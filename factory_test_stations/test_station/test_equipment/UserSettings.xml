@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<trx>
+  <CameraCalibrationPath>C:\Radiant Vision Systems Data\Camera Data\Calibration Files\</CameraCalibrationPath>
+  <MeasurementDatabasePath>C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\oculus.ttxm</MeasurementDatabasePath>
+  <SequenceFilePath>C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\pixel.seqx</SequenceFilePath>
+  <MultiChannelAnalysis>False</MultiChannelAnalysis>
+  <MeasurementSequenceMode>Asynchronous</MeasurementSequenceMode>
+  <AnalysisSequenceMode>Asynchronous</AnalysisSequenceMode>
+</trx>

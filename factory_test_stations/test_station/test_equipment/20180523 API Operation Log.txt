@@ -1,0 +1,185 @@
+Log created	2018/05/23 11:00:20.753
+11:00:20.753	Calibration path set to: C:\Radiant Vision Systems Data\Camera Data\Calibration Files\0000688589_CalibrationDB.calx
+11:00:36.366	Camera Initialized.
+11:00:36.568	App Settings Initialized.
+11:00:37.411	Measurement Database Set.
+11:00:38.983	Sequence Set.
+11:00:38.983	Initialization Success.
+11:01:25.158	Calibration path set to: C:\Radiant Vision Systems Data\Camera Data\Calibration Files\0000688589_CalibrationDB.calx
+11:01:40.570	Camera Initialized.
+11:01:40.773	App Settings Initialized.
+11:01:41.600	Measurement Database Set.
+11:01:43.113	Sequence Set.
+11:01:43.113	Initialization Success.
+11:06:44.552	Calibration path set to: C:\Radiant Vision Systems Data\Camera Data\Calibration Files\0000688589_CalibrationDB.calx
+11:06:59.934	Camera Initialized.
+11:07:00.136	App Settings Initialized.
+11:07:00.963	Measurement Database Set.
+11:07:02.476	Sequence Set.
+11:07:02.492	Initialization Success.
+11:07:30.291	Calibration path set to: C:\Radiant Vision Systems Data\Camera Data\Calibration Files\0000688589_CalibrationDB.calx
+11:07:45.595	Camera Initialized.
+11:07:45.798	App Settings Initialized.
+11:07:46.640	Measurement Database Set.
+11:07:48.153	Sequence Set.
+11:07:48.153	Initialization Success.
+11:08:53.158	Calibration path set to: C:\Radiant Vision Systems Data\Camera Data\Calibration Files\0000688589_CalibrationDB.calx
+11:09:08.852	Camera Initialized.
+11:09:09.070	App Settings Initialized.
+11:09:09.975	Measurement Database Set.
+11:09:11.488	Sequence Set.
+11:09:11.504	Initialization Success.
+11:09:56.838	Calibration path set to: C:\Radiant Vision Systems Data\Camera Data\Calibration Files\0000688589_CalibrationDB.calx
+11:10:12.094	Camera Initialized.
+11:10:12.297	App Settings Initialized.
+11:10:13.155	Measurement Database Set.
+11:10:14.746	Sequence Set.
+11:10:14.746	Initialization Success.
+11:10:14.778	Entering Create Measurement Setup.
+11:10:14.793	Creating measurement setup titled: W255
+11:10:14.793	Setting Green Exposure Time to: 113 ms.
+11:10:14.793	Setting Red Exposure Time to: 113 ms.
+11:10:14.793	Setting Blue Exposure Time to: 113 ms.
+11:10:14.793	Setting Xb Exposure Time to: 113 ms.
+11:10:14.793	Setting focus distance to: 0.575 ms.
+11:10:14.793	Setting f-stop to to: 8 ms.
+11:10:14.793	Setting Subframe region.
+11:10:14.793	Setting DistanceUnit to: Millimeters
+11:10:14.793	Setting Spectral Response to: Photometric
+11:10:14.793	Setting image rotation to: 0
+11:10:14.793	Non-supported rotation, using default value instead.
+11:10:14.793	Leaving Create Measurement Setup.
+11:10:14.824	Entering Set Calibrations.
+11:10:14.824	Measurement setup does not exist: White. Throwing exception and returning.
+11:10:14.824	Entering Take Measurement.
+11:10:14.824	Measurement setup does not exist: White. Throwing exception and returning.
+11:12:01.575	Calibration path set to: C:\Radiant Vision Systems Data\Camera Data\Calibration Files\0000688589_CalibrationDB.calx
+11:12:17.035	Camera Initialized.
+11:12:17.253	App Settings Initialized.
+11:12:18.220	Measurement Database Set.
+11:12:19.952	Sequence Set.
+11:12:19.952	Initialization Success.
+11:12:19.999	Entering Create Measurement Setup.
+11:12:19.999	Creating measurement setup titled: W255
+11:12:19.999	Setting Green Exposure Time to: 113 ms.
+11:12:19.999	Setting Red Exposure Time to: 113 ms.
+11:12:19.999	Setting Blue Exposure Time to: 113 ms.
+11:12:19.999	Setting Xb Exposure Time to: 113 ms.
+11:12:19.999	Setting focus distance to: 0.575 ms.
+11:12:19.999	Setting f-stop to to: 8 ms.
+11:12:19.999	Setting Subframe region.
+11:12:19.999	Setting DistanceUnit to: Millimeters
+11:12:19.999	Setting Spectral Response to: Photometric
+11:12:19.999	Setting image rotation to: 0
+11:12:19.999	Non-supported rotation, using default value instead.
+11:12:19.999	Leaving Create Measurement Setup.
+11:12:20.046	Entering Set Calibrations.
+11:12:20.046	Setting Color Cal Id: 21.
+11:12:20.046	Setting Image Scale Cal Id: 5.
+11:12:20.046	Setting Color Shift Cal Id: 3.
+11:12:20.046	Entering Take Measurement.
+11:12:20.046	Measurement setup does not exist: white. Throwing exception and returning.
+11:12:51.230	Calibration path set to: C:\Radiant Vision Systems Data\Camera Data\Calibration Files\0000688589_CalibrationDB.calx
+11:13:06.955	Camera Initialized.
+11:13:07.158	App Settings Initialized.
+11:13:07.984	Measurement Database Set.
+11:13:09.482	Sequence Set.
+11:13:09.482	Initialization Success.
+11:13:16.892	Entering Create Measurement Setup.
+11:13:16.908	Creating measurement setup titled: W255
+11:13:16.908	Setting Green Exposure Time to: 113 ms.
+11:13:16.908	Setting Red Exposure Time to: 113 ms.
+11:13:16.908	Setting Blue Exposure Time to: 113 ms.
+11:13:16.908	Setting Xb Exposure Time to: 113 ms.
+11:13:16.908	Setting focus distance to: 0.575 ms.
+11:13:16.908	Setting f-stop to to: 8 ms.
+11:13:16.908	Setting Subframe region.
+11:13:16.908	Setting DistanceUnit to: Millimeters
+11:13:16.908	Setting Spectral Response to: Photometric
+11:13:16.908	Setting image rotation to: 0
+11:13:16.908	Non-supported rotation, using default value instead.
+11:13:16.923	Leaving Create Measurement Setup.
+11:13:35.659	Entering Set Calibrations.
+11:13:35.659	Setting Color Cal Id: 21.
+11:13:35.659	Setting Image Scale Cal Id: 5.
+11:13:35.659	Setting Color Shift Cal Id: 3.
+11:15:47.481	Entering Take Measurement.
+11:15:47.481	Measurement setup does not exist: white. Throwing exception and returning.
+11:16:35.498	Entering Take Measurement.
+11:16:35.498	Measurement setup does not exist: white. Throwing exception and returning.
+11:16:53.812	Entering Take Measurement.
+11:16:53.812	Measurement setup does not exist: white. Throwing exception and returning.
+11:17:09.381	Entering Take Measurement.
+11:17:09.381	Measurement setup does not exist: white. Throwing exception and returning.
+11:18:27.381	Calibration path set to: C:\Radiant Vision Systems Data\Camera Data\Calibration Files\0000688589_CalibrationDB.calx
+11:18:42.966	Camera Initialized.
+11:18:43.168	App Settings Initialized.
+11:18:44.011	Measurement Database Set.
+11:18:45.508	Sequence Set.
+11:18:45.508	Initialization Success.
+11:18:45.540	Entering Create Measurement Setup.
+11:18:45.555	Creating measurement setup titled: W255
+11:18:45.555	Setting Green Exposure Time to: 113 ms.
+11:18:45.555	Setting Red Exposure Time to: 113 ms.
+11:18:45.555	Setting Blue Exposure Time to: 113 ms.
+11:18:45.555	Setting Xb Exposure Time to: 113 ms.
+11:18:45.555	Setting focus distance to: 0.575 ms.
+11:18:45.555	Setting f-stop to to: 8 ms.
+11:18:45.555	Setting Subframe region.
+11:18:45.555	Setting DistanceUnit to: Millimeters
+11:18:45.555	Setting Spectral Response to: Photometric
+11:18:45.555	Setting image rotation to: 0
+11:18:45.555	Non-supported rotation, using default value instead.
+11:18:45.555	Leaving Create Measurement Setup.
+11:18:45.586	Entering Set Calibrations.
+11:18:45.586	Setting Color Cal Id: 21.
+11:18:45.586	Setting Image Scale Cal Id: 5.
+11:18:45.586	Setting Color Shift Cal Id: 3.
+11:18:57.583	Calibration path set to: C:\Radiant Vision Systems Data\Camera Data\Calibration Files\0000688589_CalibrationDB.calx
+11:19:12.996	Camera Initialized.
+11:19:13.198	App Settings Initialized.
+11:19:14.025	Measurement Database Set.
+11:19:15.523	Sequence Set.
+11:19:15.523	Initialization Success.
+11:19:15.570	Entering Create Measurement Setup.
+11:19:15.570	Creating measurement setup titled: W255
+11:19:15.570	Setting Green Exposure Time to: 113 ms.
+11:19:15.570	Setting Red Exposure Time to: 113 ms.
+11:19:15.570	Setting Blue Exposure Time to: 113 ms.
+11:19:15.570	Setting Xb Exposure Time to: 113 ms.
+11:19:15.570	Setting focus distance to: 0.575 ms.
+11:19:15.570	Setting f-stop to to: 8 ms.
+11:19:15.570	Setting Subframe region.
+11:19:15.570	Setting DistanceUnit to: Millimeters
+11:19:15.570	Setting Spectral Response to: Photometric
+11:19:15.570	Setting image rotation to: 0
+11:19:15.570	Non-supported rotation, using default value instead.
+11:19:15.570	Leaving Create Measurement Setup.
+11:19:15.601	Entering Set Calibrations.
+11:19:15.616	Setting Color Cal Id: 21.
+11:19:15.616	Setting Image Scale Cal Id: 5.
+11:19:15.616	Setting Color Shift Cal Id: 3.
+13:50:47.780	Calibration path set to: C:\Radiant Vision Systems Data\Camera Data\Calibration Files\0000688589_CalibrationDB.calx
+13:51:03.239	Camera Initialized.
+13:51:03.442	App Settings Initialized.
+13:51:04.269	Measurement Database Set.
+13:51:05.782	Sequence Set.
+13:51:05.782	Initialization Success.
+13:51:05.813	Entering Create Measurement Setup.
+13:51:05.813	Creating measurement setup titled: W255
+13:51:05.829	Setting Green Exposure Time to: 113 ms.
+13:51:05.829	Setting Red Exposure Time to: 113 ms.
+13:51:05.829	Setting Blue Exposure Time to: 113 ms.
+13:51:05.829	Setting Xb Exposure Time to: 113 ms.
+13:51:05.829	Setting focus distance to: 0.575 ms.
+13:51:05.829	Setting f-stop to to: 8 ms.
+13:51:05.829	Setting Subframe region.
+13:51:05.829	Setting DistanceUnit to: Millimeters
+13:51:05.829	Setting Spectral Response to: Photometric
+13:51:05.829	Setting image rotation to: 0
+13:51:05.829	Non-supported rotation, using default value instead.
+13:51:05.829	Leaving Create Measurement Setup.
+13:51:05.860	Entering Set Calibrations.
+13:51:05.860	Setting Color Cal Id: 21.
+13:51:05.860	Setting Image Scale Cal Id: 5.
+13:51:05.860	Setting Color Shift Cal Id: 3.
