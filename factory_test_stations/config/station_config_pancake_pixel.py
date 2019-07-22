@@ -65,6 +65,8 @@ COMMAND_TRAY_DOWN = "CMD_TRAY_DOWN\r\n"
 COMMAND_TRAY_UP = "CMD_TRAY_UP\r\n"
 COMMAND_BUTTON_LIGHT_ON = "CMD_BUTTON_LIGHT_ON\r\n"
 COMMAND_BUTTON_LIGHT_OFF = "CMD_BUTTON_LIGHT_OFF\r\n"
+COMMAND_ELIMINATOR_ON = "CMD_ELIMINATOR_ON\r\n"
+COMMAND_ELIMINATOR_OFF = "CMD_ELIMINATOR_OFF\r\n"
 
 # Fixture Status Enum Values
 PTB_POSITION_STATUS = ["Testing Position", "Reset Position", "Outside Position", "Other Position"]
@@ -80,7 +82,7 @@ FIXTURE_USB_ON_TIME = 1
 ##################################
 # shopfloor
 #
-SHOPFLOOR_SYSTEM = 'Genius'
+SHOPFLOOR_SYSTEM = 'Sunny'
 # Will we be enforcing shopfloor routing?
 ENFORCE_SHOPFLOOR_ROUTING = False
 # does the shopfloor use work orders?
@@ -92,7 +94,8 @@ DUT_DISPLAYSLEEPTIME = 1
 DISPLAY_CYCLE_TIME = 2
 LAUNCH_TIME = 4
 DUT_MAX_WAIT_TIME =60
-DEFAULT_VSYNC_US = 111.44646
+DEFAULT_VSYNC_US = 13.889 #111.44646  #
+DUT_ON_MAXRETRY = 10
 
 ##################################
 # Test Equipment related parameters
@@ -101,7 +104,7 @@ MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\pixel.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 DATABASE_RELATIVEPATH = r'factory-test_logs\oculus.ttxm'
-EMPTY_DATABASE_RELATIVEPATH = r'factory-test_logs\empty.ttxm'
+EMPTY_DATABASE_RELATIVEPATH = r'.\empty.ttxm'
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
 DATABASE_RELATIVEPATH_BAK = r'factory-test_logs'
 
@@ -109,12 +112,17 @@ FOCUS_DISTANCE = 0.425
 APERTURE = 8.0
 ROTATION = 90
 IS_AUTOEXPOSURE = False
-LEFT = 501
-TOP = 1272
-WIDTH = 3703
-HEIGHT = 4012
+# LEFT = 462
+# TOP = 1253
+# WIDTH = 3781
+# HEIGHT = 3954
+LEFT = 200
+TOP = 1300
+WIDTH = 3781
+HEIGHT = 3954
 IS_SAVEDB = True
-
+RESTART_TEST_COUNT = 1
+DB_MAX_SIZE = 2048
 
 SPECTRAL_RESPONSE = 'PhotoMetric'
 DISTANCE_UNIT = "Millimeters"
@@ -123,12 +131,14 @@ COLOR_CAL = 'camera_color_cal1'
 SCALE_CAL = 'image_scale_cal1'
 SHIFT_CAL = '(None)'
 
-PATTERNS =  ["W255","W000"]
-SAVE_IMAGES = [True,True]
-COLORS = [(255,255,255),(0,0,0)]
+PATTERNS =  ["W255","W000","R255","G255","B255"]
+SAVE_IMAGES = [True,True,True,True,True]
+COLORS = [(255,255,255),(0,0,0),(255,0,0),(0,255,0),(0,0,255)]
 # COLORS = ['0008','0000']
-ANALYSIS = ["PanelCheck","PanelCheck"]
-EXPOSURE = [[40,40,40],[800,800,800]]
+ANALYSIS = ["ParticleDefectsW","ParticleDefectsB","ParticleDefectsW","ParticleDefectsW","ParticleDefectsW"]
+# EXPOSURE = [[10,10,10],[90,90,90],[40,40,40],[40,40,40],[40,40,40]]
+
+EXPOSURE = [[9,9,9],[20,20,20],[18,18,18],[13,13,13],[20,20,20]]
 
 
 

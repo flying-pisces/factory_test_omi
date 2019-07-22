@@ -78,7 +78,7 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
             print(init_result)
         return init_result
 
-    def uninit(self, sn):
+    def uninit(self):
         response = self._device.CloseCommunication()
         return int(self._parse_result(response))
 

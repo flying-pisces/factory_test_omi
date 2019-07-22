@@ -71,3 +71,6 @@ class projectstationStation(test_station.TestStation):
 
     def is_ready(self):
         self._fixture.is_ready()
+
+    def force_restart(self):
+        return False

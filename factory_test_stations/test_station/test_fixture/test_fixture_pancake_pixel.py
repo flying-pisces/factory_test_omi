@@ -136,6 +136,37 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
     ######################
     # Fixture control
     ######################
+
+    def elminator_on(self):
+        self._write_serial(self._station_config.COMMAND_ELIMINATOR_ON)
+        #time.sleep(CARRIER_LOAD_TIME)
+        response = self._read_response()
+        print(response[1])
+        if "0" in response[1]:
+            value = 0
+        elif self._error_msg not in response[1]:
+            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
+        else:
+            value = None
+            self._read_error = "True"
+            raise pancakepixelFixtureError("Fail to Read %s" % response[0])
+        return value
+
+    def elminator_off(self):
+        self._write_serial(self._station_config.COMMAND_ELIMINATOR_OFF)
+        #time.sleep(CARRIER_LOAD_TIME)
+        response = self._read_response()
+        print(response[1])
+        if "0" in response[1]:
+            value = 0
+        elif self._error_msg not in response[1]:
+            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
+        else:
+            value = None
+            self._read_error = "True"
+            raise pancakepixelFixtureError("Fail to Read %s" % response[0])
+        return value
+
     def load(self):
         self._write_serial(self._station_config.COMMAND_LOAD)
         #time.sleep(CARRIER_LOAD_TIME)
@@ -190,7 +221,7 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
         else:
             value = None
             self._read_error = "True"
-            raise pancakeuniformityFixtureError("Fail to Read %s" % response[0])
+            raise pancakepixelFixtureError("Fail to Read %s" % response[0])
         return value
 
     def poweroff_usb(self):
@@ -219,7 +250,7 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
         else:
             value = None
             self._read_error = "True"
-            raise pancakeuniformityFixtureError("Fail to Read %s" % response[0])
+            raise pancakepixelFixtureError("Fail to Read %s" % response[0])
         return value
 
     def poweroff_ptb(self):

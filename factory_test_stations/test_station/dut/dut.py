@@ -20,54 +20,26 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def initialize(self):
         self._display_server = displayCtrlBoard(self._station_config, self._operator_interface) # DisplayServer(custom_adb_path=self._adb_path)
-        self._display_server.initialize()
-        isinit = self.ptb_booted() and bool(self.ptb_detected()) and bool(self._display_server)#        self._display_server.kill_server()
-        return isinit
+        return self._display_server.initialize()
 
     def connect_display(self, display_cycle_time=2, launch_time=4):
         if self.first_boot:
             self.first_boot = False
-            # this should be set once, but run at least once on boot to ensure system settings are correct
-            self._display_server.disable_animations()
-            self._display_server.set_screen_timeout()
-            self._display_server.set_displayserver_permissions()
-
-        if self._display_server.is_connected() == False:
-            self._display_server.connect()
-        time.sleep(1)
-        self._display_server.screen_off()
-        time.sleep(display_cycle_time)
-        self._display_server.screen_on()
-        time.sleep(display_cycle_time)
-        self._display_server.launch_displayserver()
-        time.sleep(launch_time)
-        return self._display_server.is_connected()
-
-    def disconnect_display(self):
-        retval = False
-        self.screen_off()
-        if self._display_server != None:
-            retval = self._display_server.disconnect()
-        return retval
+            self._display_server.screen_on()
+            time.sleep(display_cycle_time)
+        return True
 
     def screen_on(self):
         self._display_server.screen_on()
 
-    def launch_displayserver(self):
-        self._display_server.launch_displayserver()
+    def screen_off(self):
+        self._display_server.screen_off()
 
     def close(self):
         self._operator_interface.print_to_console("Turn Off display................\n")
         self._display_server.screen_off()
-        self._operator_interface.print_to_console("Closing DUT by killing the server\n")
-        self._display_server.kill_server()
-
-    def handle_first_boot_reboot(self):
-        if self.first_boot:
-            ret, stdout, stderr = self._display_server.reboot()
-            self.first_boot = False
-            return ret == 0
-        return False
+        self._operator_interface.print_to_console("Closing DUT by the communication interface.\n")
+        self._display_server.close()
 
     def display_color(self, color=(255,255,255)):
         ## color here will be three integers tuple from 0 to 255 represent the RGB value
@@ -83,31 +55,9 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def vsync_microseconds(self):
         return self._station_config.DEFAULT_VSYNC_US
-    '''
-    def load_fragment_shader(self, shadername='frag.glsl'):
-        self._display_server.load_fragment_shader(shadername)
-
-    def send_data_as_file(self, data, remote_filename):
-        self._display_server.send_data_as_file(data, remote_filename)
-
-    def send_file(self, file, remote_filename):
-        self._display_server.send_file(file, remote_filename)
-
-    def screen_off(self):
-        if self._display_server != None and self._display_server.is_connected():
-            self._display_server.screen_off()
-    '''
-    def ptb_detected(self):
-        return len(self._display_server.list_devices())
-
-    def ptb_booted(self):
-        return self._display_server.is_ready()
 
     def get_displayserver_version(self):
         return self._display_server.version()
-
-    def get_os_version(self):
-        return self._display_server.get_build_fingerprint()
 
 ############ projectDut is just an example
 class projectDut(hardware_station_common.test_station.dut.DUT):
@@ -128,20 +78,32 @@ class projectDut(hardware_station_common.test_station.dut.DUT):
         self._operator_interface.print_to_console("Closing pancake uniformity Fixture\n")
 
 if __name__ == "__main__" :
-    the_unit = pancakeDut("1HC30000000000")
+    import sys
+    sys.path.append(r'..\..')
+    import dutTestUtil
+    import station_config
+    import logging
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    logging.getLogger(__name__).addHandler(ch)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+
+    station_config.load_station('pancake_pixel')
+    # station_config.load_station('pancake_uniformity')
+    operator = dutTestUtil.simOperator()
+    the_unit = pancakeDut('COM1', station_config, operator)
     the_unit.initialize()
-    print the_unit.ptb_detected()
     the_unit.connect_display()
     the_unit.screen_on()
-    the_unit.launch_displayserver()
+    time.sleep(1)
     the_unit.display_color()
+    time.sleep(1)
     print the_unit.vsync_microseconds()
+    for c in [(255,0,0), (0,255,0), (0,0,255)]:
+        the_unit.display_color(c)
+        time.sleep(0.5)
 
-    FILENAME = "auo_register_33_180_0.png"
-    the_unit.display_image(FILENAME)
     time.sleep(2)
-    the_unit.displdisplay_color((255, 0, 0))
     the_unit.screen_off()
-    time.sleep(5)
-    print "Disconnecting display"
-    the_unit.disconnect_display()
+    the_unit.close()

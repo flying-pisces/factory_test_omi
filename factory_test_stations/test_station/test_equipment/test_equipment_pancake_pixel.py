@@ -83,6 +83,10 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
             print(init_result)
         return init_result
 
+    def uninit(self):
+        response = self._device.CloseCommunication()
+        return int(self._parse_result(response))
+
     #####################################################################################################
     ######### Measurement Setup ##################
     # CreateMeasurementSetup(patternName as String, redEFilterxposure as Single, greenFilterExposure as Single,
@@ -220,6 +224,7 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
         if isinstance(imageKey, list):
             imageKey = Array[String](imageKey)
         response = self._device.RunAnalysisByName(analysisName, imageKey, xmlParameterSet)
+        print(response)
 
     #        return self._parse_result(response)
 
@@ -272,6 +277,9 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
           raise pancakepixelEquipmentError(e)
 
 if __name__ == "__main__":
+    import sys
+    sys.path.append(r'../../')
+    import test_station
     verbose = True
     is_autoexp = False
     cx = 0  # Left
@@ -293,14 +301,18 @@ if __name__ == "__main__":
     sn = "91738177"
     version = the_instrument.version()
     the_instrument.init(sn)
+    the_instrument.flush_measurement_setups()
+    the_instrument.flush_measurements()
+    the_instrument.prepare_for_run()
+
     pattern = "W255"
     the_instrument.measurementsetup(pattern, eR, eG, eB, eXB, focus, aperture, is_autoexp, rect, distance_unit,
                                     spectral_response, rotation)
 
     #    the_instrument.measurementsetup("White", 113, 113, 113)
 
-    color_cal = 'camera_color_cal'
-    scale_cal = 'image_scale_cal'
+    color_cal = 'camera_color_cal1'
+    scale_cal = 'image_scale_cal1'
     shift_cal = '(None)'
 
     colorcalibrationid = the_instrument.get_colorcal_key(color_cal)
@@ -311,12 +323,12 @@ if __name__ == "__main__":
     imagekey = pattern
     is_savedb = True
     flag = the_instrument.capture(pattern, imagekey, True)
-    print flag
+    # print flag
 
     export_name = "tempdata"
     output_dir = os.getcwd()
     the_instrument.export_data(pattern, output_dir, export_name)
-    analysis_item = "PanelCheck"
+    analysis_item = "ParticleDefectsW"
     override = ""
     the_instrument.run_analysis_by_name(analysis_item, pattern, override)
     filename = export_name + ".csv"

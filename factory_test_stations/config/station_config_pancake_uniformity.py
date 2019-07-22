@@ -24,6 +24,7 @@ COMMAND_DISP_VERSION_GRP=['mcu','hw','fpga']
 COMMAND_DISP_VERSION = "Version"
 COMMAND_DISP_GETBOARDID = "getBoardID"
 COMMAND_DISP_POWERON = "DUT.powerOn,SSD2832_BistMode"
+#COMMAND_DISP_POWERON = "DUT.powerOn"
 COMMAND_DISP_POWEROFF = "DUT.powerOff"
 COMMAND_DISP_RESET = "Reset"
 COMMAND_DISP_SETCOLOR = "SetColor"
@@ -66,6 +67,8 @@ COMMAND_TRAY_DOWN = "CMD_TRAY_DOWN\r\n"
 COMMAND_TRAY_UP = "CMD_TRAY_UP\r\n"
 COMMAND_BUTTON_LIGHT_ON = "CMD_BUTTON_LIGHT_ON\r\n"
 COMMAND_BUTTON_LIGHT_OFF = "CMD_BUTTON_LIGHT_OFF\r\n"
+COMMAND_ELIMINATOR_ON = "CMD_ELIMINATOR_ON\r\n"
+COMMAND_ELIMINATOR_OFF = "CMD_ELIMINATOR_OFF\r\n"
 
 # Fixture Status Enum Values
 PTB_POSITION_STATUS = ["Testing Position", "Reset Position", "Outside Position", "Other Position"]
@@ -86,7 +89,8 @@ DUT_DISPLAYSLEEPTIME = 1
 DISPLAY_CYCLE_TIME = 2
 LAUNCH_TIME = 4
 DUT_MAX_WAIT_TIME =60
-DEFAULT_VSYNC_US = 111.44646
+DEFAULT_VSYNC_US = 13.8889  # 72  # 111.44646
+DUT_ON_MAXRETRY = 10
 
 ##################################
 # Test Equipment related parameters
@@ -108,6 +112,8 @@ TOP = 928
 WIDTH = 1337
 HEIGHT = 1400
 IS_SAVEDB = True
+RESTART_TEST_COUNT = 1
+DB_MAX_SIZE = 2048
 
 
 SPECTRAL_RESPONSE = 'PhotoMetric'
@@ -119,7 +125,7 @@ SHIFT_CAL = '159486608 Color Shift Correction'
 PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255,255,255), (180, 180, 180), (127,127,127), (90,90,90), (255,0,0), (0,255,0), (0,0,255)]
-#COLORS = ['0008', '0001', '0800', '8000', '0010', '0020', '0040']
+# COLORS = ['0008', '0001', '0800', '8000', '0010', '0020', '0040']
 ANALYSIS = ["UniformityRegister", "UniformityMeasure", "UniformityMeasure", "UniformityMeasure", "UniformityMeasure", "UniformityMeasure", "UniformityMeasure", "UniformityMeasure", "UniformityMeasure", "UniformityMeasure"]
 EXPOSURE = [[125,125,125], [250,250,250],[375,375,375],[500,500,500],[250,250,500],[125,125,125],[250,250,250]]
 

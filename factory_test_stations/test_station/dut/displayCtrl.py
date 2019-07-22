@@ -28,6 +28,7 @@ class displayCtrlBoard:
     UNLOAD_MURA_DATA = 7
 
     def __init__(self, station_config, operator_interface):
+        self.is_screen_poweron = False
         self._serial_port = None
         self._station_config = station_config
         self._operator_interface = operator_interface
@@ -37,43 +38,10 @@ class displayCtrlBoard:
         self._end_delimiter = '\r\n'
         self._spliter = ','
 
-    def disable_animations(self):
-        pass
-
-    def set_screen_timeout(self, timeout=999000):
-        pass
-
-    def set_displayserver_permissions(self):
-        pass
-
-    def connect(self):
-        pass
-
-    def launch_displayserver(self):
-        pass
-
-    def is_connected(self):
-        return self._serial_port is not None
-
-    def disconnect(self):
-        pass
-
-    def is_ready(self):
-        return True
-
     def close(self):
         if self._serial_port is not None:
             self._serial_port.close()
             self._serial_port = None
-
-    def kill_server(self):
-        pass
-
-    def reboot(self):
-        return True
-
-    def list_devices(self):
-        return '1'
 
     def initialize(self):
         self.is_screen_poweron = False
@@ -126,19 +94,23 @@ class displayCtrlBoard:
                 raise RuntimeError("Exit display_color because can't receive any data from dut.")
             elif int(recvobj[0]) != 0x00:
                 raise RuntimeError("Exit display_color because rev err msg. Msg = {}".format(recvobj))
-            else:
-                self.is_screen_poweron = True
 
     def screen_on(self):
         if not self.is_screen_poweron:
-            recvobj = self._power_on()
-            if recvobj is None:
-                raise RuntimeError("Exit power_on because can't receive any data from dut.")
-            elif int(recvobj[0]) != 0x00:
-                raise RuntimeError("Exit power_on because rev err msg. Msg = {}".format(recvobj))
-            else:
-                self.is_screen_poweron = True
-
+            retryCount = 1
+            while retryCount <= self._station_config.DUT_ON_MAXRETRY and not self.is_screen_poweron:
+                recvobj = self._power_on()
+                if recvobj is None:
+                    raise RuntimeError("Exit power_on because can't receive any data from dut.")
+                elif int(recvobj[0]) != 0x00:
+                    if retryCount >= self._station_config.DUT_ON_MAXRETRY:
+                        raise RuntimeError("Exit power_on because rev err msg. Msg = {}".format(recvobj))
+                    else:
+                        retryCount = retryCount + 1
+                        msg = 'Retry power_on {}/{} times.\n'.format(retryCount, self._station_config.DUT_ON_MAXRETRY)
+                        self._operator_interface.print_to_console(msg)
+                else:
+                    self.is_screen_poweron = True
 
     def screen_off(self):
         if self.is_screen_poweron:
@@ -147,6 +119,8 @@ class displayCtrlBoard:
                 raise RuntimeError("Exit power_off because can't receive any data from dut.")
             elif int(recvobj[0]) != 0x00:
                 raise RuntimeError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
+            else:
+                self.is_screen_poweron = False
 
     def display_image(self, imagefile):
         recvobj = self._showImage(imagefile)
@@ -254,10 +228,6 @@ class displayCtrlBoard:
         command = '{},{}'.format(self._station_config.COMMAND_DISP_2832WRITE, command)
         self._write_serial_cmd(command)
         return ['0000']
-
-
-    def get_build_fingerprint(self):
-        return "1.0.0"
 
     def _send_displayserver_command(self, commandID, extra=None, data=None):
         extra_bytesize = 0
