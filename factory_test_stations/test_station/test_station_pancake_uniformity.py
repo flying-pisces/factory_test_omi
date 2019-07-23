@@ -9,6 +9,8 @@ import shutil
 import time
 import math
 import datetime
+import re
+import filecmp
 
 class pancakeuniformityError(Exception):
     pass
@@ -20,9 +22,10 @@ class pancakeuniformityStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
+        self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_uniformity.pancakeuniformityFixture(station_config, operator_interface)
-        self._equipment = test_equipment_pancake_uniformity.pancakeuniformityEquipment(station_config, operator_interface)
+        # self._equipment = test_equipment_pancake_uniformity.pancakeuniformityEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
 
@@ -31,9 +34,18 @@ class pancakeuniformityStation(test_station.TestStation):
         try:
             self._operator_interface.print_to_console("Initializing station...\n")
             self._fixture.initialize()
+            dbfn = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
+            empytdb = os.path.join(self._station_config.ROOT_DIR, self._station_config.EMPTY_DATABASE_RELATIVEPATH)
+            if self._station_config.RESTART_TEST_COUNT != 1 and \
+                    self._station_config.IS_SAVEDB and \
+                    os.path.exists(dbfn) and not filecmp.cmp(dbfn, empytdb):
+                dbfnbak = "{0}_{1}_autobak.ttxm".format(self._station_config.STATION_TYPE,
+                                                        datetime.datetime.now().strftime("%y%m%d%H%M%S"))
+                self._operator_interface.print_to_console("backup ttxm raw database to {}...\n".format(dbfnbak))
+                self.backup_database(dbfnbak, True)
+
             self._operator_interface.print_to_console("Empty ttxm raw database ...\n")
-            shutil.copyfile(os.path.join(self._station_config.ROOT_DIR, self._station_config.EMPTY_DATABASE_RELATIVEPATH),
-                            os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
+            shutil.copyfile(empytdb, dbfn)
         except:
             raise
 
@@ -41,14 +53,35 @@ class pancakeuniformityStation(test_station.TestStation):
         self._operator_interface.print_to_console("Close...\n")
         self._operator_interface.print_to_console("\n..shutting the station down..\n")
         self._fixture.status()
-        self._fixture.unload()
-        self._fixture.close()
+        try:
+            self._fixture.elminator_off()
+            self._fixture.unload()
+        finally:
+            self._fixture.close()
 
     def _do_test(self, serial_number, test_log):
         self._overall_result = False
         self._overall_errorcode = ''
 #        self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
+        self._fixture.elminator_on()
         self._fixture.load()
+        '''
+        # ttxm is occupy by process, can't override it correctly.
+        if self._station_config.RESTART_TEST_COUNT == 1:
+            self._operator_interface.print_to_console("Empty ttxm raw database ...\n")
+            try:
+                ttxmpth = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
+                dirname = os.path.dirname(ttxmpth)
+                shutil.rmtree(dirname)
+                if not os.path.exists(dirname):
+                    os.mkdir(dirname, 777)
+
+                shutil.copyfile(
+                    os.path.join(self._station_config.ROOT_DIR, self._station_config.EMPTY_DATABASE_RELATIVEPATH),
+                    os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
+            except Exception, e:
+                self._operator_interface.print_to_console("Fail to create new raw database.{}\n".format(e.message))
+        '''
         try:
             self._operator_interface.print_to_console("Testing Unit %s\n" %serial_number)
             the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
@@ -207,18 +240,21 @@ class pancakeuniformityStation(test_station.TestStation):
 
             the_unit.close()
             self._fixture.unload()
-
+            self._fixture.elminator_off()
+            the_equipment.uninit()
             overall_result, first_failed_test_result = self.close_test(test_log)
 
             # SN-YYMMDDHHMMS-P.ttxm for pass unit and  SN-YYMMDDHHMMS-F.ttxm for failed
-            dbfn = ""
-            if overall_result:
-                dbfn = "{0}-{1}-P.ttxm".format(the_unit.serial_number, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
-            else:
-                dbfn = "{0}-{1}-F.ttxm".format(the_unit.serial_number, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
+            if  self._station_config.RESTART_TEST_COUNT == 1\
+                and self._station_config.IS_SAVEDB:
+                dbfn = test_log.get_filename()
+                if overall_result:
+                    dbfn = re.sub('x.log', 'P.ttxm', test_log.get_filename())
+                else:
+                    dbfn = re.sub('x.log', 'F.ttxm', test_log.get_filename())
+                self.backup_database(dbfn)
 
-            shutil.copy(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH),
-                        os.path.join(self._station_config.DATABASE_RELATIVEPATH_BAK, dbfn))
+            self._runningCount += 1
             return overall_result, first_failed_test_result
 
     def close_test(self, test_log):
@@ -229,3 +265,29 @@ class pancakeuniformityStation(test_station.TestStation):
 
     def is_ready(self):
         self._fixture.is_ready()
+
+    def backup_database(self, dbfn, ismov = False):
+        bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_BAK)
+        if not os.path.exists(bak_dir):
+            os.mkdir(bak_dir, 777)
+        if ismov:
+            shutil.move(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH),
+                        os.path.join(bak_dir, dbfn))
+        else:
+            shutil.copyfile(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH),
+                        os.path.join(bak_dir, dbfn))
+
+    def force_restart(self):
+        if not self._station_config.IS_SAVEDB:
+            return False
+
+        dbsize = os.path.getsize(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
+        dbsize = dbsize / 1024  # kb
+        dbsize = dbsize / 1024  # mb
+        if self._station_config.RESTART_TEST_COUNT <= self._runningCount or dbsize >= self._station_config.DB_MAX_SIZE:
+            # dbfn = "{0}_{1}_autobak.ttxm".format(self._station_id, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
+            # self.backup_database(dbfn)
+            return True
+
+        return False
+
