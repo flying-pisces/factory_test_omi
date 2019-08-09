@@ -50,14 +50,17 @@ class pancakeuniformityStation(test_station.TestStation):
             raise
 
     def close(self):
-        self._operator_interface.print_to_console("Close...\n")
-        self._operator_interface.print_to_console("\n..shutting the station down..\n")
-        self._fixture.status()
+        if self._fixture is None:
+            return
         try:
+            self._operator_interface.print_to_console("Close...\n")
+            self._operator_interface.print_to_console("\n..shutting the station down..\n")
+            self._fixture.status()
             self._fixture.elminator_off()
-            self._fixture.unload()
+            # self._fixture.unload()
         finally:
             self._fixture.close()
+            self._fixture = None
 
     def _do_test(self, serial_number, test_log):
         self._overall_result = False
@@ -230,18 +233,19 @@ class pancakeuniformityStation(test_station.TestStation):
                 test_log.set_measured_value_by_name("DISPLAY_GAMMA", gamma)
             except pancakeuniformityError:
                 self._operator_interface.print_to_console("Non-parametric Test Failure\n")
-                # return self.close_test(test_log)
-            # else:
-                # return self.close_test(test_log)
 
         except Exception, e:
             self._operator_interface.print_to_console("Test exception . {}".format(e.message))
         finally:
-
-            the_unit.close()
-            self._fixture.unload()
-            self._fixture.elminator_off()
-            the_equipment.uninit()
+            self._operator_interface.print_to_console('release current test resource.\n')
+            if the_unit is not None:
+                the_unit.close()
+            if self._fixture is not None:
+                self._fixture.unload()
+                self._fixture.elminator_off()
+            # if the_equipment is not None:
+            #     the_equipment.uninit()
+            self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
             overall_result, first_failed_test_result = self.close_test(test_log)
 
             # SN-YYMMDDHHMMS-P.ttxm for pass unit and  SN-YYMMDDHHMMS-F.ttxm for failed
@@ -255,6 +259,7 @@ class pancakeuniformityStation(test_station.TestStation):
                 self.backup_database(dbfn)
 
             self._runningCount += 1
+            self._operator_interface.print_to_console('--- do test finished ---\n')
             return overall_result, first_failed_test_result
 
     def close_test(self, test_log):
@@ -284,9 +289,12 @@ class pancakeuniformityStation(test_station.TestStation):
         dbsize = os.path.getsize(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
         dbsize = dbsize / 1024  # kb
         dbsize = dbsize / 1024  # mb
-        if self._station_config.RESTART_TEST_COUNT <= self._runningCount or dbsize >= self._station_config.DB_MAX_SIZE:
+        if self._station_config.RESTART_TEST_COUNT <= self._runningCount \
+                or dbsize >= self._station_config.DB_MAX_SIZE:
             # dbfn = "{0}_{1}_autobak.ttxm".format(self._station_id, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
             # self.backup_database(dbfn)
+            self.close()
+            self._operator_interface.print_to_console('database will be renamed automatically while software restarted next time.\n')
             return True
 
         return False

@@ -126,7 +126,7 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
         return value
 
     def close(self):
-        self._operator_interface.print_to_console("Closing auo unif Fixture\n")
+        self._operator_interface.print_to_console("Closing auo pixel Fixture\n")
         if hasattr(self, '_serial_port') and self._station_config.FIXTURE_COMPORT:
             self._serial_port.close()
             self._serial_port = None

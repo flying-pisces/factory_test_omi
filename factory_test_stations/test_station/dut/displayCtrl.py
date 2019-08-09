@@ -98,6 +98,8 @@ class displayCtrlBoard:
     def screen_on(self):
         if not self.is_screen_poweron:
             retryCount = 1
+            self._power_off()
+            time.sleep(0.5)
             while retryCount <= self._station_config.DUT_ON_MAXRETRY and not self.is_screen_poweron:
                 recvobj = self._power_on()
                 if recvobj is None:
@@ -108,6 +110,8 @@ class displayCtrlBoard:
                     else:
                         retryCount = retryCount + 1
                         msg = 'Retry power_on {}/{} times.\n'.format(retryCount, self._station_config.DUT_ON_MAXRETRY)
+                        time.sleep(0.5)
+                        self._power_off()
                         self._operator_interface.print_to_console(msg)
                 else:
                     self.is_screen_poweron = True

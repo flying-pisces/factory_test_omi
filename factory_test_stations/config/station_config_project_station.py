@@ -4,8 +4,8 @@
 # Where is the root directory.
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
-ROOT_DIR = r'C:\projects\Pancake\factory_test_omi'
-
+ROOT_DIR = r'C:\oculus\factory_test_omi'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory-test_logs'
 ##################################
 # serial number codes
 #
