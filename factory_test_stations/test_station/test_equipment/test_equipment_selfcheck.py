@@ -234,7 +234,7 @@ if __name__ == "__main__":
     rotation = 0
     the_instrument = pancakeuniformityEquipment(verbose, focus, aperture, is_autoexp, cx, cy, cl, cw)
     sn = the_instrument.serialnumber()
-    sn = "159486608"
+    sn = "94142510"
     version = the_instrument.version()
     the_instrument.init(sn)
     pattern = "W255"
@@ -242,9 +242,9 @@ if __name__ == "__main__":
 
 #    the_instrument.measurementsetup("White", 113, 113, 113)
 
-    color_cal = 'camera_color_cal'
-    scale_cal = 'image_scale_cal'
-    shift_cal = '159486608 Color Shift Correction'
+    color_cal = '(None)'
+    scale_cal = '(None)'
+    shift_cal = '(None)'
 
     colorcalibrationid = the_instrument.get_colorcal_key(color_cal)
     imagescaleid = the_instrument.get_imagescalecal_key(scale_cal)
