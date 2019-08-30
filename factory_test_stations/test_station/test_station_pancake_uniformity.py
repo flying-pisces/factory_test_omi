@@ -68,6 +68,7 @@ class pancakeuniformityStation(test_station.TestStation):
 #        self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
         self._fixture.elminator_on()
         self._fixture.load()
+        test_success = False
         '''
         # ttxm is occupy by process, can't override it correctly.
         if self._station_config.RESTART_TEST_COUNT == 1:
@@ -120,119 +121,118 @@ class pancakeuniformityStation(test_station.TestStation):
             gls = []
             centercolordifference255 = 0.0
             attempts = 0
-            try:
-                for i in range(len(self._station_config.PATTERNS)):
-                    self._operator_interface.print_to_console(
-                        "Panel Measurement Pattern: %s" %self._station_config.PATTERNS[i])
-                    # modified by elton . add random color
-                    # the_unit.display_color(self._station_config.COLORS[i])
-                    if isinstance(self._station_config.COLORS[i], tuple):
-                        the_unit.display_color(self._station_config.COLORS[i])
-                    elif isinstance(self._station_config.COLORS[i], str):
-                        the_unit.display_image(self._station_config.COLORS[i])
 
-                    if math.isnan(the_unit.vsync_microseconds()):
-                        vsync_us = self._station_config.DEFAULT_VSYNC_US
-                        exp_time_list = self._station_config.EXPOSURE[i]
-                    else:
-                        vsync_us = the_unit.vsync_microseconds()
-                        exp_time_list = self._station_config.EXPOSURE[i]
-                        for exp_index in range(len(exp_time_list)):
-                            exp_time_list[exp_index] = float(int(exp_time_list[exp_index]*1000.0/vsync_us)*vsync_us)/1000.0
-                            self._operator_interface.print_to_console(
-                                    "\nAdjusted Timing in millesecond: %s\n" % exp_time_list[exp_index])
+            for i in range(len(self._station_config.PATTERNS)):
+                self._operator_interface.print_to_console(
+                    "Panel Measurement Pattern: %s" %self._station_config.PATTERNS[i])
+                # modified by elton . add random color
+                # the_unit.display_color(self._station_config.COLORS[i])
+                if isinstance(self._station_config.COLORS[i], tuple):
+                    the_unit.display_color(self._station_config.COLORS[i])
+                elif isinstance(self._station_config.COLORS[i], str):
+                    the_unit.display_image(self._station_config.COLORS[i])
 
-                    the_equipment.measurementsetup(self._station_config.PATTERNS[i], exp_time_list[0],
-                                                   exp_time_list[1], exp_time_list[2], exp_time_list[2],
-                                                   self._station_config.FOCUS_DISTANCE, self._station_config.APERTURE,
-                                                   self._station_config.IS_AUTOEXPOSURE, rect, self._station_config.DISTANCE_UNIT,
-                                                   self._station_config.SPECTRAL_RESPONSE, self._station_config.ROTATION)
-                    the_equipment.setcalibrationid(self._station_config.PATTERNS[i],color_cal_id, scale_cal_id, shift_cal_id)
-                    imagekey = self._station_config.PATTERNS[i]
-                    flag = the_equipment.capture(self._station_config.PATTERNS[i], imagekey, self._station_config.IS_SAVEDB)
-                    self._operator_interface.print_to_console("\n".format(str(flag)))
+                if math.isnan(the_unit.vsync_microseconds()):
+                    vsync_us = self._station_config.DEFAULT_VSYNC_US
+                    exp_time_list = self._station_config.EXPOSURE[i]
+                else:
+                    vsync_us = the_unit.vsync_microseconds()
+                    exp_time_list = self._station_config.EXPOSURE[i]
+                    for exp_index in range(len(exp_time_list)):
+                        exp_time_list[exp_index] = float(int(exp_time_list[exp_index]*1000.0/vsync_us)*vsync_us)/1000.0
+                        self._operator_interface.print_to_console(
+                                "\nAdjusted Timing in millesecond: %s\n" % exp_time_list[exp_index])
 
-                    export_name = "{}_{}".format(serial_number, self._station_config.PATTERNS[i])
-                    output_dir = os.path.join(self._station_config.ROOT_DIR , self._station_config.ANALYSIS_RELATIVEPATH, the_unit.serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
-                    if not os.path.exists(output_dir):
-                        os.mkdir(output_dir,777)
-                    time.sleep(1)
-                    while attempts < 3:
+                the_equipment.measurementsetup(self._station_config.PATTERNS[i], exp_time_list[0],
+                                               exp_time_list[1], exp_time_list[2], exp_time_list[2],
+                                               self._station_config.FOCUS_DISTANCE, self._station_config.APERTURE,
+                                               self._station_config.IS_AUTOEXPOSURE, rect, self._station_config.DISTANCE_UNIT,
+                                               self._station_config.SPECTRAL_RESPONSE, self._station_config.ROTATION)
+                the_equipment.setcalibrationid(self._station_config.PATTERNS[i],color_cal_id, scale_cal_id, shift_cal_id)
+                imagekey = self._station_config.PATTERNS[i]
+                flag = the_equipment.capture(self._station_config.PATTERNS[i], imagekey, self._station_config.IS_SAVEDB)
+                self._operator_interface.print_to_console("\n".format(str(flag)))
 
-                        try:
-                            the_equipment.export_data(self._station_config.PATTERNS[i], output_dir, export_name)
-                            break
-                        except:
-                            attempts += 1
-                            self._operator_interface.print_to_console("\n try to export data for {} times\n".format(attempts))
+                export_name = "{}_{}".format(serial_number, self._station_config.PATTERNS[i])
+                output_dir = os.path.join(self._station_config.ROOT_DIR , self._station_config.ANALYSIS_RELATIVEPATH, the_unit.serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
+                if not os.path.exists(output_dir):
+                    os.mkdir(output_dir,777)
+                time.sleep(1)
+                while attempts < 3:
+
+                    try:
+                        the_equipment.export_data(self._station_config.PATTERNS[i], output_dir, export_name)
+                        break
+                    except:
+                        attempts += 1
+                        self._operator_interface.print_to_console("\n try to export data for {} times\n".format(attempts))
 
 
-                    override = ''
-                    the_equipment.run_analysis_by_name(self._station_config.ANALYSIS[i], self._station_config.PATTERNS[i],
-                                                       override)
+                override = ''
+                the_equipment.run_analysis_by_name(self._station_config.ANALYSIS[i], self._station_config.PATTERNS[i],
+                                                   override)
 
-                    filename = export_name + ".csv "
-                    analysis_result = the_equipment.get_last_results()
+                filename = export_name + ".csv "
+                analysis_result = the_equipment.get_last_results()
 
-                    for r in analysis_result:
-                        if '255' in self._station_config.PATTERNS[i] and 'Center Color (C' in r[0]:
-                            test_item = str(self._station_config.PATTERNS[i] + "_" + r[0]).replace(" ", "")
-                            self._operator_interface.print_to_console("\n" + test_item + ": \t" + r[2] + "\n")
-                            test_log.set_measured_value_by_name(test_item, float(r[2]))
-                        elif 'W' in self._station_config.PATTERNS[i] and 'CenterColorDifference'in r[0]:
-                            if 'W255' in self._station_config.PATTERNS[i]:
-                                centercolordifference255 = float(r[2])
-                            else:
-                                test_item = self._station_config.PATTERNS[i] + "_" + r[0]
-                                test_value = abs(float(r[2])-centercolordifference255)
-                                test_log.set_measured_value_by_name(test_item, test_value)
+                for r in analysis_result:
+                    if '255' in self._station_config.PATTERNS[i] and 'Center Color (C' in r[0]:
+                        test_item = str(self._station_config.PATTERNS[i] + "_" + r[0]).replace(" ", "")
+                        self._operator_interface.print_to_console("\n" + test_item + ": \t" + r[2] + "\n")
+                        test_log.set_measured_value_by_name(test_item, float(r[2]))
+                    elif 'W' in self._station_config.PATTERNS[i] and 'CenterColorDifference'in r[0]:
+                        if 'W255' in self._station_config.PATTERNS[i]:
+                            centercolordifference255 = float(r[2])
                         else:
-                            for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
-                                test_item = self._station_config.PATTERNS[i] + "_" + r[0]
-                                if limit_array[0] == test_item:
-                                    test_log.set_measured_value_by_name(test_item, float(r[2]))
-                                    break
+                            test_item = self._station_config.PATTERNS[i] + "_" + r[0]
+                            test_value = abs(float(r[2])-centercolordifference255)
+                            test_log.set_measured_value_by_name(test_item, test_value)
+                    else:
+                        for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
+                            test_item = self._station_config.PATTERNS[i] + "_" + r[0]
+                            if limit_array[0] == test_item:
+                                test_log.set_measured_value_by_name(test_item, float(r[2]))
+                                break
 
 
-                        if self._station_config.PATTERNS[i][0] == 'W' and self._station_config.PATTERNS[i][1:4] in self._station_config.GAMMA_CHECK_GLS and r[0] == 'CenterLv':
-                            centerlv_gls.append(float(r[2]))
-                            gls.append(float(self._station_config.PATTERNS[i][1:4]))
+                    if self._station_config.PATTERNS[i][0] == 'W' and self._station_config.PATTERNS[i][1:4] in self._station_config.GAMMA_CHECK_GLS and r[0] == 'CenterLv':
+                        centerlv_gls.append(float(r[2]))
+                        gls.append(float(self._station_config.PATTERNS[i][1:4]))
 
 
-                    mesh_data = the_equipment.get_last_mesh()
+                mesh_data = the_equipment.get_last_mesh()
 
-                    if os.path.exists(os.path.join(output_dir, filename)):
-                        the_equipment.delete_file(os.path.join(output_dir, filename))
+                if os.path.exists(os.path.join(output_dir, filename)):
+                    the_equipment.delete_file(os.path.join(output_dir, filename))
 
-                    if mesh_data != {}:
-                        output_data = StringIO.StringIO()
-                        np.savez_compressed(output_data, **mesh_data)
-                        npzdata = output_data.getvalue()
-                        ## LEAVE for the logging of npzdata
-                        ## LEAVE for the logging of npzdata
-                        # also calculate some statistical infdir()o about the measurement
-                        for c in ["Lv", "Cx", "Cy","u'", "v'"]:
-                            cdata = mesh_data.get(c)
-                            filename = the_unit.serial_number + "_" + c + "_" +self._station_config.PATTERNS[i] + ".csv"
-                            unit_log_path = os.path.join(output_dir, filename)
-                            self._operator_interface.print_to_console(
-                                "\n Saving Jacob's data of: %s \n" % unit_log_path)
-                            np.savetxt(unit_log_path, cdata, delimiter=',')
-    #                        if cdata is not None:
-    #                            cmean = np.mean(cdata, dtype=np.float32)
-    #                            cmax = cdata.max()
-    #                            cmin = cdata.min()
-    #                            cstd = np.std(cdata, dtype=np.float32)
+                if mesh_data != {}:
+                    output_data = StringIO.StringIO()
+                    np.savez_compressed(output_data, **mesh_data)
+                    npzdata = output_data.getvalue()
+                    ## LEAVE for the logging of npzdata
+                    ## LEAVE for the logging of npzdata
+                    # also calculate some statistical infdir()o about the measurement
+                    for c in ["Lv", "Cx", "Cy","u'", "v'"]:
+                        cdata = mesh_data.get(c)
+                        filename = the_unit.serial_number + "_" + c + "_" +self._station_config.PATTERNS[i] + ".csv"
+                        unit_log_path = os.path.join(output_dir, filename)
+                        self._operator_interface.print_to_console(
+                            "\n Saving Jacob's data of: %s \n" % unit_log_path)
+                        np.savetxt(unit_log_path, cdata, delimiter=',')
+#                        if cdata is not None:
+#                            cmean = np.mean(cdata, dtype=np.float32)
+#                            cmax = cdata.max()
+#                            cmin = cdata.min()
+#                            cstd = np.std(cdata, dtype=np.float32)
 
 
-                ### implement tests here.  Note thadir(t the test name matches one in the station_limits file ###
+            ### implement tests here.  Note thadir(t the test name matches one in the station_limits file ###
 
-                norm_gls = np.log10([gl / max(gls) for gl in gls])
-                norm_clv = np.log10([centerlv_gl / max(centerlv_gls) for centerlv_gl in centerlv_gls])
-                gamma, cov = np.polyfit(norm_gls, norm_clv, 1, cov=False)
-                test_log.set_measured_value_by_name("DISPLAY_GAMMA", gamma)
-            except pancakeuniformityError:
-                self._operator_interface.print_to_console("Non-parametric Test Failure\n")
+            norm_gls = np.log10([gl / max(gls) for gl in gls])
+            norm_clv = np.log10([centerlv_gl / max(centerlv_gls) for centerlv_gl in centerlv_gls])
+            gamma, cov = np.polyfit(norm_gls, norm_clv, 1, cov=False)
+            test_log.set_measured_value_by_name("DISPLAY_GAMMA", gamma)
+            test_success = True
 
         except Exception, e:
             self._operator_interface.print_to_console("Test exception . {}".format(e.message))
@@ -243,6 +243,8 @@ class pancakeuniformityStation(test_station.TestStation):
             if self._fixture is not None:
                 self._fixture.unload()
                 self._fixture.elminator_off()
+            if not test_success:
+                raise pancakeuniformityError()
             # if the_equipment is not None:
             #     the_equipment.uninit()
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))

@@ -65,6 +65,7 @@ class pancakepixelStation(test_station.TestStation):
     def _do_test(self, serial_number, test_log):
         self._overall_result = False
         self._overall_errorcode = ''
+        test_success = False
         #        self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
         self._fixture.elminator_on()
         self._fixture.load()
@@ -121,74 +122,72 @@ class pancakepixelStation(test_station.TestStation):
             attempts = 0
             is_rawdata_save = True
 
-            try:
-                for i in range(len(self._station_config.PATTERNS)):
-                    self._operator_interface.print_to_console(
-                        "Panel Measurement Pattern: %s" % self._station_config.PATTERNS[i])
+            for i in range(len(self._station_config.PATTERNS)):
+                self._operator_interface.print_to_console(
+                    "Panel Measurement Pattern: %s" % self._station_config.PATTERNS[i])
 
-                    # modified by elton . add random color
-                    # the_unit.display_color(self._station_config.COLORS[i])
-                    if isinstance(self._station_config.COLORS[i], tuple):
-                        the_unit.display_color(self._station_config.COLORS[i])
-                    elif isinstance(self._station_config.COLORS[i], str):
-                        the_unit.display_image(self._station_config.COLORS[i])
+                # modified by elton . add random color
+                # the_unit.display_color(self._station_config.COLORS[i])
+                if isinstance(self._station_config.COLORS[i], tuple):
+                    the_unit.display_color(self._station_config.COLORS[i])
+                elif isinstance(self._station_config.COLORS[i], str):
+                    the_unit.display_image(self._station_config.COLORS[i])
 
-                    if math.isnan(the_unit.vsync_microseconds()):
-                        vsync_us = self._station_config.DEFAULT_VSYNC_US
-                        exp_time_list = self._station_config.EXPOSURE[i]
-                    else:
-                        vsync_us = the_unit.vsync_microseconds()
-                        exp_time_list = self._station_config.EXPOSURE[i]
-                        for exp_index in range(len(exp_time_list)):
-                            exp_time_list[exp_index] = float(
-                                int(exp_time_list[exp_index] * 1000.0 / vsync_us) * vsync_us) / 1000.0
-                            self._operator_interface.print_to_console(
-                                "\nAdjusted Timing in millesecond: %s\n" % exp_time_list[exp_index])
+                vsync_us = the_unit.vsync_microseconds()
+                if math.isnan(vsync_us):
+                    vsync_us = self._station_config.DEFAULT_VSYNC_US
+                    exp_time_list = self._station_config.EXPOSURE[i]
+                else:
+                    exp_time_list = self._station_config.EXPOSURE[i]
+                    for exp_index in range(len(exp_time_list)):
+                        exp_time_list[exp_index] = float(
+                            int(exp_time_list[exp_index] * 1000.0 / vsync_us) * vsync_us) / 1000.0
+                        self._operator_interface.print_to_console(
+                            "\nAdjusted Timing in millesecond: %s\n" % exp_time_list[exp_index])
 
-                    the_equipment.measurementsetup(self._station_config.PATTERNS[i], exp_time_list[0],
-                                                   exp_time_list[1], exp_time_list[2], exp_time_list[2],
-                                                   self._station_config.FOCUS_DISTANCE, self._station_config.APERTURE,
-                                                   self._station_config.IS_AUTOEXPOSURE, rect,
-                                                   self._station_config.DISTANCE_UNIT,
-                                                   self._station_config.SPECTRAL_RESPONSE, self._station_config.ROTATION)
-                    the_equipment.setcalibrationid(self._station_config.PATTERNS[i], color_cal_id, scale_cal_id,
-                                                   shift_cal_id)
-                    imagekey = self._station_config.PATTERNS[i]
-                    flag = the_equipment.capture(self._station_config.PATTERNS[i], imagekey, self._station_config.IS_SAVEDB)
-                    self._operator_interface.print_to_console("\n".format(str(flag)))
+                the_equipment.measurementsetup(self._station_config.PATTERNS[i], exp_time_list[0],
+                                               exp_time_list[1], exp_time_list[2], exp_time_list[2],
+                                               self._station_config.FOCUS_DISTANCE, self._station_config.APERTURE,
+                                               self._station_config.IS_AUTOEXPOSURE, rect,
+                                               self._station_config.DISTANCE_UNIT,
+                                               self._station_config.SPECTRAL_RESPONSE, self._station_config.ROTATION)
+                the_equipment.setcalibrationid(self._station_config.PATTERNS[i], color_cal_id, scale_cal_id,
+                                               shift_cal_id)
+                imagekey = self._station_config.PATTERNS[i]
+                flag = the_equipment.capture(self._station_config.PATTERNS[i], imagekey, self._station_config.IS_SAVEDB)
+                self._operator_interface.print_to_console("\n".format(str(flag)))
 
-                    export_name = "{}_{}".format(serial_number, self._station_config.PATTERNS[i])
-                    output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
-                                              the_unit.serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
-                    if not os.path.exists(output_dir):
-                        os.mkdir(output_dir, 777)
-                    time.sleep(1)
-                    while attempts < 3:
-                        try:
-                            the_equipment.export_data(self._station_config.PATTERNS[i], output_dir, export_name)
+                export_name = "{}_{}".format(serial_number, self._station_config.PATTERNS[i])
+                output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
+                                          the_unit.serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
+                if not os.path.exists(output_dir):
+                    os.mkdir(output_dir, 777)
+                time.sleep(1)
+                while attempts < 3:
+                    try:
+                        the_equipment.export_data(self._station_config.PATTERNS[i], output_dir, export_name)
+                        break
+                    except:
+                        attempts += 1
+                        self._operator_interface.print_to_console(
+                            "\n try to export data for {} times\n".format(attempts))
+                is_rawdata_save = is_rawdata_save and os.path.exists(os.path.join(output_dir, export_name + '.npz'))
+                override = ''
+                the_equipment.run_analysis_by_name(self._station_config.ANALYSIS[i],
+                                                   self._station_config.PATTERNS[i],
+                                                   override)
+
+                analysis_result = the_equipment.get_last_results()
+
+                for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
+                    for r in list(analysis_result):
+                        test_item = self._station_config.PATTERNS[i] + "_" + r[0]
+                        if limit_array[0] == test_item:
+                            test_log.set_measured_value_by_name(test_item, int(r[2]))
                             break
-                        except:
-                            attempts += 1
-                            self._operator_interface.print_to_console(
-                                "\n try to export data for {} times\n".format(attempts))
-                    is_rawdata_save = is_rawdata_save and os.path.exists(os.path.join(output_dir, export_name + '.npz'))
-                    override = ''
-                    the_equipment.run_analysis_by_name(self._station_config.ANALYSIS[i],
-                                                       self._station_config.PATTERNS[i],
-                                                       override)
 
-                    analysis_result = the_equipment.get_last_results()
-
-                    for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
-                        for r in list(analysis_result):
-                            test_item = self._station_config.PATTERNS[i] + "_" + r[0]
-                            if limit_array[0] == test_item:
-                                test_log.set_measured_value_by_name(test_item, int(r[2]))
-                                break
-
-                test_log.set_measured_value_by_name("SaveRawImage_success", is_rawdata_save)
-            except pancakepixelError:
-                self._operator_interface.print_to_console("Non-parametric Test Failure\n")
+            test_log.set_measured_value_by_name("SaveRawImage_success", is_rawdata_save)
+            test_success = True
 
         except Exception, e:
             self._operator_interface.print_to_console("Test exception . {}".format(e))
@@ -199,6 +198,8 @@ class pancakepixelStation(test_station.TestStation):
             if self._fixture is not None:
                 self._fixture.unload()
                 self._fixture.elminator_off()
+            if not test_success:
+                raise pancakepixelError()
             # if the_equipment is not None:
             #     the_equipment.uninit()
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
