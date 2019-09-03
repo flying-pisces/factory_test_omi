@@ -54,7 +54,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         time.sleep(self._station_config.DUT_DISPLAYSLEEPTIME)
 
     def vsync_microseconds(self):
-        return self._station_config.DEFAULT_VSYNC_US
+        # return self._station_config.DEFAULT_VSYNC_US
+        return self._display_server.get_median_vsync_microseconds()
 
     def get_displayserver_version(self):
         return self._display_server.version()

@@ -10,6 +10,8 @@ import serial
 import struct
 import logging
 import time
+import string
+import dutchecker as dutchecker
 
 class displayCtrlMyzyError(Exception):
     pass
@@ -85,7 +87,17 @@ class displayCtrlBoard:
         return response
 
     def get_median_vsync_microseconds(self):
-        return self._station_config.DEFAULT_VSYNC_US
+        # return self._station_config.DEFAULT_VSYNC_US
+
+        recvobj = self._vsyn_time()
+        if recvobj is None:
+            raise RuntimeError("Exit display_color because can't receive any data from dut.")
+        else:
+            grpt = re.match(r'(\d*[\.]?\d*)', recvobj[1])
+            grpf = re.match(r'(\d*[\.]?\d*)', recvobj[2])
+            if grpf is None or grpt is None:
+                raise RuntimeError("Exit display_color because rev err msg. Msg = {}".format(recvobj))
+            return string.atof(grpt.group(0))
 
     def display_color(self, c=(255,255,255)):
         if self.is_screen_poweron:
@@ -97,6 +109,12 @@ class displayCtrlBoard:
 
     def screen_on(self):
         if not self.is_screen_poweron:
+            dutchecker = dutchecker.dut_checker()
+            #  camera
+            if self._station_config.DISP_CHECKER_ENABLE:
+                dutchecker.open()
+                time.sleep(self._station_config.DISP_CHECKER_DLY)
+
             retryCount = 1
             self._power_off()
             time.sleep(0.5)
@@ -104,17 +122,27 @@ class displayCtrlBoard:
                 recvobj = self._power_on()
                 if recvobj is None:
                     raise RuntimeError("Exit power_on because can't receive any data from dut.")
-                elif int(recvobj[0]) != 0x00:
-                    if retryCount >= self._station_config.DUT_ON_MAXRETRY:
-                        raise RuntimeError("Exit power_on because rev err msg. Msg = {}".format(recvobj))
-                    else:
-                        retryCount = retryCount + 1
-                        msg = 'Retry power_on {}/{} times.\n'.format(retryCount, self._station_config.DUT_ON_MAXRETRY)
-                        time.sleep(0.5)
-                        self._power_off()
-                        self._operator_interface.print_to_console(msg)
                 else:
-                    self.is_screen_poweron = True
+                    if self._station_config.DISP_CHECKER_ENABLE:
+                        score = dutchecker.do_checker()
+                        if score is not None and max(score) >= self._station_config.DISP_CHECKER_L_SCORE:
+                            self.is_screen_poweron = True
+                            if self._station_config.DISP_CHECKER_IMG_SAVED:
+                                fn0 = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+                                fn = 'DUT_CHECKER_{0}_{1}.jpg'.format(fn0, retryCount + 1)
+                                dutchecker.save_log_img(fn)
+                    else:
+                        self.is_screen_poweron = True
+
+                if not self.is_screen_poweron:
+                    msg = 'Retry power_on {}/{} times.\n'.format(retryCount + 1, self._station_config.DUT_ON_MAXRETRY)
+                    self._power_off()
+                    time.sleep(0.5)
+                    self._operator_interface.print_to_console(msg)
+                if retryCount >= self._station_config.DUT_ON_MAXRETRY:
+                    raise RuntimeError("Exit power_on because rev err msg. Msg = {0}".format(recvobj))
+                else:
+                    retryCount = retryCount + 1
 
     def screen_off(self):
         if self.is_screen_poweron:
@@ -140,6 +168,11 @@ class displayCtrlBoard:
     # COMMUNICAION INTERFACE
     ###
 
+    def _vsyn_time(self):
+        self._write_serial_cmd(self._station_config.COMMAND_DISP_VSYNC)
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_DISP_VSYNC, response)
+
     def _help(self):
         self._write_serial_cmd(self._station_config.COMMAND_DISP_HELP)
         time.sleep(1)
@@ -151,7 +184,7 @@ class displayCtrlBoard:
         return value
 
     def _version(self, model_name):
-        self._write_serial_cmd(self._station_config.COMMAND_DISP_VERSION)
+        self._write_serial_cmd("%s,%s"%(self._station_config.COMMAND_DISP_VERSION,model_name))
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_VERSION, response)
 
@@ -311,13 +344,12 @@ if __name__ == '__main__':
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
 
-    # station_config.load_station('pancake_pixel')
-    station_config.load_station('pancake_uniformity')
+    station_config.load_station('pancake_pixel')
+    # station_config.load_station('pancake_uniformity')
     operator = dutTestUtil.simOperator()
     the_disp = displayCtrlBoard(station_config, operator)
     the_disp.initialize()
-
-
+    the_disp.version()
     # for idx in ['0008', '0000','0008', '0000']:
     # the_disp._power_on()
         # the_disp.display_image(idx)
@@ -325,10 +357,16 @@ if __name__ == '__main__':
         # the_disp._power_off()
         # time.sleep(1)
 
-    for c in [(255,255,255),(128,128,128),(0,0,0)]:
+
+
+    # for c in [(255,255,255)]:
+    for c in range(0, 5):
         the_disp._power_on()
         time.sleep(1)
-        the_disp._setColor(c)
+        vsync = the_disp.get_median_vsync_microseconds()
+        time.sleep(1)
+        # the_disp._setColor(c)
+        the_disp.display_image(c)
         time.sleep(1)
         the_disp._power_off()
 
