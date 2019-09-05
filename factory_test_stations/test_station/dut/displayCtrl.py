@@ -11,7 +11,7 @@ import struct
 import logging
 import time
 import string
-import dutchecker as dutchecker
+import dutchecker
 
 class displayCtrlMyzyError(Exception):
     pass

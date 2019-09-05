@@ -8,6 +8,9 @@ import serial
 import serial.tools.list_ports
 import time
 import math
+from pymodbus.client.sync import ModbusSerialClient
+from pymodbus.register_write_message import WriteSingleRegisterResponse
+from pymodbus.register_read_message import ReadHoldingRegistersResponse
 
 class pancakepixelFixtureError(Exception):
     pass
@@ -31,6 +34,7 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
         self._PTB_Power_Status = None
         self._USB_Power_Status = None
         self.equipment = None
+        self._particle_counter_client = None  # type: ModbusSerialClient
 
     def is_ready(self):
         pass
@@ -56,6 +60,12 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
                 self.poweron_usb()
                 self._operator_interface.print_to_console("Power on USB {}\n".format(self._USB_Power_Status))
         isinit = bool(self._serial_port) and not bool(int(self._PTB_Power_Status)) and not bool(int(self._USB_Power_Status))
+        if self._station_config.FIXTURE_PARTICLE_COUNTER:
+            self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity='N', stopbits=1,
+                                                                port=self._station_config.FIXTURE_PARTICLE_COMPORT, timeout=2000)
+            if not self._particle_counter_client.connect():
+                raise pancakepixelFixtureError('Unable to open pariticle port: %s'%self._station_config.FIXTURE_PARTICLE_COMPORT)
+                isinit = False
         return isinit
 
     def _parsing_response(self, response):
@@ -127,10 +137,17 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
 
     def close(self):
         self._operator_interface.print_to_console("Closing auo pixel Fixture\n")
-        if hasattr(self, '_serial_port') and self._station_config.FIXTURE_COMPORT:
+        if hasattr(self, '_serial_port') \
+                and self._serial_port is not None \
+                and self._station_config.FIXTURE_COMPORT:
             self._serial_port.close()
             self._serial_port = None
-            print "====== Fixture Close ========="
+        if hasattr(self, '_particle_counter_client') and \
+                self._particle_counter_client is not None \
+                and self._station_config.FIXTURE_PARTICLE_COUNTER:
+            self._particle_counter_client.close()
+            self._particle_counter_client = None
+        print "====== Fixture Close ========="
         return True
 
     ######################
@@ -311,6 +328,31 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
             self._read_error = "True"
             raise pancakepixelFixtureError("Fail to Read %s" % response[0])
         return value
+
+    def particlecounter_on(self):
+        if self._particle_counter_client is not None:
+            wrs = self._particle_counter_client.\
+                write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                               1, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
+            if wrs is None or wrs.isError():
+                raise pancakepixelFixtureError('Failed to start paritcle counter .')
+
+    def particlecounter_off(self):
+        if self._particle_counter_client is not None:
+            self._particle_counter_client. \
+                write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                               0, unit=self._station_config.FIXTURE_PARTICLE_ADDR) # type: WriteSingleRegisterResponse
+
+    def particlecounter_val(self):
+        if self._particle_counter_client is not None:
+            rs = self._particle_counter_client. \
+                read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
+                                       2, unit=self._station_config.FIXTURE_PARTICLE_ADDR) # type: ReadHoldingRegistersResponse
+            if rs is None or rs.isError():
+                raise pancakepixelFixtureError('Failed to read data from paritcle counter .')
+            else:
+                print rs.registers
+                return rs.registers[0] * 65535 + rs.registers[1]
 
 if __name__ == "__main__":
 
