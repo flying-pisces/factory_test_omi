@@ -17,7 +17,8 @@ def load_station(station):
     global STATION_TYPE
     STATION_TYPE = station
     STATION_NUMBER = 0
-    config_path = os.path.dirname(os.path.realpath(__file__))
+    config_path =  os.getcwd()
+    #os.path.dirname(os.path.realpath(__file__))
     station_config_file = os.path.join(config_path, 'config', ('station_config_' + STATION_TYPE + '.py'))
     station_limits_file = os.path.join(config_path, 'config', ('station_limits_' + STATION_TYPE + '.py'))
     print station_config_file

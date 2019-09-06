@@ -6,10 +6,11 @@ import os
 import numpy as np
 
 class dut_checker:
-    _cap = None
-    _latest_image = None
-    _template_dir = None
-    _minArea = 6000
+    def __init__(self):
+        self._cap = None
+        self._latest_image = None
+        self._template_dir = None
+        self._minArea = 6000
 
     def _blob_areas(self, image1):
         hsv = cv.cvtColor(image1, cv.COLOR_BGR2HSV)
