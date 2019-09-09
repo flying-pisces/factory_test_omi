@@ -1,5 +1,9 @@
 
 STATION_LIMITS_ARRAYS = [
+    ["DUT_ScreenOnRetries", 0, 100, 97],
+    ["DUT_ScreenOnStatus", 0, 100, 98],
+    ["ENV_ParticleCounter", 0, 1000, 99],
+
     ["W255_NumDarkParticles", -1E+12, 1E+12, 101],
     ["W255_NumDarkBlobs", -1E+12, 1E+12, 102],
     ["W255_NumBrightParticles", -1E+12, 1E+12, 103],

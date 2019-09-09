@@ -11,7 +11,6 @@ import struct
 import logging
 import time
 import string
-import dutchecker
 
 class displayCtrlMyzyError(Exception):
     pass
@@ -109,40 +108,13 @@ class displayCtrlBoard:
 
     def screen_on(self):
         if not self.is_screen_poweron:
-            dutchecker = dutchecker.dut_checker()
-            #  camera
-            if self._station_config.DISP_CHECKER_ENABLE:
-                dutchecker.open()
-                time.sleep(self._station_config.DISP_CHECKER_DLY)
-
-            retryCount = 1
             self._power_off()
             time.sleep(0.5)
-            while retryCount <= self._station_config.DUT_ON_MAXRETRY and not self.is_screen_poweron:
-                recvobj = self._power_on()
-                if recvobj is None:
-                    raise RuntimeError("Exit power_on because can't receive any data from dut.")
-                else:
-                    if self._station_config.DISP_CHECKER_ENABLE:
-                        score = dutchecker.do_checker()
-                        if score is not None and max(score) >= self._station_config.DISP_CHECKER_L_SCORE:
-                            self.is_screen_poweron = True
-                            if self._station_config.DISP_CHECKER_IMG_SAVED:
-                                fn0 = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
-                                fn = 'DUT_CHECKER_{0}_{1}.jpg'.format(fn0, retryCount + 1)
-                                dutchecker.save_log_img(fn)
-                    else:
-                        self.is_screen_poweron = True
-
-                if not self.is_screen_poweron:
-                    msg = 'Retry power_on {}/{} times.\n'.format(retryCount + 1, self._station_config.DUT_ON_MAXRETRY)
-                    self._power_off()
-                    time.sleep(0.5)
-                    self._operator_interface.print_to_console(msg)
-                if retryCount >= self._station_config.DUT_ON_MAXRETRY:
-                    raise RuntimeError("Exit power_on because rev err msg. Msg = {0}".format(recvobj))
-                else:
-                    retryCount = retryCount + 1
+            recvobj = self._power_on()
+            if recvobj is None:
+                raise RuntimeError("Exit power_on because can't receive any data from dut.")
+            elif recvobj[0] != 0x00:
+                raise displayCtrlMyzyError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
 
     def screen_off(self):
         if self.is_screen_poweron:
@@ -150,7 +122,7 @@ class displayCtrlBoard:
             if recvobj is None:
                 raise RuntimeError("Exit power_off because can't receive any data from dut.")
             elif int(recvobj[0]) != 0x00:
-                raise RuntimeError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
+                raise displayCtrlMyzyError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
             else:
                 self.is_screen_poweron = False
 
@@ -159,7 +131,7 @@ class displayCtrlBoard:
         if recvobj is None:
             raise RuntimeError("Exit disp_image because can't receive any data from dut.")
         elif int(recvobj[0]) != 0x00:
-            raise RuntimeError("Exit disp_image because rev err msg. Msg = {}".format(recvobj))
+            raise displayCtrlMyzyError("Exit disp_image because rev err msg. Msg = {}".format(recvobj))
 
     def version(self):
         return self._version("mcu")

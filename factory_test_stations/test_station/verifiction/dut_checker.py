@@ -5,12 +5,18 @@ import cv2 as cv
 import os
 import numpy as np
 
-class dut_checker:
-    def __init__(self):
+
+class DutCheckerError(Exception):
+    pass
+
+
+class DutChecker(object):
+    def __init__(self, station_config):
         self._cap = None
         self._latest_image = None
         self._template_dir = None
         self._minArea = 6000
+        self._station_config = station_config
 
     def _blob_areas(self, image1):
         hsv = cv.cvtColor(image1, cv.COLOR_BGR2HSV)
@@ -31,25 +37,31 @@ class dut_checker:
                 areas.append(area)
         return areas
 
-    def open(self, cameraindex):
+    def initialize(self):
         self._template_dir = os.path.join(os.getcwd(), "dut_verification\\")
         if not os.path.exists(self._template_dir):
             os.makedirs(self._template_dir)
         mode = os.stat(self._template_dir.st_mode | 0o555) & 0o777
         os.chmod(self._template_dir, mode)
-        self._cap = cv.VideoCapture(cameraindex)
+        self._cap = cv.VideoCapture(self._station_config.DISP_CHECKER_CAMERA_INDEX)
+        if self._cap is None:
+            raise DutCheckerError('Unable to initialize camera checker.')
 
     def close(self):
         if self._cap is not None:
             self._cap.release()
+            self._cap = None
 
-    def do_checker(self, x, y, w, h):
-        if self._cap.isOpened():
+    def do_checker(self):
+        if self._cap is not None and self._cap.isOpened():
             # self._width, self._height = self._cap.get(3), self._cap.get(4)
             ret, frame = self._cap.read()
             if ret:
                 self._latest_image = cv.flip(frame, 3)
                 return self._blob_areas(self._latest_image)
+            else:
+                self._cap = None
+                raise DutCheckerError('Fail to capture image from camera checker.')
 
     def save_log_img(self, name):
         if self._latest_image is not None:

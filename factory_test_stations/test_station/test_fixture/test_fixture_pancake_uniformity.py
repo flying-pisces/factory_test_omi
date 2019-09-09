@@ -7,10 +7,6 @@ import glob
 import serial
 import serial.tools.list_ports
 import time
-import math
-from pymodbus.client.sync import ModbusSerialClient
-from pymodbus.register_write_message import WriteSingleRegisterResponse
-from pymodbus.register_read_message import ReadHoldingRegistersResponse
 
 class pancakeuniformityFixtureError(Exception):
     pass
@@ -34,7 +30,6 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._PTB_Power_Status = None
         self._USB_Power_Status = None
         self.equipment = None
-        self._particle_counter_client = None  # type: ModbusSerialClient
 
     def is_ready(self):
         pass
@@ -60,15 +55,6 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
                 self.poweron_usb()
                 self._operator_interface.print_to_console("Power on USB {}\n".format(self._USB_Power_Status))
         isinit = bool(self._serial_port) and not bool(int(self._PTB_Power_Status)) and not bool(int(self._USB_Power_Status))
-        if self._station_config.FIXTURE_PARTICLE_COUNTER:
-            self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity='N',
-                                                               stopbits=1,
-                                                               port=self._station_config.FIXTURE_PARTICLE_COMPORT,
-                                                               timeout=2000)
-            if not self._particle_counter_client.connect():
-                raise pancakeuniformityFixtureError(
-                    'Unable to open pariticle port: %s' % self._station_config.FIXTURE_PARTICLE_COMPORT)
-                isinit = False
         return isinit
 
     def _parsing_response(self, response):
@@ -331,30 +317,6 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
             self._read_error = "True"
             raise pancakeuniformityFixtureError("Fail to Read %s" % response[0])
         return value
-
-    def particlecounter_on(self):
-        if self._particle_counter_client is not None:
-            wrs = self._particle_counter_client.\
-                write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
-                               1, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
-            if wrs is None or wrs.isError():
-                raise pancakeuniformityFixtureError('Failed to start paritcle counter .')
-
-    def particlecounter_off(self):
-        if self._particle_counter_client is not None:
-            self._particle_counter_client. \
-                write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
-                               0, unit=self._station_config.FIXTURE_PARTICLE_ADDR) # type: WriteSingleRegisterResponse
-
-    def particlecounter_val(self):
-        if self._particle_counter_client is not None:
-            rs = self._particle_counter_client. \
-                read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
-                                       2, unit=self._station_config.FIXTURE_PARTICLE_ADDR) # type: ReadHoldingRegistersResponse
-            if rs is None or rs.isError():
-                raise pancakeuniformityFixtureError('Failed to read data from paritcle counter .')
-            else:
-                return rs.registers[0] * 65535 + rs.registers[1]
 
 if __name__ == "__main__":
         sys.path.append("../../")

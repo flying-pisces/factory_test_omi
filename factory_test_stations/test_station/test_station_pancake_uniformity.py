@@ -11,6 +11,9 @@ import math
 import datetime
 import re
 import filecmp
+from verifiction.particle_counter import ParticleCounter
+from verifiction.dut_checker import DutChecker
+
 
 class pancakeuniformityError(Exception):
     pass
@@ -26,41 +29,65 @@ class pancakeuniformityStation(test_station.TestStation):
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_uniformity.pancakeuniformityFixture(station_config, operator_interface)
         # self._equipment = test_equipment_pancake_uniformity.pancakeuniformityEquipment(station_config, operator_interface)
+        self._particle_counter = ParticleCounter(station_config)
+        if self._station_config.FIXTURE_PARTICLE_COUNTER:
+            self._particle_counter.initialize()
+            if self._particle_counter.particle_counter_state() == 0:
+                self._particle_counter.particle_counter_on()
+                self._particle_counter_start_time = datetime.datetime.now()
+        self._dut_checker = DutChecker(station_config)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
 
 
     def initialize(self):
-        try:
-            self._operator_interface.print_to_console("Initializing station...\n")
-            self._fixture.initialize()
-            dbfn = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
-            empytdb = os.path.join(self._station_config.ROOT_DIR, self._station_config.EMPTY_DATABASE_RELATIVEPATH)
-            if self._station_config.RESTART_TEST_COUNT != 1 and \
-                    self._station_config.IS_SAVEDB and \
-                    os.path.exists(dbfn) and not filecmp.cmp(dbfn, empytdb):
-                dbfnbak = "{0}_{1}_autobak.ttxm".format(self._station_config.STATION_TYPE,
-                                                        datetime.datetime.now().strftime("%y%m%d%H%M%S"))
-                self._operator_interface.print_to_console("backup ttxm raw database to {}...\n".format(dbfnbak))
-                self.backup_database(dbfnbak, True)
+        self._operator_interface.print_to_console("Initializing station...\n")
+        self._fixture.initialize()
+        dbfn = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
+        empytdb = os.path.join(self._station_config.ROOT_DIR, self._station_config.EMPTY_DATABASE_RELATIVEPATH)
+        if self._station_config.RESTART_TEST_COUNT != 1 and \
+                self._station_config.IS_SAVEDB and \
+                os.path.exists(dbfn) and not filecmp.cmp(dbfn, empytdb):
+            dbfnbak = "{0}_{1}_autobak.ttxm".format(self._station_config.STATION_TYPE,
+                                                    datetime.datetime.now().strftime("%y%m%d%H%M%S"))
+            self._operator_interface.print_to_console("backup ttxm raw database to {}...\n".format(dbfnbak))
+            self.backup_database(dbfnbak, True)
 
-            self._operator_interface.print_to_console("Empty ttxm raw database ...\n")
-            shutil.copyfile(empytdb, dbfn)
-        except:
-            raise
+        self._operator_interface.print_to_console("Empty ttxm raw database ...\n")
+        shutil.copyfile(empytdb, dbfn)
+
+        if self._station_config.FIXTURE_PARTICLE_COUNTER and hasattr(self, '_particle_counter_start_time'):
+            while ((datetime.datetime.now() - self._particle_counter_start_time)
+                   < datetime.timedelta(self._station_config.FIXTRUE_PARTICLE_START_DLY)):
+                time.sleep(0.1)
+                self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
+
+        if self._station_config.DISP_CHECKER_ENABLE:
+            self._operator_interface.print_to_console('Initializing camera dut checker...\n')
+            self._dut_checker.initialize()
+            time.sleep(self._station_config.DISP_CHECKER_DLY)
+
+    def _close_fixture(self):
+        if self._fixture is not None:
+            try:
+                self._operator_interface.print_to_console("Close...\n")
+                self._fixture.status()
+                self._fixture.elminator_off()
+            finally:
+                self._fixture.close()
+                self._fixture = None
+
+    def _close_particle_counter(self):
+        if self._particle_counter is not None:
+            try:
+                self._particle_counter.particle_counter_off()
+            finally:
+                self._particle_counter.close()
+                self._particle_counter = None
 
     def close(self):
-        if self._fixture is None:
-            return
-        try:
-            self._operator_interface.print_to_console("Close...\n")
-            self._operator_interface.print_to_console("\n..shutting the station down..\n")
-            self._fixture.status()
-            self._fixture.elminator_off()
-            # self._fixture.unload()
-        finally:
-            self._fixture.close()
-            self._fixture = None
+        self._close_fixture()
+        self._close_particle_counter()
 
     def _do_test(self, serial_number, test_log):
         self._overall_result = False
@@ -68,37 +95,48 @@ class pancakeuniformityStation(test_station.TestStation):
 #        self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
         self._fixture.elminator_on()
         self._fixture.load()
-        test_success = False
-        '''
-        # ttxm is occupy by process, can't override it correctly.
-        if self._station_config.RESTART_TEST_COUNT == 1:
-            self._operator_interface.print_to_console("Empty ttxm raw database ...\n")
-            try:
-                ttxmpth = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
-                dirname = os.path.dirname(ttxmpth)
-                shutil.rmtree(dirname)
-                if not os.path.exists(dirname):
-                    os.mkdir(dirname, 777)
-
-                shutil.copyfile(
-                    os.path.join(self._station_config.ROOT_DIR, self._station_config.EMPTY_DATABASE_RELATIVEPATH),
-                    os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
-            except Exception, e:
-                self._operator_interface.print_to_console("Fail to create new raw database.{}\n".format(e.message))
-        '''
         try:
             self._operator_interface.print_to_console("Testing Unit %s\n" %serial_number)
             the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
 
+            the_unit.initialize()
+            self._operator_interface.print_to_console("Initialize DUT... \n")
+            retries = 1
+            is_screen_on = False
+            try:
+                self._dut_checker.initialize()
+                while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
+                    try:
+                        is_screen_on = the_unit.screen_on()
+                    except test_station.dut.displayCtrlMyzyError as e:
+                        is_screen_on = False
+                    else:
+                        if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
+                            score = self._dut_checker.do_checker()
+                            is_screen_on = (
+                                        score is not None and max(score) >= self._station_config.DISP_CHECKER_L_SCORE)
+                        if not is_screen_on:
+                            msg = 'Retry power_on {}/{} times.\n'.format(retries + 1,
+                                                                         self._station_config.DUT_ON_MAXRETRY)
+                            self._operator_interface.print_to_console(msg)
+                            the_unit.screen_off()
 
-            if not the_unit.initialize():
-                self._fixture.powercycle_dut()
-                starttime = datetime.datetime.now()
-                while (datetime.datetime.now()- starttime) < datetime.timedelta(seconds=self._station_config.DUT_MAX_WAIT_TIME):
-                    self._operator_interface.print_to_console("\n\tWaiting for PTB to boot.......\n")
-                    time.sleep(5)
+                        test_log.set_measured_value_by_name("DUT_ScreenOnRetries", retries)
+                        test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
 
-            the_unit.connect_display(self._station_config.DISPLAY_CYCLE_TIME, self._station_config.LAUNCH_TIME)
+                        if self._station_config.DISP_CHECKER_IMG_SAVED:
+                            fn0 = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+                            fn = '{0}_{1}_{2}.jpg'.format(serial_number, retries, fn0)
+                            self._dut_checker.save_log_img(fn)
+
+                        retries += 1
+            finally:
+                self._dut_checker.close()
+
+            self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
+            particle_count = self._particle_counter.particle_counter_read_val()
+            test_log.set_measured_value_by_name("ENV_ParticleCounter", particle_count)
+
             the_equipment = test_equipment_pancake_uniformity.pancakeuniformityEquipment(self._station_config.IS_VERBOSE, self._station_config.FOCUS_DISTANCE,
                                             self._station_config.APERTURE, self._station_config.IS_AUTOEXPOSURE,
                                             self._station_config.LEFT,
@@ -116,6 +154,9 @@ class pancakeuniformityStation(test_station.TestStation):
             the_equipment.flush_measurement_setups()
             the_equipment.flush_measurements()
             the_equipment.prepare_for_run()
+
+            self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
+            self._fixture.elminator_off()
 
             centerlv_gls = []
             gls = []
@@ -232,7 +273,6 @@ class pancakeuniformityStation(test_station.TestStation):
             norm_clv = np.log10([centerlv_gl / max(centerlv_gls) for centerlv_gl in centerlv_gls])
             gamma, cov = np.polyfit(norm_gls, norm_clv, 1, cov=False)
             test_log.set_measured_value_by_name("DISPLAY_GAMMA", gamma)
-            test_success = True
 
         except Exception, e:
             self._operator_interface.print_to_console("Test exception . {}".format(e.message))
@@ -243,8 +283,6 @@ class pancakeuniformityStation(test_station.TestStation):
             if self._fixture is not None:
                 self._fixture.unload()
                 self._fixture.elminator_off()
-            if not test_success:
-                raise pancakeuniformityError()
             # if the_equipment is not None:
             #     the_equipment.uninit()
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
