@@ -1,11 +1,12 @@
-##Konica Minolta ca-410 Camera Driver
-#########################################
+#! /usr/bin
+# -*- coding: utf-8 -*-
+
 import serial
 import serial.tools.list_ports
 import time
 import logging
 import argparse
-from hardware.hardware import *
+# from hardware.hardware import *
 COMMAND_IDO = "IDO\r\n" # information
 COMMAND_ZRC = "ZRC\r\n" # zero cal
 COMMAND_XYZ = "XYZ\r\n" # measurement
@@ -13,15 +14,19 @@ COMMAND_XYZ = "XYZ\r\n" # measurement
 ########
 #Note: this driver was originally written for the Konica 310 but works for the 410 as well
 
-class CA310(Hardware):
+"""
+        x,  y
+  R    0.6  0.3
+  W    0.3  0.5
+  G    0.3  0.65
+  B    0.14 0.04
+"""
+class CA310(object):
   def __init__(self, fixture_port, name="CA310", hw_name="Konica CA310", verbose=False):
-    super(CA310, self).__init__()
     self.name = name
     self._hw_name = hw_name
     self.logger = logging.getLogger(self.name)
     self._verbose = verbose
-    self._reconnect_after = 1
-    self._reconnect_counter = 0
     self._end_delimiter = '\r\n'
     self._fixture_port = fixture_port
 
@@ -29,11 +34,9 @@ class CA310(Hardware):
     self._serial_port = None
     self.initialize_camera()
     self._busy = False
-    super(CA310, self).initialize(pollDelay=10) #this is long bc a status check monopolizes the serial port for 3-5s
 
 ## is_connected_clean function will make sure there is clean connection between fixture to PC. Only defined FIXTURE_COMPORT or FIXTURE_COMPORTS will be there.
   def _is_connected_clean(self):
-    
     ports = list(serial.tools.list_ports.comports())
     result = []
     for p in ports:
@@ -49,7 +52,6 @@ class CA310(Hardware):
   def initialize_camera(self):
     # need define the initialization event in the whole flow.
     self._serial_port = None
-    self._status = self._predefined_status['online'].copy()
     #previously was dynamically searching ports. We will alias ports going forward.
     #Keeping this code here in case the aliasing method fails
     # try:
@@ -85,7 +87,7 @@ class CA310(Hardware):
     #   pass
 
     # trying to alias the ports, but this is causing problems when new devices are connected, so abandoning for now
-    self._fixture_port = '/dev/Konica'
+    # self._fixture_port = '/dev/Konica'
     #ports = list(serial.tools.list_ports.comports())
     try:
       self._serial_port = serial.Serial(self._fixture_port,
@@ -98,9 +100,8 @@ class CA310(Hardware):
                                         rtscts=False)
     except:
       self._serial_port = None
-      self._status.update (status_dict.KCA001)
 
-    if self._serial_port and not self._serial_port.is_open:
+    if self._serial_port and not self._serial_port.isOpen():
       self._serial_port.open()
       #not yet time to set status to connected; let status_check validate the connect
 
@@ -113,23 +114,6 @@ class CA310(Hardware):
   def close_camera(self):
     if self._serial_port:
       self._serial_port.close()
-
-  def check_status(self):
-    if self.test_connection():
-      self._status.update(status_dict.KCA000)
-      time.sleep(3) #let healthy connection rest and give the serial port over to functional commands for a bit
-      #TODO: @David, why not just use the poll delay, this effects the threads ability to shutdown quickly
-    else:
-      self._status.update(status_dict.KCA001)
-      self.close_camera()
-      if self._reconnect_counter >= self._reconnect_after:
-        self.initialize_camera()
-        self._reconnect_counter = 0
-      else:
-        self._reconnect_counter+=1
-
-    super(CA310, self).check_status()
-
 
   def test_connection(self):
     if not self._serial_port:
@@ -209,7 +193,7 @@ class CA310(Hardware):
   def measureXYZ(self):
     self._write_serial(COMMAND_XYZ)
     cmd, data = self._read_response()
-    return data
+    return map(float, data)
 
   def measurexyLv(self):
     X,Y,Z = self.measureXYZ()
@@ -223,15 +207,24 @@ class CA310(Hardware):
 ######################
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Test hardness for ca310')
-  parser.add_argument("--port", help="Comport", type=str, default="/dev/ttyACM0")
-  args = parser.parse_args()
+  # parser = argparse.ArgumentParser(description='Test hardness for ca310')
+  # parser.add_argument("--port", help="Comport", type=str, default="/dev/ttyACM0")
+  # args = parser.parse_args()
   logging.basicConfig(level=logging.DEBUG)
 
-  the_fixture = CA310(args.port)
+  ports = list(serial.tools.list_ports.comports())
+
+  the_fixture = CA310('COM4')
   the_fixture.initialize()
+
+  print the_fixture.test_connection()
+  # the_fixture.zero_cal()
+
+  # print the_fixture.measureXYZ()
   #print the_fixture.info() ## Need set Remote mode
   #print the_fixture.config() ## Need at zero cal mode
   print the_fixture.measurexyLv() ## Need at Measurement mode
+
+  the_fixture.close_camera()
 
 
