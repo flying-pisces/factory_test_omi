@@ -1,7 +1,7 @@
 
 STATION_LIMITS_ARRAYS = [
-    ["DUT_ScreenOnRetries", 0, 100, 97],
-    ["DUT_ScreenOnStatus", 0, 100, 98],
+    ["DUT_ScreenOnRetries", 0, 10, 97],
+    ["DUT_ScreenOnStatus", 1, 1, 98],
     ["ENV_ParticleCounter", 0, 1000, 99],
 
     ["W255_NumDarkParticles", -1E+12, 1E+12, 101],
@@ -34,7 +34,7 @@ STATION_LIMITS_ARRAYS = [
     ["B255_NumBrightBlobs", -1E+12, 1E+12, 124],
     ["B255_NumDefects", -1E+12, 1E+12, 125],
 
-    ["SaveRawImage_success", -1E+12, 1, 126],
+    ["SaveRawImage_success", 1, 1, 126],
 ]
 
 global STATION_LIMITS

@@ -113,8 +113,11 @@ class displayCtrlBoard:
             recvobj = self._power_on()
             if recvobj is None:
                 raise RuntimeError("Exit power_on because can't receive any data from dut.")
-            elif recvobj[0] != 0x00:
-                raise displayCtrlMyzyError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
+            else:
+                self.is_screen_poweron = True
+                if recvobj[0] != '0000':
+                    raise displayCtrlMyzyError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
+                return True
 
     def screen_off(self):
         if self.is_screen_poweron:

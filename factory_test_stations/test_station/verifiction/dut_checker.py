@@ -41,7 +41,7 @@ class DutChecker(object):
         self._template_dir = os.path.join(os.getcwd(), "dut_verification\\")
         if not os.path.exists(self._template_dir):
             os.makedirs(self._template_dir)
-        mode = os.stat(self._template_dir.st_mode | 0o555) & 0o777
+        mode = (os.stat(self._template_dir).st_mode | 0o555) & 0o777
         os.chmod(self._template_dir, mode)
         self._cap = cv.VideoCapture(self._station_config.DISP_CHECKER_CAMERA_INDEX)
         if self._cap is None:

@@ -108,28 +108,28 @@ class pancakepixelStation(test_station.TestStation):
                 while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
                     try:
                         is_screen_on = the_unit.screen_on()
-                    except test_station.dut.displayCtrlMyzyError:
+                    except dut.displayCtrl.displayCtrlMyzyError:
                         is_screen_on = False
                     else:
                         if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
                             score = self._dut_checker.do_checker()
                             is_screen_on = (score is not None and max(score) >= self._station_config.DISP_CHECKER_L_SCORE)
-                        if not is_screen_on:
-                            msg = 'Retry power_on {}/{} times.\n'.format(retries + 1, self._station_config.DUT_ON_MAXRETRY)
-                            self._operator_interface.print_to_console(msg)
-                            the_unit.screen_off()
 
-                        test_log.set_measured_value_by_name("DUT_ScreenOnRetries", retries)
-                        test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
+                    if not is_screen_on:
+                        msg = 'Retry power_on {}/{} times.\n'.format(retries + 1, self._station_config.DUT_ON_MAXRETRY)
+                        self._operator_interface.print_to_console(msg)
+                        the_unit.screen_off()
 
-                        if self._station_config.DISP_CHECKER_IMG_SAVED:
-                            fn0 = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
-                            fn = '{0}_{1}_{2}.jpg'.format(serial_number, retries, fn0)
-                            self._dut_checker.save_log_img(fn)
+                    if self._station_config.DISP_CHECKER_IMG_SAVED:
+                        fn0 = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+                        fn = '{0}_{1}_{2}.jpg'.format(serial_number, retries, fn0)
+                        self._dut_checker.save_log_img(fn)
 
-                        retries += 1
+                    retries += 1
             finally:
                 self._dut_checker.close()
+                test_log.set_measured_value_by_name("DUT_ScreenOnRetries", retries)
+                test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
 
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
             particle_count = self._particle_counter.particle_counter_read_val()
@@ -159,7 +159,7 @@ class pancakepixelStation(test_station.TestStation):
             self._fixture.elminator_off()
 
             attempts = 0
-
+            is_rawdata_save = True
             for i in range(len(self._station_config.PATTERNS)):
                 self._operator_interface.print_to_console(
                     "Panel Measurement Pattern: %s" % self._station_config.PATTERNS[i])

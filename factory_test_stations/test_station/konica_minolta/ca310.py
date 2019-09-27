@@ -15,9 +15,14 @@ COMMAND_XYZ = "XYZ\r\n" # measurement
 #Note: this driver was originally written for the Konica 310 but works for the 410 as well
 
 """
+typical for 4 colour calibration.
+R   0.6411  0.3329  68.907
+G   0.3041  0.6087  321.91
+B   0.1541  0.0511  18.965
+W   0.2988  0.3311  326.99
         x,  y
   R    0.6  0.3
-  W    0.3  0.5
+  W    0.3  0.3
   G    0.3  0.65
   B    0.14 0.04
 """

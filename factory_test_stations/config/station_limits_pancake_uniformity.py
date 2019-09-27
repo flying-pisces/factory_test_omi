@@ -1,8 +1,8 @@
 CURRENT_FW_VERSION = 1001
 
 STATION_LIMITS_ARRAYS = [
-    ["DUT_ScreenOnRetries", 0, 100, 97],
-    ["DUT_ScreenOnStatus", 0, 100, 98],
+    ["DUT_ScreenOnRetries", 0, 10, 97],
+    ["DUT_ScreenOnStatus", 1, 1, 98],
     ["ENV_ParticleCounter", 0, 1000, 99],
 
     ["W255_CenterColor(Cx)",  -1E+12, 1E+12, 101],

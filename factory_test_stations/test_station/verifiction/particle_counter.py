@@ -65,7 +65,7 @@ class ParticleCounter(object):
                 return rs.registers[0]
 
     def close(self):
-        self._particle_counter_off()
+        self.particle_counter_off()
 
 
 if __name__ == '__main__':
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     print 'Self check for %s' % (__file__,)
     operator = dutTestUtil.simOperator()
-    station_config.load_station('pancake_pixel')
+    station_config.load_station('pancake_uniformity')
 
     the_particle_counter = ParticleCounter(station_config)
     the_particle_counter.initialize()

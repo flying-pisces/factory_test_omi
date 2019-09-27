@@ -30,18 +30,18 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         return True
 
     def screen_on(self):
-        self._display_server.screen_on()
+        return self._display_server.screen_on()
 
     def screen_off(self):
         self._display_server.screen_off()
 
     def close(self):
         self._operator_interface.print_to_console("Turn Off display................\n")
-        self._display_server.screen_off()
+        self._display_server._power_off()
         self._operator_interface.print_to_console("Closing DUT by the communication interface.\n")
         self._display_server.close()
 
-    def display_color(self, color=(255,255,255)):
+    def display_color(self, color=(255,255,255)): #  (r,g,b)
         ## color here will be three integers tuple from 0 to 255 represent the RGB value
         ## example: my_ds.display_color((255,0,0))
         self._display_server.display_color(color)
@@ -90,21 +90,22 @@ if __name__ == "__main__" :
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
 
-    station_config.load_station('pancake_pixel')
-    # station_config.load_station('pancake_uniformity')
+    # station_config.load_station('pancake_pixel')
+    station_config.load_station('pancake_uniformity')
     operator = dutTestUtil.simOperator()
-    the_unit = pancakeDut('COM1', station_config, operator)
+    the_unit = pancakeDut('COM5', station_config, operator)
     the_unit.initialize()
-    the_unit.connect_display()
-    the_unit.screen_on()
-    time.sleep(1)
-    the_unit.display_color()
-    time.sleep(1)
-    print the_unit.vsync_microseconds()
-    for c in [(255,0,0), (0,255,0), (0,0,255)]:
-        the_unit.display_color(c)
-        time.sleep(0.5)
-
-    time.sleep(2)
-    the_unit.screen_off()
-    the_unit.close()
+    try:
+        the_unit.connect_display()
+        the_unit.screen_on()
+        time.sleep(1)
+        the_unit.display_color()
+        time.sleep(1)
+        print the_unit.vsync_microseconds()
+        for c in [(0,0,0), (255,0,0), (0,255,0), (0,0,255),(255,255,255)]:
+            the_unit.display_color(c)
+            time.sleep(0.5)
+        the_unit.screen_off()
+    finally:
+        time.sleep(2)
+        the_unit.close()

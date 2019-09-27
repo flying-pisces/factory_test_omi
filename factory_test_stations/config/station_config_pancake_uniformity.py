@@ -16,16 +16,16 @@ SERIAL_NUMBER_MODEL_NUMBER = 'HC3'  # AUO panel SN
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM3" #
-FIXTURE_PARTICLE_COMPORT="COM3" #
+FIXTURE_COMPORT = "COM7" #
+FIXTURE_PARTICLE_COMPORT = "COM3" #
 FIXTURE_PARTICLE_ADDR=1
-DUT_COMPORT = "COM7" #
+DUT_COMPORT = "COM5" #
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu','hw','fpga']
 COMMAND_DISP_VERSION = "Version"
 COMMAND_DISP_GETBOARDID = "getBoardID"
-COMMAND_DISP_POWERON = "DUT.powerOn,source_compressMode"
+COMMAND_DISP_POWERON = "DUT.powerOn,FPGA_compressMode"
 # COMMAND_DISP_POWERON = "DUT.powerOn,SSD2832_BistMode"
 #COMMAND_DISP_POWERON = "DUT.powerOn"
 COMMAND_DISP_POWEROFF = "DUT.powerOff"
@@ -93,7 +93,7 @@ FIXTURE_PARTICLE_COUNTER = True
 FIXTRUE_PARTICLE_ADDR_READ = 40005
 FIXTRUE_PARTICLE_ADDR_START = 40003
 FIXTRUE_PARTICLE_ADDR_STATUS = 40003
-FIXTRUE_PARTICLE_START_DLY = 3
+FIXTRUE_PARTICLE_START_DLY = 0
 ########
 
 ######## DUT Related Parameters which will be defined
@@ -132,10 +132,10 @@ DB_MAX_SIZE = 2048
 
 SPECTRAL_RESPONSE = 'PhotoMetric'
 DISTANCE_UNIT = "Millimeters"
-CAMERA_SN = "159486608"
-COLOR_CAL = 'camera_color_cal'
-SCALE_CAL = 'image_scale_cal1'
-SHIFT_CAL = '159486608 Color Shift Correction'
+CAMERA_SN = "159185561"
+COLOR_CAL = 'color_cal'
+SCALE_CAL = 'image_scaling1'
+SHIFT_CAL = '159185561 Color Shift Correction'
 PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255,255,255), (180, 180, 180), (127,127,127), (90,90,90), (255,0,0), (0,255,0), (0,0,255)]
