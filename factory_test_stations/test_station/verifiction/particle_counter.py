@@ -70,12 +70,10 @@ class ParticleCounter(object):
 
 if __name__ == '__main__':
     sys.path.append("../../../")
-    import dutTestUtil
     import station_config
     import hardware_station_common.operator_interface.operator_interface
 
     print 'Self check for %s' % (__file__,)
-    operator = dutTestUtil.simOperator()
     station_config.load_station('pancake_uniformity')
 
     the_particle_counter = ParticleCounter(station_config)

@@ -1,1 +1,0 @@
-from dutTestUtil import simOperator

@@ -4,6 +4,7 @@ __author__ = 'chuckyin'
 # Important note: for True/False settings, these do NOT need quotes.
 # but they do need capital first letter.  (i.e. True or False)
 import os
+import sys
 ###################################
 # station_type
 #
@@ -15,8 +16,9 @@ STATION_TYPE = ''
 def load_station(station):
     global STATION_NUMBER
     global STATION_TYPE
-    STATION_TYPE = station
-    STATION_NUMBER = 0
+    if not STATION_TYPE:
+        STATION_TYPE = station
+        STATION_NUMBER = 0
     config_path =  os.getcwd()
     #os.path.dirname(os.path.realpath(__file__))
     config_path = os.path.dirname(os.path.realpath(__file__))

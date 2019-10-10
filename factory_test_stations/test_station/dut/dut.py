@@ -78,8 +78,14 @@ class projectDut(hardware_station_common.test_station.dut.DUT):
     def close(self):
         self._operator_interface.print_to_console("Closing pancake uniformity Fixture\n")
 
+
+
+def print_to_console(self, msg):
+    pass
+
 if __name__ == "__main__" :
     import sys
+    import types
     sys.path.append(r'..\..')
     import dutTestUtil
     import station_config
@@ -92,8 +98,9 @@ if __name__ == "__main__" :
 
     # station_config.load_station('pancake_pixel')
     station_config.load_station('pancake_uniformity')
-    operator = dutTestUtil.simOperator()
-    the_unit = pancakeDut('COM5', station_config, operator)
+    station_config.print_to_console = types.MethodType(print_to_console, station_config)
+
+    the_unit = pancakeDut('COM5', station_config, station_config)
     the_unit.initialize()
     try:
         the_unit.connect_display()

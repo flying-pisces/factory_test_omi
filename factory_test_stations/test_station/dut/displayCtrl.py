@@ -308,10 +308,13 @@ class displayCtrlBoard:
             if num_try >= retry:
                 raise RuntimeError("Exit because display server failed {} times, check whether it successfully launched.".format(num_try))
 
+def print_to_console(self, msg):
+    pass
+
 if __name__ == '__main__':
     sys.path.append("../..")
     import station_config
-    import dutTestUtil
+    import types
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
@@ -321,29 +324,30 @@ if __name__ == '__main__':
 
     station_config.load_station('pancake_pixel')
     # station_config.load_station('pancake_uniformity')
-    operator = dutTestUtil.simOperator()
-    the_disp = displayCtrlBoard(station_config, operator)
+    station_config.print_to_console = types.MethodType(print_to_console, station_config)
+    the_disp = displayCtrlBoard(station_config, station_config)
     the_disp.initialize()
     the_disp.version()
     # for idx in ['0008', '0000','0008', '0000']:
-    # the_disp._power_on()
-        # the_disp.display_image(idx)
-        #  time.sleep(1)
-        # the_disp._power_off()
+    #     the_disp._power_on()
+    #     the_disp.display_image(idx)
+    #     time.sleep(1)
+    #     the_disp._power_off()
+    #     time.sleep(1)
+
+
+
+    the_disp._power_on()
+    for c in  [(255,255,255), (180, 180, 180), (127,127,127), (90,90,90), (255,0,0), (0,255,0), (0,0,255)]:
+    # for c in range(0, 5):
+    #     time.sleep(1)
+        # vsync = the_disp.get_median_vsync_microseconds()
         # time.sleep(1)
-
-
-
-    # for c in [(255,255,255)]:
-    for c in range(0, 5):
-        the_disp._power_on()
+        the_disp._setColor(c)
+        # the_disp.display_image(c)
         time.sleep(1)
-        vsync = the_disp.get_median_vsync_microseconds()
-        time.sleep(1)
-        # the_disp._setColor(c)
-        the_disp.display_image(c)
-        time.sleep(1)
-        the_disp._power_off()
+
+    the_disp._power_off()
 
     the_disp.close()
 

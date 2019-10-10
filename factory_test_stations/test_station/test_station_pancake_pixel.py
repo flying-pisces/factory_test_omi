@@ -27,7 +27,7 @@ class pancakepixelStation(test_station.TestStation):
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_pixel.pancakepixelFixture(station_config, operator_interface)
-        # self._equipment = test_equipment_pancake_pixel.pancakepixelEquipment(station_config, operator_interface)
+        self._equipment = test_equipment_pancake_pixel.pancakepixelEquipment(station_config)
         self._particle_counter = ParticleCounter(station_config)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
             self._particle_counter.initialize()
@@ -42,17 +42,17 @@ class pancakepixelStation(test_station.TestStation):
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
         self._fixture.initialize()
-        dbfn = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
-        empytdb = os.path.join(self._station_config.ROOT_DIR, self._station_config.EMPTY_DATABASE_RELATIVEPATH)
-        if (self._station_config.RESTART_TEST_COUNT != 1 and
-            self._station_config.IS_SAVEDB and
-                os.path.exists(dbfn) and not filecmp.cmp(dbfn, empytdb)):
-            dbfnbak = "{0}_{1}_autobak.ttxm".format(self._station_config.STATION_TYPE, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
-            self._operator_interface.print_to_console("backup ttxm raw database to {}...\n".format(dbfnbak))
-            self.backup_database(dbfnbak, True)
-
-        self._operator_interface.print_to_console("Empty ttxm raw database ...\n")
-        shutil.copyfile(empytdb, dbfn)
+        # dbfn = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
+        # empytdb = os.path.join(self._station_config.ROOT_DIR, self._station_config.EMPTY_DATABASE_RELATIVEPATH)
+        # if (self._station_config.RESTART_TEST_COUNT != 1 and
+        #     self._station_config.IS_SAVEDB and
+        #         os.path.exists(dbfn) and not filecmp.cmp(dbfn, empytdb)):
+        #     dbfnbak = "{0}_{1}_autobak.ttxm".format(self._station_config.STATION_TYPE, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
+        #     self._operator_interface.print_to_console("backup ttxm raw database to {}...\n".format(dbfnbak))
+        #     self.backup_database(dbfnbak, True)
+        #
+        # self._operator_interface.print_to_console("Empty ttxm raw database ...\n")
+        # shutil.copyfile(empytdb, dbfn)
 
         if self._station_config.FIXTURE_PARTICLE_COUNTER and hasattr(self, '_particle_counter_start_time'):
             while ((datetime.datetime.now() - self._particle_counter_start_time)
@@ -64,6 +64,8 @@ class pancakepixelStation(test_station.TestStation):
             self._operator_interface.print_to_console('Initializing camera dut checker...\n')
             self._dut_checker.initialize()
             time.sleep(self._station_config.DISP_CHECKER_DLY)
+
+        self._equipment.initialize()
 
     def _close_fixture(self):
         if self._fixture is not None:
@@ -86,6 +88,7 @@ class pancakepixelStation(test_station.TestStation):
     def close(self):
         self._close_fixture()
         self._close_particle_counter()
+        self._equipment.close()
 
 
     def _do_test(self, serial_number, test_log):
@@ -132,28 +135,20 @@ class pancakepixelStation(test_station.TestStation):
                 test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
 
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
-            particle_count = self._particle_counter.particle_counter_read_val()
+            particle_count = 0
+            if self._station_config.FIXTURE_PARTICLE_COUNTER:
+                particle_count = self._particle_counter.particle_counter_read_val()
             test_log.set_measured_value_by_name("ENV_ParticleCounter", particle_count)
 
-            the_equipment = test_equipment_pancake_pixel.pancakepixelEquipment(self._station_config.IS_VERBOSE,
-                                                                                         self._station_config.FOCUS_DISTANCE,
-                                                                                         self._station_config.APERTURE,
-                                                                                         self._station_config.IS_AUTOEXPOSURE,
-                                                                                         self._station_config.LEFT,
-                                                                                         self._station_config.TOP,
-                                                                                         self._station_config.WIDTH,
-                                                                                         self._station_config.HEIGHT)
-
             self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
-            the_equipment.init(self._station_config.CAMERA_SN)
-            color_cal_id = the_equipment.get_colorcal_key(self._station_config.COLOR_CAL)
-            scale_cal_id = the_equipment.get_imagescalecal_key(self._station_config.SCALE_CAL)
-            shift_cal_id = the_equipment.get_colorshiftcal_key(self._station_config.SHIFT_CAL)
-            rect = the_equipment._rect
 
-            the_equipment.flush_measurement_setups()
-            the_equipment.flush_measurements()
-            the_equipment.prepare_for_run()
+            dbfn = re.sub('x.log', '.ttxm', test_log.get_filename())
+            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_ACT)
+            databaseFileName = os.path.join(bak_dir, dbfn)
+            sequencePath = os.path.join(self._station_config.ROOT_DIR,
+                                        self._station_config.SEQUENCE_RELATIVEPATH)
+            self._equipment.create_database(databaseFileName)
+            self._equipment.set_sequence(sequencePath)
 
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
             self._fixture.elminator_off()
@@ -162,7 +157,7 @@ class pancakepixelStation(test_station.TestStation):
             is_rawdata_save = True
             for i in range(len(self._station_config.PATTERNS)):
                 self._operator_interface.print_to_console(
-                    "Panel Measurement Pattern: %s" % self._station_config.PATTERNS[i])
+                    "Panel Measurement Pattern: %s\n" % self._station_config.PATTERNS[i])
 
                 # modified by elton . add random color
                 # the_unit.display_color(self._station_config.COLORS[i])
@@ -171,29 +166,34 @@ class pancakepixelStation(test_station.TestStation):
                 elif isinstance(self._station_config.COLORS[i], str):
                     the_unit.display_image(self._station_config.COLORS[i])
 
-                vsync_us = the_unit.vsync_microseconds()
-                if math.isnan(vsync_us):
-                    vsync_us = self._station_config.DEFAULT_VSYNC_US
-                    exp_time_list = self._station_config.EXPOSURE[i]
-                else:
-                    exp_time_list = self._station_config.EXPOSURE[i]
-                    for exp_index in range(len(exp_time_list)):
-                        exp_time_list[exp_index] = float(
-                            int(exp_time_list[exp_index] * 1000.0 / vsync_us) * vsync_us) / 1000.0
-                        self._operator_interface.print_to_console(
-                            "\nAdjusted Timing in millesecond: %s\n" % exp_time_list[exp_index])
+                # vsync_us = the_unit.vsync_microseconds()
+                # if math.isnan(vsync_us):
+                #     vsync_us = self._station_config.DEFAULT_VSYNC_US
+                #     exp_time_list = self._station_config.EXPOSURE[i]
+                # else:
+                #     exp_time_list = self._station_config.EXPOSURE[i]
+                #     for exp_index in range(len(exp_time_list)):
+                #         exp_time_list[exp_index] = float(
+                #             int(exp_time_list[exp_index] * 1000.0 / vsync_us) * vsync_us) / 1000.0
+                #         self._operator_interface.print_to_console(
+                #             "\nAdjusted Timing in millesecond: %s\n" % exp_time_list[exp_index])
 
-                the_equipment.measurementsetup(self._station_config.PATTERNS[i], exp_time_list[0],
-                                               exp_time_list[1], exp_time_list[2], exp_time_list[2],
-                                               self._station_config.FOCUS_DISTANCE, self._station_config.APERTURE,
-                                               self._station_config.IS_AUTOEXPOSURE, rect,
-                                               self._station_config.DISTANCE_UNIT,
-                                               self._station_config.SPECTRAL_RESPONSE, self._station_config.ROTATION)
-                the_equipment.setcalibrationid(self._station_config.PATTERNS[i], color_cal_id, scale_cal_id,
-                                               shift_cal_id)
-                imagekey = self._station_config.PATTERNS[i]
-                flag = the_equipment.capture(self._station_config.PATTERNS[i], imagekey, self._station_config.IS_SAVEDB)
-                self._operator_interface.print_to_console("\n".format(str(flag)))
+                # the_equipment.measurementsetup(self._station_config.PATTERNS[i], exp_time_list[0],
+                #                                exp_time_list[1], exp_time_list[2], exp_time_list[2],
+                #                                self._station_config.FOCUS_DISTANCE, self._station_config.APERTURE,
+                #                                self._station_config.IS_AUTOEXPOSURE, rect,
+                #                                self._station_config.DISTANCE_UNIT,
+                #                                self._station_config.SPECTRAL_RESPONSE, self._station_config.ROTATION)
+                # the_equipment.setcalibrationid(self._station_config.PATTERNS[i], color_cal_id, scale_cal_id,
+                #                                shift_cal_id)
+
+                # imagekey = self._station_config.PATTERNS[i]
+                # flag = the_equipment.capture(self._station_config.PATTERNS[i], imagekey, self._station_config.IS_SAVEDB)
+                # self._operator_interface.print_to_console("\n".format(str(flag)))
+
+                analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
+                analysis_result = self._equipment.sequence_run_step(analysis, True, self._station_config.IS_SAVEDB)
+                self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
 
                 export_name = "{}_{}".format(serial_number, self._station_config.PATTERNS[i])
                 output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
@@ -201,28 +201,44 @@ class pancakepixelStation(test_station.TestStation):
                 if not os.path.exists(output_dir):
                     os.mkdir(output_dir, 777)
                 time.sleep(1)
-                while attempts < 3:
-                    try:
-                        the_equipment.export_data(self._station_config.PATTERNS[i], output_dir, export_name)
-                        break
-                    except:
-                        attempts += 1
-                        self._operator_interface.print_to_console(
-                            "\n try to export data for {} times\n".format(attempts))
-                is_rawdata_save = is_rawdata_save and os.path.exists(os.path.join(output_dir, export_name + '.npz'))
-                override = ''
-                the_equipment.run_analysis_by_name(self._station_config.ANALYSIS[i],
-                                                   self._station_config.PATTERNS[i],
-                                                   override)
+                # while attempts < 3:
+                #     try:
+                #         the_equipment.export_data(self._station_config.PATTERNS[i], output_dir, export_name)
+                #         break
+                #     except:
+                #         attempts += 1
+                #         self._operator_interface.print_to_console(
+                #             "\n try to export data for {} times\n".format(attempts))
+                # is_rawdata_save = is_rawdata_save and os.path.exists(os.path.join(output_dir, export_name + '.npz'))
+                # override = ''
+                # the_equipment.run_analysis_by_name(self._station_config.ANALYSIS[i],
+                #                                    self._station_config.PATTERNS[i],
+                #                                    override)
 
-                analysis_result = the_equipment.get_last_results()
+                # analysis_result = the_equipment.get_last_results()
+                if self._station_config.IS_EXPORT_DATA:
+                    resolutionX = 0
+                    resolutionY = 0
+                    meas_list = self._equipment.get_measurement_list()
+                    for meas in meas_list:
+                        id = meas['Measurement ID']
+                        export_name = "{}_{}_{}_{}".format(serial_number, self._station_config.PATTERNS[i],
+                                                           meas['Measurement Setup'], meas['Pattern'])
+                        self._equipment.export_measurement(id, output_dir, export_name, resolutionX, resolutionY)
 
-                for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
-                    for r in list(analysis_result):
-                        test_item = self._station_config.PATTERNS[i] + "_" + r[0]
-                        if limit_array[0] == test_item:
-                            test_log.set_measured_value_by_name(test_item, int(r[2]))
-                            break
+                for result in analysis_result.values():
+                    for r in result:
+                        if not (isinstance(r, dict) and r.has_key('Name') and r.has_key('Value')):
+                            continue
+
+                        test_item = (self._station_config.PATTERNS[i] + "_" + r['Name']).replace(" ", "")
+                        has_test_item = False
+                        for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
+                            if limit_array[0] == test_item:
+                                has_test_item = True
+                        if not has_test_item:
+                            continue
+                        test_log.set_measured_value_by_name(test_item, int(r['Value']))
 
             test_log.set_measured_value_by_name("SaveRawImage_success", is_rawdata_save)
 
@@ -242,14 +258,14 @@ class pancakepixelStation(test_station.TestStation):
             overall_result, first_failed_test_result = self.close_test(test_log)
 
             # SN-YYMMDDHHMMS-P.ttxm for pass unit and  SN-YYMMDDHHMMS-F.ttxm for failed
-            if self._station_config.RESTART_TEST_COUNT == 1\
-                and self._station_config.IS_SAVEDB:
-                dbfn = test_log.get_filename()
-                if overall_result:
-                    dbfn = re.sub('x.log', 'P.ttxm', test_log.get_filename())
-                else:
-                    dbfn = re.sub('x.log', 'F.ttxm', test_log.get_filename())
-                self.backup_database(dbfn)
+            # if self._station_config.RESTART_TEST_COUNT == 1\
+            #     and self._station_config.IS_SAVEDB:
+            #     dbfn = test_log.get_filename()
+            #     if overall_result:
+            #         dbfn = re.sub('x.log', 'P.ttxm', test_log.get_filename())
+            #     else:
+            #         dbfn = re.sub('x.log', 'F.ttxm', test_log.get_filename())
+            #     self.backup_database(databaseFileName, dbfn)
             self._runningCount += 1
             self._operator_interface.print_to_console('--- do test finished ---\n')
             return overall_result, first_failed_test_result
@@ -266,16 +282,14 @@ class pancakepixelStation(test_station.TestStation):
     def is_ready(self):
         self._fixture.is_ready()
 
-    def backup_database(self, dbfn, ismov = False):
+    def backup_database(self, srcfn, dbfn, ismov = False):
         bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_BAK)
         if not os.path.exists(bak_dir):
             os.mkdir(bak_dir, 777)
         if ismov:
-            shutil.move(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH),
-                        os.path.join(bak_dir, dbfn))
+            shutil.move(srcfn, os.path.join(bak_dir, dbfn))
         else:
-            shutil.copyfile(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH),
-                        os.path.join(bak_dir, dbfn))
+            shutil.copyfile(srcfn, os.path.join(bak_dir, dbfn))
 
     def force_restart(self):
         if not self._station_config.IS_SAVEDB:
