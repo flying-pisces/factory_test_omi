@@ -142,7 +142,7 @@ class pancakepixelStation(test_station.TestStation):
 
             self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
 
-            dbfn = re.sub('x.log', '.ttxm', test_log.get_filename())
+            dbfn = re.sub('_x.log', '.ttxm', test_log.get_filename())
             bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_ACT)
             databaseFileName = os.path.join(bak_dir, dbfn)
             sequencePath = os.path.join(self._station_config.ROOT_DIR,
@@ -153,14 +153,11 @@ class pancakepixelStation(test_station.TestStation):
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
             self._fixture.elminator_off()
 
-            attempts = 0
-            is_rawdata_save = True
             for i in range(len(self._station_config.PATTERNS)):
                 self._operator_interface.print_to_console(
                     "Panel Measurement Pattern: %s\n" % self._station_config.PATTERNS[i])
 
                 # modified by elton . add random color
-                # the_unit.display_color(self._station_config.COLORS[i])
                 if isinstance(self._station_config.COLORS[i], tuple):
                     the_unit.display_color(self._station_config.COLORS[i])
                 elif isinstance(self._station_config.COLORS[i], str):
@@ -178,19 +175,6 @@ class pancakepixelStation(test_station.TestStation):
                 #         self._operator_interface.print_to_console(
                 #             "\nAdjusted Timing in millesecond: %s\n" % exp_time_list[exp_index])
 
-                # the_equipment.measurementsetup(self._station_config.PATTERNS[i], exp_time_list[0],
-                #                                exp_time_list[1], exp_time_list[2], exp_time_list[2],
-                #                                self._station_config.FOCUS_DISTANCE, self._station_config.APERTURE,
-                #                                self._station_config.IS_AUTOEXPOSURE, rect,
-                #                                self._station_config.DISTANCE_UNIT,
-                #                                self._station_config.SPECTRAL_RESPONSE, self._station_config.ROTATION)
-                # the_equipment.setcalibrationid(self._station_config.PATTERNS[i], color_cal_id, scale_cal_id,
-                #                                shift_cal_id)
-
-                # imagekey = self._station_config.PATTERNS[i]
-                # flag = the_equipment.capture(self._station_config.PATTERNS[i], imagekey, self._station_config.IS_SAVEDB)
-                # self._operator_interface.print_to_console("\n".format(str(flag)))
-
                 analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
                 analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
                 self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
@@ -201,21 +185,7 @@ class pancakepixelStation(test_station.TestStation):
                 if not os.path.exists(output_dir):
                     os.mkdir(output_dir, 777)
                 time.sleep(1)
-                # while attempts < 3:
-                #     try:
-                #         the_equipment.export_data(self._station_config.PATTERNS[i], output_dir, export_name)
-                #         break
-                #     except:
-                #         attempts += 1
-                #         self._operator_interface.print_to_console(
-                #             "\n try to export data for {} times\n".format(attempts))
-                # is_rawdata_save = is_rawdata_save and os.path.exists(os.path.join(output_dir, export_name + '.npz'))
-                # override = ''
-                # the_equipment.run_analysis_by_name(self._station_config.ANALYSIS[i],
-                #                                    self._station_config.PATTERNS[i],
-                #                                    override)
 
-                # analysis_result = the_equipment.get_last_results()
                 if self._station_config.IS_EXPORT_DATA:
                     resolutionX = 0
                     resolutionY = 0
@@ -261,12 +231,36 @@ class pancakepixelStation(test_station.TestStation):
 
                     test_item = self._station_config.PATTERNS[i] + "_" + "BlemishIndex"
 
-                    # TODO:
-                    blemishIndex = 0
-                    test_log.set_measured_value_by_name(test_item, blemishIndex)
+                    # Algorithm For blemish_index
+                    blemish_index = 0
+                    if num > 0 and len(constrast_lst) > 0:
+                        abs_contrast = np.abs(constrast_lst)
+                        location_r = np.sqrt(np.power(np.array(locax_list), 2) * np.power(np.array(locay_list), 2))
+                        location_index = []
+                        size_index = []
+                        for id in range(1, num + 1):
+                            tmp_local_index = 0
+                            tmp_size_index = 0
+                            if location_r[id] < self._station_config.LOCATION_1:
+                                tmp_local_index = 2
+                            elif location_r[id] < self._station_config.LOCATION_2:
+                                tmp_local_index = 1
+
+                            if size_list[id] > self._station_config.SIZE_2:
+                                tmp_size_index = 2
+                            elif size_list[id] > self._station_config.SIZE_1:
+                                tmp_size_index = 1
+
+                            location_index.append(tmp_local_index)
+                            size_index.append(tmp_size_index)
+
+                        defect_index = abs_contrast * np.array(location_index) * np.array(size_index)
+                        blemish_index = np.sum(defect_index)
+
+                    test_log.set_measured_value_by_name(test_item, blemish_index)
 
         except Exception, e:
-            self._operator_interface.print_to_console("Test exception . {}".format(e))
+            self._operator_interface.print_to_console("Test exception . {}\n".format(e))
         finally:
             self._operator_interface.print_to_console('release current test resource.\n')
             if the_unit is not None:
@@ -275,8 +269,6 @@ class pancakepixelStation(test_station.TestStation):
                 self._fixture.unload()
                 self._fixture.elminator_off()
 
-            # if the_equipment is not None:
-            #     the_equipment.uninit()
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
             overall_result, first_failed_test_result = self.close_test(test_log)
 

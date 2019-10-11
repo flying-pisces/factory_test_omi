@@ -143,17 +143,11 @@ class pancakeuniformityStation(test_station.TestStation):
                 particle_count = self._particle_counter.particle_counter_read_val()
             test_log.set_measured_value_by_name("ENV_ParticleCounter", particle_count)
 
-            # the_equipment = test_equipment_pancake_uniformity.pancakeuniformityEquipment(self._station_config.IS_VERBOSE)
-            #
-            # self._operator_interface.print_to_console("Initialize Camera %s\n" %self._station_config.CAMERA_SN)
-            # self.the_equipment.init(self._station_config.CAMERA_SN)
-            dbfn = re.sub('x.log', '.ttxm', test_log.get_filename())
+            dbfn = re.sub('_x.log', '.ttxm', test_log.get_filename())
             bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_ACT)
             databaseFileName = os.path.join(bak_dir, dbfn)
             sequencePath = os.path.join(self._station_config.ROOT_DIR, self._station_config.SEQUENCE_RELATIVEPATH)
             self._equipment.create_database(databaseFileName)
-            #databasePath = r"C:\Radiant Vision Systems Data\TrueTest\UserData\Demo4.ttxm"
-            #self._equipment.create_database(databasePath)
             self._equipment.set_sequence(sequencePath)
 
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
@@ -162,7 +156,6 @@ class pancakeuniformityStation(test_station.TestStation):
             centerlv_gls = []
             gls = []
             centercolordifference255 = 0.0
-            attempts = 0
 
             for i in range(len(self._station_config.PATTERNS)):
                 self._operator_interface.print_to_console(
@@ -185,13 +178,6 @@ class pancakeuniformityStation(test_station.TestStation):
                 #         self._operator_interface.print_to_console(
                 #                 "\nAdjusted Timing in millesecond: %s\n" % exp_time_list[exp_index])
 
-                # the_equipment.measurementsetup(self._station_config.PATTERNS[i], exp_time_list[0],
-                #                                exp_time_list[1], exp_time_list[2], exp_time_list[2],
-                #                                self._station_config.FOCUS_DISTANCE, self._station_config.APERTURE,
-                #                                self._station_config.IS_AUTOEXPOSURE, rect, self._station_config.DISTANCE_UNIT,
-                #                                self._station_config.SPECTRAL_RESPONSE, self._station_config.ROTATION)
-                # the_equipment.setcalibrationid(self._station_config.PATTERNS[i],color_cal_id, scale_cal_id, shift_cal_id)
-
                 imagekey = self._station_config.PATTERNS[i]
 
                 analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
@@ -201,17 +187,7 @@ class pancakeuniformityStation(test_station.TestStation):
                 output_dir = os.path.join(self._station_config.ROOT_DIR , self._station_config.ANALYSIS_RELATIVEPATH, the_unit.serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
                 if not os.path.exists(output_dir):
                     os.mkdir(output_dir, 777)
-                '''
-                time.sleep(1)
-                while attempts < 3:
 
-                    try:
-                        _equipment.export_data(self._station_config.PATTERNS[i], output_dir, export_name)
-                        break
-                    except:
-                        attempts += 1
-                        self._operator_interface.print_to_console("\n try to export data for {} times\n".format(attempts))
-                '''
                 if self._station_config.IS_EXPORT_DATA:
                     resolutionX = 0
                     resolutionY = 0
@@ -222,14 +198,6 @@ class pancakeuniformityStation(test_station.TestStation):
                                                            meas['Measurement Setup'], meas['Pattern'])
                         self._equipment.export_measurement(id, output_dir, export_name, resolutionX, resolutionY)
 
-                '''
-                override = ''
-                self._equipment.run_analysis_by_name(self._station_config.ANALYSIS[i], self._station_config.PATTERNS[i],
-                                                   override)
-
-                filename = export_name + ".csv "
-                analysis_result = the_equipment.get_last_results()
-                '''
                 for result in analysis_result.values():
                     for r in result:
                         if not (isinstance(r, dict) and r.has_key('Name') and r.has_key('Value')):
