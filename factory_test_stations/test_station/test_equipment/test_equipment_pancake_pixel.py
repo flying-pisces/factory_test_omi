@@ -39,6 +39,26 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
         # self._auto_exposure = auto_exposure;
         # self._rect = Rectangle(cx, cy, cl, cw);
 
+    ########### NEW SETUP FUNCTIONS ###########
+    def set_database(self, databasePath):
+        result = self._device.SetMeasurementDatabase(databasePath)
+        if self._verbose:
+            pprint.pprint(result)
+        return result
+
+    def create_database(self, databasePath):
+        result = self._device.CreateMeasurementDatabase(databasePath)
+        if self._verbose:
+            pprint.pprint(result)
+        return result
+
+    def set_sequence(self, sequencePath):
+        result = self._device.SetSequence(sequencePath)
+        if self._verbose:
+            pprint.pprint(result)
+        return result
+
+    ###########################################
 
     def _parse_result(self, apires, param=None, eOnError=True):
         resjson = json.loads(str(apires))
@@ -93,9 +113,9 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
             print(init_result)
         return init_result
 
-    def uninit(self):
+    def close(self):
         response = self._device.CloseCommunication()
-        return int(self._parse_result(response))
+        pprint.pprint(response)
 
     def ready(self):
         response = json.loads(self._device.EquipmentReady())
@@ -209,28 +229,28 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
             pprint.pprint(result)
         return result
 
-        ########### NEW SEQUENCING FUNCTIONS ###########
+    ########### NEW SEQUENCING FUNCTIONS ###########
 
-        def sequence_run_all(self, useCamera, saveImages):
-            result = self._device.RunAllSequenceSteps(useCamera, saveImages)
-            if self._verbose:
-                pprint.pprint(result)
-            return result
+    def sequence_run_all(self, useCamera, saveImages):
+        result = self._device.RunAllSequenceSteps(useCamera, saveImages)
+        if self._verbose:
+            pprint.pprint(result)
+        return result
 
-        def sequence_run_step(self, stepName, useCamera, saveImages):
-            result = self._device.RunSequenceStepByName(stepName, useCamera, saveImages)
-            if self._verbose:
-                pprint.pprint(result)
-            return json.loads(result)
+    def sequence_run_step(self, stepName, patternName = '', useCamera = True, saveImages = True):
+        result = self._device.RunSequenceStepByName(stepName, patternName, useCamera, saveImages)
+        if self._verbose:
+            pprint.pprint(result)
+        return json.loads(result)
 
-        def sequence_run_step_list(self, stepList, useCamera, saveImages):
-            stepItems = List[str]()
-            for c in stepList:
-                stepItems.Add(c)
-            result = self._device.RunSequenceStepListByName(stepItems)
-            if self._verbose:
-                pprint.pprint(result)
-            return json.loads(result)
+    def sequence_run_step_list(self, stepList, patternName="", useCamera = True, saveImages = True):
+        stepItems = List[str]()
+        for c in stepList:
+            stepItems.Add(c)
+        result = self._device.RunSequenceStepListByName(stepItems, patternName, useCamera, saveImages)
+        if self._verbose:
+            pprint.pprint(result)
+        return json.loads(result)
 
     #####################################################################################################
     ## Camera Control
@@ -339,63 +359,40 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
     #     except Exception as e:
     #       raise pancakepixelEquipmentError(e)
 
-# if __name__ == "__main__":
-#     import sys
-#     sys.path.append(r'../../')
-#     import test_station
-#     verbose = True
-#     is_autoexp = False
-#     cx = 0  # Left
-#     cy = 0  # Top
-#     cl = 0  # Width
-#     cw = 0  # Height
-#     rect = Rectangle(cx, cy, cl, cw)
-#     eR = 113.0
-#     eG = 113.0
-#     eB = 113.0
-#     eXB = 113.0
-#     focus = 0.471
-#     aperture = 8.0
-#     distance_unit = 'Millimeters'
-#     spectral_response = 'Photometric'
-#     rotation = 90
-#     the_instrument = pancakepixelEquipment(verbose, focus, aperture, is_autoexp, cx, cy, cl, cw)
-#     sn = the_instrument.serialnumber()
-#     sn = "91738177"
-#     version = the_instrument.version()
-#     the_instrument.init(sn)
-#     the_instrument.flush_measurement_setups()
-#     the_instrument.flush_measurements()
-#     the_instrument.prepare_for_run()
-#
-#     pattern = "W255"
-#     the_instrument.measurementsetup(pattern, eR, eG, eB, eXB, focus, aperture, is_autoexp, rect, distance_unit,
-#                                     spectral_response, rotation)
-#
-#     #    the_instrument.measurementsetup("White", 113, 113, 113)
-#
-#     color_cal = 'camera_color_cal1'
-#     scale_cal = 'image_scale_cal1'
-#     shift_cal = '(None)'
-#
-#     colorcalibrationid = the_instrument.get_colorcal_key(color_cal)
-#     imagescaleid = the_instrument.get_imagescalecal_key(scale_cal)
-#     colorshiftid = the_instrument.get_colorshiftcal_key(shift_cal)
-#
-#     the_instrument.setcalibrationid(pattern, colorcalibrationid, imagescaleid, colorshiftid)
-#     imagekey = pattern
-#     is_savedb = True
-#     flag = the_instrument.capture(pattern, imagekey, True)
-#     # print flag
-#
-#     export_name = "tempdata"
-#     output_dir = os.getcwd()
-#     the_instrument.export_data(pattern, output_dir, export_name)
-#     analysis_item = "ParticleDefectsW"
-#     override = ""
-#     the_instrument.run_analysis_by_name(analysis_item, pattern, override)
-#     filename = export_name + ".csv"
-#     analysis_result = the_instrument.get_last_results()
-#     mesh_data = the_instrument.get_last_mesh()
+if __name__ == "__main__":
+    import sys
+
+    sys.path.append(r'..\..')
+    import station_config
+
+    verbose = True
+
+    # focus_distance=0.50
+    # lens_aperture=2.8
+    # auto_exposure=False
+    # cx = 1916 #Left
+    # cy = 831 #Top
+    # cl = 1252 #Width
+    # cw = 1405 #Height
+    #    rect = Rectangle(cx, cy, cl, cw)
+
+    newDatabaseName = str(datetime.now().strftime("%y%m%d%H%M%S")) + ".ttxm"
+    databasePath = r"C:\Radiant Vision Systems Data\TrueTest\\" + newDatabaseName
+    databasePath = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\1PR00001UB9262_pancake_pixel-02_20190726-220417_P.ttxm'
+    sequencePath = r"C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\Myzy_Sequence_10-3-19.seqx"
+
+    station_config.load_station('pancake_pixel')
+    # station_config.CAMERA_SN = "Demo"
+    the_instrument = pancakepixelEquipment(station_config)
+
+    print  "ready before init :{}".format(the_instrument.ready())
+    isinit = the_instrument.initialize()
+    print  "ready after init :{}".format(the_instrument.ready())
+    # print  "PrepareForRun after init:{}" .format(the_instrument.prepare_for_run())
+
+    # the_instrument.create_database(databasePath)
+    the_instrument.set_database(databasePath)
+    the_instrument.set_sequence(sequencePath)
+    pass
 
 

@@ -111,7 +111,7 @@ class pancakepixelStation(test_station.TestStation):
                 while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
                     try:
                         is_screen_on = the_unit.screen_on()
-                    except dut.displayCtrl.displayCtrlMyzyError:
+                    except dut.DUTError:
                         is_screen_on = False
                     else:
                         if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
@@ -192,7 +192,7 @@ class pancakepixelStation(test_station.TestStation):
                 # self._operator_interface.print_to_console("\n".format(str(flag)))
 
                 analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
-                analysis_result = self._equipment.sequence_run_step(analysis, True, self._station_config.IS_SAVEDB)
+                analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
                 self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
 
                 export_name = "{}_{}".format(serial_number, self._station_config.PATTERNS[i])
@@ -225,22 +225,45 @@ class pancakepixelStation(test_station.TestStation):
                         export_name = "{}_{}_{}_{}".format(serial_number, self._station_config.PATTERNS[i],
                                                            meas['Measurement Setup'], meas['Pattern'])
                         self._equipment.export_measurement(id, output_dir, export_name, resolutionX, resolutionY)
+                size_list = []
+                locax_list = []
+                locay_list = []
+                pixel_list = []
+                constrast_lst = []
+                for c, result in analysis_result.items():
+                    if not result.has_key('NumDefects'):
+                        continue
 
-                for result in analysis_result.values():
-                    for r in result:
-                        if not (isinstance(r, dict) and r.has_key('Name') and r.has_key('Value')):
-                            continue
+                    num = int(result['NumDefects'])
+                    for id in range(1, num+1):
+                        size_key = 'Size_{}'.format(id)
+                        locax_key = 'LocX_{}'.format(id)
+                        locay_key = 'LocY_{}'.format(id)
+                        contrast_key = 'Contrast_{}'.format(id)
+                        pixel_key = 'Pixels_{}'.format(id)
+                        if (result.has_key(size_key) and
+                            result.has_key(locax_key) and
+                            result.has_key(locay_key) and
+                            result.has_key(contrast_key) and
+                            result.has_key(pixel_key)):
+                                size_list.append(float(result[size_key]))
+                                locax_list.append(float(result[locax_key]))
+                                locay_list.append(float(result[locay_key]))
+                                pixel_list.append(float(result[pixel_key]))
+                                constrast_lst.append(float(result[contrast_key]))
 
-                        test_item = (self._station_config.PATTERNS[i] + "_" + r['Name']).replace(" ", "")
-                        has_test_item = False
+                    for resItem in result:
+                        test_item = (self._station_config.PATTERNS[i] + "_" + resItem).replace(" ", "")
                         for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
                             if limit_array[0] == test_item:
-                                has_test_item = True
-                        if not has_test_item:
-                            continue
-                        test_log.set_measured_value_by_name(test_item, int(r['Value']))
+                                test_log.set_measured_value_by_name(test_item, float(result[resItem]))
+                                break
 
-            test_log.set_measured_value_by_name("SaveRawImage_success", is_rawdata_save)
+                    test_item = self._station_config.PATTERNS[i] + "_" + "BlemishIndex"
+
+                    # TODO:
+                    blemishIndex = 0
+                    test_log.set_measured_value_by_name(test_item, blemishIndex)
 
         except Exception, e:
             self._operator_interface.print_to_console("Test exception . {}".format(e))

@@ -15,10 +15,10 @@ SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM10" #
+FIXTURE_COMPORT = "COM11" #
 FIXTURE_PARTICLE_COMPORT="COM3" #
 FIXTURE_PARTICLE_ADDR=1
-DUT_COMPORT = "COM5" #
+DUT_COMPORT = "COM12" #
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu','hw','fpga']
@@ -40,7 +40,7 @@ COMMAND_DISP_RESET_DLY = 1
 COMMAND_DISP_SHOWIMG_DLY = 1
 COMMAND_DISP_POWEROFF_DLY = 0.2
 
-DISP_CHECKER_ENABLE = True
+DISP_CHECKER_ENABLE = False
 DISP_CHECKER_DLY = 5
 DISP_CHECKER_CAMERA_INDEX = 1
 DISP_CHECKER_L_SCORE = 6000
@@ -87,7 +87,7 @@ FIXTURE_PTB_OFF_TIME = 1
 FIXTURE_PTB_ON_TIME = 1
 FIXTURE_USB_OFF_TIME = 1
 FIXTURE_USB_ON_TIME = 1
-FIXTURE_PARTICLE_COUNTER = True
+FIXTURE_PARTICLE_COUNTER = False
 FIXTRUE_PARTICLE_ADDR_READ = 40005
 FIXTRUE_PARTICLE_ADDR_START = 40003
 FIXTRUE_PARTICLE_ADDR_STATUS = 40003
@@ -114,10 +114,11 @@ DUT_ON_MAXRETRY = 10
 # Test Equipment related parameters
 IS_VERBOSE = True
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
-SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\pixel.seqx'
+SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\Myzy_Particle_10-3-19.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 DATABASE_RELATIVEPATH = r'factory-test_logs\oculus.ttxm'
 EMPTY_DATABASE_RELATIVEPATH = r'.\empty.ttxm'
+DATABASE_RELATIVEPATH_ACT = r'factory-test_logs'
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
 DATABASE_RELATIVEPATH_BAK = r'factory-test_logs'
 
@@ -135,12 +136,12 @@ WIDTH = 3781
 HEIGHT = 3954
 IS_SAVEDB = True
 IS_EXPORT_DATA = False
-RESTART_TEST_COUNT = 1
+RESTART_TEST_COUNT = 10
 DB_MAX_SIZE = 2048
 
 SPECTRAL_RESPONSE = 'PhotoMetric'
 DISTANCE_UNIT = "Millimeters"
-CAMERA_SN = "91738177"
+CAMERA_SN = "94142510"
 COLOR_CAL = 'camera_color_cal1'
 SCALE_CAL = 'image_scale_cal1'
 SHIFT_CAL = '(None)'
@@ -149,7 +150,7 @@ PATTERNS =  ["W255","W000","R255","G255","B255"]
 SAVE_IMAGES = [True,True,True,True,True]
 COLORS = [(255,255,255),(0,0,0),(255,0,0),(0,255,0),(0,0,255)]
 # COLORS = ['0008','0000']
-ANALYSIS = ["ParticleDefectsW","ParticleDefectsB","ParticleDefectsW","ParticleDefectsW","ParticleDefectsW"]
+ANALYSIS = ["ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects"]
 # EXPOSURE = [[10,10,10],[90,90,90],[40,40,40],[40,40,40],[40,40,40]]
 
 EXPOSURE = [[9,9,9],[20,20,20],[18,18,18],[13,13,13],[20,20,20]]

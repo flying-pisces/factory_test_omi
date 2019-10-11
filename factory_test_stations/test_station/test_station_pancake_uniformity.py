@@ -112,7 +112,7 @@ class pancakeuniformityStation(test_station.TestStation):
                 while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
                     try:
                         is_screen_on = the_unit.screen_on()
-                    except dut.displayCtrl.displayCtrlMyzyError as e:
+                    except dut.DUTError as e:
                         is_screen_on = False
                     else:
                         if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
@@ -195,7 +195,7 @@ class pancakeuniformityStation(test_station.TestStation):
                 imagekey = self._station_config.PATTERNS[i]
 
                 analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
-                analysis_result = self._equipment.sequence_run_step(analysis, True, self._station_config.IS_SAVEDB)
+                analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
                 self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
 
                 output_dir = os.path.join(self._station_config.ROOT_DIR , self._station_config.ANALYSIS_RELATIVEPATH, the_unit.serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))

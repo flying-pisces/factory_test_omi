@@ -1,8 +1,15 @@
 import hardware_station_common.test_station.dut
 import os
 import time
-# from test_station.dut.displayserver import DisplayServer
-from displayCtrl import displayCtrlBoard
+import re
+import numpy as np
+import sys
+import socket
+import serial
+import struct
+import logging
+import time
+import string
 
 class DUTError(Exception):
     def __init__(self, value):
@@ -15,50 +22,230 @@ class DUTError(Exception):
 class pancakeDut(hardware_station_common.test_station.dut.DUT):
     def __init__(self, serialNumber, station_config, operatorInterface):
         hardware_station_common.test_station.dut.DUT.__init__(self, serialNumber, station_config, operatorInterface)
-        self._display_server = None
         self.first_boot = True
+        self.is_screen_poweron = False
+        self._serial_port = None
+        self._logger = logging.getLogger(__name__)
+        self._logger.setLevel(logging.DEBUG)
+        self._start_delimiter = "$"
+        self._end_delimiter = '\r\n'
+        self._spliter = ','
 
     def initialize(self):
-        self._display_server = displayCtrlBoard(self._station_config, self._operator_interface) # DisplayServer(custom_adb_path=self._adb_path)
-        return self._display_server.initialize()
+        self.is_screen_poweron = False
+        self._serial_port = serial.Serial(self._station_config.DUT_COMPORT,
+                                          baudrate=115200,
+                                          bytesize=serial.EIGHTBITS,
+                                          parity=serial.PARITY_NONE,
+                                          stopbits=serial.STOPBITS_ONE,
+                                          rtscts=False,
+                                          xonxoff=False,
+                                          dsrdtr=False,
+                                          timeout=1,
+                                          writeTimeout=None,
+                                          interCharTimeout=None)
+        if not self._serial_port:
+            raise DUTError('Unable to open DUT port : %s' % self._station_config.DUT_COMPORT)
+            return False
+        else:
+            print 'DUT %s Initialised. ' % self._station_config.DUT_COMPORT
+            return True
+        return False
 
     def connect_display(self, display_cycle_time=2, launch_time=4):
         if self.first_boot:
             self.first_boot = False
-            self._display_server.screen_on()
+            self._power_off()
+            time.sleep(0.5)
+            recvobj = self._power_on()
+            if recvobj is None:
+                raise RuntimeError("Exit power_on because can't receive any data from dut.")
+            else:
+                self.is_screen_poweron = True
+                if recvobj[0] != '0000':
+                    raise DUTError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
+                return True
             time.sleep(display_cycle_time)
         return True
 
     def screen_on(self):
-        return self._display_server.screen_on()
+        if not self.is_screen_poweron:
+            self._power_off()
+            time.sleep(0.5)
+            recvobj = self._power_on()
+            if recvobj is None:
+                raise RuntimeError("Exit power_on because can't receive any data from dut.")
+            else:
+                self.is_screen_poweron = True
+                if recvobj[0] != '0000':
+                    raise DUTError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
+                return True
 
     def screen_off(self):
-        self._display_server.screen_off()
+        if self.is_screen_poweron:
+            recvobj = self._power_off()
+            if recvobj is None:
+                raise RuntimeError("Exit power_off because can't receive any data from dut.")
+            elif int(recvobj[0]) != 0x00:
+                raise DUTError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
+            else:
+                self.is_screen_poweron = False
 
     def close(self):
         self._operator_interface.print_to_console("Turn Off display................\n")
-        self._display_server._power_off()
+        if self.is_screen_poweron:
+            self._power_off()
         self._operator_interface.print_to_console("Closing DUT by the communication interface.\n")
-        self._display_server.close()
+        if self._serial_port is not None:
+            self._serial_port.close()
+            self._serial_port = None
 
     def display_color(self, color=(255,255,255)): #  (r,g,b)
-        ## color here will be three integers tuple from 0 to 255 represent the RGB value
-        ## example: my_ds.display_color((255,0,0))
-        self._display_server.display_color(color)
+        if self.is_screen_poweron:
+            recvobj = self._setColor(color)
+            if recvobj is None:
+                raise RuntimeError("Exit display_color because can't receive any data from dut.")
+            elif int(recvobj[0]) != 0x00:
+                raise RuntimeError("Exit display_color because rev err msg. Msg = {}".format(recvobj))
         time.sleep(self._station_config.DUT_DISPLAYSLEEPTIME)
 
     def display_image(self, image):
-        ## image here will be NAME.png under /sdcard/Pictures/
-        ## example: my_ds.display_image("auo_red_33_44_0.png")
-        self._display_server.display_image(image)
+        recvobj = self._showImage(image)
+        if recvobj is None:
+            raise RuntimeError("Exit disp_image because can't receive any data from dut.")
+        elif int(recvobj[0]) != 0x00:
+            raise DUTError("Exit disp_image because rev err msg. Msg = {}".format(recvobj))
         time.sleep(self._station_config.DUT_DISPLAYSLEEPTIME)
 
     def vsync_microseconds(self):
-        # return self._station_config.DEFAULT_VSYNC_US
-        return self._display_server.get_median_vsync_microseconds()
+        recvobj = self._vsyn_time()
+        if recvobj is None:
+            raise RuntimeError("Exit display_color because can't receive any data from dut.")
+        else:
+            grpt = re.match(r'(\d*[\.]?\d*)', recvobj[1])
+            grpf = re.match(r'(\d*[\.]?\d*)', recvobj[2])
+            if grpf is None or grpt is None:
+                raise RuntimeError("Exit display_color because rev err msg. Msg = {}".format(recvobj))
+            return string.atof(grpt.group(0))
 
-    def get_displayserver_version(self):
-        return self._display_server.version()
+    def get_version(self):
+        return self._version("mcu")
+
+
+    ###
+    # COMMUNICAION INTERFACE
+    ###
+
+    def _write_serial(self, input_bytes):
+        bytes_written = self._serial_port.write(input_bytes)
+        self._serial_port.flush()
+        return bytes_written
+
+    def _write_serial_cmd(self, command):
+        cmd = '$c.{}\r\n'.format(command)
+        self._serial_port.write(cmd)
+        self._serial_port.flush()
+
+    def _read_response(self):
+        response = []
+        while True:
+            line_in = self._serial_port.readline()
+            if line_in != '':
+                response.append(line_in)
+            else:
+                break
+        print "<--- {}".format(response)
+        return response
+
+    def _vsyn_time(self):
+        self._write_serial_cmd(self._station_config.COMMAND_DISP_VSYNC)
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_DISP_VSYNC, response)
+
+    def _help(self):
+        self._write_serial_cmd(self._station_config.COMMAND_DISP_HELP)
+        time.sleep(1)
+        response = self._read_response()
+        print response
+        value = []
+        for item in response[0:len(response)-1]:
+            value.append(item)
+        return value
+
+    def _version(self, model_name):
+        self._write_serial_cmd("%s,%s"%(self._station_config.COMMAND_DISP_VERSION,model_name))
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_DISP_VERSION, response)
+
+    def _get_boardId(self):
+        self._write_serial_cmd(self._station_config.COMMAND_DISP_GETBOARDID)
+        time.sleep(1)
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_DISP_GETBOARDID, response)
+
+    def _prase_respose(self, command, response):
+
+        print "command : {},,,{}".format(command, response)
+
+        if response is None:
+            return None
+        cmd1 = command.split(self._spliter)[0]
+        respstr = ''.join(response).upper()
+        cmd = ''.format(cmd1).upper()
+        if cmd not in respstr:
+            return None
+        values = respstr.split(self._spliter)
+        if len(values) == 1:
+            raise RuntimeError('display ctrl rev data format error. <- ' + respstr)
+
+
+        return  values[1:]
+
+    def _power_on(self):
+        self._write_serial_cmd(self._station_config.COMMAND_DISP_POWERON)
+        time.sleep(self._station_config.COMMAND_DISP_POWERON_DLY)
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_DISP_POWERON, response)
+
+    def _power_off(self):
+        self._write_serial_cmd(self._station_config.COMMAND_DISP_POWEROFF)
+        time.sleep(self._station_config.COMMAND_DISP_POWEROFF_DLY)
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_DISP_POWEROFF, response)
+
+    def _reset(self):
+        self._write_serial_cmd(self._station_config.COMMAND_DISP_RESET)
+        time.sleep(self._station_config.COMMAND_DISP_RESET_DLY)
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_DISP_RESET, response)
+
+    def _showImage(self, imageindex):
+        command ='{},{}'.format(self._station_config.COMMAND_DISP_SHOWIMAGE, imageindex)
+        self._write_serial_cmd(command)
+        time.sleep(self._station_config.COMMAND_DISP_SHOWIMG_DLY)
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_DISP_SHOWIMAGE, response)
+
+    def _setColor(self, c = (255,255,255)):
+        command = '{0},0x{1[0]:X},0x{1[1]:X},0x{1[2]:X}'.format(self._station_config.COMMAND_DISP_SETCOLOR, c)
+        self._write_serial_cmd(command)
+        time.sleep(1)
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_DISP_SETCOLOR, response)
+
+    def _MIPI_read(self, reg, typ):
+        command = '{0},{1},{2}'.format(self._station_config.COMMAND_DISP_READ, reg, typ)
+        self._write_serial_cmd(command)
+        time.sleep(1)
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_DISP_READ, response)
+
+    def _MIPI_write(self, reg, typ, val):
+        command = '{0},{1},{2},{3}'.format(self._station_config.COMMAND_DISP_WRITE, reg, typ, val)
+        self._write_serial_cmd(command)
+        #time.sleep(1)
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_DISP_WRITE, response)
 
 ############ projectDut is just an example
 class projectDut(hardware_station_common.test_station.dut.DUT):
@@ -87,7 +274,6 @@ if __name__ == "__main__" :
     import sys
     import types
     sys.path.append(r'..\..')
-    import dutTestUtil
     import station_config
     import logging
     ch = logging.StreamHandler()
@@ -96,20 +282,20 @@ if __name__ == "__main__" :
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
 
-    # station_config.load_station('pancake_pixel')
-    station_config.load_station('pancake_uniformity')
+    station_config.load_station('pancake_pixel')
+    # station_config.load_station('pancake_uniformity')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
 
-    the_unit = pancakeDut('COM5', station_config, station_config)
+    the_unit = pancakeDut(station_config, station_config, station_config)
     the_unit.initialize()
     try:
         the_unit.connect_display()
-        the_unit.screen_on()
-        time.sleep(1)
-        the_unit.display_color()
+        # the_unit.screen_on()
+        # time.sleep(1)
+        # the_unit.display_color()
         time.sleep(1)
         print the_unit.vsync_microseconds()
-        for c in [(0,0,0), (255,0,0), (0,255,0), (0,0,255),(255,255,255)]:
+        for c in [(0,0,0), (255,255,255), (255,0,0), (0,255,0), (0,0,255)]:
             the_unit.display_color(c)
             time.sleep(0.5)
         the_unit.screen_off()

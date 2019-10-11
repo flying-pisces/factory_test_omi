@@ -138,6 +138,7 @@ CAMERA_SN = "159185561"
 COLOR_CAL = 'camera_color_cal'
 SCALE_CAL = 'image_scale_cal'
 SHIFT_CAL = '159185561 Color Shift Correction'
+# PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 PATTERNS = ["White", "Gray180", 'Gray127', 'Gray90', "Red", "Green", "Blue"]
 SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True, True, True]

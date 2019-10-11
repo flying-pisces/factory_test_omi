@@ -109,7 +109,7 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
 
     def close(self):
         response = self._device.CloseCommunication()
-        return int(self._parse_result(response))
+        pprint.pprint(response)
 
     def ready(self):
         response = json.loads(self._device.EquipmentReady())
@@ -150,17 +150,17 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
             pprint.pprint(result)
         return result
 
-    def sequence_run_step(self, stepName, useCamera, saveImages):
-        result = self._device.RunSequenceStepByName(stepName, useCamera, saveImages)
+    def sequence_run_step(self, stepName, patternName, useCamera, saveImages):
+        result = self._device.RunSequenceStepByName(stepName, patternName, useCamera, saveImages)
         if self._verbose:
             pprint.pprint(result)
         return json.loads(result)
 
-    def sequence_run_step_list(self, stepList, useCamera, saveImages):
+    def sequence_run_step_list(self, stepList, patternName, useCamera, saveImages):
         stepItems = List[str]()
         for c in stepList:
             stepItems.Add(c)
-        result = self._device.RunSequenceStepListByName(stepItems, useCamera, saveImages)
+        result = self._device.RunSequenceStepListByName(stepItems, patternName, useCamera, saveImages)
         if self._verbose:
             pprint.pprint(result)
         return json.loads(result)
@@ -377,10 +377,7 @@ if __name__ == "__main__":
     sequencePath = r"C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\Myzy_Sequence_10-3-19.seqx"
 
     station_config.load_station('pancake_uniformity')
-    station_config.CAMERA_SN = "Demo"
     the_instrument = pancakeuniformityEquipment(station_config)
-    the_instrument.initialize()
-    
     print  "ready before init :{}" .format(the_instrument.ready())
     isinit = the_instrument.initialize()
     print  "ready after init :{}" .format(the_instrument.ready())
