@@ -101,6 +101,7 @@ class pancakepixelStation(test_station.TestStation):
         try:
             self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
             the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
+            test_log.set_measured_value_by_name("TT_Version", self._equipment.version())
 
             the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
@@ -140,15 +141,18 @@ class pancakepixelStation(test_station.TestStation):
                 particle_count = self._particle_counter.particle_counter_read_val()
             test_log.set_measured_value_by_name("ENV_ParticleCounter", particle_count)
 
-            self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
+            self._operator_interface.print_to_console("Set Camera Database. %s\n" % self._station_config.CAMERA_SN)
 
-            dbfn = re.sub('_x.log', '.ttxm', test_log.get_filename())
+            uni_file_name = re.sub('_x.log', '.ttxm', test_log.get_filename())
             bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_ACT)
-            databaseFileName = os.path.join(bak_dir, dbfn)
+            databaseFileName = os.path.join(bak_dir, uni_file_name)
             sequencePath = os.path.join(self._station_config.ROOT_DIR,
                                         self._station_config.SEQUENCE_RELATIVEPATH)
             self._equipment.create_database(databaseFileName)
             self._equipment.set_sequence(sequencePath)
+
+            self._operator_interface.print_to_console('clean registration\n')
+            self._equipment.clear_registration()
 
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
             self._fixture.elminator_off()
@@ -179,22 +183,31 @@ class pancakepixelStation(test_station.TestStation):
                 analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
                 self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
 
-                export_name = "{}_{}".format(serial_number, self._station_config.PATTERNS[i])
-                output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
-                                          the_unit.serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
-                if not os.path.exists(output_dir):
-                    os.mkdir(output_dir, 777)
-                time.sleep(1)
-
-                if self._station_config.IS_EXPORT_DATA:
-                    resolutionX = 0
-                    resolutionY = 0
+                if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
+                    output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
+                                              the_unit.serial_number + '_' + test_log._start_time.strftime(
+                                                  "%Y%m%d-%H%M%S"))
+                    if not os.path.exists(output_dir):
+                        os.mkdir(output_dir, 777)
                     meas_list = self._equipment.get_measurement_list()
+                    exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
                     for meas in meas_list:
+                        if meas['Measurement Setup'] != self._station_config.PATTERNS[i]:
+                            continue
+
                         id = meas['Measurement ID']
-                        export_name = "{}_{}_{}_{}".format(serial_number, self._station_config.PATTERNS[i],
-                                                           meas['Measurement Setup'], meas['Pattern'])
-                        self._equipment.export_measurement(id, output_dir, export_name, resolutionX, resolutionY)
+                        export_csv_name = "{}_{}.csv".format(serial_number, self._station_config.PATTERNS[i])
+                        export_png_name = "{}_{}.png".format(serial_number, self._station_config.PATTERNS[i])
+                        if self._station_config.IS_EXPORT_CSV:
+                            self._equipment.export_measurement(id, output_dir, export_csv_name,
+                                                               self._station_config.Resolution_Bin_X,
+                                                               self._station_config.Resolution_Bin_Y)
+                        if self._station_config.IS_EXPORT_PNG:
+                            self._equipment.export_measurement(id, output_dir, export_png_name,
+                                                               self._station_config.Resolution_Bin_X,
+                                                               self._station_config.Resolution_Bin_Y)
+                        self._operator_interface.print_to_console("Export data for {}\n"
+                                                                  .format(self._station_config.PATTERNS[i]))
                 size_list = []
                 locax_list = []
                 locay_list = []
@@ -205,7 +218,7 @@ class pancakepixelStation(test_station.TestStation):
                         continue
 
                     num = int(result['NumDefects'])
-                    for id in range(1, num+1):
+                    for id in range(0, num):
                         size_key = 'Size_{}'.format(id)
                         locax_key = 'LocX_{}'.format(id)
                         locay_key = 'LocY_{}'.format(id)
@@ -238,7 +251,7 @@ class pancakepixelStation(test_station.TestStation):
                         location_r = np.sqrt(np.power(np.array(locax_list), 2) * np.power(np.array(locay_list), 2))
                         location_index = []
                         size_index = []
-                        for id in range(1, num + 1):
+                        for id in range(0, len(locax_list)):
                             tmp_local_index = 0
                             tmp_size_index = 0
                             if location_r[id] < self._station_config.LOCATION_1:

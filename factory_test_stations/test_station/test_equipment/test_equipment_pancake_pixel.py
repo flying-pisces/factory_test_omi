@@ -30,6 +30,7 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
     def __init__(self, station_config, verbose=False): # focus_distance=0.55, lens_aperture=8.0, auto_exposure=False, cx=0, cy=0, cl=0, cw=0):
         self.name = "y29"
         self._verbose = verbose
+        self._version = ''
         self._device = MPK_API()
         self._station_config = station_config
         self._error_message = self.name + "is out of work"
@@ -115,7 +116,7 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
 
     def close(self):
         response = self._device.CloseCommunication()
-        pprint.pprint(response)
+        # return int(self._parse_result(response))
 
     def ready(self):
         response = json.loads(self._device.EquipmentReady())
@@ -252,6 +253,11 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
             pprint.pprint(result)
         return json.loads(result)
 
+    def clear_registration(self):
+        result = self._device.ClearRegistration()
+        if self._verbose:
+            pprint.pprint(result)
+        return json.loads(result)
     #####################################################################################################
     ## Camera Control
 

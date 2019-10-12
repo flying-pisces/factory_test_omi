@@ -1,6 +1,6 @@
 import hardware_station_common.test_station.test_station as test_station
-import test_station.test_fixture.test_fixture_pancake_uniformity as test_fixture_pancake_uniformity
-import test_station.test_equipment.test_equipment_pancake_uniformity as test_equipment_pancake_uniformity
+import test_station.test_fixture.test_fixture_pancake_offaxis as test_fixture_pancake_offaxis
+import test_station.test_equipment.test_equipment_pancake_offaxis as test_equipment_pancake_offaxis
 import test_station.dut as dut
 import StringIO
 import numpy as np
@@ -15,20 +15,20 @@ from verifiction.particle_counter import ParticleCounter
 from verifiction.dut_checker import DutChecker
 
 
-class pancakeuniformityError(Exception):
+class pancakeoffaxisError(Exception):
     pass
 
 
-class pancakeuniformityStation(test_station.TestStation):
+class pancakeoffaxisStation(test_station.TestStation):
     """
-        pancakeuniformity Station
+        pancakeoffaxis Station
     """
 
     def __init__(self, station_config, operator_interface):
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
-        self._fixture = test_fixture_pancake_uniformity.pancakeuniformityFixture(station_config, operator_interface)
-        self._equipment = test_equipment_pancake_uniformity.pancakeuniformityEquipment(station_config)
+        self._fixture = test_fixture_pancake_offaxis.pancakeoffaxisFixture(station_config, operator_interface)
+        self._equipment = test_equipment_pancake_offaxis.pancakeoffaxisEquipment(station_config)
         self._particle_counter = ParticleCounter(station_config)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
             self._particle_counter.initialize()
@@ -198,11 +198,11 @@ class pancakeuniformityStation(test_station.TestStation):
                     meas_list = self._equipment.get_measurement_list()
                     exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
                     for meas in meas_list:
-                        if meas['Measurement Setup'] != self._station_config.PATTERNS[i]:
-                            continue
                         id = meas['Measurement ID']
-                        export_csv_name = "{}_{}.csv".format(serial_number, self._station_config.PATTERNS[i])
-                        export_png_name = "{}_{}.png".format(serial_number, self._station_config.PATTERNS[i])
+                        export_csv_name = "{}_{}_{}_{}.csv".format(exp_base_file_name, self._station_config.PATTERNS[i],
+                                                           meas['Measurement Setup'], meas['Pattern'])
+                        export_png_name = "{}_{}_{}_{}.png".format(exp_base_file_name, self._station_config.PATTERNS[i],
+                                                               meas['Measurement Setup'], meas['Pattern'])
                         if self._station_config.IS_EXPORT_CSV:
                             self._equipment.export_measurement(id, output_dir, export_csv_name,
                                                                self._station_config.Resolution_Bin_X,
@@ -211,8 +211,6 @@ class pancakeuniformityStation(test_station.TestStation):
                             self._equipment.export_measurement(id, output_dir, export_png_name,
                                                                self._station_config.Resolution_Bin_X,
                                                                self._station_config.Resolution_Bin_Y)
-                        self._operator_interface.print_to_console("Export data for {}\n"
-                                                                  .format(self._station_config.PATTERNS[i]))
 
                 for result in analysis_result.values():
                     for r in result:

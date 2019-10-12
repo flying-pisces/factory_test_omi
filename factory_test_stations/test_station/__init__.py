@@ -1,3 +1,4 @@
 from test_station_pancake_uniformity import pancakeuniformityStation
+from test_station_pancake_offaxis import pancakeoffaxisStation
 from test_station_pancake_pixel import pancakepixelStation
 from test_station_project_station import projectstationStation

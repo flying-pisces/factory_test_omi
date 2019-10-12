@@ -21,10 +21,10 @@ from datetime import datetime
 import StringIO
 import logging
 
-class pancakeuniformityEquipmentError(Exception):
+class pancakeoffaxisEquipmentError(Exception):
     pass
 	
-class pancakeuniformityEquipment(hardware_station_common.test_station.test_equipment.TestEquipment):
+class pancakeoffaxisEquipment(hardware_station_common.test_station.test_equipment.TestEquipment):
     def __init__(self, station_config):
         self.name = "i16"
         self._verbose = station_config.IS_VERBOSE
@@ -198,7 +198,7 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
     #             if cc_name == value:
     #                 break
     #     else:
-    #         raise pancakeuniformityEquipmentError("Color calibration not in list {}".format(cc_json.values))
+    #         raise pancakeoffaxisEquipmentError("Color calibration not in list {}".format(cc_json.values))
     #     return int(key)
     #
     # def get_colorshiftcal_key(self, cc_name):
@@ -209,7 +209,7 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
     #             if cc_name == value:
     #                 break
     #     else:
-    #         raise pancakeuniformityEquipmentError("Shift calibration not in list {}".format(cc_json.values))
+    #         raise pancakeoffaxisEquipmentError("Shift calibration not in list {}".format(cc_json.values))
     #     return int(key)
     #
     # def get_imagescalecal_key(self, cc_name):
@@ -220,7 +220,7 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
     #             if cc_name == value:
     #                 break
     #     else:
-    #         raise pancakeuniformityEquipmentError("Scale calibration not in list {}".format(cc_json.values))
+    #         raise pancakeoffaxisEquipmentError("Scale calibration not in list {}".format(cc_json.values))
     #     return int(key)
 
 
@@ -359,7 +359,7 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
     #             mesh_path = os.path.join(file_path, "Mesh")
     #             self.clean_dir(mesh_path, extension=[".csv", ".txt"],simulate=simulate)
     #     except Exception as e:
-    #       raise pancakeuniformityEquipmentError(e)
+    #       raise pancakeoffaxisEquipmentError(e)
 
 if __name__ == "__main__":
     import sys
@@ -381,8 +381,8 @@ if __name__ == "__main__":
     databasePath = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\1PR00001UB9262_pancake_pixel-02_20190726-220417_P.ttxm'
     sequencePath = r"C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\Myzy_Sequence_10-3-19.seqx"
 
-    station_config.load_station('pancake_uniformity')
-    the_instrument = pancakeuniformityEquipment(station_config)
+    station_config.load_station('pancake_offaxis')
+    the_instrument = pancakeoffaxisEquipment(station_config)
     print  "ready before init :{}" .format(the_instrument.ready())
     isinit = the_instrument.initialize()
     print  "ready after init :{}" .format(the_instrument.ready())
