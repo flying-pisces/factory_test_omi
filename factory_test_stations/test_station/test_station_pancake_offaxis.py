@@ -43,18 +43,6 @@ class pancakeoffaxisStation(test_station.TestStation):
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
         self._fixture.initialize()
-        # dbfn = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
-        # empytdb = os.path.join(self._station_config.ROOT_DIR, self._station_config.EMPTY_DATABASE_RELATIVEPATH)
-        # if self._station_config.RESTART_TEST_COUNT != 1 and \
-        #         self._station_config.IS_SAVEDB and \
-        #         os.path.exists(dbfn) and not filecmp.cmp(dbfn, empytdb):
-        #     dbfnbak = "{0}_{1}_autobak.ttxm".format(self._station_config.STATION_TYPE,
-        #                                             datetime.datetime.now().strftime("%y%m%d%H%M%S"))
-        #     self._operator_interface.print_to_console("backup ttxm raw database to {}...\n".format(dbfnbak))
-        #     self.backup_database(dbfnbak, True)
-        #
-        # self._operator_interface.print_to_console("Empty ttxm raw database ...\n")
-        # shutil.copyfile(empytdb, dbfn)
 
         if self._station_config.FIXTURE_PARTICLE_COUNTER and hasattr(self, '_particle_counter_start_time'):
             while ((datetime.datetime.now() - self._particle_counter_start_time)
@@ -97,8 +85,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         # type: (str, test_station.test_log) -> tuple
         self._overall_result = False
         self._overall_errorcode = ''
-#        self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
-        self._fixture.elminator_on()
+        # self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
         self._fixture.load()
         try:
             self._operator_interface.print_to_console("Testing Unit %s\n" %serial_number)
@@ -110,7 +97,8 @@ class pancakeoffaxisStation(test_station.TestStation):
             retries = 1
             is_screen_on = False
             try:
-                self._dut_checker.initialize()
+                if self._station_config.DISP_CHECKER_ENABLE:
+                    self._dut_checker.initialize()
                 while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
                     try:
                         is_screen_on = the_unit.screen_on()
@@ -154,55 +142,49 @@ class pancakeoffaxisStation(test_station.TestStation):
             self._equipment.create_database(databaseFileName)
             self._equipment.set_sequence(sequencePath)
 
-            self._operator_interface.print_to_console('clean registration\n')
+            self._operator_interface.print_to_console('clear registration\n')
             self._equipment.clear_registration()
 
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
-            self._fixture.elminator_off()
 
-            centerlv_gls = []
-            gls = []
-            centercolordifference255 = 0.0
+            pos_items = ((self._station_config.POS0_X, self._station_config.POS0_Y),
+                   (self._station_config.POS1_X, self._station_config.POS1_Y),
+                   (self._station_config.POS2_X, self._station_config.POS2_Y),
+                   (self._station_config.POS3_X, self._station_config.POS3_Y),
+                   (self._station_config.POS4_X, self._station_config.POS4_Y))
 
-            for i in range(len(self._station_config.PATTERNS)):
-                self._operator_interface.print_to_console(
-                    "Panel Measurement Pattern: %s \n" %self._station_config.PATTERNS[i])
-                # modified by elton . add random color
-                # the_unit.display_color(self._station_config.COLORS[i])
-                if isinstance(self._station_config.COLORS[i], tuple):
-                    the_unit.display_color(self._station_config.COLORS[i])
-                elif isinstance(self._station_config.COLORS[i], str):
-                    the_unit.display_image(self._station_config.COLORS[i])
+            for pos in pos_items:
+                analysis = self._station_config.ANALYSIS
+                self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
+                # self._fixture.move_abs_xy(pos[0], pos[1])
 
-                # if math.isnan(the_unit.vsync_microseconds()):
-                #     vsync_us = self._station_config.DEFAULT_VSYNC_US
-                #     exp_time_list = self._station_config.EXPOSURE[i]
-                # else:
-                #     vsync_us = the_unit.vsync_microseconds()
-                #     exp_time_list = self._station_config.EXPOSURE[i]
-                #     for exp_index in range(len(exp_time_list)):
-                #         exp_time_list[exp_index] = float(int(exp_time_list[exp_index]*1000.0/vsync_us)*vsync_us)/1000.0
-                #         self._operator_interface.print_to_console(
-                #                 "\nAdjusted Timing in millesecond: %s\n" % exp_time_list[exp_index])
+                for i in range(len(self._station_config.PATTERNS)):
+                    self._operator_interface.print_to_console(
+                        "Panel Measurement Pattern: %s \n" % self._station_config.PATTERNS[i])
+                    # the_unit.display_color(self._station_config.COLORS[i])
+                    if isinstance(self._station_config.COLORS[i], tuple):
+                        the_unit.display_color(self._station_config.COLORS[i])
+                    elif isinstance(self._station_config.COLORS[i], str):
+                        the_unit.display_image(self._station_config.COLORS[i])
 
-                imagekey = self._station_config.PATTERNS[i]
+                    analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
+                    self._operator_interface.print_to_console("Sequence run step  {}.\n".format(analysis))
 
-                analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
-                analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
-                self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
+                    if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
+                        output_dir = os.path.join(self._station_config.ROOT_DIR,
+                                                  self._station_config.DATABASE_RELATIVEPATH_ACT,
+                                                  the_unit.serial_number + '_' +
+                                                  test_log._start_time.strftime("%Y%m%d-%H%M%S"))
+                        if not os.path.exists(output_dir):
+                            os.mkdir(output_dir, 777)
+                        meas = self._equipment.get_measurement_list()[0]
+                        exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
 
-                if self._station_config.IS_EXPORT_DATA:
-                    output_dir = os.path.join(self._station_config.ROOT_DIR , self._station_config.ANALYSIS_RELATIVEPATH, the_unit.serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
-                    if not os.path.exists(output_dir):
-                        os.mkdir(output_dir, 777)
-                    meas_list = self._equipment.get_measurement_list()
-                    exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
-                    for meas in meas_list:
                         id = meas['Measurement ID']
-                        export_csv_name = "{}_{}_{}_{}.csv".format(exp_base_file_name, self._station_config.PATTERNS[i],
-                                                           meas['Measurement Setup'], meas['Pattern'])
-                        export_png_name = "{}_{}_{}_{}.png".format(exp_base_file_name, self._station_config.PATTERNS[i],
-                                                               meas['Measurement Setup'], meas['Pattern'])
+                        export_csv_name = "{}_{}_{}_{}.csv".format(serial_number,
+                                                                   self._station_config.PATTERNS[i], pos[0], pos[1])
+                        export_png_name = "{}_{}_{}_{}.png".format(serial_number,
+                                                                   self._station_config.PATTERNS[i], pos[0], pos[1])
                         if self._station_config.IS_EXPORT_CSV:
                             self._equipment.export_measurement(id, output_dir, export_csv_name,
                                                                self._station_config.Resolution_Bin_X,
@@ -212,77 +194,18 @@ class pancakeoffaxisStation(test_station.TestStation):
                                                                self._station_config.Resolution_Bin_X,
                                                                self._station_config.Resolution_Bin_Y)
 
-                for result in analysis_result.values():
-                    for r in result:
-                        if not (isinstance(r, dict) and r.has_key('Name') and r.has_key('Value')):
+                    for c, result in analysis_result.items():
+                        if c != self._station_config.ANALYSIS:
                             continue
-
-                        test_item = (self._station_config.PATTERNS[i] + "_" + r['Name']).replace(" ", "")
-                        test_item = test_item.replace('\'', '')
-                        print test_item + "\n"
-
-                        has_test_item = False
-                        for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
-                            if limit_array[0] == test_item:
-                                has_test_item = True
-                        if not has_test_item:
-                            continue
-
-                        if '255' in self._station_config.PATTERNS[i] and 'Center Color (C' in r['Name']:
-                            self._operator_interface.print_to_console("\n" + test_item + ": \t" + r['Value'] + "\n")
-                            test_log.set_measured_value_by_name(test_item, float(r['Value']))
-                        elif 'W' in self._station_config.PATTERNS[i] and 'CenterColorDifference'in r['Name']:
-                            if 'W255' in self._station_config.PATTERNS[i]:
-                                centercolordifference255 = float(r['Value'])
-                            else:
-                                test_value = abs(float(r['Value'])-centercolordifference255)
-                                test_log.set_measured_value_by_name(test_item, test_value)
-                        else:
-                            test_log.set_measured_value_by_name(test_item, float(r['Value']))
-
-                        if self._station_config.PATTERNS[i][0] == 'W' and \
-                                self._station_config.PATTERNS[i][1:4] in self._station_config.GAMMA_CHECK_GLS and \
-                                r['Name'] == 'CenterLv':
-                            centerlv_gls.append(float(r['Value']))
-                            gls.append(float(self._station_config.PATTERNS[i][1:4]))
-
-                '''
-                mesh_data = the_equipment.get_last_mesh()
-
-                if os.path.exists(os.path.join(output_dir, filename)):
-                    the_equipment.delete_file(os.path.join(output_dir, filename))
-
-                if mesh_data != {}:
-                    output_data = StringIO.StringIO()
-                    np.savez_compressed(output_data, **mesh_data)
-                    npzdata = output_data.getvalue()
-                    ## LEAVE for the logging of npzdata
-                    ## LEAVE for the logging of npzdata
-                    # also calculate some statistical infdir()o about the measurement
-                    for c in ["Lv", "Cx", "Cy","u'", "v'"]:
-                        cdata = mesh_data.get(c)
-                        filename = the_unit.serial_number + "_" + c + "_" +self._station_config.PATTERNS[i] + ".csv"
-                        unit_log_path = os.path.join(output_dir, filename)
-                        self._operator_interface.print_to_console(
-                            "\n Saving Jacob's data of: %s \n" % unit_log_path)
-                        np.savetxt(unit_log_path, cdata, delimiter=',')
-#                        if cdata is not None:
-#                            cmean = np.mean(cdata, dtype=np.float32)
-#                            cmax = cdata.max()
-#                            cmin = cdata.min()
-#                            cstd = np.std(cdata, dtype=np.float32)
-                '''
-
-
-            ### implement tests here.  Note thadir(t the test name matches one in the station_limits file ###
-
-            gamma = -1
-            if len(gls) > 0 and len(centerlv_gls) > 0:
-                norm_gls = np.log10([gl / max(gls) for gl in gls])
-                norm_clv = np.log10([centerlv_gl / max(centerlv_gls) for centerlv_gl in centerlv_gls])
-                gamma, cov = np.polyfit(norm_gls, norm_clv, 1, cov=False)
-
-            test_log.set_measured_value_by_name("DISPLAY_GAMMA", gamma)
+                        for r in result:
+                            test_item = (self._station_config.PATTERNS[i] + "_" + r.split('(')[0]).replace(" ", "")
+                            test_item = test_item.replace('\'', '')
+                            has_test_item = False
+                            for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
+                                if limit_array[0] == test_item:
+                                    has_test_item = True
+                            if has_test_item:
+                                test_log.set_measured_value_by_name(test_item, float(result[r]))
 
         except Exception, e:
             self._operator_interface.print_to_console("Test exception . {}".format(e.message))
@@ -292,9 +215,6 @@ class pancakeoffaxisStation(test_station.TestStation):
                 the_unit.close()
             if self._fixture is not None:
                 self._fixture.unload()
-                self._fixture.elminator_off()
-            # if the_equipment is not None:
-            #     the_equipment.uninit()
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
             overall_result, first_failed_test_result = self.close_test(test_log)
 

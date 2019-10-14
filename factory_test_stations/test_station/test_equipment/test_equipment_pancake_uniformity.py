@@ -32,6 +32,7 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
         self._device = MPK_API()
         self._error_message = self.name + "is out of work"
         self._read_error = False
+        self._version = None
 
 
 ########### NEW SETUP FUNCTIONS ###########
@@ -90,14 +91,16 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
         if self._verbose:
             pprint.pprint(response)
         return
-    
-    def version(self): 
+
+    def version(self):
+        if self._version is not None:
+            return self._version
         response = self._device.GetMpkApiVersionInfo()
         versionjson = json.loads(str(response))
-        versioninfo = str(versionjson.values())
         if self._verbose:
-            pprint.pprint(response)
-        return versioninfo
+            pprint.pprint(versionjson)
+        if versionjson.has_key('MpkApiVersionInfo'):
+            self._version = versionjson['MpkApiVersionInfo']
     
     def initialize(self):
         response = self._device.InitializeCamera(self._station_config.CAMERA_SN, False, True)

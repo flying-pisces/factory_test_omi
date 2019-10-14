@@ -1,7 +1,7 @@
 CURRENT_FW_VERSION = 1001
 
 STATION_LIMITS_ARRAYS = [
-    ["TT_Version", '', '', 96],
+    ["TT_Version", '1.0.0', '1.0.0', 96],
     ["DUT_ScreenOnRetries", 0, 10, 97],
     ["DUT_ScreenOnStatus", 1, 1, 98],
     ["ENV_ParticleCounter", 0, 1000, 99],

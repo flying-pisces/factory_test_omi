@@ -30,11 +30,11 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
     def __init__(self, station_config, verbose=False): # focus_distance=0.55, lens_aperture=8.0, auto_exposure=False, cx=0, cy=0, cl=0, cw=0):
         self.name = "y29"
         self._verbose = verbose
-        self._version = ''
         self._device = MPK_API()
         self._station_config = station_config
         self._error_message = self.name + "is out of work"
         self._read_error = False
+        self._version = None
         # self._focus_distance = focus_distance;  # dimension of m
         # self._lens_aperture = lens_aperture;
         # self._auto_exposure = auto_exposure;
@@ -99,12 +99,14 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
         return
 
     def version(self):
+        if self._version is not None:
+            return self._version
         response = self._device.GetMpkApiVersionInfo()
         versionjson = json.loads(str(response))
-        versioninfo = str(versionjson.values())
         if self._verbose:
-            print(versionjson)
-        return versioninfo
+            pprint.pprint(versionjson)
+        if versionjson.has_key('MpkApiVersionInfo'):
+            self._version = versionjson['MpkApiVersionInfo']
 
     def initialize(self):
         response = self._device.InitializeCamera(self._station_config.CAMERA_SN, False, True)

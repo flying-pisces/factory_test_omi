@@ -258,15 +258,15 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_RESET, response)
 
-    def _showImage(self, imageindex, is_ddr_img):
-        # type: (int, bool)->str
+    def _showImage(self, image_index, is_ddr_img):
+        # type: (int, bool) -> str
         command = ''
-        if isinstance(imageindex, str):
-            command ='{},{}'.format(self._station_config.COMMAND_DISP_SHOWIMAGE, imageindex)
-        elif isinstance(imageindex, int):
+        if isinstance(image_index, str):
+            command = '{},{}'.format(self._station_config.COMMAND_DISP_SHOWIMAGE, image_index)
+        elif isinstance(image_index, int):
             if is_ddr_img:
-                imageindex = 0x20 + imageindex
-            command = '{},{}'.format(self._station_config.COMMAND_DISP_SHOWIMAGE, hex(imageindex))
+                image_index = 0x20 + image_index
+            command = '{},{}'.format(self._station_config.COMMAND_DISP_SHOWIMAGE, hex(image_index))
         self._write_serial_cmd(command)
         time.sleep(self._station_config.COMMAND_DISP_SHOWIMG_DLY)
         response = self._read_response()
@@ -335,35 +335,44 @@ if __name__ == "__main__" :
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
 
     the_unit = pancakeDut(station_config, station_config, station_config)
+    for idx in range(0, 100):
 
-    pics = []
-    for i in range(3, 5):
-        pics.append(r'img\line_{}.bmp'.format(i))
-        # pics.append(r'img\line_r_{}.bmp'.format(i))
+        print 'Loop ---> {}'.format(idx)
 
-    for i in range(4, 11, 2):
-        pics.append(r'img\spot_{}.bmp'.format(i))
-        # pics.append(r'img\spot_r_{}.bmp'.format(i))
-    print 'pic - count {0}'.format(len(pics))
+        pics = []
+        # for i in range(3, 5):
+        #     pics.append(r'img\line_{}.bmp'.format(i))
+        #     # pics.append(r'img\line_r_{}.bmp'.format(i))
+        #
+        # for i in range(4, 11, 2):
+        #     pics.append(r'img\spot_{}.bmp'.format(i))
+        #     # pics.append(r'img\spot_r_{}.bmp'.format(i))
 
-    the_unit.render_image(pics)
+        for c in os.listdir('img'):
+            if c.endswith(".bmp"):
+                pics.append(r'img\{}'.format(c))
 
-    time.sleep(1)
+        print 'pic - count {0}'.format(len(pics))
 
-    the_unit.initialize()
-    try:
-        the_unit.connect_display()
-        # the_unit.screen_on()
-        # time.sleep(1)
-        # the_unit.display_color()
+        the_unit.render_image(pics)
+
         time.sleep(1)
-        print the_unit.vsync_microseconds()
-        # for c in [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255)]:
-        for c in range(0, len(pics)):
-            the_unit.display_image(c, True)
-            time.sleep(0.5)
-        the_unit.screen_off()
 
-    finally:
-        time.sleep(2)
-        the_unit.close()
+        the_unit.initialize()
+        try:
+            the_unit.connect_display()
+            # the_unit.screen_on()
+            # time.sleep(1)
+            # the_unit.display_color()
+            # time.sleep(1)
+            # print the_unit.vsync_microseconds()
+            # for c in [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255)]:
+            for c in range(0, len(pics)):
+                the_unit.display_image(c, True)
+                # the_unit.display_color(c)
+                time.sleep(0.5)
+            the_unit.screen_off()
+
+        finally:
+            time.sleep(2)
+            the_unit.close()

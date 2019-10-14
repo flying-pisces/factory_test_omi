@@ -151,7 +151,7 @@ class pancakepixelStation(test_station.TestStation):
             self._equipment.create_database(databaseFileName)
             self._equipment.set_sequence(sequencePath)
 
-            self._operator_interface.print_to_console('clean registration\n')
+            self._operator_interface.print_to_console('clear registration\n')
             self._equipment.clear_registration()
 
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")

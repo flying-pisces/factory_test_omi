@@ -32,6 +32,7 @@ class pancakeoffaxisEquipment(hardware_station_common.test_station.test_equipmen
         self._device = MPK_API()
         self._error_message = self.name + "is out of work"
         self._read_error = False
+        self._version = None
 
 
 ########### NEW SETUP FUNCTIONS ###########
@@ -91,13 +92,15 @@ class pancakeoffaxisEquipment(hardware_station_common.test_station.test_equipmen
             pprint.pprint(response)
         return
     
-    def version(self): 
+    def version(self):
+        if self._version is not None:
+            return self._version
         response = self._device.GetMpkApiVersionInfo()
         versionjson = json.loads(str(response))
-        versioninfo = str(versionjson.values())
         if self._verbose:
-            pprint.pprint(response)
-        return versioninfo
+            pprint.pprint(versionjson)
+        if versionjson.has_key('MpkApiVersionInfo'):
+            self._version = versionjson['MpkApiVersionInfo']
     
     def initialize(self):
         response = self._device.InitializeCamera(self._station_config.CAMERA_SN, False, True)
@@ -172,194 +175,6 @@ class pancakeoffaxisEquipment(hardware_station_common.test_station.test_equipmen
         return json.loads(result)
     #################################################
 
-#####################################################################################################
-######### Measurement Setup ##################
-    # CreateMeasurementSetup(patternName as String, redEFilterxposure as Single, greenFilterExposure as Single,
-#                       blueFilterExposure as Single, xbFilterExposure as Single, focusDistance as Single,
-#                       lenAperture as Single, autoAdjustExposure as Boolean, subframeRegion as Rectangle) 
-#     def measurementsetup(self, pattern, eR, eG, eB, eXB, focus, aperture, is_autoexp, rect, distance_unit, spectral_response, rotation):
-#         meas_setup = self._device.CreateMeasurementSetup(pattern,
-#                                            eR, eG, eB, eXB,
-#                                            focus,
-#                                            aperture,
-#                                            is_autoexp, rect, distance_unit, spectral_response, rotation)
-#         response = int(str(String.Format("Measurement Setup Result for " + pattern +" - ErrorCode: {0}", meas_setup['ErrorCode'])).split(":")[1])
-#         if self._verbose:
-#             print response
-#         return response
-#colorCals = mpkapi.GetColorCalibrationList()
-#print('Color Cals:')
-#print(colorCals)
-    # def get_colorcal_key(self, cc_name):
-    #     response = str(self._device.GetColorCalibrationList()).replace('\r\n', '')
-    #     cc_json = json.loads(response)
-    #     if cc_name in cc_json.values():
-    #         for key, value in cc_json.iteritems():
-    #             if cc_name == value:
-    #                 break
-    #     else:
-    #         raise pancakeoffaxisEquipmentError("Color calibration not in list {}".format(cc_json.values))
-    #     return int(key)
-    #
-    # def get_colorshiftcal_key(self, cc_name):
-    #     response = str(self._device.GetColorShiftCalibrationList()).replace('\r\n', '')
-    #     cc_json = json.loads(response)
-    #     if cc_name in cc_json.values():
-    #         for key, value in cc_json.iteritems():
-    #             if cc_name == value:
-    #                 break
-    #     else:
-    #         raise pancakeoffaxisEquipmentError("Shift calibration not in list {}".format(cc_json.values))
-    #     return int(key)
-    #
-    # def get_imagescalecal_key(self, cc_name):
-    #     response = str(self._device.GetImageScaleCalibrationList()).replace('\r\n', '')
-    #     cc_json = json.loads(response)
-    #     if cc_name in cc_json.values():
-    #         for key, value in cc_json.iteritems():
-    #             if cc_name == value:
-    #                 break
-    #     else:
-    #         raise pancakeoffaxisEquipmentError("Scale calibration not in list {}".format(cc_json.values))
-    #     return int(key)
-
-
-
-
-######################
-#SetCalibration(measurementSetupName As String, colorCalibrationID As Integer, imageScaleID As Integer, colorShiftID As Integer)
-
-#setwhitecalibration = mpkapi.SetCalibrations("White", 20, 3, 4)
-#print('Set Calibrations for White')
-#print(setwhitecalibration)
-
-    # def setcalibrationid(self, meassetup, colorcalibrationid, imagescaleid, colorshiftid):
-    #     response = self._device.SetCalibrations(meassetup, colorcalibrationid, imagescaleid, colorshiftid)
-    #     if self._verbose:
-    #         print(response)
-
-
-#resultSN1 = mpkapi.SetSerialNumber("SN1", 0)
-#print('Serial 1 Set')
-#print(resultSN1)
-    # def setsn(self, sn, channel=0):
-    #     response = self._device.SetSerialNumber(sn, channel)
-    #     if self._verbose:
-    #         print(response)
-
-#getSerialResult1 = mpkapi.ReadSerialNumbers(0)
-#print(getSerialResult1)
-            
-#####################################################################################################
-## Camera Control
-
-# CaptureMeasurement(measurementSetupName as String, imageKey as String, saveToDatabase as Boolean)
-#     def capture(self, pattern, imagekey="photopickey", SaveToDatabase = False):
-#         response = self._device.CaptureMeasurement(pattern, imagekey, SaveToDatabase)
-#         if self._verbose:
-#             print(String.Format("Measurement Capture Result for " + pattern + " - Image Key: {0}", response['Imagekey']))
-#         return String.Format("Measurement Capture Result for " + pattern + " - Image Key: {0}", response['Imagekey'])
-
-
-############ DATA EXPORT ##################################################
-#could pass in imageKey as array of strings, or single string
-    # def export_data(self,imageHandle, path, filename):
-    #     response = self._device.ExportData(imageHandle, path, filename)
-    #     return self._parse_result(response)
-    #
-    # def delete_file(self, filename):
-    #     os.remove(filename)
-    #
-    # def get_raw_data(self, imageHandle, temp_dir , filename):
-    #     self.export_data(imageHandle, temp_dir, filename)
-    #     cam_data = self.load_camera_measurement(temp_dir + filename + ".csv")
-    #     return cam_data
-    #
-    # def load_camera_measurement(self, filename):
-    #     with open(filename) as f:
-    #         start_time = datetime.now()
-    #         meas_data = f.read()
-    #         out = {}
-    #         split_data = meas_data.split("\n\n")
-    #         info = split_data[0].split("\n")
-    #         out['serial'] = info[0].split(" ")[1]
-    #         out['date'] = info[1].split(" ")[1]
-    #         out['time'] = info[2].split(" ")[1]
-    #         measname = ""
-    #
-    #         for i in range(1, len(split_data)):
-    #             if len(split_data[i]) <= 2 and split_data[i] in "LvCxCy":
-    #                 measname = split_data[i]
-    #             else:
-    #                 meas = split_data[i]
-    #                 floatmeas = np.genfromtxt(StringIO.StringIO(meas), dtype=np.float16)
-    #                 out[measname] = floatmeas
-    #         self.logger.debug("Loaded camera measurement in {}".format(str(datetime.now()-start_time)))
-    #         return out
-
-#####################################################################################################
-## Image Analysis
-
-#     def prepare_for_run(self):
-#         response = self._device.PrepareForRun()
-#         return not bool(int(self._parse_result(response)))
-#
-#     def get_last_results(self):
-#         response = self._device.GetLastResults()
-#         results = []
-#         for i in range(response.get_Count()):
-#             res_str = str(response.get_Item(i).encode('ascii', 'ignore'))
-#             results.append(res_str.split(","))
-#         return results
-#
-#     def run_analysis_by_name(self,analysisName, imageKey, xmlParameterSet=""):
-#         if isinstance(imageKey, list):
-#             imageKey = Array[String](imageKey)
-#         response = self._device.RunAnalysisByName(analysisName, imageKey, xmlParameterSet)
-# #        return self._parse_result(response)
-#
-#
-#
-#
-#     def get_last_mesh(self):
-#         start_time = datetime.now()
-#         response = self._device.GetLastMeshData()
-#         num_chan = response.get_Count()
-#         # channels are in the order Lv, Cx, Cy, u', v'.
-#         ret = {}
-#         for c in range(num_chan):
-#             chan = ['Lv', "Cx", "Cy", "u'", "v'"][c]
-#
-#             d = response.get_Item(c)
-#             xl = d.GetLength(0)
-#             yl = d.GetLength(1)
-#             arr = np.array(list(d), np.float32).reshape((xl,yl))
-#             arr = np.rot90(arr, 3)
-#             arr = np.fliplr(arr)
-#             ret[chan] = arr
-#         print "Loaded analysis measurement in {}".format(str(datetime.now() - start_time))
-#         return ret
-
-#####################################################################################################
-## flush measurements
-    # def flush_measurements(self):
-    #     response = self._device.FlushMeasurements()
-    #     return self._parse_result(response)
-    #
-    # def flush_measurement_setups(self):
-    #     response = self._device.FlushMeasurementSetups()
-    #     return self._parse_result(response)
-    #
-    # def clean_analysis_dir(self, simulate=False):
-    #     try:
-    #       self.clean_dir(self.analysis_dir, simulate=simulate)
-    #       for f in os.listdir(self.analysis_dir):
-    #         file_path = os.path.join(self.analysis_dir, f)
-    #         if os.path.isdir(file_path):
-    #             mesh_path = os.path.join(file_path, "Mesh")
-    #             self.clean_dir(mesh_path, extension=[".csv", ".txt"],simulate=simulate)
-    #     except Exception as e:
-    #       raise pancakeoffaxisEquipmentError(e)
 
 if __name__ == "__main__":
     import sys
@@ -391,38 +206,6 @@ if __name__ == "__main__":
     # the_instrument.create_database(databasePath)
     the_instrument.set_database(databasePath)
     the_instrument.set_sequence(sequencePath)
-
-    # version = the_instrument.version()
-
-    # the_instrument.init(sn)
-    # pattern = "W255"
-    # eR = 113.0
-    # eG = 113.0
-    # eB = 113.0
-    # eXB = 113.0
-    # focus = 0.575
-    # aperture = 8.0
-    # is_autoexp = False
-    # rect = Rectangle(cx, cy, cl, cw)
-    # distance_unit = 'Millimeters'
-    # spectral_response = 'Photometric'
-    # rotation = 0
-    # the_instrument.measurementsetup(pattern, eR, eG, eB, eXB, focus, aperture, is_autoexp, rect, distance_unit, spectral_response, rotation)
-    #
-    # color_cal = 'camera_color_cal_255_20180116'
-    # scale_cal = 'image_scale_cal_20180116'
-    # shift_cal = '158763491 Color Shift Correction'
-    #
-    # colorcalibrationid = the_instrument.get_colorcal_key(color_cal)
-    # imagescaleid = the_instrument.get_imagescalecal_key(scale_cal)
-    # colorshiftid = the_instrument.get_colorshiftcal_key(shift_cal)
-    #
-    # the_instrument.setcalibrationid(pattern, colorcalibrationid, imagescaleid, colorshiftid)
-
-#   imagekey = "whitekey" # can be set by end user.
-#     imagekey = pattern
-#     isSavetoDatabase = True
-#     the_instrument.capture(pattern, imagekey, isSavetoDatabase)
 
     patternList = ["White", "Gray180", "Gray127", "Gray90", "Red", "Green", "Blue"]
     for pattern in patternList:

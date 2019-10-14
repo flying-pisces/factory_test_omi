@@ -1,6 +1,7 @@
 import hardware_station_common.test_station.test_fixture
 import os
 import sys
+import re
 ### Below two lines will be used for debug.
 sys.path.append("../")
 import glob
@@ -22,14 +23,10 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
         self._verbose = None
         self._start_delimiter = ':'
         self._end_delimiter = '\r\n'
-        self._error_msg = 'This command is illegal,please check it again'
+        self._error_msg = r'Please scanf "CMD_HELP" check help command'
+        self._error_flag = r'err!'
         self._read_error = False
-        # status of the platform
-        self.PTB_Position = None
-        self._Button_Status = None
-        self._PTB_Power_Status = None
-        self._USB_Power_Status = None
-        self.equipment = None
+        self._particle_counter_client = None
 
     def is_ready(self):
         pass
@@ -48,14 +45,7 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
             return False
         else:
             print "Fixture %s Initialized" % self._station_config.FIXTURE_COMPORT
-            if self._PTB_Power_Status != '0':
-                self.poweron_ptb()
-                self._operator_interface.print_to_console("Power on PTB {}\n".format(self._PTB_Power_Status))
-            if self._USB_Power_Status != '0':
-                self.poweron_usb()
-                self._operator_interface.print_to_console("Power on USB {}\n".format(self._USB_Power_Status))
-        isinit = bool(self._serial_port) and not bool(int(self._PTB_Power_Status)) and not bool(int(self._USB_Power_Status))
-        return isinit
+            return True
 
     def _parsing_response(self, response):
         value = []
@@ -74,27 +64,18 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
             print("flushed")
         return bytes_written
 
-    def _read_response(self):
+    def _read_response(self, end_delimiter='@_@', timeout=5):
         response = []
         line_in = ""
-        while (line_in != "@_@"):
+        tim = time.time()
+        while (not re.search(end_delimiter, line_in, re.IGNORECASE)
+               and not re.search(self._error_flag, line_in, re.IGNORECASE)
+               and (time.time() - tim < timeout)):
             line_in = self._serial_port.readline()
-            if (line_in != ""):
+            if line_in != "":
                 response.append(line_in)
-        return response
-
-    ######################
-    # Fixture info
-    ######################
-    def status(self):
-        self._write_serial(self._station_config.COMMAND_STATUS)
-        response = self._read_response()
-        print response
-        value = self._parsing_response(response)
-        self.PTB_Position = int(value[0])
-        self._Button_Status = int(value[1])
-        self._PTB_Power_Status = int(value[2])
-        self._USB_Power_Status = int(value[6])
+        if self._verbose:
+            print response
         return response
 
     def help(self):
@@ -112,13 +93,6 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
 
     def id(self):
         self._write_serial(self._station_config.COMMAND_ID)
-        response = self._read_response()
-        print(response[1])
-        value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        return value
-
-    def version(self):
-        self._write_serial(self._station_config.COMMAND_VERSION)
         response = self._read_response()
         print(response[1])
         value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
@@ -143,180 +117,47 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
     # Fixture control
     ######################
 
-    def elminator_on(self):
-        self._write_serial(self._station_config.COMMAND_ELIMINATOR_ON)
-        #time.sleep(CARRIER_LOAD_TIME)
-        response = self._read_response()
-        print(response[1])
-        if "0" in response[1]:
-            value = 0
-        elif self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
+    def move_abs_xy(self, x, y):
+        CMD_MOVE_STRING = self._station_config.COMMAND_ABS_X_Y + str(x) + " " + str(y) + "\r\n"
+        self._write_serial(CMD_MOVE_STRING)
+        expect_rev = "move_y_axis_over"
+        resp = self._prase_command_normal(expect_rev)
+        return resp[1]
 
-    def elminator_off(self):
-        self._write_serial(self._station_config.COMMAND_ELIMINATOR_OFF)
-        #time.sleep(CARRIER_LOAD_TIME)
-        response = self._read_response()
-        print(response[1])
-        if "0" in response[1]:
-            value = 0
-        elif self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
+    # def move_res_xy(self, x, y):
+    #     CMD_MOVE_STRING = self._station_config.COMMAND_RES_X_Y + str(x) + " " + str(y) + "\r\n"
+    #     self._write_serial(CMD_MOVE_STRING)
+    #     response = self._read_response()
+    #     print(response[1])
+    #     value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
+    #     return value
 
     def load(self):
         self._write_serial(self._station_config.COMMAND_LOAD)
-        #time.sleep(CARRIER_LOAD_TIME)
-        response = self._read_response()
-        print(response[1])
-        if "0" in response[1]:
-            value = 0
-        elif self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
+        # expect_rev = (self._station_config.COMMAND_LOAD + '_OK').replace('\r\n', '')
+        expect_rev = "load_ok"
+        return self._prase_command_normal(expect_rev)
 
     def unload(self):
         self._write_serial(self._station_config.COMMAND_UNLOAD)
-        #time.sleep(CARRIER_UNLOAD_TIME)
-        response = self._read_response()
-        print(response[1])
-        if "0" in response[1]:  ## temporary fix for FW1.0.20161114
-            value = 0
-        elif self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
+        # expect_rev = (self._station_config.COMMAND_UNLOAD + '_OK').replace('\r\n', '')
+        expect_rev = "unload_ok"
+        return self._prase_command_normal(expect_rev)
 
-    def scan_serial(self):
-        self._write_serial(self._station_config.COMMAND_BARCODE)
-        #time.sleep(BARCODE_TIME)
-        response = self._read_response()
-        print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
+    def _prase_command_normal(self, expect_rev):
+        # type: (str) -> bool
+        response = self._read_response(expect_rev)
+        if len(response) >= 1:
+            err_list = [r for r in response if re.search(self._error_flag, r, re.I)]
+            ok_list = [r for l in response if re.search(expect_rev, r, re.I)]
+            if len(err_list) == 0 and len(ok_list) > 0:
+                return response
+            else:
+                msg = ','.join(err_list)
+                raise pancakeoffaxisFixtureError('Fail to read {}, Msg = {}'.format(expect_rev, msg))
         else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
-
-    def poweron_usb(self):
-        self._write_serial(self._station_config.COMMAND_USB_POWER_ON)
-        time.sleep(self._station_config.FIXTURE_USB_ON_TIME)
-        response = self._read_response()
-        print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-            self._USB_Power_Status = value
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
-
-    def poweroff_usb(self):
-        self._write_serial(self._station_config.COMMAND_USB_POWER_OFF)
-        time.sleep(self._station_config.FIXTURE_USB_OFF_TIME)
-        response = self._read_response()
-        print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-            self._USB_Power_Status = value
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
-
-
-    def poweron_ptb(self):
-        self._write_serial(self._station_config.COMMAND_PTB_POWER_ON)
-        time.sleep(self._station_config.FIXTURE_PTB_ON_TIME)
-        response = self._read_response()
-        print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-            self._PTB_Power_Status = value
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
-
-    def poweroff_ptb(self):
-        self._write_serial(self._station_config.COMMAND_PTB_POWER_OFF)
-        time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
-        response = self._read_response()
-        print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-            self._PTB_Power_Status = value
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
-
-    def powercycle_dut(self):
-        self._write_serial(self._station_config.COMMAND_USB_POWER_OFF)
-        time.sleep(self._station_config.FIXTURE_USB_OFF_TIME)
-        self._write_serial(self._station_config.COMMAND_PTB_POWER_OFF)
-        time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
-        self._write_serial(self._station_config.COMMAND_PTB_POWER_ON)
-        time.sleep(self._station_config.FIXTURE_PTB_ON_TIME)
-        self._write_serial(self._station_config.COMMAND_USB_POWER_ON)
-        time.sleep(self._station_config.FIXTURE_USB_ON_TIME + self._station_config.DUT_ON_TIME)
-        response = self._read_response()
-        print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
-    ######################
-    # Fixture button system control
-    ######################
-    def button_enable(self):
-        self._write_serial(self._station_config.COMMAND_BUTTON_ENABLE)
-        response = self._read_response()
-        print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
-
-    def button_disable(self):
-        self._write_serial(self._station_config.COMMAND_BUTTON_DISABLE)
-        response = self._read_response()
-        print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
+            self._read_error = True
+            raise pancakeoffaxisFixtureError('Fail to read %s' % expect_rev)
 
 def print_to_console(self, msg):
     pass
@@ -331,12 +172,20 @@ if __name__ == "__main__":
         station_config.load_station('pancake_offaxis')
         station_config.print_to_console = types.MethodType(print_to_console, station_config)
         the_fixture = pancakeoffaxisFixture(station_config, station_config)
+        the_fixture._verbose = True
 
-        the_fixture.initialize()
-        the_fixture.reset()
+        try:
+            the_fixture.initialize()
 
-        the_fixture.unload()
-        time.sleep(1)
-        the_fixture.load()
+            the_fixture.move_abs_xy(5, 1)
 
-        the_fixture.close()
+            for i in range(0, 100):
+                the_fixture.load()
+                time.sleep(4)
+                the_fixture.unload()
+                time.sleep(4)
+
+        except pancakeoffaxisFixtureError as e:
+            print 'exception {}'.format(e.message)
+        finally:
+            the_fixture.close()
