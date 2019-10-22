@@ -170,9 +170,12 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                     raise DUTError('exectue {} timeout :{}'.format(cmd, e))
                 if rc == win32event.WAIT_OBJECT_0:
                     res = win32process.GetExitCodeProcess(handle[0])
+            else:
+                res = 0
         finally:
             os.chdir(cwd)
-        print '_timeout_execute '
+        if res != 0:
+            raise DUTError('fail to exec {} res :{}'.format(cmd, res))
         return res
 
     def _write_serial(self, input_bytes):
@@ -372,7 +375,8 @@ if __name__ == "__main__" :
                 # the_unit.display_color(c)
                 time.sleep(0.5)
             the_unit.screen_off()
-
+        except DUTError as e:
+            print e.message
         finally:
             time.sleep(2)
             the_unit.close()

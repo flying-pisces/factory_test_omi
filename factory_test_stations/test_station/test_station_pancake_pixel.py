@@ -108,7 +108,8 @@ class pancakepixelStation(test_station.TestStation):
             retries = 1
             is_screen_on = False
             try:
-                self._dut_checker.initialize()
+                if self._station_config.DISP_CHECKER_ENABLE:
+                    self._dut_checker.initialize()
                 while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
                     try:
                         is_screen_on = the_unit.screen_on()
@@ -214,7 +215,7 @@ class pancakepixelStation(test_station.TestStation):
                 pixel_list = []
                 constrast_lst = []
                 for c, result in analysis_result.items():
-                    if not result.has_key('NumDefects'):
+                    if not isinstance(result, dict) or not result.has_key('NumDefects'):
                         continue
 
                     num = int(result['NumDefects'])
