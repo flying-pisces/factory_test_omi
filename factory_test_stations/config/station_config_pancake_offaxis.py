@@ -10,7 +10,7 @@ ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
+SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 
 ##################################

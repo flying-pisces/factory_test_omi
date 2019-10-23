@@ -1,8 +1,8 @@
 
 STATION_LIMITS_ARRAYS = [
-    ["TT_Version", '1.0.0', '1.0.0', 96],
+    ["TT_Version", 'MPK_API_CS-1.0.6.0', 'MPK_API_CS-1.0.6.0', 96],
     ["DUT_ScreenOnRetries", 0, 10, 97],
-    ["DUT_ScreenOnStatus", 1, 1, 98],
+    ["DUT_ScreenOnStatus", True, True, 98],
     ["ENV_ParticleCounter", 0, 1000, 99],
 
     ["W255_CenterLV", -1E+12, 1E+12, 1001],

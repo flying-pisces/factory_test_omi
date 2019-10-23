@@ -9,16 +9,16 @@ ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config
+SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
+SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Fake model number requirement, need config
 
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM11" #
+FIXTURE_COMPORT = "COM6" #
 FIXTURE_PARTICLE_COMPORT="COM3" #
 FIXTURE_PARTICLE_ADDR=1
-DUT_COMPORT = "COM12" #
+DUT_COMPORT = "COM5" #
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu','hw','fpga']
@@ -115,7 +115,7 @@ DUT_ON_MAXRETRY = 10
 # Test Equipment related parameters
 IS_VERBOSE = True
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
-SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\y29.seqx'
+SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\Myzy_Sequence_10-3-19.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 DATABASE_RELATIVEPATH = r'factory-test_logs\oculus.ttxm'
 EMPTY_DATABASE_RELATIVEPATH = r'.\empty.ttxm'
@@ -140,7 +140,7 @@ IS_EXPORT_CSV = False
 IS_EXPORT_PNG = False
 Resolution_Bin_X = 0
 Resolution_Bin_Y = 0
-RESTART_TEST_COUNT = 10
+RESTART_TEST_COUNT = 99999
 DB_MAX_SIZE = 2048
 
 SPECTRAL_RESPONSE = 'PhotoMetric'
@@ -150,7 +150,8 @@ COLOR_CAL = 'camera_color_cal1'
 SCALE_CAL = 'image_scale_cal1'
 SHIFT_CAL = '(None)'
 
-PATTERNS =  ["W255","W000","R255","G255","B255"]
+# PATTERNS =  ["W255","W000","R255","G255","B255"]
+PATTERNS = ["White","Black","Red","Green","Blue"]
 SAVE_IMAGES = [True,True,True,True,True]
 COLORS = [(255,255,255),(0,0,0),(255,0,0),(0,255,0),(0,0,255)]
 # COLORS = ['0008','0000']

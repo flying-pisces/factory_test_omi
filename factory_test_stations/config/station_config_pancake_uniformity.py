@@ -16,10 +16,10 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM11" #
+FIXTURE_COMPORT = "COM6" #
 FIXTURE_PARTICLE_COMPORT = "COM3" #
 FIXTURE_PARTICLE_ADDR=1
-DUT_COMPORT = "COM12" #
+DUT_COMPORT = "COM5" #
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu','hw','fpga']
@@ -132,7 +132,7 @@ IS_EXPORT_CSV = False
 IS_EXPORT_PNG = False
 Resolution_Bin_X = 0
 Resolution_Bin_Y = 0
-RESTART_TEST_COUNT = 10
+RESTART_TEST_COUNT = 99999
 DB_MAX_SIZE = 2048
 
 

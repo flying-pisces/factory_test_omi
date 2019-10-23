@@ -94,6 +94,7 @@ class pancakepixelStation(test_station.TestStation):
     def _do_test(self, serial_number, test_log):
         self._overall_result = False
         self._overall_errorcode = ''
+        self._operator_interface.print_to_console('CWD is {}\n'.format(os.getcwd()))
         #        self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
         self._fixture.elminator_on()
         self._fixture.load()
@@ -217,8 +218,9 @@ class pancakepixelStation(test_station.TestStation):
                 for c, result in analysis_result.items():
                     if not isinstance(result, dict) or not result.has_key('NumDefects'):
                         continue
-
                     num = int(result['NumDefects'])
+                    self._operator_interface.print_to_console("prase numDefect {}, Num={}.\n"
+                                                              .format(self._station_config.PATTERNS[i], num))
                     for id in range(0, num):
                         size_key = 'Size_{}'.format(id)
                         locax_key = 'LocX_{}'.format(id)
@@ -236,13 +238,21 @@ class pancakepixelStation(test_station.TestStation):
                                 pixel_list.append(float(result[pixel_key]))
                                 constrast_lst.append(float(result[contrast_key]))
 
+                    self._operator_interface.print_to_console("prase normal test item {}.\n"
+                                                              .format(self._station_config.PATTERNS[i]))
+
                     for resItem in result:
                         test_item = (self._station_config.PATTERNS[i] + "_" + resItem).replace(" ", "")
                         for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
-                            if limit_array[0] == test_item:
+                            if limit_array[0] == test_item and\
+                                    re.match(r'^([-|+]?\d+)(\.\d*)?$', result[resItem], re.IGNORECASE) is not None:
+                                self._operator_interface.print_to_console('{}, {}.\n'.format(test_item, result[resItem]))
                                 test_log.set_measured_value_by_name(test_item, float(result[resItem]))
+                                self._operator_interface.print_to_console('TEST ITEM: {}, Value: {}\n'
+                                                                          .format(test_item, result[resItem]))
                                 break
-
+                    self._operator_interface.print_to_console("calc blemish_index {}.\n"
+                                                              .format(self._station_config.PATTERNS[i]))
                     test_item = self._station_config.PATTERNS[i] + "_" + "BlemishIndex"
 
                     # Algorithm For blemish_index
@@ -270,7 +280,8 @@ class pancakepixelStation(test_station.TestStation):
 
                         defect_index = abs_contrast * np.array(location_index) * np.array(size_index)
                         blemish_index = np.sum(defect_index)
-
+                    self._operator_interface.print_to_console("close run step {}.\n"
+                                                              .format(self._station_config.PATTERNS[i]))
                     test_log.set_measured_value_by_name(test_item, blemish_index)
 
         except Exception, e:
@@ -320,19 +331,19 @@ class pancakepixelStation(test_station.TestStation):
         else:
             shutil.copyfile(srcfn, os.path.join(bak_dir, dbfn))
 
-    def force_restart(self):
-        if not self._station_config.IS_SAVEDB:
-            return False
-
-        dbsize = os.path.getsize(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
-        dbsize = dbsize / 1024  # kb
-        dbsize = dbsize / 1024  # mb
-        if self._station_config.RESTART_TEST_COUNT <= self._runningCount \
-                or dbsize >= self._station_config.DB_MAX_SIZE:
-            # dbfn = "{0}_{1}_autobak.ttxm".format(self._station_id, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
-            # self.backup_database(dbfn)
-            self.close()
-            self._operator_interface.print_to_console('database will be renamed automatically while software restarted next time.\n')
-            return True
-
-        return False
+    # def force_restart(self):
+    #     if not self._station_config.IS_SAVEDB:
+    #         return False
+    #
+    #     dbsize = os.path.getsize(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
+    #     dbsize = dbsize / 1024  # kb
+    #     dbsize = dbsize / 1024  # mb
+    #     if self._station_config.RESTART_TEST_COUNT <= self._runningCount \
+    #             or dbsize >= self._station_config.DB_MAX_SIZE:
+    #         # dbfn = "{0}_{1}_autobak.ttxm".format(self._station_id, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
+    #         # self.backup_database(dbfn)
+    #         self.close()
+    #         self._operator_interface.print_to_console('database will be renamed automatically while software restarted next time.\n')
+    #         return True
+    #
+    #     return False

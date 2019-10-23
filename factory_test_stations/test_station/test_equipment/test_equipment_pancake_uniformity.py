@@ -93,14 +93,14 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
         return
 
     def version(self):
-        if self._version is not None:
-            return self._version
-        response = self._device.GetMpkApiVersionInfo()
-        versionjson = json.loads(str(response))
-        if self._verbose:
-            pprint.pprint(versionjson)
-        if versionjson.has_key('MpkApiVersionInfo'):
-            self._version = versionjson['MpkApiVersionInfo']
+        if self._version is None:
+            response = self._device.GetMpkApiVersionInfo()
+            versionjson = json.loads(str(response))
+            if self._verbose:
+                pprint.pprint(versionjson)
+            if versionjson.has_key('MpkApiVersionInfo'):
+                self._version = versionjson['MpkApiVersionInfo']
+        return self._version
     
     def initialize(self):
         response = self._device.InitializeCamera(self._station_config.CAMERA_SN, False, True)

@@ -99,14 +99,14 @@ class pancakepixelEquipment(hardware_station_common.test_station.test_equipment.
         return
 
     def version(self):
-        if self._version is not None:
-            return self._version
-        response = self._device.GetMpkApiVersionInfo()
-        versionjson = json.loads(str(response))
-        if self._verbose:
-            pprint.pprint(versionjson)
-        if versionjson.has_key('MpkApiVersionInfo'):
-            self._version = versionjson['MpkApiVersionInfo']
+        if self._version is None:
+            response = self._device.GetMpkApiVersionInfo()
+            versionjson = json.loads(str(response))
+            if self._verbose:
+                pprint.pprint(versionjson)
+            if versionjson.has_key('MpkApiVersionInfo'):
+                self._version = versionjson['MpkApiVersionInfo']
+        return self._version
 
     def initialize(self):
         response = self._device.InitializeCamera(self._station_config.CAMERA_SN, False, True)
@@ -392,6 +392,9 @@ if __name__ == "__main__":
     station_config.load_station('pancake_pixel')
     # station_config.CAMERA_SN = "Demo"
     the_instrument = pancakepixelEquipment(station_config)
+
+    ver = the_instrument.version()
+    print  ver
 
     print  "ready before init :{}".format(the_instrument.ready())
     isinit = the_instrument.initialize()

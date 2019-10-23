@@ -250,20 +250,20 @@ class pancakeoffaxisStation(test_station.TestStation):
         else:
             shutil.copyfile(srcfn, os.path.join(bak_dir, dbfn))
 
-    def force_restart(self):
-        if not self._station_config.IS_SAVEDB:
-            return False
-
-        dbsize = os.path.getsize(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
-        dbsize = dbsize / 1024  # kb
-        dbsize = dbsize / 1024  # mb
-        if self._station_config.RESTART_TEST_COUNT <= self._runningCount \
-                or dbsize >= self._station_config.DB_MAX_SIZE:
-            # dbfn = "{0}_{1}_autobak.ttxm".format(self._station_id, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
-            # self.backup_database(dbfn)
-            self.close()
-            self._operator_interface.print_to_console('database will be renamed automatically while software restarted next time.\n')
-            return True
-
-        return False
+    # def force_restart(self):
+    #     if not self._station_config.IS_SAVEDB:
+    #         return False
+    #
+    #     dbsize = os.path.getsize(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
+    #     dbsize = dbsize / 1024  # kb
+    #     dbsize = dbsize / 1024  # mb
+    #     if self._station_config.RESTART_TEST_COUNT <= self._runningCount \
+    #             or dbsize >= self._station_config.DB_MAX_SIZE:
+    #         # dbfn = "{0}_{1}_autobak.ttxm".format(self._station_id, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
+    #         # self.backup_database(dbfn)
+    #         self.close()
+    #         self._operator_interface.print_to_console('database will be renamed automatically while software restarted next time.\n')
+    #         return True
+    #
+    #     return False
 

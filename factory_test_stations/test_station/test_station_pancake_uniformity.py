@@ -103,13 +103,15 @@ class pancakeuniformityStation(test_station.TestStation):
         try:
             self._operator_interface.print_to_console("Testing Unit %s\n" %serial_number)
             the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
+            test_log.set_measured_value_by_name("TT_Version", self._equipment.version())
 
             the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
             retries = 1
             is_screen_on = False
             try:
-                self._dut_checker.initialize()
+                if self._station_config.DISP_CHECKER_ENABLE:
+                    self._dut_checker.initialize()
                 while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
                     try:
                         is_screen_on = the_unit.screen_on()
@@ -190,7 +192,7 @@ class pancakeuniformityStation(test_station.TestStation):
                 analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
                 self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
 
-                if self._station_config.IS_EXPORT_DATA:
+                if self._station_config.IS_EXPORT_PNG or self._station_config.IS_EXPORT_CSV:
                     output_dir = os.path.join(self._station_config.ROOT_DIR , self._station_config.ANALYSIS_RELATIVEPATH, the_unit.serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
                     if not os.path.exists(output_dir):
                         os.mkdir(output_dir, 777)
@@ -213,14 +215,12 @@ class pancakeuniformityStation(test_station.TestStation):
                         self._operator_interface.print_to_console("Export data for {}\n"
                                                                   .format(self._station_config.PATTERNS[i]))
 
-                for result in analysis_result.values():
-                    for r in result:
-                        if not (isinstance(r, dict) and r.has_key('Name') and r.has_key('Value')):
-                            continue
-
-                        test_item = (self._station_config.PATTERNS[i] + "_" + r['Name']).replace(" ", "")
+                for c, result in analysis_result.items():
+                    if c != analysis:
+                        continue
+                    for resItem in result:
+                        test_item = (self._station_config.PATTERNS[i] + "_" + resItem).replace(" ", "")
                         test_item = test_item.replace('\'', '')
-                        print test_item + "\n"
 
                         has_test_item = False
                         for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
@@ -229,24 +229,31 @@ class pancakeuniformityStation(test_station.TestStation):
                         if not has_test_item:
                             continue
 
-                        if '255' in self._station_config.PATTERNS[i] and 'Center Color (C' in r['Name']:
-                            self._operator_interface.print_to_console("\n" + test_item + ": \t" + r['Value'] + "\n")
-                            test_log.set_measured_value_by_name(test_item, float(r['Value']))
-                        elif 'W' in self._station_config.PATTERNS[i] and 'CenterColorDifference'in r['Name']:
-                            if 'W255' in self._station_config.PATTERNS[i]:
-                                centercolordifference255 = float(r['Value'])
-                            else:
-                                test_value = abs(float(r['Value'])-centercolordifference255)
-                                test_log.set_measured_value_by_name(test_item, test_value)
-                        else:
-                            test_log.set_measured_value_by_name(test_item, float(r['Value']))
+                        if re.match(r'^([-|+]?\d+)(\.\d*)?$', result[resItem], re.IGNORECASE) is not None:
+                            self._operator_interface.print_to_console('{}, {}.\n'.format(test_item, result[resItem]))
+                            test_log.set_measured_value_by_name(test_item, float(result[resItem]))
+                            self._operator_interface.print_to_console('TEST ITEM: {}, Value: {}\n'
+                                                                      .format(test_item, result[resItem]))
+                        # if '255' in self._station_config.PATTERNS[i] and 'Center Color (C' in r['Name']:
+                        #     self._operator_interface.print_to_console("\n" + test_item + ": \t" + r['Value'] + "\n")
+                        #     test_log.set_measured_value_by_name(test_item, float(r['Value']))
+                        # elif 'W' in self._station_config.PATTERNS[i] and 'CenterColorDifference'in r['Name']:
+                        #     if 'W255' in self._station_config.PATTERNS[i]:
+                        #         centercolordifference255 = float(r['Value'])
+                        #     else:
+                        #         test_value = abs(float(r['Value'])-centercolordifference255)
+                        #         test_log.set_measured_value_by_name(test_item, test_value)
+                        # else:
+                        #     test_log.set_measured_value_by_name(test_item, float(r['Value']))
+                        #
+                        # if self._station_config.PATTERNS[i][0] == 'W' and \
+                        #         self._station_config.PATTERNS[i][1:4] in self._station_config.GAMMA_CHECK_GLS and \
+                        #         r['Name'] == 'CenterLv':
+                        #     centerlv_gls.append(float(r['Value']))
+                        #     gls.append(float(self._station_config.PATTERNS[i][1:4]))
 
-                        if self._station_config.PATTERNS[i][0] == 'W' and \
-                                self._station_config.PATTERNS[i][1:4] in self._station_config.GAMMA_CHECK_GLS and \
-                                r['Name'] == 'CenterLv':
-                            centerlv_gls.append(float(r['Value']))
-                            gls.append(float(self._station_config.PATTERNS[i][1:4]))
-
+                self._operator_interface.print_to_console("close run step {}.\n"
+                                                          .format(self._station_config.PATTERNS[i]))
                 '''
                 mesh_data = the_equipment.get_last_mesh()
 
@@ -331,20 +338,20 @@ class pancakeuniformityStation(test_station.TestStation):
         else:
             shutil.copyfile(srcfn, os.path.join(bak_dir, dbfn))
 
-    def force_restart(self):
-        if not self._station_config.IS_SAVEDB:
-            return False
-
-        dbsize = os.path.getsize(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
-        dbsize = dbsize / 1024  # kb
-        dbsize = dbsize / 1024  # mb
-        if self._station_config.RESTART_TEST_COUNT <= self._runningCount \
-                or dbsize >= self._station_config.DB_MAX_SIZE:
-            # dbfn = "{0}_{1}_autobak.ttxm".format(self._station_id, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
-            # self.backup_database(dbfn)
-            self.close()
-            self._operator_interface.print_to_console('database will be renamed automatically while software restarted next time.\n')
-            return True
-
-        return False
+    # def force_restart(self):
+    #     if not self._station_config.IS_SAVEDB:
+    #         return False
+    #
+    #     dbsize = os.path.getsize(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
+    #     dbsize = dbsize / 1024  # kb
+    #     dbsize = dbsize / 1024  # mb
+    #     if self._station_config.RESTART_TEST_COUNT <= self._runningCount \
+    #             or dbsize >= self._station_config.DB_MAX_SIZE:
+    #         # dbfn = "{0}_{1}_autobak.ttxm".format(self._station_id, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
+    #         # self.backup_database(dbfn)
+    #         self.close()
+    #         self._operator_interface.print_to_console('database will be renamed automatically while software restarted next time.\n')
+    #         return True
+    #
+    #     return False
 
