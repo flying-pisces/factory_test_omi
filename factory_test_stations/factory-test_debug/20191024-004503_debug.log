@@ -1,0 +1,34 @@
+[20191024-004503]: Running Test.
+[20191024-004503]: Checking Unit 1PR01234567890...
+[20191024-004505]: Testing Unit 1PR01234567890
+[20191024-004505]: Initialize DUT... 
+[20191024-004509]: Read the particle count in the fixture... 
+[20191024-004509]: Set Camera Database. 94142510
+[20191024-004509]: clear registration
+[20191024-004509]: Close the eliminator in the fixture... 
+[20191024-004510]: Panel Measurement Pattern: White
+[20191024-004517]: sequence run step ParticleDefects White.
+[20191024-004517]: prase numDefect White, Num=500.
+[20191024-004517]: prase normal test item White.
+[20191024-004517]: White_NumDefects
+[20191024-004517]: TEST ITEM: White_NumDefects, Value: 500
+[20191024-004517]: White_NumDarkBlobs
+[20191024-004517]: Test exception . [Errno 9] Bad file descriptor
+[20191024-004517]: release current test resource.
+[20191024-004517]: Turn Off display................
+[20191024-004519]: Closing DUT by the communication interface.
+[20191024-004521]: close the test_log for 1PR01234567890.
+[20191024-004521]: --- do test finished ---
+[20191024-004521]: Testing Unit 1PR01234567890 Complete
+[20191024-004521]: 
+-----------------------------------
+
+Unit [ 1PR01234567890 ] Failed!
+
+-----------------------------------
+Error Code = 101.-1
+101, White_NumDarkParticles, None, -1e+12, 1e+12, 20191024-004521, FAIL, -1
+-----------------------------------
+
+
+[20191024-004521]: waiting for sn
