@@ -19,7 +19,7 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
     def __init__(self, station_config, operator_interface):
         hardware_station_common.test_station.test_fixture.TestFixture.__init__(self, station_config, operator_interface)
         self._serial_port = None
-        self._verbose = None
+        self._verbose = station_config.IS_VERBOSE
         self._start_delimiter = ':'
         self._end_delimiter = '\r\n'
         self._error_msg = 'This command is illegal,please check it again'
@@ -47,7 +47,7 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
             raise pancakeuniformityFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
             return False
         else:
-            print "Fixture %s Initialized" % self._station_config.FIXTURE_COMPORT
+            self._operator_interface.print_to_console("Fixture %s Initialized.\n" % self._station_config.FIXTURE_COMPORT)
             if self._PTB_Power_Status != '0':
                 self.poweron_ptb()
                 self._operator_interface.print_to_console("Power on PTB {}\n".format(self._PTB_Power_Status))
@@ -89,7 +89,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
     def status(self):
         self._write_serial(self._station_config.COMMAND_STATUS)
         response = self._read_response()
-        print response
+        if self._verbose:
+            print response
         value = self._parsing_response(response)
         self.PTB_Position = int(value[0])
         self._Button_Status = int(value[1])
@@ -100,27 +101,31 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
     def help(self):
         self._write_serial(self._station_config.COMMAND_HELP)
         response = self._read_response()
-        print response
+        if self._verbose:
+            print response
         return response
 
     def reset(self):
         self._write_serial(self._station_config.COMMAND_RESET)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
         return value
 
     def id(self):
         self._write_serial(self._station_config.COMMAND_ID)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
         return value
 
     def version(self):
         self._write_serial(self._station_config.COMMAND_VERSION)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
         return value
 
@@ -136,7 +141,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
                 and self._station_config.FIXTURE_PARTICLE_COUNTER:
             self._particle_counter_client.close()
             self._particle_counter_client = None
-            print "====== Fixture Close ========="
+            if self._verbose:
+                print "====== Fixture Close ========="
         return True
 
     ######################
@@ -147,7 +153,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._write_serial(self._station_config.COMMAND_ELIMINATOR_ON)
         #time.sleep(CARRIER_LOAD_TIME)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if "0" in response[1]:
             value = 0
         elif self._error_msg not in response[1]:
@@ -162,7 +169,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._write_serial(self._station_config.COMMAND_ELIMINATOR_OFF)
         #time.sleep(CARRIER_LOAD_TIME)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if "0" in response[1]:
             value = 0
         elif self._error_msg not in response[1]:
@@ -177,7 +185,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._write_serial(self._station_config.COMMAND_LOAD)
         #time.sleep(CARRIER_LOAD_TIME)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if "0" in response[1]:
             value = 0
         elif self._error_msg not in response[1]:
@@ -192,7 +201,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._write_serial(self._station_config.COMMAND_UNLOAD)
         #time.sleep(CARRIER_UNLOAD_TIME)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if "0" in response[1]:  ## temporary fix for FW1.0.20161114
             value = 0
         elif self._error_msg not in response[1]:
@@ -207,7 +217,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._write_serial(self._station_config.COMMAND_BARCODE)
         #time.sleep(BARCODE_TIME)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if self._error_msg not in response[1]:
             value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
         else:
@@ -220,7 +231,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._write_serial(self._station_config.COMMAND_USB_POWER_ON)
         time.sleep(self._station_config.FIXTURE_USB_ON_TIME)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if self._error_msg not in response[1]:
             value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
             self._USB_Power_Status = value
@@ -234,7 +246,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._write_serial(self._station_config.COMMAND_USB_POWER_OFF)
         time.sleep(self._station_config.FIXTURE_USB_OFF_TIME)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if self._error_msg not in response[1]:
             value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
             self._USB_Power_Status = value
@@ -249,7 +262,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._write_serial(self._station_config.COMMAND_PTB_POWER_ON)
         time.sleep(self._station_config.FIXTURE_PTB_ON_TIME)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if self._error_msg not in response[1]:
             value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
             self._PTB_Power_Status = value
@@ -263,7 +277,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._write_serial(self._station_config.COMMAND_PTB_POWER_OFF)
         time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if self._error_msg not in response[1]:
             value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
             self._PTB_Power_Status = value
@@ -283,7 +298,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._write_serial(self._station_config.COMMAND_USB_POWER_ON)
         time.sleep(self._station_config.FIXTURE_USB_ON_TIME + self._station_config.DUT_ON_TIME)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if self._error_msg not in response[1]:
             value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
         else:
@@ -297,7 +313,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
     def button_enable(self):
         self._write_serial(self._station_config.COMMAND_BUTTON_ENABLE)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if self._error_msg not in response[1]:
             value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
         else:
@@ -309,7 +326,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
     def button_disable(self):
         self._write_serial(self._station_config.COMMAND_BUTTON_DISABLE)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         if self._error_msg not in response[1]:
             value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
         else:

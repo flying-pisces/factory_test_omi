@@ -26,6 +26,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
     def __init__(self, serialNumber, station_config, operatorInterface):
         hardware_station_common.test_station.dut.DUT.__init__(self, serialNumber, station_config, operatorInterface)
         self.first_boot = True
+        self._verbose = station_config.IS_VERBOSE
         self.is_screen_poweron = False
         self._serial_port = None
         self._logger = logging.getLogger(__name__)
@@ -52,7 +53,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             raise DUTError('Unable to open DUT port : %s' % self._station_config.DUT_COMPORT)
             return False
         else:
-            print 'DUT %s Initialised. ' % self._station_config.DUT_COMPORT
+            if self._verbose:
+                print 'DUT %s Initialised. ' % self._station_config.DUT_COMPORT
             return True
         return False
 
@@ -196,7 +198,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                 response.append(line_in)
             else:
                 break
-        print "<--- {}".format(response)
+        if self._verbose:
+            print "<--- {}".format(response)
         return response
 
     def _vsyn_time(self):
@@ -208,7 +211,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         self._write_serial_cmd(self._station_config.COMMAND_DISP_HELP)
         time.sleep(1)
         response = self._read_response()
-        print response
+        if self._verbose:
+            print response
         value = []
         for item in response[0:len(response)-1]:
             value.append(item)
@@ -227,7 +231,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def _prase_respose(self, command, response):
 
-        print "command : {},,,{}".format(command, response)
+        if self._verbose:
+            print "command : {},,,{}".format(command, response)
 
         if response is None:
             return None

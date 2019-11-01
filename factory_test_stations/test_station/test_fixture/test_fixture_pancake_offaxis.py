@@ -20,7 +20,7 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
     def __init__(self, station_config, operator_interface):
         hardware_station_common.test_station.test_fixture.TestFixture.__init__(self, station_config, operator_interface)
         self._serial_port = None
-        self._verbose = None
+        self._verbose = station_config.IS_VERBOSE
         self._start_delimiter = ':'
         self._end_delimiter = '\r\n'
         self._error_msg = r'Please scanf "CMD_HELP" check help command'
@@ -44,7 +44,8 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
             raise pancakeoffaxisFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
             return False
         else:
-            print "Fixture %s Initialized" % self._station_config.FIXTURE_COMPORT
+            if self._verbose:
+                print "Fixture %s Initialized" % self._station_config.FIXTURE_COMPORT
             return True
 
     def _parsing_response(self, response):
@@ -81,20 +82,23 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
     def help(self):
         self._write_serial(self._station_config.COMMAND_HELP)
         response = self._read_response()
-        print response
+        if self._verbose:
+            print response
         return response
 
     def reset(self):
         self._write_serial(self._station_config.COMMAND_RESET)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
         return value
 
     def id(self):
         self._write_serial(self._station_config.COMMAND_ID)
         response = self._read_response()
-        print(response[1])
+        if self._verbose:
+            print(response[1])
         value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
         return value
 
@@ -110,7 +114,8 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
                 and self._station_config.FIXTURE_PARTICLE_COUNTER:
             self._particle_counter_client.close()
             self._particle_counter_client = None
-            print "====== Fixture Close ========="
+            if self._verbose:
+                print "====== Fixture Close ========="
         return True
 
     ######################

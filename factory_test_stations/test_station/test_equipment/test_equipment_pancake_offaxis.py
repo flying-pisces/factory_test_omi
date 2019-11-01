@@ -117,7 +117,7 @@ class pancakeoffaxisEquipment(hardware_station_common.test_station.test_equipmen
     def ready(self):
         response = json.loads(self._device.EquipmentReady())
         msg = "Ready - ErrorCode: {0}".format(response['ErrorCode'])
-        if verbose:
+        if self._verbose:
             print msg
         ready_result = response['ErrorCode'] == 'Success'
         return ready_result

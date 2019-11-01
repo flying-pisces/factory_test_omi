@@ -26,10 +26,10 @@ def load_station(station):
 
     station_config_file = os.path.join(config_path, 'config', ('station_config_' + STATION_TYPE + '.py'))
     station_limits_file = os.path.join(config_path, 'config', ('station_limits_' + STATION_TYPE + '.py'))
-    print station_config_file
-    print station_limits_file
+    # print station_config_file
+    # print station_limits_file
     try:
         execfile(station_config_file, globals())  # imports station_config into current namespace
         execfile(station_limits_file, globals())
     except:
-        raise Exception
+        raise

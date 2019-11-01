@@ -5,6 +5,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
+CSV_SUMMARY_DIR = r'c:\csv_summray'
 
 
 ##################################
@@ -42,11 +43,13 @@ COMMAND_DISP_RESET_DLY = 1
 COMMAND_DISP_SHOWIMG_DLY = 1
 COMMAND_DISP_POWEROFF_DLY = 0.2
 
-DISP_CHECKER_ENABLE = False
-DISP_CHECKER_DLY = 5
-DISP_CHECKER_CAMERA_INDEX = 1
-DISP_CHECKER_L_SCORE = 6000
-DISP_CHECKER_H_SCORE = 10000
+DISP_CHECKER_ENABLE = True
+DISP_CHECKER_DLY = 2
+DISP_CHECKER_IMG_INDEX = 0
+DISP_CHECKER_CAMERA_INDEX = 0
+DISP_CHECKER_MIN = 50
+DISP_CHECKER_L_SCORE = 100
+DISP_CHECKER_H_SCORE = 1000
 DISP_CHECKER_COUNT = 2
 DISP_CHECKER_IMG_SAVED = False
 
@@ -111,7 +114,7 @@ DUT_ON_MAXRETRY = 10
 
 ##################################
 # Test Equipment related parameters
-IS_VERBOSE = True
+IS_VERBOSE = False
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\Myzy_Sequence_10-3-19.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'

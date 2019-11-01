@@ -15,7 +15,7 @@ class DutChecker(object):
         self._cap = None
         self._latest_image = None
         self._template_dir = None
-        self._minArea = 6000
+        self._minArea = station_config.DISP_CHECKER_MIN
         self._station_config = station_config
 
     def _blob_areas(self, image1):
@@ -57,13 +57,13 @@ class DutChecker(object):
             # self._width, self._height = self._cap.get(3), self._cap.get(4)
             ret, frame = self._cap.read()
             if ret:
-                self._latest_image = cv.flip(frame, 3)
-                return self._blob_areas(self._latest_image)
-            else:
-                self._cap = None
-                raise DutCheckerError('Fail to capture image from camera checker.')
+                ret, frame = self._cap.read() #read once more to ensure the image.
+                if ret:
+                    self._latest_image = cv.flip(frame, 3)
+                    return self._blob_areas(self._latest_image)
+            raise DutCheckerError('Fail to capture image from camera checker.')
 
     def save_log_img(self, name):
         if self._latest_image is not None:
             fn = os.path.join(self._template_dir, name)
-            cv.imwrite(fn)
+            cv.imwrite(fn, self._latest_image)

@@ -59,12 +59,6 @@ class pancakepixelStation(test_station.TestStation):
                    < datetime.timedelta(self._station_config.FIXTRUE_PARTICLE_START_DLY)):
                 time.sleep(0.1)
                 self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
-
-        if self._station_config.DISP_CHECKER_ENABLE:
-            self._operator_interface.print_to_console('Initializing camera dut checker...\n')
-            self._dut_checker.initialize()
-            time.sleep(self._station_config.DISP_CHECKER_DLY)
-
         self._equipment.initialize()
 
     def _close_fixture(self):
@@ -106,25 +100,30 @@ class pancakepixelStation(test_station.TestStation):
 
             the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
-            retries = 1
+            retries = 0
             is_screen_on = False
             try:
                 if self._station_config.DISP_CHECKER_ENABLE:
                     self._dut_checker.initialize()
+                    time.sleep(self._station_config.DISP_CHECKER_DLY)
                 while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
+                    retries += 1
                     try:
                         is_screen_on = the_unit.screen_on()
                     except dut.DUTError:
                         is_screen_on = False
                     else:
                         if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
+                            the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
                             score = self._dut_checker.do_checker()
                             score_num = 0
                             if score is not None:
+                                self._operator_interface.print_to_console(
+                                    "dut checker using blob detection. {} \n".format(score))
                                 arr = np.array(score)
-                                np.where( (arr >= self._station_config.DISP_CHECKER_L_SCORE)
-                                          & (arr <= self._station_config.DISP_CHECKER_H_SCORE))
-                            is_screen_on = score_num == self._station_config.DISP_CHECKER_COUNT
+                                score_num = np.where((arr >= self._station_config.DISP_CHECKER_L_SCORE)
+                                                     & (arr <= self._station_config.DISP_CHECKER_H_SCORE))
+                            is_screen_on = len(score_num[0]) == self._station_config.DISP_CHECKER_COUNT
 
                     if not is_screen_on:
                         msg = 'Retry power_on {}/{} times.\n'.format(retries + 1, self._station_config.DUT_ON_MAXRETRY)
@@ -135,14 +134,11 @@ class pancakepixelStation(test_station.TestStation):
                         fn0 = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
                         fn = '{0}_{1}_{2}.jpg'.format(serial_number, retries, fn0)
                         self._dut_checker.save_log_img(fn)
-
-                    retries += 1
             finally:
                 self._dut_checker.close()
                 test_log.set_measured_value_by_name("DUT_ScreenOnRetries", retries)
                 test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
-            if not is_screen_on:
-                raise pancakepixelError("Unable to power on the DUT.")
+
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
