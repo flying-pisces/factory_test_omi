@@ -261,21 +261,26 @@ class pancakepixelStation(test_station.TestStation):
                     blemish_index = 0
                     if num > 0 and len(constrast_lst) > 0:
                         abs_contrast = np.abs(constrast_lst)
-                        location_r = np.sqrt(np.power(np.array(locax_list), 2) * np.power(np.array(locay_list), 2))
+                        location_r = np.sqrt(np.power(np.array(locax_list) - self._station_config.LOCATION_X0, 2)
+                                             * np.power(np.array(locay_list) - self._station_config.LOCATION_Y0, 2))
                         location_index = []
                         size_index = []
                         for id in range(0, len(locax_list)):
                             tmp_local_index = 0
                             tmp_size_index = 0
-                            if location_r[id] < self._station_config.LOCATION_1:
+                            if location_r[id] <= self._station_config.LOCATION_L:
                                 tmp_local_index = 2
-                            elif location_r[id] < self._station_config.LOCATION_2:
+                            elif self._station_config.LOCATION_L < location_r[id] <= self._station_config.LOCATION_U:
                                 tmp_local_index = 1
+                            elif location_r[id] > self._station_config.LOCATION_U:
+                                tmp_local_index = 0
 
-                            if size_list[id] > self._station_config.SIZE_2:
-                                tmp_size_index = 2
-                            elif size_list[id] > self._station_config.SIZE_1:
+                            if size_list[id] <= self._station_config.SIZE_L:
+                                tmp_size_index = 0
+                            elif self._station_config.SIZE_L < size_list[id] <= self._station_config.SIZE_U:
                                 tmp_size_index = 1
+                            elif size_list[id] > self._station_config.SIZE_U:
+                                tmp_size_index = 2
 
                             location_index.append(tmp_local_index)
                             size_index.append(tmp_size_index)

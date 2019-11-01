@@ -164,11 +164,14 @@ ANALYSIS = ["ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDe
 
 EXPOSURE = [[9,9,9],[20,20,20],[18,18,18],[13,13,13],[20,20,20]]
 
-LOCATION_2 = 10
-LOCATION_1 = 1
+LOCATION_L = 10
+LOCATION_U = 20
 
-SIZE_2 = 0.1
-SIZE_1 = 0.03
+LOCATION_X0 = 0
+LOCATION_Y0 = 0
+
+SIZE_L = 0.03
+SIZE_U = 0.1
 
 ##################################
 # IT and work order
