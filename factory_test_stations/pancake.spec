@@ -39,9 +39,7 @@ searchpaths = [
 a = Analysis([build_target],
              pathex=searchpaths,
              binaries=[],
-             datas=[('config\\*pancake_*.py','config'),\
-                     ('factory-test_logs\\empty.ttxm','.'),\
-                     ('factory-test_logs\\oculus.ttxm','factory-test_logs')],
+             datas=[('config\\*pancake_*.py','config')],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],

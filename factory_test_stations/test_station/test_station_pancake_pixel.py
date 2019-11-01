@@ -119,7 +119,12 @@ class pancakepixelStation(test_station.TestStation):
                     else:
                         if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
                             score = self._dut_checker.do_checker()
-                            is_screen_on = (score is not None and max(score) >= self._station_config.DISP_CHECKER_L_SCORE)
+                            score_num = 0
+                            if score is not None:
+                                arr = np.array(score)
+                                np.where( (arr >= self._station_config.DISP_CHECKER_L_SCORE)
+                                          & (arr <= self._station_config.DISP_CHECKER_H_SCORE))
+                            is_screen_on = score_num == self._station_config.DISP_CHECKER_COUNT
 
                     if not is_screen_on:
                         msg = 'Retry power_on {}/{} times.\n'.format(retries + 1, self._station_config.DUT_ON_MAXRETRY)
@@ -136,7 +141,8 @@ class pancakepixelStation(test_station.TestStation):
                 self._dut_checker.close()
                 test_log.set_measured_value_by_name("DUT_ScreenOnRetries", retries)
                 test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
-
+            if not is_screen_on:
+                raise pancakepixelError("Unable to power on the DUT.")
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:

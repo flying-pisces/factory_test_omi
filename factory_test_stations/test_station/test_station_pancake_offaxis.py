@@ -126,7 +126,8 @@ class pancakeoffaxisStation(test_station.TestStation):
                 self._dut_checker.close()
                 test_log.set_measured_value_by_name("DUT_ScreenOnRetries", retries)
                 test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
-
+            if not is_screen_on:
+                raise pancakeoffaxisError("Unable to power on the DUT.")
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
