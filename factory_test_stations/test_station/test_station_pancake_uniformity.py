@@ -132,7 +132,7 @@ class pancakeuniformityStation(test_station.TestStation):
                             is_screen_on = len(score_num[0]) == self._station_config.DISP_CHECKER_COUNT
 
                     if not is_screen_on:
-                        msg = 'Retry power_on {}/{} times.\n'.format(retries + 1,
+                        msg = 'Retry power_on {}/{} times.\n'.format(retries,
                                                                      self._station_config.DUT_ON_MAXRETRY)
                         self._operator_interface.print_to_console(msg)
                         the_unit.screen_off()

@@ -2,6 +2,7 @@ import sys
 from pymodbus.client.sync import ModbusSerialClient
 from pymodbus.register_write_message import WriteSingleRegisterResponse
 from pymodbus.register_read_message import ReadHoldingRegistersResponse
+from pymodbus.constants import Defaults
 
 sys.path.append('../../')
 import station_config
@@ -20,7 +21,9 @@ class ParticleCounter(object):
     def initialize(self):
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
             if not self._init:
-                self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity='N',
+                Defaults.Retries = 5
+                Defaults.RetryOnEmpty = True
+                self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity='E',
                                                                    stopbits=1,
                                                                    port=self._station_config.FIXTURE_PARTICLE_COMPORT,
                                                                    timeout=2000)
@@ -50,7 +53,7 @@ class ParticleCounter(object):
             rs = self._particle_counter_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
                                                                       2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
             if rs is None or rs.isError():
-                raise ParticleCounterError('Failed to read data from particle counter .')
+                raise ParticleCounterError('Failed to read data from particle counter {}.'.format(rs))
             else:
                 return rs.registers[0] * 65535 + rs.registers[1]
 
@@ -71,16 +74,28 @@ class ParticleCounter(object):
 if __name__ == '__main__':
     sys.path.append("../../../")
     import station_config
+    import time
     import hardware_station_common.operator_interface.operator_interface
 
     print 'Self check for %s' % (__file__,)
     station_config.load_station('pancake_uniformity')
+    station_config.FIXTURE_PARTICLE_COUNTER = True
 
     the_particle_counter = ParticleCounter(station_config)
     the_particle_counter.initialize()
-    the_particle_counter.particle_counter_on()
-    the_particle_counter.particle_counter_off()
-    the_particle_counter.particle_counter_read_val()
+    # the_particle_counter.particle_counter_on()
+    # the_particle_counter.particle_counter_off()
+    # if the_particle_counter.particle_counter_state() == 0:
+    # time.sleep(2.1)
+    # the_particle_counter.particle_counter_on()
+    time.sleep(2.1)
+    for i in range(1, 9999000):
+        val = the_particle_counter.particle_counter_read_val()
+        print  (i, val)
+        pass
+    the_particle_counter._particle_counter_client.close()
+    # the_particle_counter.particle_counter_off()
+    pass
 
 
 

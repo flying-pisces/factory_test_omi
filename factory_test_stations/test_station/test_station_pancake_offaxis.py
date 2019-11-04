@@ -35,7 +35,6 @@ class pancakeoffaxisStation(test_station.TestStation):
             if self._particle_counter.particle_counter_state() == 0:
                 self._particle_counter.particle_counter_on()
                 self._particle_counter_start_time = datetime.datetime.now()
-        self._dut_checker = DutChecker(station_config)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
 
@@ -49,11 +48,6 @@ class pancakeoffaxisStation(test_station.TestStation):
                    < datetime.timedelta(self._station_config.FIXTRUE_PARTICLE_START_DLY)):
                 time.sleep(0.1)
                 self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
-
-        if self._station_config.DISP_CHECKER_ENABLE:
-            self._operator_interface.print_to_console('Initializing camera dut checker...\n')
-            self._dut_checker.initialize()
-            time.sleep(self._station_config.DISP_CHECKER_DLY)
 
         self._operator_interface.print_to_console("Initialize Camera %s\n" %self._station_config.CAMERA_SN)
         self._equipment.initialize()
@@ -91,43 +85,38 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._fixture.load()
         try:
             self._operator_interface.print_to_console("Testing Unit %s\n" %serial_number)
-            the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
+            the_unit = dut.pancakeDutOffAxis(serial_number, self._station_config, self._operator_interface)
             test_log.set_measured_value_by_name("TT_Version", self._equipment.version())
 
             the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
-            retries = 1
+            retries = 0
             is_screen_on = False
             try:
-                if self._station_config.DISP_CHECKER_ENABLE:
-                    self._dut_checker.initialize()
                 while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
+                    retries += 1
                     try:
                         is_screen_on = the_unit.screen_on()
                     except dut.DUTError as e:
                         is_screen_on = False
                     else:
                         if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
-                            score = self._dut_checker.do_checker()
-                            is_screen_on = (
-                                        score is not None and max(score) >= self._station_config.DISP_CHECKER_L_SCORE)
+                            the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
+                            color = the_unit.readColorSensor()
+                            is_screen_on = the_unit.display_color_check(color)
 
                     if not is_screen_on:
-                        msg = 'Retry power_on {}/{} times.\n'.format(retries + 1,
+                        msg = 'Retry power_on {}/{} times.\n'.format(retries,
                                                                      self._station_config.DUT_ON_MAXRETRY)
                         self._operator_interface.print_to_console(msg)
                         the_unit.screen_off()
-
-                    if self._station_config.DISP_CHECKER_IMG_SAVED:
-                        fn0 = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
-                        fn = '{0}_{1}_{2}.jpg'.format(serial_number, retries, fn0)
-                        self._dut_checker.save_log_img(fn)
-
                     retries += 1
             finally:
-                self._dut_checker.close()
                 test_log.set_measured_value_by_name("DUT_ScreenOnRetries", retries)
                 test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
+
+            if not is_screen_on:
+                raise pancakeoffaxisError("DUT Is unable to Power on.")
 
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
             particle_count = 0

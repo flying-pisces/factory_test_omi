@@ -128,7 +128,7 @@ class pancakepixelStation(test_station.TestStation):
                             is_screen_on = len(score_num[0]) == self._station_config.DISP_CHECKER_COUNT
 
                     if not is_screen_on:
-                        msg = 'Retry power_on {}/{} times.\n'.format(retries + 1, self._station_config.DUT_ON_MAXRETRY)
+                        msg = 'Retry power_on {}/{} times.\n'.format(retries, self._station_config.DUT_ON_MAXRETRY)
                         self._operator_interface.print_to_console(msg)
                         the_unit.screen_off()
 
@@ -140,6 +140,9 @@ class pancakepixelStation(test_station.TestStation):
                 self._dut_checker.close()
                 test_log.set_measured_value_by_name("DUT_ScreenOnRetries", retries)
                 test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
+
+            if not is_screen_on:
+                raise pancakepixelError("DUT Is unable to Power on.")
 
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
             particle_count = 0
