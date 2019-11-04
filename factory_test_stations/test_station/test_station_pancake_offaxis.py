@@ -71,7 +71,9 @@ class pancakeoffaxisStation(test_station.TestStation):
     def _close_particle_counter(self):
         if self._particle_counter is not None:
             try:
-                self._particle_counter.particle_counter_off()
+                pass
+                # turn off the particle_counter manually.
+                # self._particle_counter.particle_counter_off()
             finally:
                 self._particle_counter.close()
                 self._particle_counter = None

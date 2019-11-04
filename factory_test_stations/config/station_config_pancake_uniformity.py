@@ -5,7 +5,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'c:\csv_summray'
+CSV_SUMMARY_DIR = r'c:\unif_summray'
 
 
 ##################################
@@ -118,8 +118,7 @@ IS_VERBOSE = False
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\Myzy_Sequence_10-3-19.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
-DATABASE_RELATIVEPATH = r'factory-test_logs\oculus.ttxm'
-EMPTY_DATABASE_RELATIVEPATH = r'.\empty.ttxm'
+
 DATABASE_RELATIVEPATH_ACT = r'factory-test_logs'
 DATABASE_RELATIVEPATH_BAK = r'factory-test_logs'
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'

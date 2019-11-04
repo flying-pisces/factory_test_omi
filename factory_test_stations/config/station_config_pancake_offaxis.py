@@ -131,8 +131,7 @@ IS_VERBOSE = True
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\Conoscope.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
-DATABASE_RELATIVEPATH = r'factory-test_logs\oculus.ttxm'
-EMPTY_DATABASE_RELATIVEPATH = r'.\empty.ttxm'
+
 DATABASE_RELATIVEPATH_ACT = r'factory-test_logs'
 DATABASE_RELATIVEPATH_BAK = r'factory-test_logs'
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
