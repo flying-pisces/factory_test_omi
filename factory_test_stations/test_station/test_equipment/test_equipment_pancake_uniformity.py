@@ -149,14 +149,10 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
 
     def sequence_run_all(self, useCamera, saveImages):
         result = self._device.RunAllSequenceSteps(useCamera, saveImages)
-        if self._verbose:
-            pprint.pprint(result)
         return result
 
     def sequence_run_step(self, stepName, patternName, useCamera, saveImages):
         result = self._device.RunSequenceStepByName(stepName, patternName, useCamera, saveImages)
-        if self._verbose:
-            pprint.pprint(result)
         return json.loads(result)
 
     def sequence_run_step_list(self, stepList, patternName, useCamera, saveImages):
