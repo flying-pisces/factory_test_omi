@@ -30,7 +30,7 @@ class pancakeDutOffAxis(dut.pancakeDut):
         return tuple(map(lambda x: int(x, 16), rev))
 
     def display_color_check(self, color):
-        color1 = np.uint8([[color]])
+        color1 = np.float32([[color]])
         hsv = cv2.cvtColor(color1, cv2.COLOR_BGR2HSV)
         h, s, v = tuple(hsv[0,0,:])
         return (self.station_config.DISP_CHECKER_L_HsvH <= h <= self.station_config.DISP_CHECKER_H_HsvH and

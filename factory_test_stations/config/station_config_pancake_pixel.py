@@ -154,8 +154,8 @@ COLOR_CAL = 'camera_color_cal1'
 SCALE_CAL = 'image_scale_cal1'
 SHIFT_CAL = '(None)'
 
-# PATTERNS =  ["W255","W000","R255","G255","B255"]
-PATTERNS = ["White","Black","Red","Green","Blue"]
+PATTERNS =  ["W255","W000","R255","G255","B255"]
+# PATTERNS = ["White","Black","Red","Green","Blue"]
 SAVE_IMAGES = [True,True,True,True,True]
 COLORS = [(255,255,255),(0,0,0),(255,0,0),(0,255,0),(0,0,255)]
 # COLORS = ['0008','0000']
