@@ -1,7 +1,7 @@
 CURRENT_FW_VERSION = 1001
 
 STATION_LIMITS_ARRAYS = [
-    ["TT_Version", 'MPK_API_CS-1.0.10.0', 'MPK_API_CS-1.0.10.0', 96],
+    ["TT_Version", 'MPK_API_CS-1.0.11.0', 'MPK_API_CS-1.0.11.0', 96],
     ["DUT_ScreenOnRetries", 0, 10, 97],
     ["DUT_ScreenOnStatus", True, True, 98],
     ["ENV_ParticleCounter", 0, 1000, 99],
@@ -9,7 +9,7 @@ STATION_LIMITS_ARRAYS = [
     # Avgu/Avgv/CenterLv/AvgLv/LvUniformity
     ["White_Avgu",  -1E+12, 1E+12, 101],
     ["White_Avgv",  -1E+12, 1E+12, 102],
-    ["White_CenterLv",  -1E+12, 1E+12, 103],
+    ["White_CenterLv", 400, 600, 103],
     ["White_AvgLv", -1E+12, 1E+12, 104],
     ["White_LvUniformity",  -1E+12, 1E+12, 105],
     ["White_GlobalContrast",  -1E+12, 1E+12, 106],

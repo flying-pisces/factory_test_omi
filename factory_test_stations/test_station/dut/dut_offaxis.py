@@ -27,7 +27,7 @@ class pancakeDutOffAxis(dut.pancakeDut):
         rev = dut.pancakeDut._prase_respose(self._station_config.COMMAND_DISP_GETCOLOUR, response)
         if int(rev[0]) != 0:
             raise dut.DUTError('Read color sensor failed. \n')
-        return tuple(map(lambda x: int(x, 16), rev))
+        return tuple([int(x, 16) for x in rev])
 
     def display_color_check(self, color):
         color1 = np.float32([[color]])

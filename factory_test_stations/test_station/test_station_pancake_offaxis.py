@@ -155,7 +155,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                     # the_unit.display_color(self._station_config.COLORS[i])
                     if isinstance(self._station_config.COLORS[i], tuple):
                         the_unit.display_color(self._station_config.COLORS[i])
-                    elif isinstance(self._station_config.COLORS[i], str):
+                    elif isinstance(self._station_config.COLORS[i], (str, int)):
                         the_unit.display_image(self._station_config.COLORS[i])
 
                     analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
@@ -189,8 +189,8 @@ class pancakeoffaxisStation(test_station.TestStation):
                         if c != self._station_config.ANALYSIS:
                             continue
                         for r in result:
-                            test_item = (self._station_config.PATTERNS[i] + "_" + r.split('(')[0]).replace(" ", "")
-                            test_item = test_item.replace('\'', '')
+                            raw_test_item = (self._station_config.PATTERNS[i] + "_" + r)
+                            test_item = re.sub(r'\(|\)|\s|\|\\', '', raw_test_item)
                             has_test_item = False
                             for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
                                 if limit_array[0] == test_item:

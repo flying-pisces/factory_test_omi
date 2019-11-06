@@ -21,7 +21,7 @@ SHOPFLOOR_SYSTEM = 'Sunny'
 ENFORCE_SHOPFLOOR_ROUTING = False
 # does the shopfloor use work orders?
 # USE_WORKORDER_ENTRY = True
-
+COLORS = [1,2,3,4,5]
 ##################################
 # station hardware
 #

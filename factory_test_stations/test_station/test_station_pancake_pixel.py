@@ -173,7 +173,7 @@ class pancakepixelStation(test_station.TestStation):
                 # modified by elton . add random color
                 if isinstance(self._station_config.COLORS[i], tuple):
                     the_unit.display_color(self._station_config.COLORS[i])
-                elif isinstance(self._station_config.COLORS[i], str):
+                elif isinstance(self._station_config.COLORS[i], (str, int)):
                     the_unit.display_image(self._station_config.COLORS[i])
 
                 # vsync_us = the_unit.vsync_microseconds()
@@ -292,6 +292,12 @@ class pancakepixelStation(test_station.TestStation):
 
                         defect_index = abs_contrast * np.array(location_index) * np.array(size_index)
                         blemish_index = np.sum(defect_index)
+                        if self._station_config.IS_VERBOSE:
+                            print 'constrast_{}:{}'.format(self._station_config.PATTERNS[i], constrast_lst)
+                            print 'locationX_{}:{}'.format(self._station_config.PATTERNS[i], locax_list)
+                            print 'locationY_{}:{}'.format(self._station_config.PATTERNS[i], locay_list)
+                            print 'size     _{}:{}'.format(self._station_config.PATTERNS[i], size_list)
+                            print 'pixel    _{}:{}'.format(self._station_config.PATTERNS[i], pixel_list)
                     self._operator_interface.print_to_console("close run step {}.\n"
                                                               .format(self._station_config.PATTERNS[i]))
                     test_log.set_measured_value_by_name(test_item, blemish_index)

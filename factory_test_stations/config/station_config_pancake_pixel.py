@@ -120,7 +120,7 @@ DUT_ON_MAXRETRY = 10
 # Test Equipment related parameters
 IS_VERBOSE = False
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
-SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\Myzy_Sequence_10-3-19.seqx'
+SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\y29 particle Defect.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 DATABASE_RELATIVEPATH_ACT = r'factory-test_logs'
@@ -159,6 +159,7 @@ PATTERNS =  ["W255","W000","R255","G255","B255"]
 SAVE_IMAGES = [True,True,True,True,True]
 COLORS = [(255,255,255),(0,0,0),(255,0,0),(0,255,0),(0,0,255)]
 # COLORS = ['0008','0000']
+# COLORS = ['1', '2', '3','4','5']
 ANALYSIS = ["ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects"]
 # EXPOSURE = [[10,10,10],[90,90,90],[40,40,40],[40,40,40],[40,40,40]]
 

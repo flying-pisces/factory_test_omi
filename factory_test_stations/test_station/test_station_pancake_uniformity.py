@@ -181,7 +181,7 @@ class pancakeuniformityStation(test_station.TestStation):
                 # the_unit.display_color(self._station_config.COLORS[i])
                 if isinstance(self._station_config.COLORS[i], tuple):
                     the_unit.display_color(self._station_config.COLORS[i])
-                elif isinstance(self._station_config.COLORS[i], str):
+                elif isinstance(self._station_config.COLORS[i], (str, int)):
                     the_unit.display_image(self._station_config.COLORS[i])
 
                 # if math.isnan(the_unit.vsync_microseconds()):

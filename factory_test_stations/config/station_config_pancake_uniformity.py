@@ -152,6 +152,7 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True, True, True]
 COLORS = [(255,255,255), (180, 180, 180), (127,127,127), (90,90,90), (255,0,0), (0,255,0), (0,0,255)]
 # COLORS = ['0008', '0001', '0800', '8000', '0010', '0020', '0040']
+# COLORS = ['1', '2', '3','4','5']
 ANALYSIS = ["MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity"]
 EXPOSURE = [[125,125,125], [250,250,250],[375,375,375],[500,500,500],[250,250,500],[125,125,125],[250,250,250]]
 
