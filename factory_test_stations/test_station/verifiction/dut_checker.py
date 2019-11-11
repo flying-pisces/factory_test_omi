@@ -21,17 +21,17 @@ class DutChecker(object):
 
     def _blob_areas(self, image1):
         hsv = cv.cvtColor(image1, cv.COLOR_BGR2HSV)
-        lower = np.array([self._station_config.DISP_CHECKER_THRESH_LOW])
-        upper = np.array([self._station_config.DISP_CHECKER_THRESH_HIGH])
         h, s, v = cv.split(hsv)
-        img = cv.inRange(v, lower, upper)
 
         kernel = np.ones((5, 5), dtype=np.uint8)
-        img = cv.erode(img, kernel, iterations=1)
-        dst = cv.dilate(img, kernel, iterations=1)
+        erode_v = cv.erode(v, kernel, iterations=1)
+        dilate_v = cv.dilate(erode_v, kernel, iterations=1)
 
-        img, contours, hierarchy = cv.findContours(dst.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
-        self._dst = cv.drawContours(dst, contours, -1, (0, 0, 255), 1, lineType=cv.LINE_8)
+        dst = cv.threshold(dilate_v, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+        img, contours, hierarchy = cv.findContours(dst, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
+
+        color_v = cv.cvtColor(v, cv.COLOR_GRAY2BGR)
+        self._dst = cv.drawContours(color_v, contours, -1, (0, 0, 255), 1, lineType=cv.LINE_8)
         areas = []
         for c in contours:
             area = cv.contourArea(c)
