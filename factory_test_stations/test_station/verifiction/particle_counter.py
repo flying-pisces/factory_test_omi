@@ -50,12 +50,21 @@ class ParticleCounter(object):
 
     def particle_counter_read_val(self):
         if self._particle_counter_client is not None:
-            rs = self._particle_counter_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
-                                                                      2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
-            if rs is None or rs.isError():
-                raise ParticleCounterError('Failed to read data from particle counter {}.'.format(rs))
-            else:
-                return rs.registers[0] * 65535 + rs.registers[1]
+            val = None
+            retries = 1
+            while retries <= 10:
+                rs = self._particle_counter_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
+                                                                          2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
+                if rs is None or rs.isError():
+                    time.sleep(0.5)
+                    print "Retries to read data from particle counter {}/10. ".format(retries)
+                    retries += 1
+                else:
+                    val = rs.registers[0] * 65535 + rs.registers[1]
+                    break
+            if val is None:
+                raise ParticleCounterError('Failed to read data from particle counter.')
+            return val
 
     def particle_counter_state(self):
         if self._particle_counter_client is not None:

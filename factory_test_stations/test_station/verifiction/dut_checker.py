@@ -27,7 +27,8 @@ class DutChecker(object):
         erode_v = cv.erode(v, kernel, iterations=1)
         dilate_v = cv.dilate(erode_v, kernel, iterations=1)
 
-        dst = cv.threshold(dilate_v, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+        thr, dst = cv.threshold(dilate_v, self._station_config.DISP_CHECKER_THRESH_LOW,
+                                self._station_config.DISP_CHECKER_THRESH_HIGH, cv.THRESH_BINARY)
         img, contours, hierarchy = cv.findContours(dst, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
 
         color_v = cv.cvtColor(v, cv.COLOR_GRAY2BGR)
