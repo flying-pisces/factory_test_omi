@@ -3,7 +3,7 @@ from pymodbus.client.sync import ModbusSerialClient
 from pymodbus.register_write_message import WriteSingleRegisterResponse
 from pymodbus.register_read_message import ReadHoldingRegistersResponse
 from pymodbus.constants import Defaults
-
+import time
 sys.path.append('../../')
 import station_config
 
@@ -56,9 +56,10 @@ class ParticleCounter(object):
                 rs = self._particle_counter_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
                                                                           2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
                 if rs is None or rs.isError():
-                    time.sleep(0.5)
-                    print "Retries to read data from particle counter {}/10. ".format(retries)
+                    if self._station_config.IS_VERBOSE:
+                        print "Retries to read data from particle counter {}/10. ".format(retries)
                     retries += 1
+                    time.sleep(0.5)
                 else:
                     val = rs.registers[0] * 65535 + rs.registers[1]
                     break

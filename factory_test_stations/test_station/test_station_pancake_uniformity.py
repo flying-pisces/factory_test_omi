@@ -121,15 +121,18 @@ class pancakeuniformityStation(test_station.TestStation):
                         if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
                             the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
                             score = self._dut_checker.do_checker()
-                            score_num = 0
-                            if score is not None:
-
-                                self._operator_interface.print_to_console(
+                            self._operator_interface.print_to_console(
                                     "dut checker using blob detection. {} \n".format(score))
+                            is_screen_on = False
+                            if score is not None:
                                 arr = np.array(score)
                                 score_num = np.where((arr >= self._station_config.DISP_CHECKER_L_SCORE)
                                          & (arr <= self._station_config.DISP_CHECKER_H_SCORE))
-                            is_screen_on = len(score_num[0]) == self._station_config.DISP_CHECKER_COUNT
+                                if np.max(arr) < self._station_config.DISP_CHECKER_EXL_SCORE:
+                                    is_screen_on = len(score_num[0]) == self._station_config.DISP_CHECKER_COUNT
+                                else:
+                                    self._operator_interface.print_to_console("try to reboot the driver board... \n")
+                                    the_unit.reboot()
 
                     if not is_screen_on:
                         msg = 'Retry power_on {}/{} times.\n'.format(retries,

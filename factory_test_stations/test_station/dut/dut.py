@@ -9,6 +9,7 @@ import serial
 import struct
 import logging
 import time
+import datetime
 import string
 import win32process
 import win32event
@@ -146,6 +147,36 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             cmd = os.path.basename(self._renderImgTool) + ' -push ' + \
                   ' '.join([os.path.abspath(c) for c in pics])
             return self._timeout_execute(cmd, len(pics) * self._station_config.DUT_RENDER_ONE_IMAGE_TIMEOUT)
+
+    def reboot(self):
+        delay_seconds = 40
+        if hasattr(self._station_config, 'COMMAND_DISP_REBOOT_DLY'):
+            delay_seconds = self._station_config.COMMAND_DISP_REBOOT_DLY
+        sw = datetime.datetime.now()
+
+        recvobj = self._reboot()
+        if recvobj is None:
+            raise RuntimeError("Fail to reboot because can't receive any data from dut.")
+        elif int(recvobj[0]) != 0x00:
+            raise DUTError("Fail to reboot because rev err msg. Msg = {}".format(recvobj))
+
+        while True:
+            dt = datetime.datetime.now()
+            if (dt - sw).total_seconds() > delay_seconds:
+                raise DUTError('Fail to reboot because waiting msg timeout {0:4f}s. '.format((dt - sw).total_seconds()))
+            response = self._serial_port.readline()
+            if response is None or len(response) <= 0:
+                time.sleep(1)
+                if self._verbose:
+                    print '.'
+                continue
+            recvobj = self._prase_respose('System OK', response)
+            if int(recvobj[0]) == 0x00:
+                if self._verbose:
+                    print 'Reboot system successfully . Elapse time {0:4f} s.'.format((dt - sw).total_seconds())
+                break
+            else:
+                raise DUTError("Fail to reboot because rev err msg. Msg = {}".format(recvobj))
 
     # <editor-fold desc='InternalCommand'>
 
@@ -303,6 +334,14 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_WRITE, response)
 
+    def _reboot(self):
+        cmd = 'Reboot'
+        if hasattr(self._station_config, 'COMMAND_REBOOT'):
+            cmd = self._station_config.COMMAND_REBOOT
+        self._write_serial_cmd(cmd)
+        response = self._read_response()
+        return self._prase_respose(cmd, response)
+
     # </editor-fold>
 
 ############ projectDut is just an example
@@ -343,6 +382,7 @@ if __name__ == "__main__" :
     station_config.load_station('pancake_pixel')
     # station_config.load_station('pancake_uniformity')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
+    station_config.IS_VERBOSE = True
 
     the_unit = pancakeDut(station_config, station_config, station_config)
     for idx in range(0, 100):
@@ -357,18 +397,17 @@ if __name__ == "__main__" :
         # for i in range(4, 11, 2):
         #     pics.append(r'img\spot_{}.bmp'.format(i))
         #     # pics.append(r'img\spot_r_{}.bmp'.format(i))
-
-        for c in os.listdir('img'):
-            if c.endswith(".bmp"):
-                pics.append(r'img\{}'.format(c))
+        if os.path.exists('img'):
+            for c in os.listdir('img'):
+                if c.endswith(".bmp"):
+                    pics.append(r'img\{}'.format(c))
 
         print 'pic - count {0}'.format(len(pics))
 
-        the_unit.render_image(pics)
-
-        time.sleep(1)
-
+        # the_unit.render_image(pics)
         the_unit.initialize()
+        the_unit.reboot()
+
         try:
             the_unit.connect_display()
             # the_unit.screen_on()
