@@ -112,6 +112,7 @@ class pancakeuniformityStation(test_station.TestStation):
                     time.sleep(self._station_config.DISP_CHECKER_DLY)
 
                 while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
+                    is_reboot_need = False
                     retries += 1
                     try:
                         is_screen_on = the_unit.screen_on()
@@ -131,14 +132,16 @@ class pancakeuniformityStation(test_station.TestStation):
                                 if np.max(arr) < self._station_config.DISP_CHECKER_EXL_SCORE:
                                     is_screen_on = len(score_num[0]) == self._station_config.DISP_CHECKER_COUNT
                                 else:
-                                    self._operator_interface.print_to_console("try to reboot the driver board... \n")
-                                    the_unit.reboot()
+                                    is_reboot_need = True
 
                     if not is_screen_on:
                         msg = 'Retry power_on {}/{} times.\n'.format(retries,
                                                                      self._station_config.DUT_ON_MAXRETRY)
                         self._operator_interface.print_to_console(msg)
                         the_unit.screen_off()
+                        if is_reboot_need:
+                            self._operator_interface.print_to_console("try to reboot the driver board... \n")
+                            the_unit.reboot()
 
                     if self._station_config.DISP_CHECKER_IMG_SAVED:
                         fn0 = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())

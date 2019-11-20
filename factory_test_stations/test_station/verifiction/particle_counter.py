@@ -73,7 +73,7 @@ class ParticleCounter(object):
                                                                       2,
                                                                       unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
             if rs is None or rs.isError():
-                raise ParticleCounter('Fail to read data from particle counter. ')
+                raise ParticleCounterError('Fail to read data from particle counter. ')
             else:
                 return rs.registers[0]
 
