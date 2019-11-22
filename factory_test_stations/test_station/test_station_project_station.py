@@ -1,6 +1,7 @@
 import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_project_station as test_fixture_project_station
 import test_station.dut as dut
+import time
 
 
 class projectstationError(Exception):
@@ -71,6 +72,11 @@ class projectstationStation(test_station.TestStation):
 
     def is_ready(self):
         self._fixture.is_ready()
+        timeout_for_dual = 5
+        for idx in range(timeout_for_dual, 0, -1):
+            self._operator_interface.prompt('Press the Dual-Start Btn in %s S...\n' % idx, 'yellow');
+            time.sleep(1)
 
-    def force_restart(self):
-        return False
+        self._operator_interface.print_to_console('Unable to get start signal from fixture.')
+        self._operator_interface.prompt('', 'SystemButtonFace')
+        raise test_station.TestStationSerialNumberError('Fail to Wait for press dual-btn ...')

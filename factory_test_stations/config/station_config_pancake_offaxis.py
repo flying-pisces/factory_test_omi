@@ -10,7 +10,7 @@ ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
+SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 
 ##################################
@@ -36,6 +36,7 @@ COMMAND_DISP_READ = "MIPI.Read"
 COMMAND_DISP_WRITE = "MIPI.Write"
 COMMAND_DISP_2832WRITE = "t.2832_MIPI_WRITE"
 COMMAND_DISP_VSYNC="REFRESHRATE"
+COMMAND_DISP_GETCOLOR = "GetColor"
 
 COMMAND_DISP_POWERON_DLY = 1.5
 COMMAND_DISP_RESET_DLY = 1
@@ -43,17 +44,15 @@ COMMAND_DISP_SHOWIMG_DLY = 1
 COMMAND_DISP_POWEROFF_DLY = 0.2
 
 DISP_CHECKER_ENABLE = True
-DISP_CHECKER_DLY = 2
-DISP_CHECKER_IMG_INDEX = 0
-DISP_CHECKER_MIN = 50
 
 # blue
 # https://blog.csdn.net/a2009374138/article/details/52174856
-DISP_CHECKER_L_HsvH = 100
-DISP_CHECKER_H_HsvH = 124
-DISP_CHECKER_L_HsvS = 43
-DISP_CHECKER_H_HsvS = 255
-
+DISP_CHECKER_L_HsvH = 220
+DISP_CHECKER_H_HsvH = 250
+DISP_CHECKER_L_HsvS = 0.8
+DISP_CHECKER_H_HsvS = 1
+DISP_CHECKER_COLOR = (0, 0, 255)
+DISP_CHECKER_LOCATION = (25, 5)
 DISP_CHECKER_COUNT = 2
 
 COMMAND_HELP = "CMD_HELP\r\n"
@@ -63,8 +62,8 @@ COMMAND_RESET = "CMD_RESET\r\n"
 COMMAND_LOAD = "CMD_LOAD\r\n"
 COMMAND_UNLOAD = "CMD_UNLOAD\r\n"
 COMMAND_ID = "CMD_ID\r\n"
-COMMAND_BUTTON_ENABLE = "CMD_BUTTON_ENABLE\r\n"
-COMMAND_BUTTON_DISABLE = "CMD_BUTTON_DISABLE\r\n"
+COMMAND_BUTTON_ENABLE = "CMD_BTN_ENABLE\r\n"
+COMMAND_BUTTON_DISABLE = "CMD_BTN_DISABLE\r\n"
 COMMAND_FLEX_POWER_ON = "CMD_FLEX_POWER_ON\r\n"
 COMMAND_FLEX_POWER_OFF = "CMD_FLEX_POWER_OFF\r\n"
 COMMAND_MICROUSB_POWER_ON = "CMD_MICROUSB_POWER_ON\r\n"
@@ -90,7 +89,7 @@ COMMAND_CARRIER_POSITION = "CMD_LOAD?\r\n"
 COMMAND_POGO_UP = "CMD_POGO_UP\r\n"
 COMMAND_POGO_DOWN = "CMD_POGO_DOWN\r\n"
 COMMAND_ABS_X_Y = "CMD_ABS_X_Y"
-COMMAND_RES_X_Y = "CMD_RES_X_Y"
+COMMAND_RES_X_Y = "CMD_REG_X_Y"
 COMMAND_MOTOR_HOME = "CMD_MOTOR_HOME\r\n"
 
 # Fixture Status Enum Values
@@ -102,6 +101,7 @@ FIXTURE_PTB_OFF_TIME = 1
 FIXTURE_PTB_ON_TIME = 1
 FIXTURE_USB_OFF_TIME = 1
 FIXTURE_USB_ON_TIME = 1
+FIXTURE_PTB_UNLOAD_DLY = 6
 FIXTURE_PARTICLE_COUNTER = False
 FIXTRUE_PARTICLE_ADDR_READ = 40005
 FIXTRUE_PARTICLE_ADDR_START = 40003
@@ -120,22 +120,12 @@ FIXTRUE_PARTICLE_START_DLY = 0
 # DEFAULT_VSYNC_US = 13.8889  # 72  # 111.44646
 DUT_ON_MAXRETRY = 10
 
-POS0_X = 0
-POS0_Y = 0
-POS1_X = 0
-POS1_Y = 5
-POS2_X = 0
-POS2_Y = 5
-POS3_X = -5
-POS3_Y = 0
-POS4_X = 5
-POS4_Y = 0
-DUT_DISPLAYSLEEPTIME = 2
+DUT_DISPLAYSLEEPTIME = 1
 ##################################
 # Test Equipment related parameters
 IS_VERBOSE = True
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
-SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\Conoscope.seqx'
+SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\I16+Conoscope - POI2.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 DATABASE_RELATIVEPATH_ACT = r'factory-test_logs'
@@ -158,21 +148,16 @@ Resolution_Bin_Y = 0
 RESTART_TEST_COUNT = 10
 DB_MAX_SIZE = 2048
 
-
-SPECTRAL_RESPONSE = 'PhotoMetric'
-DISTANCE_UNIT = "Millimeters"
 CAMERA_SN = "159496752"
-COLOR_CAL = 'camera_color_cal'
-SCALE_CAL = 'image_scale_cal'
-SHIFT_CAL = '159185561 Color Shift Correction'
+
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
+POSITIONS = [(0, 0),  (-5, 5), (5, 5), (5, -5), (-5, -5)]
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
-SAVE_IMAGES = [False, False, False, False, False, False]
+SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
-COLORS = [(255,255,255), (0,0,0), (255,0,0), (0,255,0), (0,0,255)]
-# COLORS = ['0008', '0001', '0800', '8000', '0010', '0020', '0040']
-ANALYSIS = "Points Of Interest"
-EXPOSURE = [[125,125,125],[500,500,500],[250,250,500],[125,125,125],[250,250,250]]
+COLORS = [(255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
+# COLORS = ['0008', '0001', '0800', '8000', '0010']
+ANALYSIS = ["Points Of Interest White", "Points Of Interest Black", "Points Of Interest Red", "Points Of Interest Green", "Points Of Interest Blue"]
 
 ##################################
 # IT and work order

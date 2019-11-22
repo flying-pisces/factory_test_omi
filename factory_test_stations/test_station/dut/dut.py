@@ -54,6 +54,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             raise DUTError('Unable to open DUT port : %s' % self._station_config.DUT_COMPORT)
             return False
         else:
+            self.first_boot = True
             if self._verbose:
                 print 'DUT %s Initialised. ' % self._station_config.DUT_COMPORT
             return True
@@ -258,7 +259,6 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def _get_boardId(self):
         self._write_serial_cmd(self._station_config.COMMAND_DISP_GETBOARDID)
-        time.sleep(1)
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_GETBOARDID, response)
 

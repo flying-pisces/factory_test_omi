@@ -89,7 +89,6 @@ COMMAND_ELIMINATOR_OFF = "CMD_ELIMINATOR_OFF\r\n"
 # Fixture Status Enum Values
 PTB_POSITION_STATUS = ["Testing Position", "Reset Position", "Outside Position", "Other Position"]
 BUTTON_STATUS = ["Enable", "Disable"]
-PTB_POSITION_STATUS = ["Enable", "Disable"]
 CAMERA_POWER_STATUS = ["Enable", "Disable"]
 FIXTURE_PTB_OFF_TIME = 1
 FIXTURE_PTB_ON_TIME = 1
