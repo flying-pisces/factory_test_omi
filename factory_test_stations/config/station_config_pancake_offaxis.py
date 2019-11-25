@@ -5,6 +5,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
+CSV_SUMMARY_DIR = r'c:\offaxis_summray'
 
 
 ##################################

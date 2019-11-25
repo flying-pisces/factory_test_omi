@@ -149,7 +149,7 @@ class pancakeoffaxisStation(test_station.TestStation):
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
 
             pos_items = self._station_config.POSITIONS
-
+            pre_color = None
             for i in range(len(pos_items)):
                 pos = pos_items[i]
                 analysis = self._station_config.ANALYSIS[i]
@@ -160,10 +160,13 @@ class pancakeoffaxisStation(test_station.TestStation):
                 self._operator_interface.print_to_console(
                     "Panel Measurement Pattern: %s \n" % self._station_config.PATTERNS[i])
                 # the_unit.display_color(self._station_config.COLORS[i])
-                if isinstance(self._station_config.COLORS[i], tuple):
-                    the_unit.display_color(self._station_config.COLORS[i])
-                elif isinstance(self._station_config.COLORS[i], (str, int)):
-                    the_unit.display_image(self._station_config.COLORS[i])
+                if pre_color != self._station_config.COLORS[i]:
+                    if isinstance(self._station_config.COLORS[i], tuple):
+                        the_unit.display_color(self._station_config.COLORS[i])
+                    elif isinstance(self._station_config.COLORS[i], (str, int)):
+                        the_unit.display_image(self._station_config.COLORS[i])
+                    pre_color = self._station_config.COLORS[i]
+                    self._operator_interface.print_to_console('Set DUT To Color: {}.\n'.format(pre_color))
 
                 analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
                 self._operator_interface.print_to_console("Sequence run step  {}.\n".format(analysis))
