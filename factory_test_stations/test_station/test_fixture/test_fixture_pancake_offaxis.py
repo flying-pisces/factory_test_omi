@@ -121,41 +121,12 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
     def button_enable(self):
         self._write_serial(self._station_config.COMMAND_BUTTON_ENABLE)
         response = self.read_response()
-        if self._verbose:
-            print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
-
-    def button_enable(self):
-        self._write_serial(self._station_config.COMMAND_BUTTON_ENABLE)
-        response = self.read_response()
-        if self._verbose:
-            print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
+        return self._prase_response(r'BTN_ENABLE:\d+', response)
 
     def button_disable(self):
         self._write_serial(self._station_config.COMMAND_BUTTON_DISABLE)
         response = self.read_response()
-        if self._verbose:
-            print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeoffaxisFixtureError("Fail to Read %s" % response[0])
-        return value
+        return self._prase_response(r'BTN_DISABLE:\d+', response)
 
     def mov_abs_xy(self, x, y):
         CMD_MOVE_STRING = self._station_config.COMMAND_ABS_X_Y + ' ' + str(x) + " " + str(y) + "\r\n"
@@ -218,6 +189,7 @@ if __name__ == "__main__":
 
         print 'Self check for pancake_offaxis'
         station_config.load_station('pancake_offaxis')
+        station_config.FIXTURE_COMPORT = 'COM7'
         station_config.print_to_console = types.MethodType(print_to_console, station_config)
         the_fixture = pancakeoffaxisFixture(station_config, station_config)
         the_fixture._verbose = True
@@ -228,13 +200,19 @@ if __name__ == "__main__":
             # the_fixture.mov_abs_xy(5, 1)
             the_fixture.button_enable()
 
-            for i in range(0, 100):
-                the_fixture.load()
-                the_fixture.mov_abs_xy(0, 0)
+            time.sleep(1)
+            # for i in range(0, 100):
+            #     the_fixture.load()
+            #     the_fixture.mov_abs_xy(0, 0)
+            #     time.sleep(1)
+            #     the_fixture.unload()
+            #     time.sleep(1)
+            for idx in range(10, 0, -1):
+                print 'Press the Dual-Start Btn in %s S...' % idx, 'yellow'
+                if the_fixture.is_ready():
+                    ready = True
+                    break
                 time.sleep(1)
-                the_fixture.unload()
-                time.sleep(1)
-
             the_fixture.button_disable()
 
         except pancakeoffaxisFixtureError as e:
