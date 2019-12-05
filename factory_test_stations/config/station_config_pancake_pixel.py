@@ -144,8 +144,11 @@ HEIGHT = 3954
 IS_SAVEDB = True
 IS_EXPORT_CSV = False
 IS_EXPORT_PNG = False
-Resolution_Bin_X = 0
-Resolution_Bin_Y = 0
+Resolution_Bin_X_REGISTER = 10
+Resolution_Bin_Y_REGISTER = 10
+Resolution_REGISTER_SKIPTEXT = 6
+Resolution_Bin_X = 10
+Resolution_Bin_Y = 10
 RESTART_TEST_COUNT = 99999
 DB_MAX_SIZE = 2048
 
@@ -156,16 +159,25 @@ COLOR_CAL = 'camera_color_cal1'
 SCALE_CAL = 'image_scale_cal1'
 SHIFT_CAL = '(None)'
 
-PATTERNS =  ["W255","W000","R255","G255","B255"]
+PATTERNS_BRIGHT = ['REG000', 'REG001', 'W000']  # the first two are used to register data for bright test.
+PATTERNS_DARK = ['W255', 'R255', "R255", "G255", "B255"]
+PATTERNS = ["REG000", "REG001", "W000", "W255", "R255", "G255", "B255"]
 # PATTERNS = ["White","Black","Red","Green","Blue"]
-SAVE_IMAGES = [True,True,True,True,True]
-COLORS = [(255,255,255),(0,0,0),(255,0,0),(0,255,0),(0,0,255)]
+SAVE_IMAGES = [True, True, True, True, True, True, True]
+COLORS = [(28, 28, 28), (48, 48, 48), (0, 0, 0), (255, 255, 255),  (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 # COLORS = ['0008','0000']
 # COLORS = ['1', '2', '3','4','5']
-ANALYSIS = ["ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects"]
-# EXPOSURE = [[10,10,10],[90,90,90],[40,40,40],[40,40,40],[40,40,40]]
+ANALYSIS = ["ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects"]
 
-EXPOSURE = [[9,9,9],[20,20,20],[18,18,18],[13,13,13],[20,20,20]]
+QUALITY_AREA_R = 18
+SUPER_QUALITY_AREA_R = 7
+SEPARATION_DISTANCE = 5
+
+SUPER_AREA_DEFECTS_COUNT_L = 0
+SUPER_AREA_DEFECTS_COUNT_U = 1
+QUALITY_AREA_DEFECTS_COUNT_B = 0
+QUALITY_AREA_DEFECTS_COUNT_DU = 2
+QUALITY_AREA_DEFECTS_COUNT_DL = 3
 
 LOCATION_L = 10
 LOCATION_U = 20

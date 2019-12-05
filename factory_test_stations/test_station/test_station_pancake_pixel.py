@@ -2,7 +2,6 @@ import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_pancake_pixel as test_fixture_pancake_pixel
 import test_station.test_equipment.test_equipment_pancake_pixel as test_equipment_pancake_pixel
 import test_station.dut as dut
-import hardware_station_common.test_station.test_station as test_station
 import os
 import shutil
 import time
@@ -11,6 +10,7 @@ import datetime
 import re
 import filecmp
 import numpy as np
+from itertools import islice
 from verifiction.particle_counter import ParticleCounter
 from verifiction.dut_checker import DutChecker
 
@@ -173,57 +173,184 @@ class pancakepixelStation(test_station.TestStation):
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
             self._fixture.elminator_off()
 
-            for i in range(len(self._station_config.PATTERNS)):
-                self._operator_interface.print_to_console(
-                    "Panel Measurement Pattern: %s\n" % self._station_config.PATTERNS[i])
+            self.bright_subpixel_do(the_unit, serial_number, test_log)
+            self.dark_subpixel_do(the_unit, serial_number, test_log)
+            self.data_export()
 
-                # modified by elton . add random color
-                if isinstance(self._station_config.COLORS[i], tuple):
-                    the_unit.display_color(self._station_config.COLORS[i])
-                elif isinstance(self._station_config.COLORS[i], (str, int)):
-                    the_unit.display_image(self._station_config.COLORS[i])
+        except Exception, e:
+            self._operator_interface.print_to_console("Test exception . {}\n".format(e))
+        finally:
+            self._operator_interface.print_to_console('release current test resource.\n')
+            if the_unit is not None:
+                the_unit.close()
+            if self._fixture is not None:
+                self._fixture.unload()
+                self._fixture.elminator_off()
 
-                # vsync_us = the_unit.vsync_microseconds()
-                # if math.isnan(vsync_us):
-                #     vsync_us = self._station_config.DEFAULT_VSYNC_US
-                #     exp_time_list = self._station_config.EXPOSURE[i]
-                # else:
-                #     exp_time_list = self._station_config.EXPOSURE[i]
-                #     for exp_index in range(len(exp_time_list)):
-                #         exp_time_list[exp_index] = float(
-                #             int(exp_time_list[exp_index] * 1000.0 / vsync_us) * vsync_us) / 1000.0
-                #         self._operator_interface.print_to_console(
-                #             "\nAdjusted Timing in millesecond: %s\n" % exp_time_list[exp_index])
+            self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
+            overall_result, first_failed_test_result = self.close_test(test_log)
 
-                analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
-                analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
-                self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
+            self._runningCount += 1
+            self._operator_interface.print_to_console('--- do test finished ---\n')
+            return overall_result, first_failed_test_result
 
-                if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
-                    output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
-                                              the_unit.serial_number + '_' + test_log._start_time.strftime(
-                                                  "%Y%m%d-%H%M%S"))
+    def close_test(self, test_log):
+        ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###
+        self._overall_result = test_log.get_overall_result()
+        self._first_failed_test_result = test_log.get_first_failed_test_result()
+
+        return self._overall_result, self._first_failed_test_result
+
+    def is_ready(self):
+        self._fixture.is_ready()
+
+    def backup_database(self, srcfn, dbfn, ismov = False):
+        bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_BAK)
+        if not os.path.exists(bak_dir):
+            os.mkdir(bak_dir, 777)
+        if ismov:
+            shutil.move(srcfn, os.path.join(bak_dir, dbfn))
+        else:
+            shutil.copyfile(srcfn, os.path.join(bak_dir, dbfn))
+
+    def calc_blemish_index(self, pattern, zdata, test_log):
+        self._operator_interface.print_to_console("calc blemish_index {}.\n".format(pattern))
+        test_item = pattern + "_" + "BlemishIndex"
+        if test_item not in test_log.results_array:
+            return
+        num = len(zdata)
+        npdata = np.array(zdata)
+        size_list = npdata[:, 0]
+        locax_list = npdata[:, 1]
+        locay_list = npdata[:, 2]
+        pixel_list = npdata[:, 3]
+        constrast_lst = npdata[:, 4]
+
+        # Algorithm For blemish_index
+        blemish_index = 0
+        if num > 0 and len(constrast_lst) > 0:
+            abs_contrast = np.abs(constrast_lst)
+            location_r = np.sqrt(np.power(np.array(locax_list) - self._station_config.LOCATION_X0, 2)
+                                 * np.power(np.array(locay_list) - self._station_config.LOCATION_Y0, 2))
+            location_index = []
+            size_index = []
+            for id in range(0, len(locax_list)):
+                tmp_local_index = 0
+                tmp_size_index = 0
+                if location_r[id] <= self._station_config.LOCATION_L:
+                    tmp_local_index = 2
+                elif self._station_config.LOCATION_L < location_r[id] <= self._station_config.LOCATION_U:
+                    tmp_local_index = 1
+                elif location_r[id] > self._station_config.LOCATION_U:
+                    tmp_local_index = 0
+
+                if size_list[id] <= self._station_config.SIZE_L:
+                    tmp_size_index = 0
+                elif self._station_config.SIZE_L < size_list[id] <= self._station_config.SIZE_U:
+                    tmp_size_index = 1
+                elif size_list[id] > self._station_config.SIZE_U:
+                    tmp_size_index = 2
+
+                location_index.append(tmp_local_index)
+                size_index.append(tmp_size_index)
+
+            defect_index = abs_contrast * np.array(location_index) * np.array(size_index)
+            blemish_index = np.sum(defect_index)
+            if self._station_config.IS_VERBOSE:
+                print 'constrast_{}:{}'.format(pattern, constrast_lst)
+                print 'locationX_{}:{}'.format(pattern, locax_list)
+                print 'locationY_{}:{}'.format(pattern, locay_list)
+                print 'size     _{}:{}'.format(pattern, size_list)
+                print 'pixel    _{}:{}'.format(pattern, pixel_list)
+        test_log.set_measured_value_by_name(test_item, blemish_index)
+
+    def data_export(self, serial_number, test_log):
+        """
+        export csv and png from ttxm database
+        :type test_log: test_station.TestRecord
+        :type serial_number: str
+        """
+        for i in range(len(self._station_config.PATTERNS)):
+            self._operator_interface.print_to_console(
+                "Panel export for Pattern: %s\n" % self._station_config.PATTERNS[i])
+            if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
+                output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
+                                          serial_number + '_' + test_log._start_time.strftime(
+                                              "%Y%m%d-%H%M%S"))
+                if not os.path.exists(output_dir):
+                    os.mkdir(output_dir, 777)
+                meas_list = self._equipment.get_measurement_list()
+                exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
+                for meas in meas_list:
+                    if meas['Measurement Setup'] != self._station_config.PATTERNS[i]:
+                        continue
+
+                    id = meas['Measurement ID']
+                    export_csv_name = "{}_{}.csv".format(serial_number, self._station_config.PATTERNS[i])
+                    export_png_name = "{}_{}.png".format(serial_number, self._station_config.PATTERNS[i])
+                    if self._station_config.IS_EXPORT_CSV:
+                        self._equipment.export_measurement(id, output_dir, export_csv_name,
+                                                           self._station_config.Resolution_Bin_X,
+                                                           self._station_config.Resolution_Bin_Y)
+                    if self._station_config.IS_EXPORT_PNG:
+                        self._equipment.export_measurement(id, output_dir, export_png_name,
+                                                           self._station_config.Resolution_Bin_X,
+                                                           self._station_config.Resolution_Bin_Y)
+                    self._operator_interface.print_to_console("Export data for {}\n"
+                                                              .format(self._station_config.PATTERNS[i]))
+
+    def bright_subpixel_do(self, the_unit, serial_number, test_log):
+        """
+        export csv and png from ttxm database
+        :type the_unit: dut.pancakeDut
+        :type test_log: test_station.TestRecord
+        :type serial_number: str
+        """
+        avg_lv_register_patterns = []
+        for idx, br_pattern in enumerate(self._station_config.PATTERNS_BRIGHT):
+            if br_pattern not in self._station_config.PATTERNS:
+                self._operator_interface.print_to_console("unable to find pattern: %s\n" % br_pattern)
+                continue
+            i = self._station_config.PATTERNS.index(br_pattern)
+            self._operator_interface.print_to_console(
+                "Panel Measurement Pattern: %s\n" % self._station_config.PATTERNS[i])
+
+            # modified by elton . add random color
+            if isinstance(self._station_config.COLORS[i], tuple):
+                the_unit.display_color(self._station_config.COLORS[i])
+            elif isinstance(self._station_config.COLORS[i], (str, int)):
+                the_unit.display_image(self._station_config.COLORS[i])
+
+            analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
+            analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
+            self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
+
+            if 0 <= idx <= 1:  # the first 2 patterns are used to register.
+                meas_list = self._equipment.get_measurement_list()
+                for meas in meas_list:
+                    if meas['Measurement Setup'] != self._station_config.PATTERNS[i]:
+                        continue
+                    output_dir = os.path.join(self._station_config.ROOT_DIR,
+                                              self._station_config.ANALYSIS_RELATIVEPATH,
+                                              serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
                     if not os.path.exists(output_dir):
                         os.mkdir(output_dir, 777)
-                    meas_list = self._equipment.get_measurement_list()
-                    exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
-                    for meas in meas_list:
-                        if meas['Measurement Setup'] != self._station_config.PATTERNS[i]:
-                            continue
-
-                        id = meas['Measurement ID']
-                        export_csv_name = "{}_{}.csv".format(serial_number, self._station_config.PATTERNS[i])
-                        export_png_name = "{}_{}.png".format(serial_number, self._station_config.PATTERNS[i])
-                        if self._station_config.IS_EXPORT_CSV:
-                            self._equipment.export_measurement(id, output_dir, export_csv_name,
-                                                               self._station_config.Resolution_Bin_X,
-                                                               self._station_config.Resolution_Bin_Y)
-                        if self._station_config.IS_EXPORT_PNG:
-                            self._equipment.export_measurement(id, output_dir, export_png_name,
-                                                               self._station_config.Resolution_Bin_X,
-                                                               self._station_config.Resolution_Bin_Y)
-                        self._operator_interface.print_to_console("Export data for {}\n"
-                                                                  .format(self._station_config.PATTERNS[i]))
+                    id = meas['Measurement ID']
+                    export_csv_name = "{}_{}_register.csv".format(serial_number, self._station_config.PATTERNS[i])
+                    self._equipment.export_measurement(id, output_dir, export_csv_name,
+                                                       self._station_config.Resolution_Bin_X_REGISTER,
+                                                       self._station_config.Resolution_Bin_Y_REGISTER)
+                    lv = []
+                    fn = os.path.join(output_dir, export_csv_name)
+                    with open(fn) as f:
+                        for line in islice(f, self._station_config.Resolution_REGISTER_SKIPTEXT,
+                                           self._station_config.Resolution_Bin_Y_REGISTER):
+                            row_data = line.replace('\n', '').split(',')
+                            lv.append([float(c) for c in row_data])
+                    avg = np.array(lv).mean()
+                    avg_lv_register_patterns.append(avg)
+                    shutil.rmtree(fn, True)
+            else:
                 size_list = []
                 locax_list = []
                 locay_list = []
@@ -242,133 +369,201 @@ class pancakepixelStation(test_station.TestStation):
                         contrast_key = 'Contrast_{}'.format(id)
                         pixel_key = 'Pixels_{}'.format(id)
                         if (result.has_key(size_key) and
+                                result.has_key(locax_key) and
+                                result.has_key(locay_key) and
+                                result.has_key(contrast_key) and
+                                result.has_key(pixel_key)):
+                            size_list.append(float(result[size_key]))
+                            locax_list.append(float(result[locax_key]))
+                            locay_list.append(float(result[locay_key]))
+                            pixel_list.append(float(result[pixel_key]))
+                            constrast_lst.append(float(result[contrast_key]))
+
+                    self._operator_interface.print_to_console("prase normal test item {}.\n"
+                                                              .format(self._station_config.PATTERNS[i]))
+                    self.normal_test_item_prase(br_pattern, result, test_log)
+
+                    pos_items = zip(locax_list, locay_list)
+                    if num > 0 and len(constrast_lst) > 0:
+                        abs_contrast = np.abs(constrast_lst)
+                        location_r = np.sqrt(np.power(np.array(locax_list) - self._station_config.LOCATION_X0, 2)
+                                             + np.power(np.array(locay_list) - self._station_config.LOCATION_Y0, 2))
+                        con_r = zip(abs_contrast, location_r)
+
+                        defects = [c > avg_lv_register_patterns[0] and
+                                                              d <= self._station_config.SUPER_QUALITY_AREA_R
+                                                              for c, d in con_r]
+                        test_item = '{}_SuperQuality_Brighter_NumDefects'.format(br_pattern)
+                        super_brighter_count = defects.count(True)
+                        test_log.set_measured_value_by_name(test_item, super_brighter_count)
+                        test_item = '{}_SuperQuality_Brighter_MinSeparationDistance'.format(br_pattern)
+                        min_sepa_distance = self.calc_separate_distance(pos_items, defects)
+                        test_log.set_measured_value_by_name(test_item, min_sepa_distance)
+                        test_item = '{}_SuperQuality_Brighter_Res'.format(br_pattern)
+                        test_log.set_measured_value_by_name(test_item,
+                             super_brighter_count <= self._station_config.SUPER_AREA_DEFECTS_COUNT_L)
+
+                        defects = [c <= avg_lv_register_patterns[0] and
+                                              d <= self._station_config.SUPER_QUALITY_AREA_R
+                                              for c, d in con_r]
+                        test_item = '{}_SuperQuality_Dimmer_NumDefects'.format(br_pattern)
+                        super_dimmer_count = defects.count(True)
+                        test_log.set_measured_value_by_name(test_item, super_dimmer_count)
+                        test_item = '{}_SuperQuality_Dimmer_MinSeparationDistance'.format(br_pattern)
+                        min_sepa_distance = self.calc_separate_distance(pos_items, defects)
+                        test_log.set_measured_value_by_name(test_item, min_sepa_distance)
+                        test_item = '{}_SuperQuality_Dimmer_Res'.format(br_pattern)
+                        test_log.set_measured_value_by_name(test_item,
+                             super_dimmer_count <= self._station_config.SUPER_AREA_DEFECTS_COUNT_H and
+                             min_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
+
+                        defects = [c > avg_lv_register_patterns[1] and
+                            self._station_config.QUALITY_AREA_R >= d > self._station_config.SUPER_QUALITY_AREA_R
+                            for c, d in con_r]
+                        quality_brighter_count = defects.count(True)
+                        test_item = '{}_Quality_Brighter_NumDefects'.format(br_pattern)
+                        test_log.set_measured_value_by_name(test_item, quality_brighter_count)
+                        test_item = '{}_Quality_Brighter_MinSeparationDistance'.format(br_pattern)
+                        min_sepa_distance = self.calc_separate_distance(pos_items, quality_brighter_count)
+                        test_log.set_measured_value_by_name(test_item, min_sepa_distance)
+                        test_item = '{}_Quality_Brighter_Res'.format(br_pattern)
+                        test_log.set_measured_value_by_name(test_item,
+                             quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_B)
+
+                        defects = [ avg_lv_register_patterns[0] < c <= avg_lv_register_patterns[1] and
+                             self._station_config.QUALITY_AREA_R >= d > self._station_config.SUPER_QUALITY_AREA_R
+                             for c, d in con_r]
+                        quality_dimmeru_count = defects.count(True)
+                        test_item = '{}_Quality_DimmerU_NumDefects'.format(br_pattern)
+                        test_log.set_measured_value_by_name(test_item, quality_dimmeru_count)
+                        test_item = '{}_Quality_DimmerU_MinSeparationDistance'.format(br_pattern)
+                        min_sepa_distance = self.calc_separate_distance(pos_items, quality_dimmeru_count)
+                        test_log.set_measured_value_by_name(test_item, min_sepa_distance)
+                        test_item = '{}_Quality_DimmerU_Res'.format(br_pattern)
+                        test_log.set_measured_value_by_name(test_item,
+                             quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DU)
+
+                        defects = [ avg_lv_register_patterns[0] >= c and
+                             self._station_config.QUALITY_AREA_R >= d > self._station_config.SUPER_QUALITY_AREA_R
+                             for c, d in con_r]
+                        quality_dimmerl_count = defects.count(True)
+                        test_item = '{}_Quality_DimmerL_NumDefects'.format(br_pattern)
+                        test_log.set_measured_value_by_name(test_item, quality_dimmerl_count)
+                        test_item = '{}_Quality_DimmerL_MinSeparationDistance'.format(br_pattern)
+                        min_sepa_distance = self.calc_separate_distance(pos_items, quality_dimmerl_count)
+                        test_log.set_measured_value_by_name(test_item, min_sepa_distance)
+                        test_item = '{}_Quality_DimmerL_Res'.format(br_pattern)
+                        test_log.set_measured_value_by_name(test_item,
+                             quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DL)
+
+                        self.calc_blemish_index(br_pattern,
+                            zip(size_list, locax_list, locay_list, pixel_list, constrast_lst), test_log)
+
+    def calc_separate_distance(self, defect_positions, mask_pos):
+        distance_items = []
+        pos_items = []
+        for pos, value in enumerate(mask_pos):
+            if not value:
+                continue
+            pos_items.append(pos)
+        num = len(pos_items)
+        x = np.array(defect_positions)[:, 0][pos_items]
+        y = np.array(defect_positions)[:, 1][pos_items]
+        for row in range(num):
+            for col in range(num):
+                if row != col:
+                    dis = ((x[col] - x[row]) ** 2 + (y[col] - y[row]) ** 2) ** 0.5
+                    distance_items.append(dis)
+        if len(distance_items) < 1:
+            return 9999
+        return min(distance_items)
+
+    def normal_test_item_parse(self, br_pattern, result, test_log):
+        """
+        :type test_log: test_station.TestRecord
+        :type result: []
+        :type br_pattern: str
+        """
+        for resItem in result:
+            test_item = (br_pattern + "_" + resItem).replace(" ", "")
+            for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
+                if limit_array[0] == test_item and \
+                        re.match(r'^([-|+]?\d+)(\.\d*)?$', result[resItem], re.IGNORECASE) is not None:
+                    self._operator_interface.print_to_console(
+                        '{}, {}.\n'.format(test_item, result[resItem]))
+                    test_log.set_measured_value_by_name(test_item, float(result[resItem]))
+                    self._operator_interface.print_to_console('TEST ITEM: {}, Value: {}\n'
+                                                              .format(test_item, result[resItem]))
+                    break
+
+    def dark_subpixel_do(self, the_unit, serial_number, test_log):
+        for idx, br_pattern in enumerate(self._station_config.PATTERNS_DARK):
+            if br_pattern not in self._station_config.PATTERNS:
+                self._operator_interface.print_to_console("unable to find pattern: %s\n" % br_pattern)
+                continue
+            i = self._station_config.PATTERNS.index(br_pattern)
+            self._operator_interface.print_to_console(
+                "Panel Measurement Pattern: %s\n" % self._station_config.PATTERNS[i])
+
+            # modified by elton . add random color
+            if isinstance(self._station_config.COLORS[i], tuple):
+                the_unit.display_color(self._station_config.COLORS[i])
+            elif isinstance(self._station_config.COLORS[i], (str, int)):
+                the_unit.display_image(self._station_config.COLORS[i])
+
+            analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
+            analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
+            self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
+
+            size_list = []
+            locax_list = []
+            locay_list = []
+            pixel_list = []
+            constrast_lst = []
+            for c, result in analysis_result.items():
+                if not isinstance(result, dict) or not result.has_key('NumDefects'):
+                    continue
+                num = int(result['NumDefects'])
+                self._operator_interface.print_to_console("prase numDefect {}, Num={}.\n"
+                                                          .format(self._station_config.PATTERNS[i], num))
+                for id in range(0, num):
+                    size_key = 'Size_{}'.format(id)
+                    locax_key = 'LocX_{}'.format(id)
+                    locay_key = 'LocY_{}'.format(id)
+                    contrast_key = 'Contrast_{}'.format(id)
+                    pixel_key = 'Pixels_{}'.format(id)
+                    if (result.has_key(size_key) and
                             result.has_key(locax_key) and
                             result.has_key(locay_key) and
                             result.has_key(contrast_key) and
                             result.has_key(pixel_key)):
-                                size_list.append(float(result[size_key]))
-                                locax_list.append(float(result[locax_key]))
-                                locay_list.append(float(result[locay_key]))
-                                pixel_list.append(float(result[pixel_key]))
-                                constrast_lst.append(float(result[contrast_key]))
+                        size_list.append(float(result[size_key]))
+                        locax_list.append(float(result[locax_key]))
+                        locay_list.append(float(result[locay_key]))
+                        pixel_list.append(float(result[pixel_key]))
+                        constrast_lst.append(float(result[contrast_key]))
 
-                    self._operator_interface.print_to_console("prase normal test item {}.\n"
-                                                              .format(self._station_config.PATTERNS[i]))
+                self._operator_interface.print_to_console("prase normal test item {}.\n"
+                                                          .format(self._station_config.PATTERNS[i]))
+                self.normal_test_item_prase(br_pattern, result, test_log)
 
-                    for resItem in result:
-                        test_item = (self._station_config.PATTERNS[i] + "_" + resItem).replace(" ", "")
-                        for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
-                            if limit_array[0] == test_item and\
-                                    re.match(r'^([-|+]?\d+)(\.\d*)?$', result[resItem], re.IGNORECASE) is not None:
-                                self._operator_interface.print_to_console('{}, {}.\n'.format(test_item, result[resItem]))
-                                test_log.set_measured_value_by_name(test_item, float(result[resItem]))
-                                self._operator_interface.print_to_console('TEST ITEM: {}, Value: {}\n'
-                                                                          .format(test_item, result[resItem]))
-                                break
-                    self._operator_interface.print_to_console("calc blemish_index {}.\n"
-                                                              .format(self._station_config.PATTERNS[i]))
-                    test_item = self._station_config.PATTERNS[i] + "_" + "BlemishIndex"
+                pos_items = zip(locax_list, locay_list)
+                if num > 0 and len(constrast_lst) > 0:
+                    abs_contrast = np.abs(constrast_lst)
+                    location_r = np.sqrt(np.power(np.array(locax_list) - self._station_config.LOCATION_X0, 2)
+                                         + np.power(np.array(locay_list) - self._station_config.LOCATION_Y0, 2))
+                    con_r = zip(abs_contrast, location_r)
 
-                    # Algorithm For blemish_index
-                    blemish_index = 0
-                    if num > 0 and len(constrast_lst) > 0:
-                        abs_contrast = np.abs(constrast_lst)
-                        location_r = np.sqrt(np.power(np.array(locax_list) - self._station_config.LOCATION_X0, 2)
-                                             * np.power(np.array(locay_list) - self._station_config.LOCATION_Y0, 2))
-                        location_index = []
-                        size_index = []
-                        for id in range(0, len(locax_list)):
-                            tmp_local_index = 0
-                            tmp_size_index = 0
-                            if location_r[id] <= self._station_config.LOCATION_L:
-                                tmp_local_index = 2
-                            elif self._station_config.LOCATION_L < location_r[id] <= self._station_config.LOCATION_U:
-                                tmp_local_index = 1
-                            elif location_r[id] > self._station_config.LOCATION_U:
-                                tmp_local_index = 0
+                    defects = [d < self._station_config.SUPER_QUALITY_AREA_R
+                               for c, d in con_r]
+                    super_quality_count = defects.count(True)
+                    test_item = '{}_SuperQuality_NumDefects'.format(br_pattern)
+                    test_log.set_measured_value_by_name(test_item, super_quality_count)
 
-                            if size_list[id] <= self._station_config.SIZE_L:
-                                tmp_size_index = 0
-                            elif self._station_config.SIZE_L < size_list[id] <= self._station_config.SIZE_U:
-                                tmp_size_index = 1
-                            elif size_list[id] > self._station_config.SIZE_U:
-                                tmp_size_index = 2
-
-                            location_index.append(tmp_local_index)
-                            size_index.append(tmp_size_index)
-
-                        defect_index = abs_contrast * np.array(location_index) * np.array(size_index)
-                        blemish_index = np.sum(defect_index)
-                        if self._station_config.IS_VERBOSE:
-                            print 'constrast_{}:{}'.format(self._station_config.PATTERNS[i], constrast_lst)
-                            print 'locationX_{}:{}'.format(self._station_config.PATTERNS[i], locax_list)
-                            print 'locationY_{}:{}'.format(self._station_config.PATTERNS[i], locay_list)
-                            print 'size     _{}:{}'.format(self._station_config.PATTERNS[i], size_list)
-                            print 'pixel    _{}:{}'.format(self._station_config.PATTERNS[i], pixel_list)
-                    self._operator_interface.print_to_console("close run step {}.\n"
-                                                              .format(self._station_config.PATTERNS[i]))
-                    test_log.set_measured_value_by_name(test_item, blemish_index)
-
-        except Exception, e:
-            self._operator_interface.print_to_console("Test exception . {}\n".format(e))
-        finally:
-            self._operator_interface.print_to_console('release current test resource.\n')
-            if the_unit is not None:
-                the_unit.close()
-            if self._fixture is not None:
-                self._fixture.unload()
-                self._fixture.elminator_off()
-
-            self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
-            overall_result, first_failed_test_result = self.close_test(test_log)
-
-            # SN-YYMMDDHHMMS-P.ttxm for pass unit and  SN-YYMMDDHHMMS-F.ttxm for failed
-            # if self._station_config.RESTART_TEST_COUNT == 1\
-            #     and self._station_config.IS_SAVEDB:
-            #     dbfn = test_log.get_filename()
-            #     if overall_result:
-            #         dbfn = re.sub('x.log', 'P.ttxm', test_log.get_filename())
-            #     else:
-            #         dbfn = re.sub('x.log', 'F.ttxm', test_log.get_filename())
-            #     self.backup_database(databaseFileName, dbfn)
-            self._runningCount += 1
-            self._operator_interface.print_to_console('--- do test finished ---\n')
-            return overall_result, first_failed_test_result
-
-    def close_test(self, test_log):
-        ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###
-        self._overall_result = test_log.get_overall_result()
-        self._first_failed_test_result = test_log.get_first_failed_test_result()
-
-        return self._overall_result, self._first_failed_test_result
-
-
-
-    def is_ready(self):
-        self._fixture.is_ready()
-
-    def backup_database(self, srcfn, dbfn, ismov = False):
-        bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_BAK)
-        if not os.path.exists(bak_dir):
-            os.mkdir(bak_dir, 777)
-        if ismov:
-            shutil.move(srcfn, os.path.join(bak_dir, dbfn))
-        else:
-            shutil.copyfile(srcfn, os.path.join(bak_dir, dbfn))
-
-    # def force_restart(self):
-    #     if not self._station_config.IS_SAVEDB:
-    #         return False
-    #
-    #     dbsize = os.path.getsize(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
-    #     dbsize = dbsize / 1024  # kb
-    #     dbsize = dbsize / 1024  # mb
-    #     if self._station_config.RESTART_TEST_COUNT <= self._runningCount \
-    #             or dbsize >= self._station_config.DB_MAX_SIZE:
-    #         # dbfn = "{0}_{1}_autobak.ttxm".format(self._station_id, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
-    #         # self.backup_database(dbfn)
-    #         self.close()
-    #         self._operator_interface.print_to_console('database will be renamed automatically while software restarted next time.\n')
-    #         return True
-    #
-    #     return False
+                    defects = [self._station_config.QUALITY_AREA_R >= d > self._station_config.SUPER_QUALITY_AREA_R
+                               for c, d in con_r]
+                    quality_count = defects.count(True)
+                    test_item = '{}_Quality_NumDefects'.format(br_pattern)
+                    test_log.set_measured_value_by_name(test_item, quality_count)
+                    self.calc_blemish_index(br_pattern,
+                         zip(size_list, locax_list, locay_list, pixel_list, constrast_lst), test_log)

@@ -152,7 +152,7 @@ DB_MAX_SIZE = 2048
 CAMERA_SN = "159496752"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
-POSITIONS = [(0, 0),  (-5, 5), (5, 5), (5, -5), (-5, -5)]
+POSITIONS = [(0, 0),  (0, 18), (18, 0), (0, -18), (-18, 0)]
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
