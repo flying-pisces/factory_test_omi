@@ -41,7 +41,7 @@ COMMAND_DISP_RESET_DLY = 1
 COMMAND_DISP_SHOWIMG_DLY = 1
 COMMAND_DISP_POWEROFF_DLY = 0.2
 
-DISP_CHECKER_ENABLE = True
+DISP_CHECKER_ENABLE = False
 DISP_CHECKER_DLY = 2
 DISP_CHECKER_IMG_INDEX = 0
 DISP_CHECKER_CAMERA_INDEX = 0
@@ -154,7 +154,7 @@ DB_MAX_SIZE = 2048
 
 SPECTRAL_RESPONSE = 'PhotoMetric'
 DISTANCE_UNIT = "Millimeters"
-CAMERA_SN = "94142510"
+CAMERA_SN = "Demo"
 COLOR_CAL = 'camera_color_cal1'
 SCALE_CAL = 'image_scale_cal1'
 SHIFT_CAL = '(None)'
@@ -168,7 +168,7 @@ COLORS = [(28, 28, 28), (48, 48, 48), (0, 0, 0), (255, 255, 255),  (255, 0, 0), 
 # COLORS = ['0008','0000']
 # COLORS = ['1', '2', '3','4','5']
 ANALYSIS = ["ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects"]
-
+MEASUREMENTS = ["White", "White", "White", "Black", "Red", "Green", "Blue"]
 QUALITY_AREA_R = 18
 SUPER_QUALITY_AREA_R = 7
 SEPARATION_DISTANCE = 5

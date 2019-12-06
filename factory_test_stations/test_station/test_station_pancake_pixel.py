@@ -216,7 +216,7 @@ class pancakepixelStation(test_station.TestStation):
     def calc_blemish_index(self, pattern, zdata, test_log):
         self._operator_interface.print_to_console("calc blemish_index {}.\n".format(pattern))
         test_item = pattern + "_" + "BlemishIndex"
-        if test_item not in test_log.results_array:
+        if test_item not in test_log.results_array():
             return
         num = len(zdata)
         npdata = np.array(zdata)
@@ -282,7 +282,7 @@ class pancakepixelStation(test_station.TestStation):
                 meas_list = self._equipment.get_measurement_list()
                 exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
                 for meas in meas_list:
-                    if meas['Measurement Setup'] != self._station_config.PATTERNS[i]:
+                    if meas['Measurement Setup'] != self._station_config.MEASUREMENTS[i]:
                         continue
 
                     id = meas['Measurement ID']
@@ -328,7 +328,7 @@ class pancakepixelStation(test_station.TestStation):
             if 0 <= idx <= 1:  # the first 2 patterns are used to register.
                 meas_list = self._equipment.get_measurement_list()
                 for meas in meas_list:
-                    if meas['Measurement Setup'] != self._station_config.PATTERNS[i]:
+                    if meas['Measurement Setup'] != self._station_config.MEASUREMENTS[i]:
                         continue
                     output_dir = os.path.join(self._station_config.ROOT_DIR,
                                               self._station_config.ANALYSIS_RELATIVEPATH,
@@ -381,7 +381,7 @@ class pancakepixelStation(test_station.TestStation):
 
                     self._operator_interface.print_to_console("prase normal test item {}.\n"
                                                               .format(self._station_config.PATTERNS[i]))
-                    self.normal_test_item_prase(br_pattern, result, test_log)
+                    self.normal_test_item_parse(br_pattern, result, test_log)
 
                     pos_items = zip(locax_list, locay_list)
                     if num > 0 and len(constrast_lst) > 0:
@@ -545,7 +545,7 @@ class pancakepixelStation(test_station.TestStation):
 
                 self._operator_interface.print_to_console("prase normal test item {}.\n"
                                                           .format(self._station_config.PATTERNS[i]))
-                self.normal_test_item_prase(br_pattern, result, test_log)
+                self.normal_test_item_parse(br_pattern, result, test_log)
 
                 pos_items = zip(locax_list, locay_list)
                 if num > 0 and len(constrast_lst) > 0:
