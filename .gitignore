@@ -1,6 +1,14 @@
 *.py[cod]
 *.un~
 *.md~
+*.xml
+*.xml
+*.xml
+*.xml
+*.xml
+*.xml
+*.xml
+*.xml
 
 # C extensions
 *.so
