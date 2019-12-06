@@ -14,11 +14,23 @@ import filecmp
 from verifiction.particle_counter import ParticleCounter
 from verifiction.dut_checker import DutChecker
 from dut.dut_offaxis import pancakeDutOffAxis
+from dut.dut import projectDut
+from test_fixture.test_fixture_project_station import projectstationFixture
+import pprint
+import types
 
 
 class pancakeoffaxisError(Exception):
     pass
 
+def chk_and_set_measured_value_by_name(test_log, item, value):
+    """
+
+    :type test_log: test_station.TestRecord
+    """
+    if item in test_log.results_array():
+        test_log.set_measured_value_by_name(item, value)
+    pass
 
 class pancakeoffaxisStation(test_station.TestStation):
     """
@@ -29,6 +41,8 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_offaxis.pancakeoffaxisFixture(station_config, operator_interface)
+        if station_config.FIXTURE_SIM:
+            self._fixture = projectstationFixture(station_config, operator_interface)
         self._equipment = test_equipment_pancake_offaxis.pancakeoffaxisEquipment(station_config)
         self._particle_counter = ParticleCounter(station_config)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
@@ -80,13 +94,16 @@ class pancakeoffaxisStation(test_station.TestStation):
 
     def _do_test(self, serial_number, test_log):
         # type: (str, test_station.test_log) -> tuple
+        test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
         self._overall_result = False
         self._overall_errorcode = ''
         # self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
         try:
             self._operator_interface.print_to_console("Testing Unit %s\n" %serial_number)
             the_unit = pancakeDutOffAxis(serial_number, self._station_config, self._operator_interface)
-            test_log.set_measured_value_by_name("TT_Version", self._equipment.version())
+            if self._station_config.DUT_SIM:
+                the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
+            test_log.set_measured_value_by_name_ex("TT_Version", self._equipment.version())
 
             the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
@@ -98,7 +115,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                     is_reboot_need = False
                     retries += 1
                     try:
-                        is_screen_on = the_unit.screen_on()
+                        is_screen_on = the_unit.screen_on() or self._station_config.DUT_SIM
                     except dut.DUTError as e:
                         is_screen_on = False
                     else:
@@ -122,8 +139,8 @@ class pancakeoffaxisStation(test_station.TestStation):
                             the_unit.reboot()
 
             finally:
-                test_log.set_measured_value_by_name("DUT_ScreenOnRetries", retries)
-                test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
+                test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", retries)
+                test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", is_screen_on)
 
             if not is_screen_on:
                 raise pancakeoffaxisError("DUT Is unable to Power on.")
@@ -132,15 +149,11 @@ class pancakeoffaxisStation(test_station.TestStation):
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
                 particle_count = self._particle_counter.particle_counter_read_val()
-            test_log.set_measured_value_by_name("ENV_ParticleCounter", particle_count)
+            test_log.set_measured_value_by_name_ex("ENV_ParticleCounter", particle_count)
 
             self._operator_interface.print_to_console("Set Camera Database. %s\n" % self._station_config.CAMERA_SN)
 
-            uni_file_name = re.sub('_x.log', '.ttxm', test_log.get_filename())
-            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_ACT)
-            databaseFileName = os.path.join(bak_dir, uni_file_name)
             sequencePath = os.path.join(self._station_config.ROOT_DIR, self._station_config.SEQUENCE_RELATIVEPATH)
-            self._equipment.create_database(databaseFileName)
             self._equipment.set_sequence(sequencePath)
 
             self._operator_interface.print_to_console('clear registration\n')
@@ -148,67 +161,7 @@ class pancakeoffaxisStation(test_station.TestStation):
 
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
 
-            pos_items = self._station_config.POSITIONS
-            pre_color = None
-            for i in range(len(pos_items)):
-                pos = pos_items[i]
-                analysis = self._station_config.ANALYSIS[i]
-
-                self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
-                self._fixture.mov_abs_xy(pos[0], pos[1])
-
-                self._operator_interface.print_to_console(
-                    "Panel Measurement Pattern: %s \n" % self._station_config.PATTERNS[i])
-                # the_unit.display_color(self._station_config.COLORS[i])
-                if pre_color != self._station_config.COLORS[i]:
-                    if isinstance(self._station_config.COLORS[i], tuple):
-                        the_unit.display_color(self._station_config.COLORS[i])
-                    elif isinstance(self._station_config.COLORS[i], (str, int)):
-                        the_unit.display_image(self._station_config.COLORS[i])
-                    pre_color = self._station_config.COLORS[i]
-                    self._operator_interface.print_to_console('Set DUT To Color: {}.\n'.format(pre_color))
-
-                analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
-                self._operator_interface.print_to_console("Sequence run step  {}.\n".format(analysis))
-
-                if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
-                    output_dir = os.path.join(self._station_config.ROOT_DIR,
-                                              self._station_config.DATABASE_RELATIVEPATH_ACT,
-                                              the_unit.serial_number + '_' +
-                                              test_log._start_time.strftime("%Y%m%d-%H%M%S"))
-                    if not os.path.exists(output_dir):
-                        os.mkdir(output_dir, 777)
-                    meas = self._equipment.get_measurement_list()[0]
-                    exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
-
-                    id = meas['Measurement ID']
-                    export_csv_name = "{}_{}_{}_{}.csv".format(serial_number,
-                                                               self._station_config.PATTERNS[i], pos[0], pos[1])
-                    export_png_name = "{}_{}_{}_{}.png".format(serial_number,
-                                                               self._station_config.PATTERNS[i], pos[0], pos[1])
-                    if self._station_config.IS_EXPORT_CSV:
-                        self._equipment.export_measurement(id, output_dir, export_csv_name,
-                                                           self._station_config.Resolution_Bin_X,
-                                                           self._station_config.Resolution_Bin_Y)
-                    if self._station_config.IS_EXPORT_PNG:
-                        self._equipment.export_measurement(id, output_dir, export_png_name,
-                                                           self._station_config.Resolution_Bin_X,
-                                                           self._station_config.Resolution_Bin_Y)
-
-                for c, result in analysis_result.items():
-                    if c != analysis:
-                        continue
-                    for r in result:
-                        raw_test_item = (self._station_config.PATTERNS[i] + "_" + r)
-                        test_item = re.sub(r'\(Lv\)|Lv', '_Lv', raw_test_item)
-                        test_item = re.sub(r'\s|%', '', test_item)
-                        has_test_item = False
-                        for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
-                            if limit_array[0] == test_item:
-                                has_test_item = True
-                                break
-                        if has_test_item:
-                            test_log.set_measured_value_by_name(test_item, float(result[r]))
+            self.offaxis_test_do(serial_number, test_log, the_unit)
 
         except Exception, e:
             self._operator_interface.print_to_console("Test exception {}.\n".format(e.message))
@@ -226,6 +179,7 @@ class pancakeoffaxisStation(test_station.TestStation):
             self._operator_interface.print_to_console('--- do test finished ---\n')
             return overall_result, first_failed_test_result
 
+
     def close_test(self, test_log):
         ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###
         self._overall_result = test_log.get_overall_result()
@@ -239,7 +193,7 @@ class pancakeoffaxisStation(test_station.TestStation):
             timeout_for_dual = 10
             for idx in range(timeout_for_dual, 0, -1):
                 self._operator_interface.prompt('Press the Dual-Start Btn in %s S...'%idx, 'yellow');
-                if self._fixture.is_ready():
+                if self._fixture.is_ready() or self._station_config.FIXTURE_SIM:
                     ready = True
                     break
                 time.sleep(1)
@@ -249,3 +203,140 @@ class pancakeoffaxisStation(test_station.TestStation):
         finally:
             self._fixture.button_disable()
             self._operator_interface.prompt('', 'SystemButtonFace')
+
+    def data_export(self, serial_number, test_log, pos):
+        """
+        export csv and png from ttxm database
+        :type test_log: test_station.TestRecord
+        :type serial_number: str
+        """
+        for i in range(len(self._station_config.PATTERNS)):
+            self._operator_interface.print_to_console(
+                "Panel export for Pattern: %s\n" % self._station_config.PATTERNS[i])
+            if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
+                output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
+                                          serial_number + '_' + test_log._start_time.strftime(
+                                              "%Y%m%d-%H%M%S"))
+                if not os.path.exists(output_dir):
+                    os.mkdir(output_dir, 777)
+                meas_list = self._equipment.get_measurement_list()
+                exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
+                for meas in meas_list:
+                    if meas['Measurement Setup'] != self._station_config.MEASUREMENTS[i]:
+                        continue
+
+                    id = meas['Measurement ID']
+                    export_csv_name = "{}_{}_{}_{}.csv".format(serial_number,
+                                                               self._station_config.PATTERNS[i], pos[0], pos[1])
+                    export_png_name = "{}_{}_{}_{}.png".format(serial_number,
+                                                               self._station_config.PATTERNS[i], pos[0], pos[1])
+                    if self._station_config.IS_EXPORT_CSV:
+                        self._equipment.export_measurement(id, output_dir, export_csv_name,
+                                                           self._station_config.Resolution_Bin_X,
+                                                           self._station_config.Resolution_Bin_Y)
+                    if self._station_config.IS_EXPORT_PNG:
+                        self._equipment.export_measurement(id, output_dir, export_png_name,
+                                                           self._station_config.Resolution_Bin_X,
+                                                           self._station_config.Resolution_Bin_Y)
+                    self._operator_interface.print_to_console("Export data for {}\n"
+                                                              .format(self._station_config.PATTERNS[i]))
+
+    def offaxis_test_do(self, serial_number, test_log, the_unit):
+        pos_items = self._station_config.POSITIONS
+        pre_color = None
+        for posIdx, pos in pos_items.items():
+            uni_file_name = re.sub('_x.log', '_{}.ttxm'.format(posIdx), test_log.get_filename())
+            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_ACT)
+            databaseFileName = os.path.join(bak_dir, uni_file_name)
+            if not self._station_config.EQUIPMENT_SIM:
+                self._equipment.create_database(databaseFileName)
+            else:
+                databaseFileName = self._station_config.EQUIPMENT_DEMO_DATABASE
+                self._equipment.set_database(databaseFileName)
+
+            self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
+            self._fixture.mov_abs_xy(pos[0], pos[1])
+
+            for i in range(len(self._station_config.PATTERNS)):
+                analysis = self._station_config.ANALYSIS[i]
+                pattern = self._station_config.PATTERNS[i]
+                self._operator_interface.print_to_console(
+                    "Panel Measurement Pattern: %s , Position Id %s.\n" % (pattern, posIdx))
+                # the_unit.display_color(self._station_config.COLORS[i])
+                if pre_color != self._station_config.COLORS[i]:
+                    if isinstance(self._station_config.COLORS[i], tuple):
+                        the_unit.display_color(self._station_config.COLORS[i])
+                    elif isinstance(self._station_config.COLORS[i], (str, int)):
+                        the_unit.display_image(self._station_config.COLORS[i])
+                    pre_color = self._station_config.COLORS[i]
+                    self._operator_interface.print_to_console('Set DUT To Color: {}.\n'.format(pre_color))
+                use_camera = not self._station_config.EQUIPMENT_SIM
+                analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, self._station_config.IS_SAVEDB)
+                self._operator_interface.print_to_console("Sequence run step  {}.\n".format(analysis))
+
+                lv_dic = {}
+                cx_dic = {}
+                cy_dic = {}
+                center_dic = {}
+                for c, result in analysis_result.items():
+                    if c != analysis:
+                        continue
+                    for ra in result:
+                        r = re.sub(' ', '', ra)
+                        raw_test_item = (pattern + "_" + r)
+                        test_item = re.sub(r'\(Lv\)|Lv', '_Lv', raw_test_item)
+                        test_item = re.sub(r'\s|%', '', test_item)
+
+                        lv_match = re.search(r'(P\d+)\(lv\)', r, re.I | re.S)
+                        if lv_match:
+                            lv_dic[lv_match.groups()[0]] = float(result[ra])
+                        cx_match = re.search(r'(P\d+)\(cx\)', r, re.I|re.S)
+                        if cx_match:
+                            cx_dic[cx_match.groups()[0]] = float(result[ra])
+                        cy_match = re.search(r'(P\d+)\(cx\)', r, re.I|re.S)
+                        if cy_match:
+                            cy_dic[cy_match.groups()[0]] = float(result[ra])
+
+                        center_match = re.search(r'(CenterLv|CenterCx|CenterCy)', r)
+                        if center_match:
+                            center_dic[center_match.groups()[0]] = float(result[ra])
+
+                        test_log.set_measured_value_by_name_ex(test_item, float(result[ra]))
+
+                brightness_items = []
+                for item in self._station_config.BRIGHTNESS_AT_DEG_30:
+                    brightness_items.append(lv_dic[item])
+                brightness_min = np.array(brightness_items).min()
+                test_item = '{}_{}_Brightness_Min_At_30Degree'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, brightness_min)
+
+                brightness_items = []
+                for item in self._station_config.BRIGHTNESS_AT_DEG_PERCENT_IDS:
+                    brightness_items.append(lv_dic[item])
+                brightness_min = np.array(brightness_items).min()/center_dic['CenterLv']
+                test_item = '{}_{}_Brightness_Min_30_TO_0Degree'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, brightness_min)
+
+                brightness_items = []
+                for item in self._station_config.BRIGHTNESS_AT_DEG_10:
+                    brightness_items.append(lv_dic[item])
+                brightness_min = np.array(brightness_items).min()
+                test_item = '{}_{}_Brightness_Min_At_10Degree'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, brightness_min)
+
+                brightness_items = []
+                for item in self._station_config.BRIGHTNESS_AT_DEG_20:
+                    brightness_items.append(lv_dic[item])
+                brightness_min = np.array(brightness_items).min()
+                test_item = '{}_{}_Brightness_Min_At_20Degree'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, brightness_min)
+
+                #  TODO:
+                #  color shift
+
+
+
+                pass
+
+
+            self.data_export(serial_number, test_log, pos)

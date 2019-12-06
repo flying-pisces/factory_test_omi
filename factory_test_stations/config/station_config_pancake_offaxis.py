@@ -44,7 +44,7 @@ COMMAND_DISP_RESET_DLY = 1
 COMMAND_DISP_SHOWIMG_DLY = 1
 COMMAND_DISP_POWEROFF_DLY = 0.2
 
-DISP_CHECKER_ENABLE = True
+DISP_CHECKER_ENABLE = False
 
 # blue
 # https://blog.csdn.net/a2009374138/article/details/52174856
@@ -152,13 +152,33 @@ DB_MAX_SIZE = 2048
 CAMERA_SN = "159496752"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
-POSITIONS = [(0, 0),  (0, 18), (18, 0), (0, -18), (-18, 0)]
+POSITIONS = {'P1':(0, 0),  'P2': (0, 18), 'P4': (18, 0), 'P6': (0, -18), 'P8': (-18, 0)}
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
 COLORS = [(255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 # COLORS = ['0008', '0001', '0800', '8000', '0010']
 ANALYSIS = ["Points Of Interest White", "Points Of Interest Black", "Points Of Interest Red", "Points Of Interest Green", "Points Of Interest Blue"]
+MEASUREMENTS = ["White", "Black", "Red", "Green", "Blue"]
+##################################
+
+BRIGHTNESS_AT_DEG_30 = ['P1', 'P2', 'P3', 'P4']
+BRIGHTNESS_AT_DEG_PERCENT_IDS =  ['P1', 'P2', 'P3', 'P4']
+BRIGHTNESS_AT_DEG_PERCENT = 16
+
+BRIGHTNESS_AT_DEG_10 = ['P1', 'P2', 'P3', 'P4']
+COLORSHIFT_AT_DEG_10 = ['P1', 'P2', 'P3', 'P4']
+BRIGHTNESS_AT_DEG_20 = ['P1', 'P2', 'P3', 'P4']
+COLORSHIFT_AT_DEG_20 = ['P1', 'P2', 'P3', 'P4']
+
+COLORSHIFT_RATIO_AT_DEG_30 = ['P1', 'P2', 'P3', 'P4']
+CR_AT_DEG_30 = ['P1', 'P2', 'P3', 'P4']
+CR_AT_DEG_0 = ['P1', 'P2', 'P3', 'P4']
+
+BRIGHTNESS_AT_DEG_PERCENT_IDS = ['P1', 'P2', 'P3', 'P4']
+
+
+
 
 ##################################
 # IT and work order
@@ -166,3 +186,8 @@ ANALYSIS = ["Points Of Interest White", "Points Of Interest Black", "Points Of I
 FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
+
+EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\1PR01234567890_pancake_offaxis-0_20191203-213526.ttxm'
+DUT_SIM = True
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True

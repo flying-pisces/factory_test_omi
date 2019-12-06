@@ -13,10 +13,22 @@ import numpy as np
 from itertools import islice
 from verifiction.particle_counter import ParticleCounter
 from verifiction.dut_checker import DutChecker
+from test_fixture.test_fixture_project_station import projectstationFixture
+import pprint
+import types
+
 
 class pancakepixelError(Exception):
     pass
 
+def chk_and_set_measured_value_by_name(test_log, item, value):
+    """
+
+    :type test_log: test_station.TestRecord
+    """
+    if item in test_log.results_array():
+        test_log.set_measured_value_by_name(item, value)
+    pass
 
 class pancakepixelStation(test_station.TestStation):
     """
@@ -27,6 +39,8 @@ class pancakepixelStation(test_station.TestStation):
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_pixel.pancakepixelFixture(station_config, operator_interface)
+        if station_config.FIXTURE_SIM:
+            self._fixture = projectstationFixture(station_config, operator_interface)
         self._equipment = test_equipment_pancake_pixel.pancakepixelEquipment(station_config)
         self._particle_counter = ParticleCounter(station_config)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
@@ -37,7 +51,6 @@ class pancakepixelStation(test_station.TestStation):
         self._dut_checker = DutChecker(station_config)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
@@ -88,6 +101,8 @@ class pancakepixelStation(test_station.TestStation):
 
 
     def _do_test(self, serial_number, test_log):
+        # type: (str, test_station.test_log) -> tuple
+        test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
         self._overall_result = False
         self._overall_errorcode = ''
         self._operator_interface.print_to_console('CWD is {}\n'.format(os.getcwd()))
@@ -98,7 +113,9 @@ class pancakepixelStation(test_station.TestStation):
         try:
             self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
             the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
-            test_log.set_measured_value_by_name("TT_Version", self._equipment.version())
+            if self._station_config.DUT_SIM:
+                the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
+            test_log.set_measured_value_by_name_ex("TT_Version", self._equipment.version())
 
             the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
@@ -112,7 +129,7 @@ class pancakepixelStation(test_station.TestStation):
                     is_reboot_need = False
                     retries += 1
                     try:
-                        is_screen_on = the_unit.screen_on()
+                        is_screen_on = the_unit.screen_on() or self._station_config.DUT_SIM
                     except dut.DUTError:
                         is_screen_on = False
                     else:
@@ -145,8 +162,8 @@ class pancakepixelStation(test_station.TestStation):
                         self._dut_checker.save_log_img(fn)
             finally:
                 self._dut_checker.close()
-                test_log.set_measured_value_by_name("DUT_ScreenOnRetries", retries)
-                test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
+                test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", retries)
+                test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", is_screen_on)
 
             if not is_screen_on:
                 raise pancakepixelError("DUT Is unable to Power on.")
@@ -155,7 +172,7 @@ class pancakepixelStation(test_station.TestStation):
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
                 particle_count = self._particle_counter.particle_counter_read_val()
-            test_log.set_measured_value_by_name("ENV_ParticleCounter", particle_count)
+            test_log.set_measured_value_by_name_ex("ENV_ParticleCounter", particle_count)
 
             self._operator_interface.print_to_console("Set Camera Database. %s\n" % self._station_config.CAMERA_SN)
 
@@ -164,7 +181,11 @@ class pancakepixelStation(test_station.TestStation):
             databaseFileName = os.path.join(bak_dir, uni_file_name)
             sequencePath = os.path.join(self._station_config.ROOT_DIR,
                                         self._station_config.SEQUENCE_RELATIVEPATH)
-            self._equipment.create_database(databaseFileName)
+            if not self._station_config.EQUIPMENT_SIM:
+                self._equipment.create_database(databaseFileName)
+            else:
+                databaseFileName = self._station_config.EQUIPMENT_DEMO_DATABASE
+                self._equipment.set_database(databaseFileName)
             self._equipment.set_sequence(sequencePath)
 
             self._operator_interface.print_to_console('clear registration\n')
@@ -262,7 +283,7 @@ class pancakepixelStation(test_station.TestStation):
                 print 'locationY_{}:{}'.format(pattern, locay_list)
                 print 'size     _{}:{}'.format(pattern, size_list)
                 print 'pixel    _{}:{}'.format(pattern, pixel_list)
-        test_log.set_measured_value_by_name(test_item, blemish_index)
+        test_log.set_measured_value_by_name_ex(test_item, blemish_index)
 
     def data_export(self, serial_number, test_log):
         """
@@ -322,7 +343,8 @@ class pancakepixelStation(test_station.TestStation):
                 the_unit.display_image(self._station_config.COLORS[i])
 
             analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
-            analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
+            use_camera = not self._station_config.EQUIPMENT_SIM
+            analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, self._station_config.IS_SAVEDB)
             self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
 
             if 0 <= idx <= 1:  # the first 2 patterns are used to register.
@@ -395,12 +417,12 @@ class pancakepixelStation(test_station.TestStation):
                                                               for c, d in con_r]
                         test_item = '{}_SuperQuality_Brighter_NumDefects'.format(br_pattern)
                         super_brighter_count = defects.count(True)
-                        test_log.set_measured_value_by_name(test_item, super_brighter_count)
+                        test_log.set_measured_value_by_name_ex(test_item, super_brighter_count)
                         test_item = '{}_SuperQuality_Brighter_MinSeparationDistance'.format(br_pattern)
                         min_sepa_distance = self.calc_separate_distance(pos_items, defects)
-                        test_log.set_measured_value_by_name(test_item, min_sepa_distance)
+                        test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
                         test_item = '{}_SuperQuality_Brighter_Res'.format(br_pattern)
-                        test_log.set_measured_value_by_name(test_item,
+                        test_log.set_measured_value_by_name_ex(test_item,
                              super_brighter_count <= self._station_config.SUPER_AREA_DEFECTS_COUNT_L)
 
                         defects = [c <= avg_lv_register_patterns[0] and
@@ -408,12 +430,12 @@ class pancakepixelStation(test_station.TestStation):
                                               for c, d in con_r]
                         test_item = '{}_SuperQuality_Dimmer_NumDefects'.format(br_pattern)
                         super_dimmer_count = defects.count(True)
-                        test_log.set_measured_value_by_name(test_item, super_dimmer_count)
+                        test_log.set_measured_value_by_name_ex(test_item, super_dimmer_count)
                         test_item = '{}_SuperQuality_Dimmer_MinSeparationDistance'.format(br_pattern)
                         min_sepa_distance = self.calc_separate_distance(pos_items, defects)
-                        test_log.set_measured_value_by_name(test_item, min_sepa_distance)
+                        test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
                         test_item = '{}_SuperQuality_Dimmer_Res'.format(br_pattern)
-                        test_log.set_measured_value_by_name(test_item,
+                        test_log.set_measured_value_by_name_ex(test_item,
                              super_dimmer_count <= self._station_config.SUPER_AREA_DEFECTS_COUNT_H and
                              min_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
 
@@ -422,12 +444,12 @@ class pancakepixelStation(test_station.TestStation):
                             for c, d in con_r]
                         quality_brighter_count = defects.count(True)
                         test_item = '{}_Quality_Brighter_NumDefects'.format(br_pattern)
-                        test_log.set_measured_value_by_name(test_item, quality_brighter_count)
+                        test_log.set_measured_value_by_name_ex(test_item, quality_brighter_count)
                         test_item = '{}_Quality_Brighter_MinSeparationDistance'.format(br_pattern)
                         min_sepa_distance = self.calc_separate_distance(pos_items, quality_brighter_count)
-                        test_log.set_measured_value_by_name(test_item, min_sepa_distance)
+                        test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
                         test_item = '{}_Quality_Brighter_Res'.format(br_pattern)
-                        test_log.set_measured_value_by_name(test_item,
+                        test_log.set_measured_value_by_name_ex(test_item,
                              quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_B)
 
                         defects = [ avg_lv_register_patterns[0] < c <= avg_lv_register_patterns[1] and
@@ -435,12 +457,12 @@ class pancakepixelStation(test_station.TestStation):
                              for c, d in con_r]
                         quality_dimmeru_count = defects.count(True)
                         test_item = '{}_Quality_DimmerU_NumDefects'.format(br_pattern)
-                        test_log.set_measured_value_by_name(test_item, quality_dimmeru_count)
+                        test_log.set_measured_value_by_name_ex(test_item, quality_dimmeru_count)
                         test_item = '{}_Quality_DimmerU_MinSeparationDistance'.format(br_pattern)
                         min_sepa_distance = self.calc_separate_distance(pos_items, quality_dimmeru_count)
-                        test_log.set_measured_value_by_name(test_item, min_sepa_distance)
+                        test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
                         test_item = '{}_Quality_DimmerU_Res'.format(br_pattern)
-                        test_log.set_measured_value_by_name(test_item,
+                        test_log.set_measured_value_by_name_ex(test_item,
                              quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DU)
 
                         defects = [ avg_lv_register_patterns[0] >= c and
@@ -448,12 +470,12 @@ class pancakepixelStation(test_station.TestStation):
                              for c, d in con_r]
                         quality_dimmerl_count = defects.count(True)
                         test_item = '{}_Quality_DimmerL_NumDefects'.format(br_pattern)
-                        test_log.set_measured_value_by_name(test_item, quality_dimmerl_count)
+                        test_log.set_measured_value_by_name_ex(test_item, quality_dimmerl_count)
                         test_item = '{}_Quality_DimmerL_MinSeparationDistance'.format(br_pattern)
                         min_sepa_distance = self.calc_separate_distance(pos_items, quality_dimmerl_count)
-                        test_log.set_measured_value_by_name(test_item, min_sepa_distance)
+                        test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
                         test_item = '{}_Quality_DimmerL_Res'.format(br_pattern)
-                        test_log.set_measured_value_by_name(test_item,
+                        test_log.set_measured_value_by_name_ex(test_item,
                              quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DL)
 
                         self.calc_blemish_index(br_pattern,
@@ -491,7 +513,7 @@ class pancakepixelStation(test_station.TestStation):
                         re.match(r'^([-|+]?\d+)(\.\d*)?$', result[resItem], re.IGNORECASE) is not None:
                     self._operator_interface.print_to_console(
                         '{}, {}.\n'.format(test_item, result[resItem]))
-                    test_log.set_measured_value_by_name(test_item, float(result[resItem]))
+                    test_log.set_measured_value_by_name_ex(test_item, float(result[resItem]))
                     self._operator_interface.print_to_console('TEST ITEM: {}, Value: {}\n'
                                                               .format(test_item, result[resItem]))
                     break
@@ -512,7 +534,8 @@ class pancakepixelStation(test_station.TestStation):
                 the_unit.display_image(self._station_config.COLORS[i])
 
             analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
-            analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
+            use_camera = not self._station_config.EQUIPMENT_SIM
+            analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, self._station_config.IS_SAVEDB)
             self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
 
             size_list = []
@@ -558,12 +581,12 @@ class pancakepixelStation(test_station.TestStation):
                                for c, d in con_r]
                     super_quality_count = defects.count(True)
                     test_item = '{}_SuperQuality_NumDefects'.format(br_pattern)
-                    test_log.set_measured_value_by_name(test_item, super_quality_count)
+                    test_log.set_measured_value_by_name_ex(test_item, super_quality_count)
 
                     defects = [self._station_config.QUALITY_AREA_R >= d > self._station_config.SUPER_QUALITY_AREA_R
                                for c, d in con_r]
                     quality_count = defects.count(True)
                     test_item = '{}_Quality_NumDefects'.format(br_pattern)
-                    test_log.set_measured_value_by_name(test_item, quality_count)
+                    test_log.set_measured_value_by_name_ex(test_item, quality_count)
                     self.calc_blemish_index(br_pattern,
                          zip(size_list, locax_list, locay_list, pixel_list, constrast_lst), test_log)

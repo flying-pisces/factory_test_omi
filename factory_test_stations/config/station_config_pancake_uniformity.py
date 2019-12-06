@@ -168,3 +168,8 @@ GAMMA_CHECK_GLS = ["White", "180", "127", "090"]
 FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
+
+EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\1PR00000D49265_pancake_uniformity-02_20191114-144907.ttxm'
+DUT_SIM = True
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True

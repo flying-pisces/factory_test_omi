@@ -362,6 +362,11 @@ class projectDut(hardware_station_common.test_station.dut.DUT):
     def close(self):
         self._operator_interface.print_to_console("Closing pancake uniformity Fixture\n")
 
+    def __getattr__(self, item):
+        def not_find(*args, **kwargs):
+            pass
+        if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image']:
+            return not_find
 
 
 def print_to_console(self, msg):

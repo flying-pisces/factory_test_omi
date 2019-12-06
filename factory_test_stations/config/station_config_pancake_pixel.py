@@ -152,12 +152,7 @@ Resolution_Bin_Y = 10
 RESTART_TEST_COUNT = 99999
 DB_MAX_SIZE = 2048
 
-SPECTRAL_RESPONSE = 'PhotoMetric'
-DISTANCE_UNIT = "Millimeters"
 CAMERA_SN = "Demo"
-COLOR_CAL = 'camera_color_cal1'
-SCALE_CAL = 'image_scale_cal1'
-SHIFT_CAL = '(None)'
 
 PATTERNS_BRIGHT = ['REG000', 'REG001', 'W000']  # the first two are used to register data for bright test.
 PATTERNS_DARK = ['W255', 'R255', "R255", "G255", "B255"]
@@ -194,3 +189,8 @@ SIZE_U = 0.1
 FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
+
+EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\1PR00000D69265_pancake_pixel-02_20191113-141052.ttxm'
+DUT_SIM = True
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True

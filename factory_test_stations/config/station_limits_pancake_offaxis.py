@@ -1,9 +1,21 @@
 
 STATION_LIMITS_ARRAYS = [
-    ["TT_Version", 'MPK_API_CS-1.0.10.0', 'MPK_API_CS-1.0.10.0', 96],
+    ["TT_Version", 'MPK_API_CS-1.0.12.0', 'MPK_API_CS-1.0.12.0', 96],
     ["DUT_ScreenOnRetries", 0, 10, 97],
     ["DUT_ScreenOnStatus", True, True, 98],
     ["ENV_ParticleCounter", 0, 1000, 99],
+
+    ["P1_W255_Brightness_Min_At_30Degree", 76, 1E+12, 800],
+    ["P1_R255_Brightness_Min_At_30Degree", 76, 1E+12, 801],
+    ["P1_G255_Brightness_Min_At_30Degree", 76, 1E+12, 802],
+    ["P1_B255_Brightness_Min_At_30Degree", 76, 1E+12, 803],
+    ["P1_W000_Brightness_Min_At_30Degree", 76, 1E+12, 804],
+
+    ["P1_W255_Brightness_Min_At_10Degree", -1E+12, 1E+12, 805],
+    ["P1_R255_Brightness_Min_At_20Degree", -1E+12, 1E+12, 806],
+
+    ["P1_W255_CR_At_10Degree", -1E+12, 1E+12, 807],
+    ["P1_R255_CR_At_20Degree", -1E+12, 1E+12, 808],
 
     ["W255_Center_Lv", -1E+12, 1E+12, 1001],
     ["W255_P1_Lv", -1E+12, 1E+12, 1002],
