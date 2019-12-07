@@ -124,10 +124,7 @@ IS_VERBOSE = False
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\y29 particle Defect.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
-
-DATABASE_RELATIVEPATH_ACT = r'factory-test_logs'
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
-DATABASE_RELATIVEPATH_BAK = r'factory-test_logs'
 
 FOCUS_DISTANCE = 0.425
 APERTURE = 8.0
@@ -155,24 +152,32 @@ DB_MAX_SIZE = 2048
 CAMERA_SN = "Demo"
 
 PATTERNS_BRIGHT = ['REG000', 'REG001', 'W000']  # the first two are used to register data for bright test.
-PATTERNS_DARK = ['W255', 'R255', "R255", "G255", "B255"]
+PATTERNS_DARK = ['W255', "R255", "G255", "B255"]
 PATTERNS = ["REG000", "REG001", "W000", "W255", "R255", "G255", "B255"]
 # PATTERNS = ["White","Black","Red","Green","Blue"]
 SAVE_IMAGES = [True, True, True, True, True, True, True]
 COLORS = [(28, 28, 28), (48, 48, 48), (0, 0, 0), (255, 255, 255),  (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 # COLORS = ['0008','0000']
 # COLORS = ['1', '2', '3','4','5']
-ANALYSIS = ["ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects", "ParticleDefects"]
+ANALYSIS = ["ParticleDefects W255", "ParticleDefects W255", "ParticleDefects W000", "ParticleDefects W255",
+            "ParticleDefects R255", "ParticleDefects G255", "ParticleDefects B255"]
 MEASUREMENTS = ["White", "White", "White", "Black", "Red", "Green", "Blue"]
 QUALITY_AREA_R = 18
 SUPER_QUALITY_AREA_R = 7
 SEPARATION_DISTANCE = 5
+SEPARATION_DISTANCE_L = 1
 
 SUPER_AREA_DEFECTS_COUNT_L = 0
-SUPER_AREA_DEFECTS_COUNT_U = 1
+SUPER_AREA_DEFECTS_COUNT_H = 1
 QUALITY_AREA_DEFECTS_COUNT_B = 0
 QUALITY_AREA_DEFECTS_COUNT_DU = 2
 QUALITY_AREA_DEFECTS_COUNT_DL = 3
+
+DARK_SUPER_AREA_DEFECTS_COUNT_L = 0
+DARK_SUPER_AREA_DEFECTS_COUNT_H = 0
+
+DARK_QUALITY_AREA_DEFECTS_COUNT_L = 0
+DARK_QUALITY_AREA_DEFECTS_COUNT_H = 1
 
 LOCATION_L = 10
 LOCATION_U = 20

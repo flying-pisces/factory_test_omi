@@ -5,17 +5,48 @@ STATION_LIMITS_ARRAYS = [
     ["DUT_ScreenOnStatus", True, True, 98],
     ["ENV_ParticleCounter", 0, 1000, 99],
 
-    ["P1_W255_Brightness_Min_At_30Degree", 76, 1E+12, 800],
-    ["P1_R255_Brightness_Min_At_30Degree", 76, 1E+12, 801],
-    ["P1_G255_Brightness_Min_At_30Degree", 76, 1E+12, 802],
-    ["P1_B255_Brightness_Min_At_30Degree", 76, 1E+12, 803],
-    ["P1_W000_Brightness_Min_At_30Degree", 76, 1E+12, 804],
+    ["P1_W255_Brightness_Min_At_30Degree", 76, 1E+12, 100],
+    ["P1_R255_Brightness_Min_At_30Degree", None, None, 101],
+    ["P1_G255_Brightness_Min_At_30Degree", None, None, 102],
+    ["P1_B255_Brightness_Min_At_30Degree", None, None, 103],
+    ["P1_W000_Brightness_Min_At_30Degree", None, None, 104],
 
-    ["P1_W255_Brightness_Min_At_10Degree", -1E+12, 1E+12, 805],
-    ["P1_R255_Brightness_Min_At_20Degree", -1E+12, 1E+12, 806],
+    ["P1_W255_Brightness_Min_30_TO_0Degree", 16, 1E+12, 105],
 
-    ["P1_W255_CR_At_10Degree", -1E+12, 1E+12, 807],
-    ["P1_R255_CR_At_20Degree", -1E+12, 1E+12, 808],
+    ["P1_W255_Brightness_Min_At_10Degree", -1E+12, 1E+12, 106],
+    ["P1_W255_Duv_Max_At_10Degree", -1E+12, 1E+12, 107],
+    ["P1_W255_Brightness_Min_At_20Degree", -1E+12, 1E+12, 108],
+    ["P1_W255_Duv_Max_At_20Degree", -1E+12, 1E+12, 109],
+
+    ["P1_W000_Brightness_Min_At_10Degree", -1E+12, 1E+12, 110],
+    ["P1_W000_Duv_Max_At_10Degree", -1E+12, 1E+12, 111],
+    ["P1_W000_Brightness_Min_At_20Degree", -1E+12, 1E+12, 112],
+    ["P1_W000_Duv_Max_At_20Degree", -1E+12, 1E+12, 113],
+
+    ["P1_R255_Brightness_Min_At_10Degree", -1E+12, 1E+12, 114],
+    ["P1_R255_Duv_Max_At_10Degree", -1E+12, 1E+12, 115],
+    ["P1_R255_Brightness_Min_At_20Degree", -1E+12, 1E+12, 116],
+    ["P1_R255_Duv_Max_At_20Degree", -1E+12, 1E+12, 117],
+
+    ["P1_G255_Brightness_Min_At_10Degree", -1E+12, 1E+12, 118],
+    ["P1_G255_Duv_Max_At_10Degree", -1E+12, 1E+12, 119],
+    ["P1_G255_Brightness_Min_At_20Degree", -1E+12, 1E+12, 120],
+    ["P1_G255_Duv_Max_At_20Degree", -1E+12, 1E+12, 121],
+
+    ["P1_B255_Brightness_Min_At_10Degree", -1E+12, 1E+12, 122],
+    ["P1_B255_Duv_Max_At_10Degree", -1E+12, 1E+12, 123],
+    ["P1_B255_Brightness_Min_At_20Degree", -1E+12, 1E+12, 124],
+    ["P1_B255_Duv_Max_At_20Degree", -1E+12, 1E+12, 125],
+
+    ["P1_W255_ColorShift_Max_At_30Degree", -1E+12, 0.06, 126],
+    ["P1_R255_ColorShift_Max_At_30Degree", -1E+12, 0.06, 127],
+    ["P1_G255_ColorShift_Max_At_30Degree", -1E+12, 0.06, 128],
+    ["P1_B255_ColorShift_Max_At_30Degree", -1E+12, 0.06, 129],
+
+    ["P1_W255_Brightness_Max_Location", -1E+12, 0.06, 130],
+
+    ["P1_CR_At_0Degree", 500, 1E+12, 131],
+    ["P1_CR_Min_At_30Degree", 100, 1E+12, 132],
 
     ["W255_Center_Lv", -1E+12, 1E+12, 1001],
     ["W255_P1_Lv", -1E+12, 1E+12, 1002],

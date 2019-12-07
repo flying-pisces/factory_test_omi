@@ -71,6 +71,8 @@ class projectstationStation(test_station.TestStation):
         return self._overall_result, self._first_failed_test_result
 
     def is_ready(self):
+        return True
+
         self._fixture.is_ready()
         timeout_for_dual = 5
         for idx in range(timeout_for_dual, 0, -1):

@@ -156,9 +156,6 @@ class pancakeoffaxisStation(test_station.TestStation):
             sequencePath = os.path.join(self._station_config.ROOT_DIR, self._station_config.SEQUENCE_RELATIVEPATH)
             self._equipment.set_sequence(sequencePath)
 
-            self._operator_interface.print_to_console('clear registration\n')
-            self._equipment.clear_registration()
-
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
 
             self.offaxis_test_do(serial_number, test_log, the_unit)
@@ -244,9 +241,9 @@ class pancakeoffaxisStation(test_station.TestStation):
     def offaxis_test_do(self, serial_number, test_log, the_unit):
         pos_items = self._station_config.POSITIONS
         pre_color = None
-        for posIdx, pos in pos_items.items():
+        for posIdx, pos in pos_items:
             uni_file_name = re.sub('_x.log', '_{}.ttxm'.format(posIdx), test_log.get_filename())
-            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_ACT)
+            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
             databaseFileName = os.path.join(bak_dir, uni_file_name)
             if not self._station_config.EQUIPMENT_SIM:
                 self._equipment.create_database(databaseFileName)
@@ -254,8 +251,14 @@ class pancakeoffaxisStation(test_station.TestStation):
                 databaseFileName = self._station_config.EQUIPMENT_DEMO_DATABASE
                 self._equipment.set_database(databaseFileName)
 
+            self._operator_interface.print_to_console('clear registration\n')
+            self._equipment.clear_registration()
+
             self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
             self._fixture.mov_abs_xy(pos[0], pos[1])
+
+            center_item = self._station_config.CENTER_AT_DEG_0
+            lv_cr_items = {}
 
             for i in range(len(self._station_config.PATTERNS)):
                 analysis = self._station_config.ANALYSIS[i]
@@ -271,6 +274,8 @@ class pancakeoffaxisStation(test_station.TestStation):
                     pre_color = self._station_config.COLORS[i]
                     self._operator_interface.print_to_console('Set DUT To Color: {}.\n'.format(pre_color))
                 use_camera = not self._station_config.EQUIPMENT_SIM
+                if not use_camera:
+                    self._equipment.clear_registration()
                 analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, self._station_config.IS_SAVEDB)
                 self._operator_interface.print_to_console("Sequence run step  {}.\n".format(analysis))
 
@@ -278,7 +283,16 @@ class pancakeoffaxisStation(test_station.TestStation):
                 cx_dic = {}
                 cy_dic = {}
                 center_dic = {}
+                u_dic = {}
+                v_dic = {}
+                duv_dic = {}
+                u_values = None
+                u_values = None
+
+                # region extract raw data
+
                 for c, result in analysis_result.items():
+
                     if c != analysis:
                         continue
                     for ra in result:
@@ -287,22 +301,46 @@ class pancakeoffaxisStation(test_station.TestStation):
                         test_item = re.sub(r'\(Lv\)|Lv', '_Lv', raw_test_item)
                         test_item = re.sub(r'\s|%', '', test_item)
 
-                        lv_match = re.search(r'(P\d+)\(lv\)', r, re.I | re.S)
+                        lv_match = re.search(r'([P|G]\d+)\(lv\)', r, re.I | re.S)
                         if lv_match:
                             lv_dic[lv_match.groups()[0]] = float(result[ra])
-                        cx_match = re.search(r'(P\d+)\(cx\)', r, re.I|re.S)
+                        cx_match = re.search(r'([P|G]\d+)\(cx\)', r, re.I|re.S)
                         if cx_match:
                             cx_dic[cx_match.groups()[0]] = float(result[ra])
-                        cy_match = re.search(r'(P\d+)\(cx\)', r, re.I|re.S)
+                        cy_match = re.search(r'([P|G]\d+)\(cx\)', r, re.I|re.S)
                         if cy_match:
                             cy_dic[cy_match.groups()[0]] = float(result[ra])
+
+                        u_match = re.search(r'u\'Values', r, re.I | re.S)
+                        if u_match:
+                            u_values = result[ra]
+                        v_match = re.search(r'v\'Values', r, re.I | re.S)
+                        if v_match:
+                            v_values = result[ra]
 
                         center_match = re.search(r'(CenterLv|CenterCx|CenterCy)', r)
                         if center_match:
                             center_dic[center_match.groups()[0]] = float(result[ra])
+                        if test_item in test_log.results_array():
+                            test_log.set_measured_value_by_name(test_item, float(result[ra]))
 
-                        test_log.set_measured_value_by_name_ex(test_item, float(result[ra]))
+                    p_num = len(lv_dic)
+                    uv_keys = ['P%d'%k for k in range(p_num - 1)]  # remove Point: G1
+                    uv_keys.append('G1')
+                    us = [float(c) for c in u_values.split(',')[0:-1]]
+                    vs = [float(c) for c in v_values.split(',')[0:-1]]
 
+                    duvs = [((u - us[0])**2 + (v - vs[0])**2)**0.5 for u in us for v in vs]
+
+                    u_dic = dict(zip(uv_keys, us))
+                    v_dic = dict(zip(uv_keys, vs))
+                    duv_dic = dict(zip(uv_keys, duvs))
+
+                # endregion
+
+                # region Normal Test Item.
+
+                # Brightness at 30deg polar angle (nits)
                 brightness_items = []
                 for item in self._station_config.BRIGHTNESS_AT_DEG_30:
                     brightness_items.append(lv_dic[item])
@@ -310,33 +348,78 @@ class pancakeoffaxisStation(test_station.TestStation):
                 test_item = '{}_{}_Brightness_Min_At_30Degree'.format(posIdx, pattern)
                 test_log.set_measured_value_by_name_ex(test_item, brightness_min)
 
+                # Brightness % @30deg wrt on axis brightness
                 brightness_items = []
                 for item in self._station_config.BRIGHTNESS_AT_DEG_PERCENT_IDS:
                     brightness_items.append(lv_dic[item])
-                brightness_min = np.array(brightness_items).min()/center_dic['CenterLv']
+                brightness_min = np.array(brightness_items).min()/lv_dic[center_item]
                 test_item = '{}_{}_Brightness_Min_30_TO_0Degree'.format(posIdx, pattern)
                 test_log.set_measured_value_by_name_ex(test_item, brightness_min)
 
+                # Brightness and color shift (delta u'v') at 10deg and 20deg polar angle (nits)
                 brightness_items = []
+                duv_items = []
                 for item in self._station_config.BRIGHTNESS_AT_DEG_10:
                     brightness_items.append(lv_dic[item])
+                    duv_items.append(duv_dic[item])
                 brightness_min = np.array(brightness_items).min()
+                duv_max = np.array(duv_items).max()
                 test_item = '{}_{}_Brightness_Min_At_10Degree'.format(posIdx, pattern)
                 test_log.set_measured_value_by_name_ex(test_item, brightness_min)
+                test_item = '{}_{}_Duv_Max_At_10Degree'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, duv_max)
 
                 brightness_items = []
+                duv_items = []
                 for item in self._station_config.BRIGHTNESS_AT_DEG_20:
                     brightness_items.append(lv_dic[item])
+                    duv_items.append(duv_dic[item])
                 brightness_min = np.array(brightness_items).min()
+                duv_max = np.array(duv_items).max()
                 test_item = '{}_{}_Brightness_Min_At_20Degree'.format(posIdx, pattern)
                 test_log.set_measured_value_by_name_ex(test_item, brightness_min)
+                test_item = '{}_{}_Duv_Max_At_20Degree'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, duv_max)
 
-                #  TODO:
-                #  color shift
+                # Color shift, 30deg off-axis compared to 0deg polar angle (delta u'v')
+                duv_items = []
+                for item in self._station_config.COLORSHIFT_RATIO_AT_DEG_30:
+                    duv_items.append(duv_dic[item])
+                duv_max = np.array(duv_items).max()
+                test_item = '{}_{}_ColorShift_Max_At_30Degree'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, duv_max)
 
+                # Max brightness location
+                max_loc = max(lv_dic, key=lv_dic.get)
+                test_item = '{}_{}_Brightness_Max_Location'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, max_loc)
+                # endregion
 
+                if pattern in self._station_config.CR_TEST_PATTERNS:
+                    lv_cr_items[pattern] = lv_dic
 
-                pass
+            # region Constract Test Item
 
+            if len(lv_cr_items) == len(self._station_config.CR_TEST_PATTERNS) == 2:
+                # CR at 0deg and 30deg polar angle
+                w = self._station_config.CR_TEST_PATTERNS[0]
+                d = self._station_config.CR_TEST_PATTERNS[1]
+                cr_onaxis = lv_cr_items[w][center_item] / lv_cr_items[d][center_item]
+
+                cr_items = []
+                for item in self._station_config.CR_AT_DEG_30:
+                    cr = lv_cr_items[w][item] / lv_cr_items[d][item]
+                    cr_items.append(cr)
+                cr_offaxis_min = np.array(cr_items).min()
+
+                test_item = '{}_CR_At_0Degree'.format(posIdx)
+                test_log.set_measured_value_by_name_ex(test_item, cr_onaxis)
+
+                test_item = '{}_CR_Min_At_30Degree'.format(posIdx)
+                test_log.set_measured_value_by_name_ex(test_item, cr_offaxis_min)
+
+            # endregion
 
             self.data_export(serial_number, test_log, pos)
+
+        self._operator_interface.print_to_console('complete the off_axis test items.\n')

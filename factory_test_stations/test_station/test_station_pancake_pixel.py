@@ -55,17 +55,6 @@ class pancakepixelStation(test_station.TestStation):
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
         self._fixture.initialize()
-        # dbfn = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
-        # empytdb = os.path.join(self._station_config.ROOT_DIR, self._station_config.EMPTY_DATABASE_RELATIVEPATH)
-        # if (self._station_config.RESTART_TEST_COUNT != 1 and
-        #     self._station_config.IS_SAVEDB and
-        #         os.path.exists(dbfn) and not filecmp.cmp(dbfn, empytdb)):
-        #     dbfnbak = "{0}_{1}_autobak.ttxm".format(self._station_config.STATION_TYPE, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
-        #     self._operator_interface.print_to_console("backup ttxm raw database to {}...\n".format(dbfnbak))
-        #     self.backup_database(dbfnbak, True)
-        #
-        # self._operator_interface.print_to_console("Empty ttxm raw database ...\n")
-        # shutil.copyfile(empytdb, dbfn)
 
         if self._station_config.FIXTURE_PARTICLE_COUNTER and hasattr(self, '_particle_counter_start_time'):
             while ((datetime.datetime.now() - self._particle_counter_start_time)
@@ -177,7 +166,7 @@ class pancakepixelStation(test_station.TestStation):
             self._operator_interface.print_to_console("Set Camera Database. %s\n" % self._station_config.CAMERA_SN)
 
             uni_file_name = re.sub('_x.log', '.ttxm', test_log.get_filename())
-            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_ACT)
+            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
             databaseFileName = os.path.join(bak_dir, uni_file_name)
             sequencePath = os.path.join(self._station_config.ROOT_DIR,
                                         self._station_config.SEQUENCE_RELATIVEPATH)
@@ -196,7 +185,7 @@ class pancakepixelStation(test_station.TestStation):
 
             self.bright_subpixel_do(the_unit, serial_number, test_log)
             self.dark_subpixel_do(the_unit, serial_number, test_log)
-            self.data_export()
+            self.data_export(serial_number, test_log)
 
         except Exception, e:
             self._operator_interface.print_to_console("Test exception . {}\n".format(e))
@@ -225,37 +214,27 @@ class pancakepixelStation(test_station.TestStation):
     def is_ready(self):
         self._fixture.is_ready()
 
-    def backup_database(self, srcfn, dbfn, ismov = False):
-        bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_BAK)
-        if not os.path.exists(bak_dir):
-            os.mkdir(bak_dir, 777)
-        if ismov:
-            shutil.move(srcfn, os.path.join(bak_dir, dbfn))
-        else:
-            shutil.copyfile(srcfn, os.path.join(bak_dir, dbfn))
-
     def calc_blemish_index(self, pattern, zdata, test_log):
         self._operator_interface.print_to_console("calc blemish_index {}.\n".format(pattern))
         test_item = pattern + "_" + "BlemishIndex"
         if test_item not in test_log.results_array():
             return
-        num = len(zdata)
-        npdata = np.array(zdata)
-        size_list = npdata[:, 0]
-        locax_list = npdata[:, 1]
-        locay_list = npdata[:, 2]
-        pixel_list = npdata[:, 3]
-        constrast_lst = npdata[:, 4]
-
         # Algorithm For blemish_index
         blemish_index = 0
-        if num > 0 and len(constrast_lst) > 0:
+
+        if len(zdata) > 0:
+            npdata = np.array(zdata)
+            size_list = npdata[:, 0]
+            locax_list = npdata[:, 1]
+            locay_list = npdata[:, 2]
+            pixel_list = npdata[:, 3]
+            constrast_lst = npdata[:, 4]
             abs_contrast = np.abs(constrast_lst)
             location_r = np.sqrt(np.power(np.array(locax_list) - self._station_config.LOCATION_X0, 2)
                                  * np.power(np.array(locay_list) - self._station_config.LOCATION_Y0, 2))
             location_index = []
             size_index = []
-            for id in range(0, len(locax_list)):
+            for id in range(len(locax_list)):
                 tmp_local_index = 0
                 tmp_size_index = 0
                 if location_r[id] <= self._station_config.LOCATION_L:
@@ -342,8 +321,11 @@ class pancakepixelStation(test_station.TestStation):
             elif isinstance(self._station_config.COLORS[i], (str, int)):
                 the_unit.display_image(self._station_config.COLORS[i])
 
-            analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
+            # analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
+            analysis = self._station_config.ANALYSIS[i]
             use_camera = not self._station_config.EQUIPMENT_SIM
+            if not use_camera:
+                self._equipment.clear_registration()
             analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, self._station_config.IS_SAVEDB)
             self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
 
@@ -371,7 +353,7 @@ class pancakepixelStation(test_station.TestStation):
                             lv.append([float(c) for c in row_data])
                     avg = np.array(lv).mean()
                     avg_lv_register_patterns.append(avg)
-                    shutil.rmtree(fn, True)
+                    os.remove(fn)
             else:
                 size_list = []
                 locax_list = []
@@ -446,7 +428,7 @@ class pancakepixelStation(test_station.TestStation):
                         test_item = '{}_Quality_Brighter_NumDefects'.format(br_pattern)
                         test_log.set_measured_value_by_name_ex(test_item, quality_brighter_count)
                         test_item = '{}_Quality_Brighter_MinSeparationDistance'.format(br_pattern)
-                        min_sepa_distance = self.calc_separate_distance(pos_items, quality_brighter_count)
+                        min_sepa_distance = self.calc_separate_distance(pos_items, defects)
                         test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
                         test_item = '{}_Quality_Brighter_Res'.format(br_pattern)
                         test_log.set_measured_value_by_name_ex(test_item,
@@ -459,11 +441,12 @@ class pancakepixelStation(test_station.TestStation):
                         test_item = '{}_Quality_DimmerU_NumDefects'.format(br_pattern)
                         test_log.set_measured_value_by_name_ex(test_item, quality_dimmeru_count)
                         test_item = '{}_Quality_DimmerU_MinSeparationDistance'.format(br_pattern)
-                        min_sepa_distance = self.calc_separate_distance(pos_items, quality_dimmeru_count)
+                        min_sepa_distance = self.calc_separate_distance(pos_items, defects)
                         test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
                         test_item = '{}_Quality_DimmerU_Res'.format(br_pattern)
                         test_log.set_measured_value_by_name_ex(test_item,
-                             quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DU)
+                             quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DU
+                                     and min_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
 
                         defects = [ avg_lv_register_patterns[0] >= c and
                              self._station_config.QUALITY_AREA_R >= d > self._station_config.SUPER_QUALITY_AREA_R
@@ -472,14 +455,15 @@ class pancakepixelStation(test_station.TestStation):
                         test_item = '{}_Quality_DimmerL_NumDefects'.format(br_pattern)
                         test_log.set_measured_value_by_name_ex(test_item, quality_dimmerl_count)
                         test_item = '{}_Quality_DimmerL_MinSeparationDistance'.format(br_pattern)
-                        min_sepa_distance = self.calc_separate_distance(pos_items, quality_dimmerl_count)
+                        min_sepa_distance = self.calc_separate_distance(pos_items, defects)
                         test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
                         test_item = '{}_Quality_DimmerL_Res'.format(br_pattern)
                         test_log.set_measured_value_by_name_ex(test_item,
-                             quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DL)
+                             quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DL
+                                     and min_sepa_distance >= self._station_config.SEPARATION_DISTANCE_L)
 
-                        self.calc_blemish_index(br_pattern,
-                            zip(size_list, locax_list, locay_list, pixel_list, constrast_lst), test_log)
+                    self.calc_blemish_index(br_pattern,
+                        zip(size_list, locax_list, locay_list, pixel_list, constrast_lst), test_log)
 
     def calc_separate_distance(self, defect_positions, mask_pos):
         distance_items = []
@@ -533,8 +517,11 @@ class pancakepixelStation(test_station.TestStation):
             elif isinstance(self._station_config.COLORS[i], (str, int)):
                 the_unit.display_image(self._station_config.COLORS[i])
 
-            analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
+            # analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
+            analysis = self._station_config.ANALYSIS[i]
             use_camera = not self._station_config.EQUIPMENT_SIM
+            if not use_camera:
+                self._equipment.clear_registration()
             analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, self._station_config.IS_SAVEDB)
             self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
 
@@ -582,11 +569,28 @@ class pancakepixelStation(test_station.TestStation):
                     super_quality_count = defects.count(True)
                     test_item = '{}_SuperQuality_NumDefects'.format(br_pattern)
                     test_log.set_measured_value_by_name_ex(test_item, super_quality_count)
+                    min_sepa_distance = self.calc_separate_distance(pos_items, defects)
+                    test_item = '{}_SuperQuality_MinSeparationDistance'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
+                    test_item = '{}_SuperQuality_Res'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item,
+                                self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_L <= super_quality_count
+                                    <= self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_H and
+                                min_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
 
                     defects = [self._station_config.QUALITY_AREA_R >= d > self._station_config.SUPER_QUALITY_AREA_R
                                for c, d in con_r]
                     quality_count = defects.count(True)
                     test_item = '{}_Quality_NumDefects'.format(br_pattern)
                     test_log.set_measured_value_by_name_ex(test_item, quality_count)
-                    self.calc_blemish_index(br_pattern,
-                         zip(size_list, locax_list, locay_list, pixel_list, constrast_lst), test_log)
+                    min_sepa_distance = self.calc_separate_distance(pos_items, defects)
+                    test_item = '{}_Quality_MinSeparationDistance'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
+                    test_item = '{}_SuperQuality_Res'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item,
+                            self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_L <= super_quality_count
+                                <= self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_H and
+                            min_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
+
+                self.calc_blemish_index(br_pattern,
+                     zip(size_list, locax_list, locay_list, pixel_list, constrast_lst), test_log)

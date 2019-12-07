@@ -1,39 +1,62 @@
 
 STATION_LIMITS_ARRAYS = [
-    ["TT_Version", 'MPK_API_CS-1.0.11.0', 'MPK_API_CS-1.0.11.0', 96],
+    ["TT_Version", 'MPK_API_CS-1.0.12.0', 'MPK_API_CS-1.0.12.0', 96],
     ["DUT_ScreenOnRetries", 0, 10, 97],
     ["DUT_ScreenOnStatus", True, True, 98],
     ["ENV_ParticleCounter", 0, 1000, 99],
 
-    ["W000_SuperQuality_Brighter_NumDefects", None, None, 50],
-    ["W000_SuperQuality_Brighter_MinSeparationDistance", None, None, 51],
-    ["W000_SuperQuality_Brighter_Res", True, True, 52],
+    # ["W000_SuperQuality_Brighter_NumDefects", None, None, 10],
+    # ["W000_SuperQuality_Brighter_MinSeparationDistance", None, None, 11],
+    # ["W000_SuperQuality_Brighter_Res", True, True, 12],
+    #
+    # ["W000_SuperQuality_Dimmer_NumDefects", None, None, 13],
+    # ["W000_SuperQuality_Dimmer_MinSeparationDistance", None, None, 14],
+    # ["W000_SuperQuality_Dimmer_Res", True, True, 15],
+    #
+    # ["W000_Quality_Brighter_NumDefects", 0, 0, 16],
+    # ["W000_Quality_Brighter_MinSeparationDistance", None, None, 17],
+    # ["W000_Quality_Brighter_Res", True, True, 18],
+    #
+    # ["W000_Quality_DimmerU_NumDefects", 0, 2, 19],
+    # ["W000_Quality_DimmerU_MinSeparationDistance", None, None, 20],
+    # ["W000_Quality_DimmerU_Res", True, True, 21],
+    #
+    # ["W000_Quality_DimmerL_NumDefects", 0, 3, 22],
+    # ["W000_Quality_DimmerL_MinSeparationDistance", None, None, 23],
+    # ["W000_Quality_DimmerL_Res", True, True, 24],
+    #
+    # ["W255_SuperQuality_NumDefects", None, None, 25],
+    # ["W255_SuperQuality_MinSeparationDistance", None, None, 26],
+    # ["W255_SuperQuality_Res", True, True, 27],
+    #
+    # ["W255_Quality_NumDefects", None, None, 28],
+    # ["W255_Quality_MinSeparationDistance", None, None, 29],
+    # ["W255_Quality_Res", True, True, 30],
+    #
+    # ["R255_SuperQuality_NumDefects", 0, 0, 31],
+    # ["R255_SuperQuality_MinSeparationDistance", None, None, 32],
+    # ["R255_SuperQuality_Res", True, True, 33],
+    #
+    # ["R255_Quality_NumDefects", 0, 1, 34],
+    # ["R255_Quality_MinSeparationDistance", None, None, 35],
+    # ["R255_Quality_Res", True, True, 36],
+    #
+    # ["G255_SuperQuality_NumDefects", 0, 0, 37],
+    # ["G255_SuperQuality_MinSeparationDistance", None, None, 38],
+    # ["G255_SuperQuality_Res", True, True, 39],
+    #
+    # ["G255_Quality_NumDefects", 0, 1, 40],
+    # ["G255_Quality_MinSeparationDistance", None, None, 41],
+    # ["G255_Quality_Res", True, True, 42],
+    #
+    # ["B255_SuperQuality_NumDefects", 0, 0, 43],
+    # ["B255_SuperQuality_MinSeparationDistance", None, None, 44],
+    # ["B255_SuperQuality_Res", True, True, 45],
+    #
+    # ["B255_Quality_NumDefects", 0, 1, 46],
+    # ["B255_Quality_MinSeparationDistance", None, None, 47],
+    # ["B255_Quality_Res", True, True, 48],
 
-    ["W000_SuperQuality_Dimmer_NumDefects", None, None, 53],
-    ["W000_SuperQuality_Dimmer_MinSeparationDistance", None, None, 54],
-    ["W000_SuperQuality_Dimmer_Res", True, True, 55],
-
-    ["W000_Quality_Brighter_NumDefects", 0, 0, 56],
-    ["W000_Quality_Brighter_MinSeparationDistance", None, None, 57],
-    ["W000_Quality_Brighter_Res", True, True, 58],
-
-    ["W000_Quality_DimmerU_NumDefects", 0, 2, 59],
-    ["W000_Quality_DimmerU_MinSeparationDistance", None, None, 60],
-    ["W000_Quality_DimmerU_Res", True, True, 61],
-
-    ["W000_Quality_DimmerL_NumDefects", 0, 3, 62],
-    ["W000_Quality_DimmerL_MinSeparationDistance", None, None, 63],
-    ["W000_Quality_DimmerL_Res", True, True, 64],
-
-    ["W255_SuperQuality_NumDefects", 0, 0, 80],
-    ["W255_Quality_NumDefects", 0, 1, 81],
-    ["R255_SuperQuality_NumDefects", 0, 0, 82],
-    ["R255_Quality_NumDefects", 0, 1, 83],
-    ["G255_SuperQuality_NumDefects", 0, 0, 84],
-    ["G255_Quality_NumDefects", 0, 1, 85],
-    ["B255_SuperQuality_NumDefects", 0, 0, 86],
-    ["B255_Quality_NumDefects", 0, 1, 87],
-    '''
     ["W255_NumDarkParticles", -1E+12, 1E+12, 101],
     ["W255_NumDarkBlobs", -1E+12, 1E+12, 102],
     ["W255_NumBrightParticles", -1E+12, 1E+12, 103],
@@ -68,7 +91,6 @@ STATION_LIMITS_ARRAYS = [
     ["B255_NumBrightBlobs", -1E+12, 1E+12, 144],
     ["B255_NumDefects", -1E+12, 1E+12, 145],
     ["B255_BlemishIndex", -1E+12, 1E+12, 146],
-    '''
 ]
 
 global STATION_LIMITS

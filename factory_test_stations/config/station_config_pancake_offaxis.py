@@ -129,8 +129,6 @@ MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\I16+Conoscope - POI2.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
-DATABASE_RELATIVEPATH_ACT = r'factory-test_logs'
-DATABASE_RELATIVEPATH_BAK = r'factory-test_logs'
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
 
 FOCUS_DISTANCE = 0.45
@@ -152,33 +150,31 @@ DB_MAX_SIZE = 2048
 CAMERA_SN = "159496752"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
-POSITIONS = {'P1':(0, 0),  'P2': (0, 18), 'P4': (18, 0), 'P6': (0, -18), 'P8': (-18, 0)}
+POSITIONS = [('P1', (0, 0)),  ('P2', (0, 18)), ('P4', (18, 0)), ('P6', (0, -18)), ('P8', (-18, 0))]
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
 COLORS = [(255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 # COLORS = ['0008', '0001', '0800', '8000', '0010']
-ANALYSIS = ["Points Of Interest White", "Points Of Interest Black", "Points Of Interest Red", "Points Of Interest Green", "Points Of Interest Blue"]
-MEASUREMENTS = ["White", "Black", "Red", "Green", "Blue"]
+ANALYSIS = ["Points Of Interest Blue", "Points Of Interest Blue", "Points Of Interest Blue", "Points Of Interest Blue", "Points Of Interest Blue"]
+MEASUREMENTS = ["Black", "Black", "Red", "Green", "Blue"]
 ##################################
 
-BRIGHTNESS_AT_DEG_30 = ['P1', 'P2', 'P3', 'P4']
-BRIGHTNESS_AT_DEG_PERCENT_IDS =  ['P1', 'P2', 'P3', 'P4']
-BRIGHTNESS_AT_DEG_PERCENT = 16
+CR_TEST_PATTERNS = ['W255', 'W000']
+CENTER_AT_DEG_0 = 'P1'
 
-BRIGHTNESS_AT_DEG_10 = ['P1', 'P2', 'P3', 'P4']
-COLORSHIFT_AT_DEG_10 = ['P1', 'P2', 'P3', 'P4']
-BRIGHTNESS_AT_DEG_20 = ['P1', 'P2', 'P3', 'P4']
-COLORSHIFT_AT_DEG_20 = ['P1', 'P2', 'P3', 'P4']
+BRIGHTNESS_AT_DEG_30 = ['P2', 'P3', 'P4', 'P5']
+BRIGHTNESS_AT_DEG_PERCENT_IDS = ['P2', 'P3', 'P4', 'P5']
 
-COLORSHIFT_RATIO_AT_DEG_30 = ['P1', 'P2', 'P3', 'P4']
-CR_AT_DEG_30 = ['P1', 'P2', 'P3', 'P4']
-CR_AT_DEG_0 = ['P1', 'P2', 'P3', 'P4']
+BRIGHTNESS_AT_DEG_10 = ['P2', 'P3', 'P4', 'P5']
+COLORSHIFT_AT_DEG_10 = ['P2', 'P3', 'P4', 'P5']
 
-BRIGHTNESS_AT_DEG_PERCENT_IDS = ['P1', 'P2', 'P3', 'P4']
+BRIGHTNESS_AT_DEG_20 = ['P2', 'P3', 'P4', 'P5']
+COLORSHIFT_AT_DEG_20 = ['P2', 'P3', 'P4', 'P5']
 
+COLORSHIFT_RATIO_AT_DEG_30 = ['P2', 'P3', 'P4', 'P5']
 
-
+CR_AT_DEG_30 = ['P2', 'P3', 'P4', 'P5']
 
 ##################################
 # IT and work order

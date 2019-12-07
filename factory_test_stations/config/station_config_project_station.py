@@ -4,7 +4,7 @@
 # Where is the root directory.
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
-ROOT_DIR = r'C:\oculus\factory_test_omi'
+ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory-test_logs'
 ##################################
 # serial number codes
@@ -12,6 +12,7 @@ CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory-test_logs'
 SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config
 
+ANALYSIS_RELATIVEPATH = r'factory-test_logs'
 
 ##################################
 # shopfloor
