@@ -144,8 +144,6 @@ IS_EXPORT_CSV = False
 IS_EXPORT_PNG = False
 Resolution_Bin_X = 0
 Resolution_Bin_Y = 0
-RESTART_TEST_COUNT = 10
-DB_MAX_SIZE = 2048
 
 CAMERA_SN = "159496752"
 

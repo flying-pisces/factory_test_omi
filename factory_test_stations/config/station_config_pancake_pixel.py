@@ -146,8 +146,6 @@ Resolution_Bin_Y_REGISTER = 10
 Resolution_REGISTER_SKIPTEXT = 6
 Resolution_Bin_X = 10
 Resolution_Bin_Y = 10
-RESTART_TEST_COUNT = 99999
-DB_MAX_SIZE = 2048
 
 CAMERA_SN = "Demo"
 

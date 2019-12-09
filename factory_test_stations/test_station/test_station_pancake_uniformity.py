@@ -13,11 +13,22 @@ import re
 import filecmp
 from verifiction.particle_counter import ParticleCounter
 from verifiction.dut_checker import DutChecker
-
+from factory_test_stations.test_station.test_fixture.test_fixture_project_station import projectstationFixture
+from factory_test_stations.test_station.dut.dut import  projectDut
+import types
+from itertools import islice
+import cv2
 
 class pancakeuniformityError(Exception):
     pass
 
+def chk_and_set_measured_value_by_name(test_log, item, value):
+    """
+
+    :type test_log: test_station.TestRecord
+    """
+    if item in test_log.results_array():
+        test_log.set_measured_value_by_name(item, value)
 
 class pancakeuniformityStation(test_station.TestStation):
     """
@@ -28,6 +39,8 @@ class pancakeuniformityStation(test_station.TestStation):
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_uniformity.pancakeuniformityFixture(station_config, operator_interface)
+        if station_config.FIXTURE_SIM:
+            self._fixture = projectstationFixture(station_config, operator_interface)
         self._equipment = test_equipment_pancake_uniformity.pancakeuniformityEquipment(station_config)
         self._particle_counter = ParticleCounter(station_config)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
@@ -43,19 +56,6 @@ class pancakeuniformityStation(test_station.TestStation):
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
         self._fixture.initialize()
-        # dbfn = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
-        # empytdb = os.path.join(self._station_config.ROOT_DIR, self._station_config.EMPTY_DATABASE_RELATIVEPATH)
-        # if self._station_config.RESTART_TEST_COUNT != 1 and \
-        #         self._station_config.IS_SAVEDB and \
-        #         os.path.exists(dbfn) and not filecmp.cmp(dbfn, empytdb):
-        #     dbfnbak = "{0}_{1}_autobak.ttxm".format(self._station_config.STATION_TYPE,
-        #                                             datetime.datetime.now().strftime("%y%m%d%H%M%S"))
-        #     self._operator_interface.print_to_console("backup ttxm raw database to {}...\n".format(dbfnbak))
-        #     self.backup_database(dbfnbak, True)
-        #
-        # self._operator_interface.print_to_console("Empty ttxm raw database ...\n")
-        # shutil.copyfile(empytdb, dbfn)
-
         if self._station_config.FIXTURE_PARTICLE_COUNTER and hasattr(self, '_particle_counter_start_time'):
             while ((datetime.datetime.now() - self._particle_counter_start_time)
                    < datetime.timedelta(self._station_config.FIXTRUE_PARTICLE_START_DLY)):
@@ -100,7 +100,11 @@ class pancakeuniformityStation(test_station.TestStation):
         try:
             self._operator_interface.print_to_console("Testing Unit %s\n" %serial_number)
             the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
-            test_log.set_measured_value_by_name("TT_Version", self._equipment.version())
+            if self._station_config.DUT_SIM:
+                the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
+            test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
+
+            test_log.set_measured_value_by_name_ex("TT_Version", self._equipment.version())
 
             the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
@@ -115,7 +119,7 @@ class pancakeuniformityStation(test_station.TestStation):
                     is_reboot_need = False
                     retries += 1
                     try:
-                        is_screen_on = the_unit.screen_on()
+                        is_screen_on = the_unit.screen_on() or self._station_config.DUT_SIM
                     except dut.DUTError as e:
                         is_screen_on = False
                     else:
@@ -149,8 +153,8 @@ class pancakeuniformityStation(test_station.TestStation):
                         self._dut_checker.save_log_img(fn)
             finally:
                 self._dut_checker.close()
-                test_log.set_measured_value_by_name("DUT_ScreenOnRetries", retries)
-                test_log.set_measured_value_by_name("DUT_ScreenOnStatus", is_screen_on)
+                test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", retries)
+                test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", is_screen_on)
 
             if not is_screen_on:
                 raise pancakeuniformityError("DUT Is unable to Power on.")
@@ -159,15 +163,19 @@ class pancakeuniformityStation(test_station.TestStation):
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
                 particle_count = self._particle_counter.particle_counter_read_val()
-            test_log.set_measured_value_by_name("ENV_ParticleCounter", particle_count)
+            test_log.set_measured_value_by_name_ex("ENV_ParticleCounter", particle_count)
 
             self._operator_interface.print_to_console("Set Camera Database. %s\n" % self._station_config.CAMERA_SN)
 
             uni_file_name = re.sub('_x.log', '.ttxm', test_log.get_filename())
-            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_ACT)
+            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
             databaseFileName = os.path.join(bak_dir, uni_file_name)
             sequencePath = os.path.join(self._station_config.ROOT_DIR, self._station_config.SEQUENCE_RELATIVEPATH)
-            self._equipment.create_database(databaseFileName)
+            if self._station_config.EQUIPMENT_SIM:
+                databaseFileName = self._station_config.EQUIPMENT_DEMO_DATABASE
+                self._equipment.set_database(databaseFileName)
+            else:
+                self._equipment.create_database(databaseFileName)
             self._equipment.set_sequence(sequencePath)
 
             self._operator_interface.print_to_console('clear registration\n')
@@ -178,6 +186,8 @@ class pancakeuniformityStation(test_station.TestStation):
 
             centerlv_gls = []
             gls = []
+
+            '''
             centercolordifference255 = 0.0
 
             for i in  range(len(self._station_config.PATTERNS)):
@@ -190,45 +200,11 @@ class pancakeuniformityStation(test_station.TestStation):
                 elif isinstance(self._station_config.COLORS[i], (str, int)):
                     the_unit.display_image(self._station_config.COLORS[i])
 
-                # if math.isnan(the_unit.vsync_microseconds()):
-                #     vsync_us = self._station_config.DEFAULT_VSYNC_US
-                #     exp_time_list = self._station_config.EXPOSURE[i]
-                # else:
-                #     vsync_us = the_unit.vsync_microseconds()
-                #     exp_time_list = self._station_config.EXPOSURE[i]
-                #     for exp_index in range(len(exp_time_list)):
-                #         exp_time_list[exp_index] = float(int(exp_time_list[exp_index]*1000.0/vsync_us)*vsync_us)/1000.0
-                #         self._operator_interface.print_to_console(
-                #                 "\nAdjusted Timing in millesecond: %s\n" % exp_time_list[exp_index])
-
                 imagekey = self._station_config.PATTERNS[i]
-
                 analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
-                analysis_result = self._equipment.sequence_run_step(analysis, '', True, self._station_config.IS_SAVEDB)
+                use_camera = not self._station_config.EQUIPMENT_SIM
+                analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, self._station_config.IS_SAVEDB)
                 self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
-
-                if self._station_config.IS_EXPORT_PNG or self._station_config.IS_EXPORT_CSV:
-                    output_dir = os.path.join(self._station_config.ROOT_DIR , self._station_config.ANALYSIS_RELATIVEPATH, the_unit.serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
-                    if not os.path.exists(output_dir):
-                        os.mkdir(output_dir, 777)
-                    meas_list = self._equipment.get_measurement_list()
-                    exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
-                    for meas in meas_list:
-                        if meas['Measurement Setup'] != self._station_config.PATTERNS[i]:
-                            continue
-                        id = meas['Measurement ID']
-                        export_csv_name = "{}_{}.csv".format(serial_number, self._station_config.PATTERNS[i])
-                        export_png_name = "{}_{}.png".format(serial_number, self._station_config.PATTERNS[i])
-                        if self._station_config.IS_EXPORT_CSV:
-                            self._equipment.export_measurement(id, output_dir, export_csv_name,
-                                                               self._station_config.Resolution_Bin_X,
-                                                               self._station_config.Resolution_Bin_Y)
-                        if self._station_config.IS_EXPORT_PNG:
-                            self._equipment.export_measurement(id, output_dir, export_png_name,
-                                                               self._station_config.Resolution_Bin_X,
-                                                               self._station_config.Resolution_Bin_Y)
-                        self._operator_interface.print_to_console("Export data for {}\n"
-                                                                  .format(self._station_config.PATTERNS[i]))
 
                 for c, result in analysis_result.items():
                     if c != analysis:
@@ -246,7 +222,7 @@ class pancakeuniformityStation(test_station.TestStation):
 
                         if re.match(r'^([-|+]?\d+)(\.\d*)?$', result[resItem], re.IGNORECASE) is not None:
                             self._operator_interface.print_to_console('{}, {}.\n'.format(test_item, result[resItem]))
-                            test_log.set_measured_value_by_name(test_item, float(result[resItem]))
+                            test_log.set_measured_value_by_name_ex(test_item, float(result[resItem]))
                             self._operator_interface.print_to_console('TEST ITEM: {}, Value: {}\n'
                                                                       .format(test_item, result[resItem]))
                         # if '255' in self._station_config.PATTERNS[i] and 'Center Color (C' in r['Name']:
@@ -269,7 +245,7 @@ class pancakeuniformityStation(test_station.TestStation):
 
                 self._operator_interface.print_to_console("close run step {}.\n"
                                                           .format(self._station_config.PATTERNS[i]))
-                '''
+               
                 mesh_data = the_equipment.get_last_mesh()
 
                 if os.path.exists(os.path.join(output_dir, filename)):
@@ -294,18 +270,13 @@ class pancakeuniformityStation(test_station.TestStation):
 #                            cmax = cdata.max()
 #                            cmin = cdata.min()
 #                            cstd = np.std(cdata, dtype=np.float32)
-                '''
 
 
             ### implement tests here.  Note thadir(t the test name matches one in the station_limits file ###
-
-            gamma = -1
-            if len(gls) > 0 and len(centerlv_gls) > 0:
-                norm_gls = np.log10([gl / max(gls) for gl in gls])
-                norm_clv = np.log10([centerlv_gl / max(centerlv_gls) for centerlv_gl in centerlv_gls])
-                gamma, cov = np.polyfit(norm_gls, norm_clv, 1, cov=False)
-
-            test_log.set_measured_value_by_name("DISPLAY_GAMMA", gamma)
+            '''
+            self.uniformity_test_do(the_unit, serial_number, test_log)
+            self.uniformity_test_alg(serial_number, test_log)
+            self.data_export(serial_number, test_log)
 
         except Exception, e:
             self._operator_interface.print_to_console("Test exception {}.\n".format(e.message))
@@ -321,16 +292,6 @@ class pancakeuniformityStation(test_station.TestStation):
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
             overall_result, first_failed_test_result = self.close_test(test_log)
 
-            # SN-YYMMDDHHMMS-P.ttxm for pass unit and  SN-YYMMDDHHMMS-F.ttxm for failed
-            # if  self._station_config.RESTART_TEST_COUNT == 1\
-            #     and self._station_config.IS_SAVEDB:
-            #     dbfn = test_log.get_filename()
-            #     if overall_result:
-            #         dbfn = re.sub('x.log', 'P.ttxm', test_log.get_filename())
-            #     else:
-            #         dbfn = re.sub('x.log', 'F.ttxm', test_log.get_filename())
-            #     self.backup_database(databaseFileName, dbfn)
-
             self._runningCount += 1
             self._operator_interface.print_to_console('--- do test finished ---\n')
             return overall_result, first_failed_test_result
@@ -344,29 +305,179 @@ class pancakeuniformityStation(test_station.TestStation):
     def is_ready(self):
         self._fixture.is_ready()
 
-    def backup_database(self, srcfn, dbfn, ismov = False):
-        bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH_BAK)
-        if not os.path.exists(bak_dir):
-            os.mkdir(bak_dir, 777)
-        if ismov:
-            shutil.move(srcfn, os.path.join(bak_dir, dbfn))
-        else:
-            shutil.copyfile(srcfn, os.path.join(bak_dir, dbfn))
+    def data_export(self, serial_number, test_log):
+        """
+        export csv and png from ttxm database
+        :type test_log: test_station.TestRecord
+        :type serial_number: str
+        """
+        for i in range(len(self._station_config.PATTERNS)):
+            self._operator_interface.print_to_console(
+                "Panel export for Pattern: %s\n" % self._station_config.PATTERNS[i])
+            if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
+                output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
+                                          serial_number + '_' + test_log._start_time.strftime(
+                                              "%Y%m%d-%H%M%S"))
+                if not os.path.exists(output_dir):
+                    os.mkdir(output_dir, 777)
+                meas_list = self._equipment.get_measurement_list()
+                exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
+                for meas in meas_list:
+                    if meas['Measurement Setup'] != self._station_config.MEASUREMENTS[i]:
+                        continue
 
-    # def force_restart(self):
-    #     if not self._station_config.IS_SAVEDB:
-    #         return False
-    #
-    #     dbsize = os.path.getsize(os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH))
-    #     dbsize = dbsize / 1024  # kb
-    #     dbsize = dbsize / 1024  # mb
-    #     if self._station_config.RESTART_TEST_COUNT <= self._runningCount \
-    #             or dbsize >= self._station_config.DB_MAX_SIZE:
-    #         # dbfn = "{0}_{1}_autobak.ttxm".format(self._station_id, datetime.datetime.now().strftime("%y%m%d%H%M%S"))
-    #         # self.backup_database(dbfn)
-    #         self.close()
-    #         self._operator_interface.print_to_console('database will be renamed automatically while software restarted next time.\n')
-    #         return True
-    #
-    #     return False
+                    id = meas['Measurement ID']
+                    export_csv_name = "{}_{}.csv".format(serial_number, self._station_config.PATTERNS[i])
+                    export_png_name = "{}_{}.png".format(serial_number, self._station_config.PATTERNS[i])
+                    if self._station_config.IS_EXPORT_CSV:
+                        self._equipment.export_measurement(id, output_dir, export_csv_name,
+                                                           self._station_config.Resolution_Bin_X,
+                                                           self._station_config.Resolution_Bin_Y)
+                    if self._station_config.IS_EXPORT_PNG:
+                        self._equipment.export_measurement(id, output_dir, export_png_name,
+                                                           self._station_config.Resolution_Bin_X,
+                                                           self._station_config.Resolution_Bin_Y)
+                    self._operator_interface.print_to_console("Export data for {}\n"
+                                                              .format(self._station_config.PATTERNS[i]))
 
+    def normal_test_item_parse(self, br_pattern, result, test_log):
+        """
+        :type test_log: test_station.TestRecord
+        :type result: []
+        :type br_pattern: str
+        """
+        for resItem in result:
+            test_item = (br_pattern + "_" + resItem).replace(" ", "")
+            for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
+                if limit_array[0] == test_item and \
+                        re.match(r'^([-|+]?\d+)(\.\d*)?$', result[resItem], re.IGNORECASE) is not None:
+                    self._operator_interface.print_to_console(
+                        '{}, {}.\n'.format(test_item, result[resItem]))
+                    test_log.set_measured_value_by_name_ex(test_item, float(result[resItem]))
+                    self._operator_interface.print_to_console('TEST ITEM: {}, Value: {}\n'
+                                                              .format(test_item, result[resItem]))
+                    break
+
+    def uniformity_test_do(self, the_unit, serial_number, test_log):
+        """
+        export csv and png from ttxm database
+        :type the_unit: dut.pancakeDut
+        :type test_log: test_station.TestRecord
+        :type serial_number: str
+        """
+        centerlv_gls = []
+        gls = []
+        for i in range(len(self._station_config.PATTERNS)):
+            br_pattern = self._station_config.PATTERNS[i]
+            self._operator_interface.print_to_console(
+                "Panel Measurement Pattern: %s \n" % self._station_config.PATTERNS[i])
+            # modified by elton . add random color
+            # the_unit.display_color(self._station_config.COLORS[i])
+            if isinstance(self._station_config.COLORS[i], tuple):
+                the_unit.display_color(self._station_config.COLORS[i])
+            elif isinstance(self._station_config.COLORS[i], (str, int)):
+                the_unit.display_image(self._station_config.COLORS[i])
+
+            analysis = self._station_config.ANALYSIS[i]
+            use_camera = not self._station_config.EQUIPMENT_SIM
+            analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera,
+                                                                self._station_config.IS_SAVEDB)
+            self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
+
+            if not analysis_result.has_key(analysis):
+                continue
+            result = analysis_result[analysis]
+
+            center_lv_key = 'CenterLv'
+            if br_pattern[0] == 'W' and \
+                    self._station_config.PATTERNS[i][1:4] in self._station_config.GAMMA_CHECK_GLS and \
+                    result.has_key(center_lv_key):
+                centerlv_gls.append(float(result[center_lv_key]))
+                gls.append(float(br_pattern[1:4]))
+
+            self.normal_test_item_parse(br_pattern, result, test_log)
+        # gamma ...
+        gamma = -1
+        if len(gls) > 0 and len(centerlv_gls) > 0:
+            norm_gls = np.log10([gl / max(gls) for gl in gls])
+            norm_clv = np.log10([centerlv_gl / max(centerlv_gls) for centerlv_gl in centerlv_gls])
+            gamma, cov = np.polyfit(norm_gls, norm_clv, 1, cov=False)
+        test_log.set_measured_value_by_name_ex("DISPLAY_GAMMA", gamma)
+
+    def uniformity_test_alg(self, serial_number, test_log):
+        """
+        :type test_log: test_station.TestRecord
+        :type serial_number: str
+        """
+        output_dir = os.path.join(self._station_config.ROOT_DIR,
+                                  self._station_config.ANALYSIS_RELATIVEPATH,
+                                  serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
+        if not os.path.exists(output_dir):
+            os.mkdir(output_dir, 777)
+        if self._station_config.Resolution_Bin_REGISTER_PATTERN not in self._station_config.PATTERNS:
+            return
+
+        xm = self._station_config.Resolution_Bin_X_REGISTER
+        ym = self._station_config.Resolution_Bin_Y_REGISTER
+        scale = self._station_config.Resolution_Bin_SCALE
+        points = [(int(xm/2 + c[0] * scale),
+                   int(ym/2 + c[1] * scale))
+                  for c in self._station_config.TEST_POINTS]
+
+        for i in range(len(self._station_config.PATTERNS)):
+            br_pattern = self._station_config.PATTERNS[i]
+            meas_list = self._equipment.get_measurement_list()
+            for meas in meas_list:
+                if meas['Measurement Setup'] != self._station_config.MEASUREMENTS[i]:
+                    continue
+
+                id = meas['Measurement ID']
+                export_csv_name = "{}_{}_register.csv".format(serial_number, self._station_config.PATTERNS[i])
+                self._equipment.export_measurement(id, output_dir, export_csv_name,
+                                                   self._station_config.Resolution_Bin_X_REGISTER,
+                                                   self._station_config.Resolution_Bin_Y_REGISTER)  # w == h ???
+                lv = []
+                cx = []
+                cy = []
+                fn = os.path.join(output_dir, export_csv_name)
+                if not os.path.exists(fn):
+                    continue
+
+                with open(fn) as f:
+                    start_line = self._station_config.Resolution_REGISTER_SKIPTEXT
+                    f.seek(0, 0)
+                    for line in islice(f, start_line,
+                                       start_line + self._station_config.Resolution_Bin_Y_REGISTER - 1):
+                        row_data = line.replace('\n', '').split(',')
+                        lv.append([float(c) for c in row_data])
+                    f.seek(0, 0)
+                    start_line += (3 + self._station_config.Resolution_Bin_Y_REGISTER)
+                    for line in islice(f, start_line,
+                                       start_line + self._station_config.Resolution_Bin_Y_REGISTER):
+                        row_data = line.replace('\n', '').split(',')
+                        cx.append([float(c) for c in row_data])
+
+                    f.seek(0, 0)
+                    start_line += (3 + self._station_config.Resolution_Bin_Y_REGISTER)
+                    for line in islice(f, start_line,
+                                       start_line + self._station_config.Resolution_Bin_Y_REGISTER):
+                        row_data = line.replace('\n', '').split(',')
+                        cy.append([float(c) for c in row_data])
+
+                os.remove(fn)
+
+                lv = np.array(lv)
+                cx = np.array(cx)
+                cy = np.array(cy)
+                lv_points = []
+                cx_points = []
+                cy_points = []
+                for c in points:
+                    lv_points.append(lv[c[0], c[1]])
+                    cx_points.append(cx[c[0], c[1]])
+                    cy_points.append(cy[c[0], c[1]])
+
+                lv_std = np.std(lv)
+                test_item = '{}_Max_Brightness_variation'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item, float(lv_std))
+                pass

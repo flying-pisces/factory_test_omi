@@ -11,7 +11,7 @@ CSV_SUMMARY_DIR = r'c:\unif_summray'
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
+SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 
 ##################################
@@ -43,7 +43,7 @@ COMMAND_DISP_RESET_DLY = 1
 COMMAND_DISP_SHOWIMG_DLY = 1
 COMMAND_DISP_POWEROFF_DLY = 0.2
 
-DISP_CHECKER_ENABLE = True
+DISP_CHECKER_ENABLE = False
 DISP_CHECKER_DLY = 2
 DISP_CHECKER_IMG_INDEX = 0
 DISP_CHECKER_CAMERA_INDEX = 0
@@ -121,9 +121,6 @@ IS_VERBOSE = False
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\Myzy_Sequence_10-3-19.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
-
-DATABASE_RELATIVEPATH_ACT = r'factory-test_logs'
-DATABASE_RELATIVEPATH_BAK = r'factory-test_logs'
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
 
 FOCUS_DISTANCE = 0.45
@@ -139,16 +136,24 @@ IS_EXPORT_CSV = False
 IS_EXPORT_PNG = False
 Resolution_Bin_X = 0
 Resolution_Bin_Y = 0
-RESTART_TEST_COUNT = 99999
-DB_MAX_SIZE = 2048
 
+
+TEST_POINTS = [(0, 0), (0, 18), (12.728, 12.728), (18, 0), (12.728, -12.728), (0, -18),
+               (-12.728, -12.728), (-18, 0), (-12.728, 12.728)]
+TEST_POINTS_SIZE = 3
+Resolution_Bin_REGISTER_SaveImg = True
+Resolution_Bin_REGISTER_THRESH_L = 107
+Resolution_Bin_REGISTER_THRESH_H = 255
+Resolution_Bin_REGISTER_MIN_AREA = 1000
+Resolution_Bin_REGISTER_PATTERN = 'White'
+Resolution_Bin_Y_REGISTER = 450
+Resolution_Bin_X_REGISTER = 450
+Resolution_Bin_SCALE = 10
+Resolution_REGISTER_SKIPTEXT = 6
 
 SPECTRAL_RESPONSE = 'PhotoMetric'
-DISTANCE_UNIT = "Millimeters"
-CAMERA_SN = "159185561"
-COLOR_CAL = 'camera_color_cal'
-SCALE_CAL = 'image_scale_cal'
-SHIFT_CAL = '159185561 Color Shift Correction'
+CAMERA_SN = "Demo"
+
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 PATTERNS = ["White", "Gray180", 'Gray127', 'Gray90', "Red", "Green", "Blue"]
 SAVE_IMAGES = [False, False, False, False, False, False, False, False]
@@ -156,11 +161,11 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255,255,255), (180, 180, 180), (127,127,127), (90,90,90), (255,0,0), (0,255,0), (0,0,255)]
 # COLORS = ['0008', '0001', '0800', '8000', '0010', '0020', '0040']
 # COLORS = ['1', '2', '3','4','5']
-ANALYSIS = ["MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity", "MLO_Uniformity"]
-EXPOSURE = [[125,125,125], [250,250,250],[375,375,375],[500,500,500],[250,250,500],[125,125,125],[250,250,250]]
-
+ANALYSIS = ["MLO_Uniformity White", "MLO_Uniformity Gray180", "MLO_Uniformity Gray127",
+            "MLO_Uniformity Gray90", "MLO_Uniformity Red", "MLO_Uniformity Green", "MLO_Uniformity Bule"]
+MEASUREMENTS = ["White", "Gray180", "Gray127", "Gray90", "Red", "Green", "Blue"]
 #gamma related
-GAMMA_CHECK_GLS = ["White", "180", "127", "090"]
+GAMMA_CHECK_GLS = ["255", "180", "127", "090"]
 
 ##################################
 # IT and work order
