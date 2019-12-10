@@ -586,7 +586,7 @@ class pancakepixelStation(test_station.TestStation):
                     min_sepa_distance = self.calc_separate_distance(pos_items, defects)
                     test_item = '{}_Quality_MinSeparationDistance'.format(br_pattern)
                     test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
-                    test_item = '{}_SuperQuality_Res'.format(br_pattern)
+                    test_item = '{}_Quality_Res'.format(br_pattern)
                     test_log.set_measured_value_by_name_ex(test_item,
                             self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_L <= super_quality_count
                                 <= self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_H and

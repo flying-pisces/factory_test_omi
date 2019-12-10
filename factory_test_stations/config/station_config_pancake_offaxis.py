@@ -154,8 +154,8 @@ SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
 COLORS = [(255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 # COLORS = ['0008', '0001', '0800', '8000', '0010']
-ANALYSIS = ["Points Of Interest Blue", "Points Of Interest Blue", "Points Of Interest Blue", "Points Of Interest Blue", "Points Of Interest Blue"]
-MEASUREMENTS = ["Black", "Black", "Red", "Green", "Blue"]
+ANALYSIS = ["Points Of Interest W255", "Points Of Interest W000", "Points Of Interest R255", "Points Of Interest G255", "Points Of Interest B255"]
+MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255"]
 ##################################
 
 CR_TEST_PATTERNS = ['W255', 'W000']

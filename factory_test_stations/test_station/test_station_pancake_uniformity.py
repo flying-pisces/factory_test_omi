@@ -417,12 +417,7 @@ class pancakeuniformityStation(test_station.TestStation):
         if self._station_config.Resolution_Bin_REGISTER_PATTERN not in self._station_config.PATTERNS:
             return
 
-        xm = self._station_config.Resolution_Bin_X_REGISTER
-        ym = self._station_config.Resolution_Bin_Y_REGISTER
-        scale = self._station_config.Resolution_Bin_SCALE
-        points = [(int(xm/2 + c[0] * scale),
-                   int(ym/2 + c[1] * scale))
-                  for c in self._station_config.TEST_POINTS]
+        points = self._station_config.TEST_POINTS_POS
 
         for i in range(len(self._station_config.PATTERNS)):
             br_pattern = self._station_config.PATTERNS[i]
@@ -435,19 +430,16 @@ class pancakeuniformityStation(test_station.TestStation):
                 export_csv_name = "{}_{}_register.csv".format(serial_number, self._station_config.PATTERNS[i])
                 self._equipment.export_measurement(id, output_dir, export_csv_name,
                                                    self._station_config.Resolution_Bin_X_REGISTER,
-                                                   self._station_config.Resolution_Bin_Y_REGISTER)  # w == h ???
+                                                   self._station_config.Resolution_Bin_Y_REGISTER)
                 lv = []
                 cx = []
                 cy = []
                 fn = os.path.join(output_dir, export_csv_name)
-                if not os.path.exists(fn):
-                    continue
-
                 with open(fn) as f:
                     start_line = self._station_config.Resolution_REGISTER_SKIPTEXT
                     f.seek(0, 0)
                     for line in islice(f, start_line,
-                                       start_line + self._station_config.Resolution_Bin_Y_REGISTER - 1):
+                                       start_line + self._station_config.Resolution_Bin_Y_REGISTER):
                         row_data = line.replace('\n', '').split(',')
                         lv.append([float(c) for c in row_data])
                     f.seek(0, 0)
@@ -465,19 +457,49 @@ class pancakeuniformityStation(test_station.TestStation):
                         cy.append([float(c) for c in row_data])
 
                 os.remove(fn)
-
                 lv = np.array(lv)
                 cx = np.array(cx)
                 cy = np.array(cy)
-                lv_points = []
-                cx_points = []
-                cy_points = []
-                for c in points:
-                    lv_points.append(lv[c[0], c[1]])
-                    cx_points.append(cx[c[0], c[1]])
-                    cy_points.append(cy[c[0], c[1]])
 
-                lv_std = np.std(lv)
-                test_item = '{}_Max_Brightness_variation'.format(br_pattern)
-                test_log.set_measured_value_by_name_ex(test_item, float(lv_std))
+                keys = [x[0] for x in points]
+
+                u = 2 * cx / (-2 * cx + 12 * cy + 3)
+                v = 9 * cy / (-2 * cx + 12 * cy + 3)
+                center_pos = dict(points)['P1']
+                center_u = u[center_pos[0]]
+                center_v = v[center_pos[1]]
+
+                lv_data = [lv[x[1]] for x in points]
+                u_data = [u[x[1]] for x in points]
+                v_data = [v[x[1]] for x in points]
+
+                duv = np.sqrt((u - center_u)**2 + (v - center_v)**2)
+                lv_points = dict(zip(keys, lv_data))
+                u_points = dict(zip(keys, u_data))
+                v_points = dict(zip(keys, v_data))
+
+                cv_lv = np.std(np.array(lv), dtype=np.float32) / np.mean(np.array(lv))
+                test_item = '{}_Brightness_Variation'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item, cv_lv)
+
+                cv_color = np.std(np.array(duv), dtype=np.float32) / np.mean(np.array(duv))
+                test_item = '{}_Color_Variation'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item, cv_color)
+                duv_dic = dict(zip(keys, duv))
+                grps = [['P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9'],
+                       ['P1', 'P3', 'P9'],
+                       ['P2', 'P1', 'P4'],
+                       ['P3', 'P1', 'P5'],
+                       ['P4', 'P1', 'P6'],
+                       ['P5', 'P1', 'P7'],
+                       ['P6', 'P1', 'P8'],
+                       ['P7', 'P1', 'P9'],
+                       ['P8', 'P1', 'P2']]
+                for grp in grps:
+                    tmp = []
+                    for c in grp:
+                        tmp.append(duv_dic[c])
+                    cv_color = np.std(np.array(tmp), dtype=np.float32)/np.mean(np.array(tmp))
+                    test_item = '{}_Max_Neighbor_Color_Variation'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, cv_color)
                 pass

@@ -134,20 +134,25 @@ HEIGHT = 1400
 IS_SAVEDB = True
 IS_EXPORT_CSV = False
 IS_EXPORT_PNG = False
-Resolution_Bin_X = 0
-Resolution_Bin_Y = 0
+Resolution_Bin_X = 100
+Resolution_Bin_Y = 100
 
 
-TEST_POINTS = [(0, 0), (0, 18), (12.728, 12.728), (18, 0), (12.728, -12.728), (0, -18),
-               (-12.728, -12.728), (-18, 0), (-12.728, 12.728)]
-TEST_POINTS_SIZE = 3
+# TEST_POINTS = [(0, 0), (0, 18), (12.728, 12.728), (18, 0), (12.728, -12.728), (0, -18),
+#                (-12.728, -12.728), (-18, 0), (-12.728, 12.728)]
+
+TEST_POINTS_POS = [('P1', (0, 0)), ('P2', (0, 30)), ('P3', (30, 30)), ('P4', (18, 0)),
+                   ('P5', (12, 12)), ('P6', (0, 30)),
+                   ('P7', (0, 0)), ('P8', (0, 0)), ('P9', (0, 0))]
+
 Resolution_Bin_REGISTER_SaveImg = True
 Resolution_Bin_REGISTER_THRESH_L = 107
 Resolution_Bin_REGISTER_THRESH_H = 255
 Resolution_Bin_REGISTER_MIN_AREA = 1000
 Resolution_Bin_REGISTER_PATTERN = 'White'
-Resolution_Bin_Y_REGISTER = 450
-Resolution_Bin_X_REGISTER = 450
+Resolution_Bin_Y_REGISTER = 40
+Resolution_Bin_X_REGISTER = 40
+
 Resolution_Bin_SCALE = 10
 Resolution_REGISTER_SKIPTEXT = 6
 

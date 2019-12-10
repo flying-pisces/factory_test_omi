@@ -6,6 +6,18 @@ STATION_LIMITS_ARRAYS = [
     ["DUT_ScreenOnStatus", True, True, 98],
     ["ENV_ParticleCounter", 0, 1000, 99],
 
+    ['W255_Brightness_Variation', 0, 0.02, 10],
+    ['W127_Brightness_Variation', 0, 0.02, 11],
+    ['R255_Color_Variation', 0, 0.01, 12],
+    ['G255_Color_Variation', 0, 0.01, 13],
+    ['B255_Color_Variation', 0, 0.01, 14],
+    ['W255_Color_Variation', 0, 0.01, 15],
+
+    ['R255_Max_Neighbor_Color_Variation', 0, 0.005, 16],
+    ['G255_Max_Neighbor_Color_Variation', 0, 0.005, 17],
+    ['B255_Max_Neighbor_Color_Variation', 0, 0.005, 18],
+    ['W255_Max_Neighbor_Color_Variation', 0, 0.005, 19],
+
     # Avgu/Avgv/CenterLv/AvgLv/LvUniformity
     ["White_Avgu",  -1E+12, 1E+12, 101],
     ["White_Avgv",  -1E+12, 1E+12, 102],

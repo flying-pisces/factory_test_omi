@@ -292,7 +292,6 @@ class pancakeoffaxisStation(test_station.TestStation):
                 # region extract raw data
 
                 for c, result in analysis_result.items():
-
                     if c != analysis:
                         continue
                     for ra in result:
@@ -329,8 +328,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                     uv_keys.append('G1')
                     us = [float(c) for c in u_values.split(',')[0:-1]]
                     vs = [float(c) for c in v_values.split(',')[0:-1]]
-
-                    duvs = [((u - us[0])**2 + (v - vs[0])**2)**0.5 for u in us for v in vs]
+                    duvs = np.sqrt((np.array(us) - us[0])**2 + (np.array(vs) - vs[0])**2)
 
                     u_dic = dict(zip(uv_keys, us))
                     v_dic = dict(zip(uv_keys, vs))

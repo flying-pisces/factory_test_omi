@@ -16,10 +16,10 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Fake model number requirement, need config
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM6" #
+FIXTURE_COMPORT = "COM10" #
 FIXTURE_PARTICLE_COMPORT="COM3" #
 FIXTURE_PARTICLE_ADDR=1
-DUT_COMPORT = "COM5" #
+DUT_COMPORT = "COM9" #
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu','hw','fpga']
@@ -126,10 +126,6 @@ SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\y29 particle Def
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
 
-FOCUS_DISTANCE = 0.425
-APERTURE = 8.0
-ROTATION = 90
-IS_AUTOEXPOSURE = False
 # LEFT = 462
 # TOP = 1253
 # WIDTH = 3781
@@ -147,19 +143,19 @@ Resolution_REGISTER_SKIPTEXT = 6
 Resolution_Bin_X = 10
 Resolution_Bin_Y = 10
 
-CAMERA_SN = "Demo"
+CAMERA_SN = "91738177"
 
-PATTERNS_BRIGHT = ['REG000', 'REG001', 'W000']  # the first two are used to register data for bright test.
+PATTERNS_BRIGHT = ['W024', 'W048', 'W000']  # the first two are used to register data for bright test.
 PATTERNS_DARK = ['W255', "R255", "G255", "B255"]
-PATTERNS = ["REG000", "REG001", "W000", "W255", "R255", "G255", "B255"]
+PATTERNS = ["W024", "W048", "W000", "W255", "R255", "G255", "B255"]
 # PATTERNS = ["White","Black","Red","Green","Blue"]
 SAVE_IMAGES = [True, True, True, True, True, True, True]
 COLORS = [(28, 28, 28), (48, 48, 48), (0, 0, 0), (255, 255, 255),  (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 # COLORS = ['0008','0000']
 # COLORS = ['1', '2', '3','4','5']
-ANALYSIS = ["ParticleDefects W255", "ParticleDefects W255", "ParticleDefects W000", "ParticleDefects W255",
+ANALYSIS = ["ParticleDefects W024", "ParticleDefects W048", "ParticleDefects W000", "ParticleDefects W255",
             "ParticleDefects R255", "ParticleDefects G255", "ParticleDefects B255"]
-MEASUREMENTS = ["White", "White", "White", "Black", "Red", "Green", "Blue"]
+MEASUREMENTS = ["W024", "W048", "White", "Black", "Red", "Green", "Blue"]
 QUALITY_AREA_R = 18
 SUPER_QUALITY_AREA_R = 7
 SEPARATION_DISTANCE = 5
@@ -194,6 +190,6 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\1PR00000D69265_pancake_pixel-02_20191113-141052.ttxm'
-DUT_SIM = True
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False
