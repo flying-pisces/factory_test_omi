@@ -22,5 +22,5 @@ class projectstationFixture(hardware_station_common.test_station.test_fixture.Te
         def not_find(*args, **kwargs):
             return
         if item in ['status', 'elminator_off', 'elminator_on', 'mov_abs_xy', 'unload',
-                    'load', 'button_disable', 'button_enable']:
+                    'load', 'button_disable', 'button_enable', 'flush_data']:
             return not_find

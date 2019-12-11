@@ -5,7 +5,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'c:\pixel_summray'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\pixel_summray'
 
 ##################################
 # serial number codes
@@ -120,7 +120,7 @@ DUT_ON_MAXRETRY = 10
 
 ##################################
 # Test Equipment related parameters
-IS_VERBOSE = False
+IS_VERBOSE = True
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\y29 particle Defect.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
@@ -145,17 +145,17 @@ Resolution_Bin_Y = 10
 
 CAMERA_SN = "91738177"
 
-PATTERNS_BRIGHT = ['W024', 'W048', 'W000']  # the first two are used to register data for bright test.
+PATTERNS_BRIGHT = ['W028', 'W048', 'W000']  # the first two are used to register data for bright test.
 PATTERNS_DARK = ['W255', "R255", "G255", "B255"]
-PATTERNS = ["W024", "W048", "W000", "W255", "R255", "G255", "B255"]
+PATTERNS = ["W028", "W048", "W000", "W255", "R255", "G255", "B255"]
 # PATTERNS = ["White","Black","Red","Green","Blue"]
 SAVE_IMAGES = [True, True, True, True, True, True, True]
 COLORS = [(28, 28, 28), (48, 48, 48), (0, 0, 0), (255, 255, 255),  (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 # COLORS = ['0008','0000']
 # COLORS = ['1', '2', '3','4','5']
-ANALYSIS = ["ParticleDefects W024", "ParticleDefects W048", "ParticleDefects W000", "ParticleDefects W255",
+ANALYSIS = ["ParticleDefects W028", "ParticleDefects W048", "ParticleDefects W000", "ParticleDefects W255",
             "ParticleDefects R255", "ParticleDefects G255", "ParticleDefects B255"]
-MEASUREMENTS = ["W024", "W048", "White", "Black", "Red", "Green", "Blue"]
+MEASUREMENTS = ["W028", "W048", "W255", "W000", "R255", "G255", "B255"]
 QUALITY_AREA_R = 18
 SUPER_QUALITY_AREA_R = 7
 SEPARATION_DISTANCE = 5

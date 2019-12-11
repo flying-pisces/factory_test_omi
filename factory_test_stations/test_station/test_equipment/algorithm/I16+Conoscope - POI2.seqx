@@ -5,7 +5,7 @@
   <Items>
     <SequenceItem>
       <PointsOfInterest>
-        <UserName>Points Of Interest White</UserName>
+        <UserName>Points Of Interest W255</UserName>
         <Notes />
         <MeasureElapsedTime>false</MeasureElapsedTime>
         <MaxScaleValue>100</MaxScaleValue>
@@ -184,7 +184,7 @@
         <MoireRegionFilterName />
         <SavedFilterDescription />
         <FilterGUID />
-        <XMLPOISETID>15</XMLPOISETID>
+        <XMLPOISETID>4</XMLPOISETID>
         <PassFailPOIPoints>true</PassFailPOIPoints>
         <MaxAllowedAverageLv>0</MaxAllowedAverageLv>
         <MinAllowedAverageLv>0</MinAllowedAverageLv>
@@ -197,13 +197,13 @@
         <MaxColorDifference>0</MaxColorDifference>
         <FailOption>Normal</FailOption>
       </PointsOfInterest>
-      <PatternSetupName>White</PatternSetupName>
-      <Selected>False</Selected>
+      <PatternSetupName>W255</PatternSetupName>
+      <Selected>True</Selected>
       <GUID>e82e6f34-457e-454b-90dc-b04ce06ca0ed</GUID>
     </SequenceItem>
     <SequenceItem>
       <PointsOfInterest>
-        <UserName>Points Of Interest Black</UserName>
+        <UserName>Points Of Interest W000</UserName>
         <Notes />
         <MeasureElapsedTime>false</MeasureElapsedTime>
         <MaxScaleValue>100</MaxScaleValue>
@@ -382,7 +382,7 @@
         <MoireRegionFilterName />
         <SavedFilterDescription />
         <FilterGUID />
-        <XMLPOISETID>15</XMLPOISETID>
+        <XMLPOISETID>4</XMLPOISETID>
         <PassFailPOIPoints>true</PassFailPOIPoints>
         <MaxAllowedAverageLv>0</MaxAllowedAverageLv>
         <MinAllowedAverageLv>0</MinAllowedAverageLv>
@@ -395,13 +395,13 @@
         <MaxColorDifference>0</MaxColorDifference>
         <FailOption>Normal</FailOption>
       </PointsOfInterest>
-      <PatternSetupName>Black</PatternSetupName>
-      <Selected>True</Selected>
+      <PatternSetupName>W000</PatternSetupName>
+      <Selected>False</Selected>
       <GUID>e3aa06ca-87b6-4118-947d-8a90c4cb44c9</GUID>
     </SequenceItem>
     <SequenceItem>
       <PointsOfInterest>
-        <UserName>Points Of Interest Red</UserName>
+        <UserName>Points Of Interest R255</UserName>
         <Notes />
         <MeasureElapsedTime>false</MeasureElapsedTime>
         <MaxScaleValue>100</MaxScaleValue>
@@ -580,7 +580,7 @@
         <MoireRegionFilterName />
         <SavedFilterDescription />
         <FilterGUID />
-        <XMLPOISETID>15</XMLPOISETID>
+        <XMLPOISETID>4</XMLPOISETID>
         <PassFailPOIPoints>true</PassFailPOIPoints>
         <MaxAllowedAverageLv>0</MaxAllowedAverageLv>
         <MinAllowedAverageLv>0</MinAllowedAverageLv>
@@ -593,13 +593,13 @@
         <MaxColorDifference>0</MaxColorDifference>
         <FailOption>Normal</FailOption>
       </PointsOfInterest>
-      <PatternSetupName>White</PatternSetupName>
-      <Selected>True</Selected>
+      <PatternSetupName>R255</PatternSetupName>
+      <Selected>False</Selected>
       <GUID>b4048ab0-0b9d-421b-b68e-170bba31349d</GUID>
     </SequenceItem>
     <SequenceItem>
       <PointsOfInterest>
-        <UserName>Points Of Interest Green</UserName>
+        <UserName>Points Of Interest G255</UserName>
         <Notes />
         <MeasureElapsedTime>false</MeasureElapsedTime>
         <MaxScaleValue>100</MaxScaleValue>
@@ -778,7 +778,7 @@
         <MoireRegionFilterName />
         <SavedFilterDescription />
         <FilterGUID />
-        <XMLPOISETID>15</XMLPOISETID>
+        <XMLPOISETID>4</XMLPOISETID>
         <PassFailPOIPoints>true</PassFailPOIPoints>
         <MaxAllowedAverageLv>0</MaxAllowedAverageLv>
         <MinAllowedAverageLv>0</MinAllowedAverageLv>
@@ -791,13 +791,13 @@
         <MaxColorDifference>0</MaxColorDifference>
         <FailOption>Normal</FailOption>
       </PointsOfInterest>
-      <PatternSetupName>White</PatternSetupName>
-      <Selected>True</Selected>
+      <PatternSetupName>G255</PatternSetupName>
+      <Selected>False</Selected>
       <GUID>4b1a97a1-5d2a-483d-bf11-6efd2d72efb7</GUID>
     </SequenceItem>
     <SequenceItem>
       <PointsOfInterest>
-        <UserName>Points Of Interest Blue</UserName>
+        <UserName>Points Of Interest B255</UserName>
         <Notes />
         <MeasureElapsedTime>false</MeasureElapsedTime>
         <MaxScaleValue>100</MaxScaleValue>
@@ -976,7 +976,7 @@
         <MoireRegionFilterName />
         <SavedFilterDescription />
         <FilterGUID />
-        <XMLPOISETID>15</XMLPOISETID>
+        <XMLPOISETID>4</XMLPOISETID>
         <PassFailPOIPoints>true</PassFailPOIPoints>
         <MaxAllowedAverageLv>0</MaxAllowedAverageLv>
         <MinAllowedAverageLv>0</MinAllowedAverageLv>
@@ -989,8 +989,8 @@
         <MaxColorDifference>0</MaxColorDifference>
         <FailOption>Normal</FailOption>
       </PointsOfInterest>
-      <PatternSetupName>White</PatternSetupName>
-      <Selected>True</Selected>
+      <PatternSetupName>B255</PatternSetupName>
+      <Selected>False</Selected>
       <GUID>544c0c67-7ed6-47e2-89e0-27fe3435f2d9</GUID>
     </SequenceItem>
   </Items>
@@ -999,26 +999,26 @@
       <CaptureFilter>
         <boolean>false</boolean>
         <boolean>true</boolean>
-        <boolean>false</boolean>
-        <boolean>false</boolean>
+        <boolean>true</boolean>
+        <boolean>true</boolean>
         <boolean>false</boolean>
         <boolean>false</boolean>
         <boolean>false</boolean>
       </CaptureFilter>
       <ExposureTime>
         <float>100</float>
+        <float>112.48</float>
+        <float>305.02</float>
+        <float>178.23</float>
         <float>100</float>
         <float>100</float>
         <float>100</float>
-        <float>0.01</float>
-        <float>0.01</float>
-        <float>0.01</float>
       </ExposureTime>
       <NDFilterPosition>
         <int>1</int>
-        <int>1</int>
-        <int>1</int>
-        <int>1</int>
+        <int>2</int>
+        <int>2</int>
+        <int>2</int>
         <int>1</int>
         <int>1</int>
         <int>1</int>
@@ -1032,8 +1032,8 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>c3123219-f354-4b56-89f9-771c8fcfa014</GUID>
-      <Name>White</Name>
+      <GUID>17b0370c-8dac-4422-beaf-ed4a6194fb60</GUID>
+      <Name>W255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
       <Pattern>
@@ -1052,7 +1052,7 @@
       <ManualHDRValuesList />
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
-      <AutoAdjustExposure>false</AutoAdjustExposure>
+      <AutoAdjustExposure>true</AutoAdjustExposure>
       <BinningX>1</BinningX>
       <BinningY>1</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
@@ -1062,38 +1062,13 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Degrees</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
-          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
-          <FlatFieldID>0</FlatFieldID>
-          <FFType>0</FFType>
-          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
-          <LensDistortionID>0</LensDistortionID>
-          <MultiPointID>0</MultiPointID>
-          <StrayLightID>0</StrayLightID>
-          <SubFrameRegion>
-            <Location>
-              <X>0</X>
-              <Y>0</Y>
-            </Location>
-            <Size>
-              <Width>0</Width>
-              <Height>0</Height>
-            </Size>
-            <X>0</X>
-            <Y>0</Y>
-            <Width>0</Width>
-            <Height>0</Height>
-          </SubFrameRegion>
-        </CameraSettings>
-        <CameraSettings>
           <SerialNumber>159496752</SerialNumber>
-          <ColorCalID>0</ColorCalID>
+          <ColorCalID>17</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>0</FlatFieldID>
           <FFType>0</FFType>
@@ -1118,7 +1093,7 @@
         </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
-      <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
+      <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
       <LEDColorPurity>0.8</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
@@ -1138,7 +1113,7 @@
       <ECCCustomCal>0</ECCCustomCal>
       <ConoscopeZDistance>3</ConoscopeZDistance>
       <FFType>0</FFType>
-      <GoniometerType>TypeB</GoniometerType>
+      <GoniometerType>TypeC</GoniometerType>
       <DUTDistance>1</DUTDistance>
       <DownsampleFactor>1</DownsampleFactor>
       <InterpolationMethod>CubicSpline</InterpolationMethod>
@@ -1217,7 +1192,6 @@
           <Timeout>20000</Timeout>
         </NetworkComputerInfo>
       </ComputerInfoList>
-      <AssociatedCamera />
     </PatternSetup>
     <PatternSetup>
       <CaptureFilter>
@@ -1231,12 +1205,12 @@
       </CaptureFilter>
       <ExposureTime>
         <float>100</float>
+        <float>549.65</float>
+        <float>1292.69</float>
+        <float>1932.56</float>
         <float>100</float>
         <float>100</float>
         <float>100</float>
-        <float>0.01</float>
-        <float>0.01</float>
-        <float>0.01</float>
       </ExposureTime>
       <NDFilterPosition>
         <int>1</int>
@@ -1256,8 +1230,8 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>f8853de3-ab69-4b66-a352-49397849c6a0</GUID>
-      <Name>Black</Name>
+      <GUID>7c289715-1d41-487a-ba6f-8a2689a7aedd</GUID>
+      <Name>W000</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
       <Pattern>
@@ -1277,8 +1251,8 @@
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
       <AutoAdjustExposure>false</AutoAdjustExposure>
-      <BinningX>1</BinningX>
-      <BinningY>1</BinningY>
+      <BinningX>4</BinningX>
+      <BinningY>4</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
       <NbrFramesToAverage>1</NbrFramesToAverage>
       <DarkImageOptions>AutoDark</DarkImageOptions>
@@ -1286,38 +1260,13 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Degrees</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
-          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
-          <FlatFieldID>0</FlatFieldID>
-          <FFType>0</FFType>
-          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
-          <LensDistortionID>0</LensDistortionID>
-          <MultiPointID>0</MultiPointID>
-          <StrayLightID>0</StrayLightID>
-          <SubFrameRegion>
-            <Location>
-              <X>0</X>
-              <Y>0</Y>
-            </Location>
-            <Size>
-              <Width>0</Width>
-              <Height>0</Height>
-            </Size>
-            <X>0</X>
-            <Y>0</Y>
-            <Width>0</Width>
-            <Height>0</Height>
-          </SubFrameRegion>
-        </CameraSettings>
-        <CameraSettings>
           <SerialNumber>159496752</SerialNumber>
-          <ColorCalID>0</ColorCalID>
+          <ColorCalID>17</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>0</FlatFieldID>
           <FFType>0</FFType>
@@ -1342,7 +1291,7 @@
         </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
-      <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
+      <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
       <LEDColorPurity>0.8</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
@@ -1362,7 +1311,7 @@
       <ECCCustomCal>0</ECCCustomCal>
       <ConoscopeZDistance>3</ConoscopeZDistance>
       <FFType>0</FFType>
-      <GoniometerType>TypeB</GoniometerType>
+      <GoniometerType>TypeC</GoniometerType>
       <DUTDistance>1</DUTDistance>
       <DownsampleFactor>1</DownsampleFactor>
       <InterpolationMethod>CubicSpline</InterpolationMethod>
@@ -1441,7 +1390,6 @@
           <Timeout>20000</Timeout>
         </NetworkComputerInfo>
       </ComputerInfoList>
-      <AssociatedCamera />
     </PatternSetup>
     <PatternSetup>
       <CaptureFilter>
@@ -1455,12 +1403,12 @@
       </CaptureFilter>
       <ExposureTime>
         <float>100</float>
+        <float>53.42</float>
+        <float>53.64</float>
+        <float>1511.48</float>
         <float>100</float>
         <float>100</float>
         <float>100</float>
-        <float>0.01</float>
-        <float>0.01</float>
-        <float>0.01</float>
       </ExposureTime>
       <NDFilterPosition>
         <int>1</int>
@@ -1480,8 +1428,8 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>2337ced2-a9a2-4a22-9dd0-efb5f5a3ffcc</GUID>
-      <Name>Red</Name>
+      <GUID>0f9db49a-1203-4119-95d8-b9ec06f06b61</GUID>
+      <Name>R255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
       <Pattern>
@@ -1501,8 +1449,8 @@
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
       <AutoAdjustExposure>false</AutoAdjustExposure>
-      <BinningX>1</BinningX>
-      <BinningY>1</BinningY>
+      <BinningX>4</BinningX>
+      <BinningY>4</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
       <NbrFramesToAverage>1</NbrFramesToAverage>
       <DarkImageOptions>AutoDark</DarkImageOptions>
@@ -1510,38 +1458,13 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Degrees</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
-          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
-          <FlatFieldID>0</FlatFieldID>
-          <FFType>0</FFType>
-          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
-          <LensDistortionID>0</LensDistortionID>
-          <MultiPointID>0</MultiPointID>
-          <StrayLightID>0</StrayLightID>
-          <SubFrameRegion>
-            <Location>
-              <X>0</X>
-              <Y>0</Y>
-            </Location>
-            <Size>
-              <Width>0</Width>
-              <Height>0</Height>
-            </Size>
-            <X>0</X>
-            <Y>0</Y>
-            <Width>0</Width>
-            <Height>0</Height>
-          </SubFrameRegion>
-        </CameraSettings>
-        <CameraSettings>
           <SerialNumber>159496752</SerialNumber>
-          <ColorCalID>0</ColorCalID>
+          <ColorCalID>17</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>0</FlatFieldID>
           <FFType>0</FFType>
@@ -1566,7 +1489,7 @@
         </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
-      <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
+      <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
       <LEDColorPurity>0.8</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
@@ -1586,7 +1509,7 @@
       <ECCCustomCal>0</ECCCustomCal>
       <ConoscopeZDistance>3</ConoscopeZDistance>
       <FFType>0</FFType>
-      <GoniometerType>TypeB</GoniometerType>
+      <GoniometerType>TypeC</GoniometerType>
       <DUTDistance>1</DUTDistance>
       <DownsampleFactor>1</DownsampleFactor>
       <InterpolationMethod>CubicSpline</InterpolationMethod>
@@ -1665,7 +1588,6 @@
           <Timeout>20000</Timeout>
         </NetworkComputerInfo>
       </ComputerInfoList>
-      <AssociatedCamera />
     </PatternSetup>
     <PatternSetup>
       <CaptureFilter>
@@ -1679,9 +1601,9 @@
       </CaptureFilter>
       <ExposureTime>
         <float>100</float>
-        <float>100</float>
-        <float>100</float>
-        <float>100</float>
+        <float>15.39</float>
+        <float>54.88</float>
+        <float>200.49</float>
         <float>100</float>
         <float>100</float>
         <float>100</float>
@@ -1704,8 +1626,8 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>af19c252-d5fa-4c49-9bf5-09cc77b8cfaa</GUID>
-      <Name>Green</Name>
+      <GUID>5cb8d4f5-72ff-4b68-be40-c50d0ed4dc0a</GUID>
+      <Name>G255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
       <Pattern>
@@ -1725,8 +1647,8 @@
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
       <AutoAdjustExposure>false</AutoAdjustExposure>
-      <BinningX>1</BinningX>
-      <BinningY>1</BinningY>
+      <BinningX>4</BinningX>
+      <BinningY>4</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
       <NbrFramesToAverage>1</NbrFramesToAverage>
       <DarkImageOptions>AutoDark</DarkImageOptions>
@@ -1734,38 +1656,13 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Degrees</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
           <SerialNumber>159496752</SerialNumber>
-          <ColorCalID>0</ColorCalID>
-          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
-          <FlatFieldID>0</FlatFieldID>
-          <FFType>0</FFType>
-          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
-          <LensDistortionID>0</LensDistortionID>
-          <MultiPointID>0</MultiPointID>
-          <StrayLightID>0</StrayLightID>
-          <SubFrameRegion>
-            <Location>
-              <X>0</X>
-              <Y>0</Y>
-            </Location>
-            <Size>
-              <Width>0</Width>
-              <Height>0</Height>
-            </Size>
-            <X>0</X>
-            <Y>0</Y>
-            <Width>0</Width>
-            <Height>0</Height>
-          </SubFrameRegion>
-        </CameraSettings>
-        <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
+          <ColorCalID>17</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>0</FlatFieldID>
           <FFType>0</FFType>
@@ -1790,14 +1687,14 @@
         </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
-      <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
-      <LEDColorCalibration>false</LEDColorCalibration>
-      <LEDColorPurity>0</LEDColorPurity>
+      <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
+      <LEDColorCalibration>true</LEDColorCalibration>
+      <LEDColorPurity>0.8</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
       <ExternalFilterID>0</ExternalFilterID>
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
-      <LensDistance>0</LensDistance>
-      <LensfStop>0</LensfStop>
+      <LensDistance>1</LensDistance>
+      <LensfStop>5</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>false</CameraMirror>
@@ -1810,7 +1707,7 @@
       <ECCCustomCal>0</ECCCustomCal>
       <ConoscopeZDistance>3</ConoscopeZDistance>
       <FFType>0</FFType>
-      <GoniometerType>TypeB</GoniometerType>
+      <GoniometerType>TypeC</GoniometerType>
       <DUTDistance>1</DUTDistance>
       <DownsampleFactor>1</DownsampleFactor>
       <InterpolationMethod>CubicSpline</InterpolationMethod>
@@ -1821,10 +1718,10 @@
         <int>5</int>
       </HardwareTrigger_Command>
       <HardwareTrigger_Pin>
-        <int>1</int>
+        <int>0</int>
       </HardwareTrigger_Pin>
       <HardwareTrigger_LogicLevel>
-        <int>129</int>
+        <int>0</int>
       </HardwareTrigger_LogicLevel>
       <HardwareTrigger_MillisecondTimeout>
         <int>0</int>
@@ -1849,8 +1746,46 @@
         <Inclination>0</Inclination>
         <Azimuth>0</Azimuth>
       </PatternGoniometerSettings>
-      <ComputerInfoList />
-      <AssociatedCamera />
+      <ComputerInfoList>
+        <NetworkComputerInfo>
+          <Selected>true</Selected>
+          <Description>Local Machine</Description>
+          <MeasSetup>
+            <MeasurementSetupDescription />
+            <Exposures>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+            </Exposures>
+          </MeasSetup>
+          <IPAddress />
+          <IPPort>65535</IPPort>
+          <Timeout>20000</Timeout>
+        </NetworkComputerInfo>
+        <NetworkComputerInfo>
+          <Selected>false</Selected>
+          <Description>No Clients Defined</Description>
+          <MeasSetup>
+            <MeasurementSetupDescription />
+            <Exposures>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+            </Exposures>
+          </MeasSetup>
+          <IPAddress>255.255.255.255</IPAddress>
+          <IPPort>65535</IPPort>
+          <Timeout>20000</Timeout>
+        </NetworkComputerInfo>
+      </ComputerInfoList>
     </PatternSetup>
     <PatternSetup>
       <CaptureFilter>
@@ -1864,9 +1799,9 @@
       </CaptureFilter>
       <ExposureTime>
         <float>100</float>
-        <float>100</float>
-        <float>100</float>
-        <float>100</float>
+        <float>248.12</float>
+        <float>1624.71</float>
+        <float>19.43</float>
         <float>100</float>
         <float>100</float>
         <float>100</float>
@@ -1889,8 +1824,8 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>b99305e2-7933-450b-b1a3-10968ffada9a</GUID>
-      <Name>Blue</Name>
+      <GUID>46537883-bf68-4d3c-a012-59ef7755ba54</GUID>
+      <Name>B255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
       <Pattern>
@@ -1910,8 +1845,8 @@
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
       <AutoAdjustExposure>false</AutoAdjustExposure>
-      <BinningX>1</BinningX>
-      <BinningY>1</BinningY>
+      <BinningX>4</BinningX>
+      <BinningY>4</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
       <NbrFramesToAverage>1</NbrFramesToAverage>
       <DarkImageOptions>AutoDark</DarkImageOptions>
@@ -1919,38 +1854,13 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Degrees</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
           <SerialNumber>159496752</SerialNumber>
-          <ColorCalID>0</ColorCalID>
-          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
-          <FlatFieldID>0</FlatFieldID>
-          <FFType>0</FFType>
-          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
-          <LensDistortionID>0</LensDistortionID>
-          <MultiPointID>0</MultiPointID>
-          <StrayLightID>0</StrayLightID>
-          <SubFrameRegion>
-            <Location>
-              <X>0</X>
-              <Y>0</Y>
-            </Location>
-            <Size>
-              <Width>0</Width>
-              <Height>0</Height>
-            </Size>
-            <X>0</X>
-            <Y>0</Y>
-            <Width>0</Width>
-            <Height>0</Height>
-          </SubFrameRegion>
-        </CameraSettings>
-        <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
+          <ColorCalID>17</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>0</FlatFieldID>
           <FFType>0</FFType>
@@ -1975,14 +1885,14 @@
         </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
-      <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
-      <LEDColorCalibration>false</LEDColorCalibration>
-      <LEDColorPurity>0</LEDColorPurity>
+      <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
+      <LEDColorCalibration>true</LEDColorCalibration>
+      <LEDColorPurity>0.8</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
       <ExternalFilterID>0</ExternalFilterID>
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
-      <LensDistance>0</LensDistance>
-      <LensfStop>0</LensfStop>
+      <LensDistance>1</LensDistance>
+      <LensfStop>5</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>false</CameraMirror>
@@ -1995,7 +1905,7 @@
       <ECCCustomCal>0</ECCCustomCal>
       <ConoscopeZDistance>3</ConoscopeZDistance>
       <FFType>0</FFType>
-      <GoniometerType>TypeB</GoniometerType>
+      <GoniometerType>TypeC</GoniometerType>
       <DUTDistance>1</DUTDistance>
       <DownsampleFactor>1</DownsampleFactor>
       <InterpolationMethod>CubicSpline</InterpolationMethod>
@@ -2006,10 +1916,10 @@
         <int>5</int>
       </HardwareTrigger_Command>
       <HardwareTrigger_Pin>
-        <int>1</int>
+        <int>0</int>
       </HardwareTrigger_Pin>
       <HardwareTrigger_LogicLevel>
-        <int>129</int>
+        <int>0</int>
       </HardwareTrigger_LogicLevel>
       <HardwareTrigger_MillisecondTimeout>
         <int>0</int>
@@ -2034,8 +1944,46 @@
         <Inclination>0</Inclination>
         <Azimuth>0</Azimuth>
       </PatternGoniometerSettings>
-      <ComputerInfoList />
-      <AssociatedCamera />
+      <ComputerInfoList>
+        <NetworkComputerInfo>
+          <Selected>true</Selected>
+          <Description>Local Machine</Description>
+          <MeasSetup>
+            <MeasurementSetupDescription />
+            <Exposures>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+            </Exposures>
+          </MeasSetup>
+          <IPAddress />
+          <IPPort>65535</IPPort>
+          <Timeout>20000</Timeout>
+        </NetworkComputerInfo>
+        <NetworkComputerInfo>
+          <Selected>false</Selected>
+          <Description>No Clients Defined</Description>
+          <MeasSetup>
+            <MeasurementSetupDescription />
+            <Exposures>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+              <float>0</float>
+            </Exposures>
+          </MeasSetup>
+          <IPAddress>255.255.255.255</IPAddress>
+          <IPPort>65535</IPPort>
+          <Timeout>20000</Timeout>
+        </NetworkComputerInfo>
+      </ComputerInfoList>
     </PatternSetup>
   </PatternSetupList>
   <PreExecuteActionGUIDs />

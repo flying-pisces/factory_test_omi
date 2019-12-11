@@ -61,6 +61,10 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
         self._serial_port.flush()
         return bytes_written
 
+    def flush_data(self):
+        if self._serial_port is not None:
+            self._serial_port.flush
+
     def _read_response(self, timeout=5):
         response = []
         line_in = ""

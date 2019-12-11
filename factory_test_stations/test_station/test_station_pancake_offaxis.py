@@ -71,8 +71,6 @@ class pancakeoffaxisStation(test_station.TestStation):
         if self._fixture is not None:
             try:
                 self._operator_interface.print_to_console("Close...\n")
-                self._fixture.status()
-                self._fixture.elminator_off()
             finally:
                 self._fixture.close()
                 self._fixture = None
@@ -99,6 +97,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._overall_errorcode = ''
         # self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
         try:
+            self._fixture.flush_data()
             self._operator_interface.print_to_console("Testing Unit %s\n" %serial_number)
             the_unit = pancakeDutOffAxis(serial_number, self._station_config, self._operator_interface)
             if self._station_config.DUT_SIM:
@@ -187,7 +186,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         ready = False
         try:
             self._fixture.button_enable()
-            timeout_for_dual = 10
+            timeout_for_dual = 20
             for idx in range(timeout_for_dual, 0, -1):
                 self._operator_interface.prompt('Press the Dual-Start Btn in %s S...'%idx, 'yellow');
                 if self._fixture.is_ready() or self._station_config.FIXTURE_SIM:
@@ -198,7 +197,10 @@ class pancakeoffaxisStation(test_station.TestStation):
                 self._operator_interface.print_to_console('Unable to get start signal in %s from fixture.\n'%timeout_for_dual)
                 raise test_station.TestStationSerialNumberError('Fail to Wait for press dual-btn ...')
         finally:
-            self._fixture.button_disable()
+            try:
+                self._fixture.button_disable()
+            except:
+                pass
             self._operator_interface.prompt('', 'SystemButtonFace')
 
     def data_export(self, serial_number, test_log, pos):
@@ -243,7 +245,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         pre_color = None
         for posIdx, pos in pos_items:
             uni_file_name = re.sub('_x.log', '_{}.ttxm'.format(posIdx), test_log.get_filename())
-            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.DATABASE_RELATIVEPATH)
+            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
             databaseFileName = os.path.join(bak_dir, uni_file_name)
             if not self._station_config.EQUIPMENT_SIM:
                 self._equipment.create_database(databaseFileName)

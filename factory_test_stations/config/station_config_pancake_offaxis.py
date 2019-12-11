@@ -5,21 +5,21 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'c:\offaxis_summray'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\offaxis_summray'
 
 
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
+SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM9" #
+FIXTURE_COMPORT = "COM4" #
 FIXTURE_PARTICLE_COMPORT = "COM3" #
-FIXTURE_PARTICLE_ADDR=1
+FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = "COM5" #
 
 COMMAND_DISP_HELP = "$c.help"
@@ -148,7 +148,7 @@ Resolution_Bin_Y = 0
 CAMERA_SN = "159496752"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
-POSITIONS = [('P1', (0, 0)),  ('P2', (0, 18)), ('P4', (18, 0)), ('P6', (0, -18)), ('P8', (-18, 0))]
+POSITIONS = [('P1', (0, 0)),  ('P2', (0, -18)), ('P4', (18, 0)), ('P6', (0, 18)), ('P8', (-18, 0))]
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
@@ -182,6 +182,6 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\1PR01234567890_pancake_offaxis-0_20191203-213526.ttxm'
-DUT_SIM = True
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False

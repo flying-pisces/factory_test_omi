@@ -184,96 +184,6 @@ class pancakeuniformityStation(test_station.TestStation):
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
             self._fixture.elminator_off()
 
-            centerlv_gls = []
-            gls = []
-
-            '''
-            centercolordifference255 = 0.0
-
-            for i in  range(len(self._station_config.PATTERNS)):
-                self._operator_interface.print_to_console(
-                    "Panel Measurement Pattern: %s \n" %self._station_config.PATTERNS[i])
-                # modified by elton . add random color
-                # the_unit.display_color(self._station_config.COLORS[i])
-                if isinstance(self._station_config.COLORS[i], tuple):
-                    the_unit.display_color(self._station_config.COLORS[i])
-                elif isinstance(self._station_config.COLORS[i], (str, int)):
-                    the_unit.display_image(self._station_config.COLORS[i])
-
-                imagekey = self._station_config.PATTERNS[i]
-                analysis = self._station_config.ANALYSIS[i] + " " + self._station_config.PATTERNS[i]
-                use_camera = not self._station_config.EQUIPMENT_SIM
-                analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, self._station_config.IS_SAVEDB)
-                self._operator_interface.print_to_console("sequence run step {}.\n".format(analysis))
-
-                for c, result in analysis_result.items():
-                    if c != analysis:
-                        continue
-                    for resItem in result:
-                        test_item = (self._station_config.PATTERNS[i] + "_" + resItem).replace(" ", "")
-                        test_item = test_item.replace('\'', '')
-
-                        has_test_item = False
-                        for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
-                            if limit_array[0] == test_item:
-                                has_test_item = True
-                        if not has_test_item:
-                            continue
-
-                        if re.match(r'^([-|+]?\d+)(\.\d*)?$', result[resItem], re.IGNORECASE) is not None:
-                            self._operator_interface.print_to_console('{}, {}.\n'.format(test_item, result[resItem]))
-                            test_log.set_measured_value_by_name_ex(test_item, float(result[resItem]))
-                            self._operator_interface.print_to_console('TEST ITEM: {}, Value: {}\n'
-                                                                      .format(test_item, result[resItem]))
-                        # if '255' in self._station_config.PATTERNS[i] and 'Center Color (C' in r['Name']:
-                        #     self._operator_interface.print_to_console("\n" + test_item + ": \t" + r['Value'] + "\n")
-                        #     test_log.set_measured_value_by_name(test_item, float(r['Value']))
-                        # elif 'W' in self._station_config.PATTERNS[i] and 'CenterColorDifference'in r['Name']:
-                        #     if 'W255' in self._station_config.PATTERNS[i]:
-                        #         centercolordifference255 = float(r['Value'])
-                        #     else:
-                        #         test_value = abs(float(r['Value'])-centercolordifference255)
-                        #         test_log.set_measured_value_by_name(test_item, test_value)
-                        # else:
-                        #     test_log.set_measured_value_by_name(test_item, float(r['Value']))
-                        #
-                        # if self._station_config.PATTERNS[i][0] == 'W' and \
-                        #         self._station_config.PATTERNS[i][1:4] in self._station_config.GAMMA_CHECK_GLS and \
-                        #         r['Name'] == 'CenterLv':
-                        #     centerlv_gls.append(float(r['Value']))
-                        #     gls.append(float(self._station_config.PATTERNS[i][1:4]))
-
-                self._operator_interface.print_to_console("close run step {}.\n"
-                                                          .format(self._station_config.PATTERNS[i]))
-               
-                mesh_data = the_equipment.get_last_mesh()
-
-                if os.path.exists(os.path.join(output_dir, filename)):
-                    the_equipment.delete_file(os.path.join(output_dir, filename))
-
-                if mesh_data != {}:
-                    output_data = StringIO.StringIO()
-                    np.savez_compressed(output_data, **mesh_data)
-                    npzdata = output_data.getvalue()
-                    ## LEAVE for the logging of npzdata
-                    ## LEAVE for the logging of npzdata
-                    # also calculate some statistical infdir()o about the measurement
-                    for c in ["Lv", "Cx", "Cy","u'", "v'"]:
-                        cdata = mesh_data.get(c)
-                        filename = the_unit.serial_number + "_" + c + "_" +self._station_config.PATTERNS[i] + ".csv"
-                        unit_log_path = os.path.join(output_dir, filename)
-                        self._operator_interface.print_to_console(
-                            "\n Saving Jacob's data of: %s \n" % unit_log_path)
-                        np.savetxt(unit_log_path, cdata, delimiter=',')
-#                        if cdata is not None:
-#                            cmean = np.mean(cdata, dtype=np.float32)
-#                            cmax = cdata.max()
-#                            cmin = cdata.min()
-#                            cstd = np.std(cdata, dtype=np.float32)
-
-
-            ### implement tests here.  Note thadir(t the test name matches one in the station_limits file ###
-            '''
             self.uniformity_test_do(the_unit, serial_number, test_log)
             self.uniformity_test_alg(serial_number, test_log)
             self.data_export(serial_number, test_log)
@@ -348,6 +258,7 @@ class pancakeuniformityStation(test_station.TestStation):
         """
         for resItem in result:
             test_item = (br_pattern + "_" + resItem).replace(" ", "")
+            test_item = test_item.replace('\'', '')
             for limit_array in self._station_config.STATION_LIMITS_ARRAYS:
                 if limit_array[0] == test_item and \
                         re.match(r'^([-|+]?\d+)(\.\d*)?$', result[resItem], re.IGNORECASE) is not None:
@@ -414,8 +325,6 @@ class pancakeuniformityStation(test_station.TestStation):
                                   serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
         if not os.path.exists(output_dir):
             os.mkdir(output_dir, 777)
-        if self._station_config.Resolution_Bin_REGISTER_PATTERN not in self._station_config.PATTERNS:
-            return
 
         points = self._station_config.TEST_POINTS_POS
 
@@ -423,7 +332,7 @@ class pancakeuniformityStation(test_station.TestStation):
             br_pattern = self._station_config.PATTERNS[i]
             meas_list = self._equipment.get_measurement_list()
             for meas in meas_list:
-                if meas['Measurement Setup'] != self._station_config.MEASUREMENTS[i]:
+                if meas['Measurement Setup'] not in self._station_config.MEASUREMENTS[i]:
                     continue
 
                 id = meas['Measurement ID']
@@ -466,8 +375,8 @@ class pancakeuniformityStation(test_station.TestStation):
                 u = 2 * cx / (-2 * cx + 12 * cy + 3)
                 v = 9 * cy / (-2 * cx + 12 * cy + 3)
                 center_pos = dict(points)['P1']
-                center_u = u[center_pos[0]]
-                center_v = v[center_pos[1]]
+                center_u = u[center_pos]
+                center_v = v[center_pos]
 
                 lv_data = [lv[x[1]] for x in points]
                 u_data = [u[x[1]] for x in points]
@@ -482,12 +391,16 @@ class pancakeuniformityStation(test_station.TestStation):
                 test_item = '{}_Brightness_Variation'.format(br_pattern)
                 test_log.set_measured_value_by_name_ex(test_item, cv_lv)
 
+                max_lv = np.max(lv)
+                test_item = '{}_Brightness_Max'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item, max_lv)
+
                 cv_color = np.std(np.array(duv), dtype=np.float32) / np.mean(np.array(duv))
                 test_item = '{}_Color_Variation'.format(br_pattern)
                 test_log.set_measured_value_by_name_ex(test_item, cv_color)
                 duv_dic = dict(zip(keys, duv))
                 grps = [['P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9'],
-                       ['P1', 'P3', 'P9'],
+                       ['P3', 'P1', 'P9'],
                        ['P2', 'P1', 'P4'],
                        ['P3', 'P1', 'P5'],
                        ['P4', 'P1', 'P6'],

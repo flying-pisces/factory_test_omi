@@ -366,7 +366,7 @@ class pancakepixelStation(test_station.TestStation):
                     num = int(result['NumDefects'])
                     self._operator_interface.print_to_console("prase numDefect {}, Num={}.\n"
                                                               .format(self._station_config.PATTERNS[i], num))
-                    for id in range(0, num):
+                    for id in range(1, num + 1):
                         size_key = 'Size_{}'.format(id)
                         locax_key = 'LocX_{}'.format(id)
                         locay_key = 'LocY_{}'.format(id)
@@ -388,6 +388,16 @@ class pancakepixelStation(test_station.TestStation):
                     self.normal_test_item_parse(br_pattern, result, test_log)
 
                     pos_items = zip(locax_list, locay_list)
+                    super_brighter_count = 0
+                    min_super_sepa_distance = 0
+                    super_dimmer_count = 0
+                    min_super_dimmer_distance = 0
+                    quality_brighter_count = 0
+                    min_qual_brighter_sepa_distance = 0
+                    quality_dimmeru_count = 0
+                    min_qual_dimu_sepa_distance = 0
+                    quality_dimmerl_count = 0
+                    min_qual_diml_sepa_distance = 0
                     if num > 0 and len(constrast_lst) > 0:
                         abs_contrast = np.abs(constrast_lst)
                         location_r = np.sqrt(np.power(np.array(locax_list) - self._station_config.LOCATION_X0, 2)
@@ -397,70 +407,73 @@ class pancakepixelStation(test_station.TestStation):
                         defects = [c > avg_lv_register_patterns[0] and
                                                               d <= self._station_config.SUPER_QUALITY_AREA_R
                                                               for c, d in con_r]
-                        test_item = '{}_SuperQuality_Brighter_NumDefects'.format(br_pattern)
+
                         super_brighter_count = defects.count(True)
-                        test_log.set_measured_value_by_name_ex(test_item, super_brighter_count)
-                        test_item = '{}_SuperQuality_Brighter_MinSeparationDistance'.format(br_pattern)
-                        min_sepa_distance = self.calc_separate_distance(pos_items, defects)
-                        test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
-                        test_item = '{}_SuperQuality_Brighter_Res'.format(br_pattern)
-                        test_log.set_measured_value_by_name_ex(test_item,
-                             super_brighter_count <= self._station_config.SUPER_AREA_DEFECTS_COUNT_L)
+                        min_super_sepa_distance = self.calc_separate_distance(pos_items, defects)
 
                         defects = [c <= avg_lv_register_patterns[0] and
                                               d <= self._station_config.SUPER_QUALITY_AREA_R
                                               for c, d in con_r]
-                        test_item = '{}_SuperQuality_Dimmer_NumDefects'.format(br_pattern)
+
                         super_dimmer_count = defects.count(True)
-                        test_log.set_measured_value_by_name_ex(test_item, super_dimmer_count)
-                        test_item = '{}_SuperQuality_Dimmer_MinSeparationDistance'.format(br_pattern)
-                        min_sepa_distance = self.calc_separate_distance(pos_items, defects)
-                        test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
-                        test_item = '{}_SuperQuality_Dimmer_Res'.format(br_pattern)
-                        test_log.set_measured_value_by_name_ex(test_item,
-                             super_dimmer_count <= self._station_config.SUPER_AREA_DEFECTS_COUNT_H and
-                             min_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
+                        min_super_dimmer_distance = self.calc_separate_distance(pos_items, defects)
 
                         defects = [c > avg_lv_register_patterns[1] and
                             self._station_config.QUALITY_AREA_R >= d > self._station_config.SUPER_QUALITY_AREA_R
                             for c, d in con_r]
                         quality_brighter_count = defects.count(True)
-                        test_item = '{}_Quality_Brighter_NumDefects'.format(br_pattern)
-                        test_log.set_measured_value_by_name_ex(test_item, quality_brighter_count)
-                        test_item = '{}_Quality_Brighter_MinSeparationDistance'.format(br_pattern)
-                        min_sepa_distance = self.calc_separate_distance(pos_items, defects)
-                        test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
-                        test_item = '{}_Quality_Brighter_Res'.format(br_pattern)
-                        test_log.set_measured_value_by_name_ex(test_item,
-                             quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_B)
+                        min_bri_sepa_distance = self.calc_separate_distance(pos_items, defects)
 
                         defects = [ avg_lv_register_patterns[0] < c <= avg_lv_register_patterns[1] and
                              self._station_config.QUALITY_AREA_R >= d > self._station_config.SUPER_QUALITY_AREA_R
                              for c, d in con_r]
                         quality_dimmeru_count = defects.count(True)
-                        test_item = '{}_Quality_DimmerU_NumDefects'.format(br_pattern)
-                        test_log.set_measured_value_by_name_ex(test_item, quality_dimmeru_count)
-                        test_item = '{}_Quality_DimmerU_MinSeparationDistance'.format(br_pattern)
-                        min_sepa_distance = self.calc_separate_distance(pos_items, defects)
-                        test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
-                        test_item = '{}_Quality_DimmerU_Res'.format(br_pattern)
-                        test_log.set_measured_value_by_name_ex(test_item,
-                             quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DU
-                                     and min_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
+                        min_qual_dimu_sepa_distance = self.calc_separate_distance(pos_items, defects)
 
                         defects = [ avg_lv_register_patterns[0] >= c and
                              self._station_config.QUALITY_AREA_R >= d > self._station_config.SUPER_QUALITY_AREA_R
                              for c, d in con_r]
                         quality_dimmerl_count = defects.count(True)
-                        test_item = '{}_Quality_DimmerL_NumDefects'.format(br_pattern)
-                        test_log.set_measured_value_by_name_ex(test_item, quality_dimmerl_count)
-                        test_item = '{}_Quality_DimmerL_MinSeparationDistance'.format(br_pattern)
-                        min_sepa_distance = self.calc_separate_distance(pos_items, defects)
-                        test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
-                        test_item = '{}_Quality_DimmerL_Res'.format(br_pattern)
-                        test_log.set_measured_value_by_name_ex(test_item,
-                             quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DL
-                                     and min_sepa_distance >= self._station_config.SEPARATION_DISTANCE_L)
+                        min_qual_diml_sepa_distance = self.calc_separate_distance(pos_items, defects)
+
+                    test_item = '{}_SuperQuality_Brighter_NumDefects'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, super_brighter_count)
+                    test_item = '{}_SuperQuality_Brighter_MinSeparationDistance'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, min_super_sepa_distance)
+                    test_item = '{}_SuperQuality_Brighter_Res'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, super_brighter_count == 0 or
+                                                           super_brighter_count <= self._station_config.SUPER_AREA_DEFECTS_COUNT_L)
+                    test_item = '{}_SuperQuality_Dimmer_NumDefects'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, super_dimmer_count)
+                    test_item = '{}_SuperQuality_Dimmer_MinSeparationDistance'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, min_super_dimmer_distance)
+                    test_item = '{}_SuperQuality_Dimmer_Res'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, super_dimmer_count == 0 or
+                                                           super_dimmer_count <= self._station_config.SUPER_AREA_DEFECTS_COUNT_H and
+                                                           min_super_dimmer_distance >= self._station_config.SEPARATION_DISTANCE)
+                    test_item = '{}_Quality_Brighter_NumDefects'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, quality_brighter_count)
+                    test_item = '{}_Quality_Brighter_MinSeparationDistance'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, min_qual_brighter_sepa_distance)
+                    test_item = '{}_Quality_Brighter_Res'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, quality_brighter_count == 0 or
+                                                           quality_brighter_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_B)
+                    test_item = '{}_Quality_DimmerU_NumDefects'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, quality_dimmeru_count)
+                    test_item = '{}_Quality_DimmerU_MinSeparationDistance'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, min_qual_dimu_sepa_distance)
+                    test_item = '{}_Quality_DimmerU_Res'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, quality_dimmeru_count == 0 or
+                                                           quality_dimmeru_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DU
+                                                           and min_qual_dimu_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
+                    test_item = '{}_Quality_DimmerL_NumDefects'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, quality_dimmerl_count)
+                    test_item = '{}_Quality_DimmerL_MinSeparationDistance'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, min_qual_diml_sepa_distance)
+                    test_item = '{}_Quality_DimmerL_Res'.format(br_pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, quality_dimmerl_count == 0 or
+                                                           quality_dimmerl_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DL
+                                                           and min_qual_diml_sepa_distance >= self._station_config.SEPARATION_DISTANCE_L)
 
                     self.calc_blemish_index(br_pattern,
                         zip(size_list, locax_list, locay_list, pixel_list, constrast_lst), test_log)
@@ -480,8 +493,8 @@ class pancakepixelStation(test_station.TestStation):
                 if row != col:
                     dis = ((x[col] - x[row]) ** 2 + (y[col] - y[row]) ** 2) ** 0.5
                     distance_items.append(dis)
-        if len(distance_items) < 1:
-            return 9999
+        if len(distance_items) <= 1:
+            return 0
         return min(distance_items)
 
     def normal_test_item_parse(self, br_pattern, result, test_log):
@@ -536,7 +549,7 @@ class pancakepixelStation(test_station.TestStation):
                 num = int(result['NumDefects'])
                 self._operator_interface.print_to_console("prase numDefect {}, Num={}.\n"
                                                           .format(self._station_config.PATTERNS[i], num))
-                for id in range(0, num):
+                for id in range(1, num + 1):
                     size_key = 'Size_{}'.format(id)
                     locax_key = 'LocX_{}'.format(id)
                     locay_key = 'LocY_{}'.format(id)
@@ -558,6 +571,12 @@ class pancakepixelStation(test_station.TestStation):
                 self.normal_test_item_parse(br_pattern, result, test_log)
 
                 pos_items = zip(locax_list, locay_list)
+
+                super_quality_count = 0
+                min_super_sepa_distance = 0
+                quality_count = 0
+                min_sepa_distance = 0
+
                 if num > 0 and len(constrast_lst) > 0:
                     abs_contrast = np.abs(constrast_lst)
                     location_r = np.sqrt(np.power(np.array(locax_list) - self._station_config.LOCATION_X0, 2)
@@ -567,30 +586,35 @@ class pancakepixelStation(test_station.TestStation):
                     defects = [d < self._station_config.SUPER_QUALITY_AREA_R
                                for c, d in con_r]
                     super_quality_count = defects.count(True)
-                    test_item = '{}_SuperQuality_NumDefects'.format(br_pattern)
-                    test_log.set_measured_value_by_name_ex(test_item, super_quality_count)
-                    min_sepa_distance = self.calc_separate_distance(pos_items, defects)
-                    test_item = '{}_SuperQuality_MinSeparationDistance'.format(br_pattern)
-                    test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
-                    test_item = '{}_SuperQuality_Res'.format(br_pattern)
-                    test_log.set_measured_value_by_name_ex(test_item,
-                                self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_L <= super_quality_count
-                                    <= self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_H and
-                                min_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
+
+                    min_super_sepa_distance = self.calc_separate_distance(pos_items, defects)
 
                     defects = [self._station_config.QUALITY_AREA_R >= d > self._station_config.SUPER_QUALITY_AREA_R
                                for c, d in con_r]
                     quality_count = defects.count(True)
-                    test_item = '{}_Quality_NumDefects'.format(br_pattern)
-                    test_log.set_measured_value_by_name_ex(test_item, quality_count)
-                    min_sepa_distance = self.calc_separate_distance(pos_items, defects)
-                    test_item = '{}_Quality_MinSeparationDistance'.format(br_pattern)
-                    test_log.set_measured_value_by_name_ex(test_item, min_sepa_distance)
-                    test_item = '{}_Quality_Res'.format(br_pattern)
-                    test_log.set_measured_value_by_name_ex(test_item,
-                            self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_L <= super_quality_count
-                                <= self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_H and
-                            min_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
 
+                    min_qaul_sepa_distance = self.calc_separate_distance(pos_items, defects)
+
+                test_item = '{}_SuperQuality_NumDefects'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item, super_quality_count)
+                test_item = '{}_SuperQuality_MinSeparationDistance'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item, min_super_sepa_distance)
+                test_item = '{}_SuperQuality_Res'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item,
+                                                       super_quality_count == 0 or
+                                                       self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_L <= super_quality_count
+                                                       <= self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_H and
+                                                       min_super_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
+
+                test_item = '{}_Quality_NumDefects'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item, quality_count)
+                test_item = '{}_Quality_MinSeparationDistance'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item, min_qaul_sepa_distance)
+                test_item = '{}_Quality_Res'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item,
+                                                       quality_count == 0 or
+                                                       self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_L <= quality_count
+                                                       <= self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_H and
+                                                       min_qaul_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
                 self.calc_blemish_index(br_pattern,
                      zip(size_list, locax_list, locay_list, pixel_list, constrast_lst), test_log)
