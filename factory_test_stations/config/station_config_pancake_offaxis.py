@@ -159,20 +159,19 @@ MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255"]
 ##################################
 
 CR_TEST_PATTERNS = ['W255', 'W000']
-CENTER_AT_DEG_0 = 'P1'
+CENTER_AT_POLE_AZI = 'P_0_0'
 
-BRIGHTNESS_AT_DEG_30 = ['P2', 'P3', 'P4', 'P5']
-BRIGHTNESS_AT_DEG_PERCENT_IDS = ['P2', 'P3', 'P4', 'P5']
+BRIGHTNESS_AT_POLE_AZI = [(30, 0), (30, 45), (30, 90), (30, 135),
+                         (10, 0), (10, 45), (10, 90), (10, 135),
+                         (20, 0), (20, 45), (20, 90), (20, 135)]
+BRIGHTNESS_AT_POLE_AZI_PER = [(30, 0), (30, 45), (30, 90), (30, 135), (30, 180), (30, 270)]
 
-BRIGHTNESS_AT_DEG_10 = ['P2', 'P3', 'P4', 'P5']
-COLORSHIFT_AT_DEG_10 = ['P2', 'P3', 'P4', 'P5']
+COLORSHIFT_AT_POLE_AZI = [(10, 0), (10, 45), (10, 90), (10, 135),
+                         (20, 0), (20, 45), (20, 90), (20, 135)]
 
-BRIGHTNESS_AT_DEG_20 = ['P2', 'P3', 'P4', 'P5']
-COLORSHIFT_AT_DEG_20 = ['P2', 'P3', 'P4', 'P5']
+COLORSHIFT_CP0_AT_POLE_AZI = [(30, 0), (30, 45), (30, 90), (30, 135),(30, 180), (30, 270)]
 
-COLORSHIFT_RATIO_AT_DEG_30 = ['P2', 'P3', 'P4', 'P5']
-
-CR_AT_DEG_30 = ['P2', 'P3', 'P4', 'P5']
+CR_AT_POLE_AZI = [(0, 0), (30, 0), (30, 90), (30, 180), (30, 270)]
 
 ##################################
 # IT and work order
@@ -181,7 +180,7 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\1PR01234567890_pancake_offaxis-0_20191203-213526.ttxm'
+EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\22.ttxm'
 DUT_SIM = False
 EQUIPMENT_SIM = False
 FIXTURE_SIM = False

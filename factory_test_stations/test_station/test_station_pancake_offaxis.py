@@ -259,7 +259,7 @@ class pancakeoffaxisStation(test_station.TestStation):
             self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
             self._fixture.mov_abs_xy(pos[0], pos[1])
 
-            center_item = self._station_config.CENTER_AT_DEG_0
+            center_item = self._station_config.CENTER_AT_POLE_AZI
             lv_cr_items = {}
 
             for i in range(len(self._station_config.PATTERNS)):
@@ -302,13 +302,13 @@ class pancakeoffaxisStation(test_station.TestStation):
                         test_item = re.sub(r'\(Lv\)|Lv', '_Lv', raw_test_item)
                         test_item = re.sub(r'\s|%', '', test_item)
 
-                        lv_match = re.search(r'([P|G]\d+)\(lv\)', r, re.I | re.S)
+                        lv_match = re.search(r'(P_\d+_\d+)\(lv\)', r, re.I | re.S)
                         if lv_match:
                             lv_dic[lv_match.groups()[0]] = float(result[ra])
-                        cx_match = re.search(r'([P|G]\d+)\(cx\)', r, re.I|re.S)
+                        cx_match = re.search(r'(P_\d+_\d+)\(cx\)', r, re.I|re.S)
                         if cx_match:
                             cx_dic[cx_match.groups()[0]] = float(result[ra])
-                        cy_match = re.search(r'([P|G]\d+)\(cx\)', r, re.I|re.S)
+                        cy_match = re.search(r'(P_\d+_\d+)\(cx\)', r, re.I|re.S)
                         if cy_match:
                             cy_dic[cy_match.groups()[0]] = float(result[ra])
 
@@ -325,16 +325,19 @@ class pancakeoffaxisStation(test_station.TestStation):
                         if test_item in test_log.results_array():
                             test_log.set_measured_value_by_name(test_item, float(result[ra]))
 
-                    p_num = len(lv_dic)
-                    uv_keys = ['P%d'%k for k in range(p_num - 1)]  # remove Point: G1
-                    uv_keys.append('G1')
-                    us = [float(c) for c in u_values.split(',')[0:-1]]
-                    vs = [float(c) for c in v_values.split(',')[0:-1]]
-                    duvs = np.sqrt((np.array(us) - us[0])**2 + (np.array(vs) - vs[0])**2)
+                    keys = lv_dic.keys()
+                    us = []
+                    vs = []
+                    for key in keys:
+                        cx = cx_dic[key]
+                        cy = cy_dic[key]
+                        u = 2 * cx / (-2 * cx + 12 * cy + 3)
+                        v = 9 * cy / (-2 * cx + 12 * cy + 3)
+                        us.append(u)
+                        vs.append(v)
 
-                    u_dic = dict(zip(uv_keys, us))
-                    v_dic = dict(zip(uv_keys, vs))
-                    duv_dic = dict(zip(uv_keys, duvs))
+                    duvs = np.sqrt((np.array(us) - us[0])**2 + (np.array(vs) - vs[0])**2)
+                    duv_dic = dict(zip(keys, duvs))
 
                 # endregion
 
@@ -342,56 +345,34 @@ class pancakeoffaxisStation(test_station.TestStation):
 
                 # Brightness at 30deg polar angle (nits)
                 brightness_items = []
-                for item in self._station_config.BRIGHTNESS_AT_DEG_30:
-                    brightness_items.append(lv_dic[item])
-                brightness_min = np.array(brightness_items).min()
-                test_item = '{}_{}_Brightness_Min_At_30Degree'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, brightness_min)
+                for item in self._station_config.BRIGHTNESS_AT_POLE_AZI:
+                    tlv = lv_dic['P_%d_%d' % item]
+                    brightness_items.append(tlv)
+                    test_item = '{}_{}_Lv_{}_{}'.format(posIdx, pattern, *item)
+                    test_log.set_measured_value_by_name_ex(test_item, tlv)
 
                 # Brightness % @30deg wrt on axis brightness
                 brightness_items = []
-                for item in self._station_config.BRIGHTNESS_AT_DEG_PERCENT_IDS:
-                    brightness_items.append(lv_dic[item])
-                brightness_min = np.array(brightness_items).min()/lv_dic[center_item]
-                test_item = '{}_{}_Brightness_Min_30_TO_0Degree'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, brightness_min)
+                for item in self._station_config.BRIGHTNESS_AT_POLE_AZI_PER:
+                    tlv = lv_dic['P_%d_%d' % item]
+                    brightness_items.append(tlv)
+                    test_item = '{}_{}_Lv_Proportion_{}_{}'.format(posIdx, pattern, *item)
+                    test_log.set_measured_value_by_name_ex(test_item, tlv)
 
-                # Brightness and color shift (delta u'v') at 10deg and 20deg polar angle (nits)
-                brightness_items = []
-                duv_items = []
-                for item in self._station_config.BRIGHTNESS_AT_DEG_10:
-                    brightness_items.append(lv_dic[item])
-                    duv_items.append(duv_dic[item])
-                brightness_min = np.array(brightness_items).min()
-                duv_max = np.array(duv_items).max()
-                test_item = '{}_{}_Brightness_Min_At_10Degree'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, brightness_min)
-                test_item = '{}_{}_Duv_Max_At_10Degree'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, duv_max)
-
-                brightness_items = []
-                duv_items = []
-                for item in self._station_config.BRIGHTNESS_AT_DEG_20:
-                    brightness_items.append(lv_dic[item])
-                    duv_items.append(duv_dic[item])
-                brightness_min = np.array(brightness_items).min()
-                duv_max = np.array(duv_items).max()
-                test_item = '{}_{}_Brightness_Min_At_20Degree'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, brightness_min)
-                test_item = '{}_{}_Duv_Max_At_20Degree'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, duv_max)
+                for item in self._station_config.COLORSHIFT_AT_POLE_AZI:
+                    duv = duv_dic['P_%d_%d' % item]
+                    test_item = '{}_{}_duv_{}_{}'.format(posIdx, pattern, *item)
+                    test_log.set_measured_value_by_name_ex(test_item, duv)
 
                 # Color shift, 30deg off-axis compared to 0deg polar angle (delta u'v')
-                duv_items = []
-                for item in self._station_config.COLORSHIFT_RATIO_AT_DEG_30:
-                    duv_items.append(duv_dic[item])
-                duv_max = np.array(duv_items).max()
-                test_item = '{}_{}_ColorShift_Max_At_30Degree'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, duv_max)
+                for item in self._station_config.COLORSHIFT_CP0_AT_POLE_AZI:
+                    duv_cp = duv_dic['P_%d_%d' % item]
+                    test_item = '{}_{}_duv_Comp_{}_{}'.format(posIdx, pattern, *item)
+                    test_log.set_measured_value_by_name_ex(test_item, duv_cp)
 
                 # Max brightness location
                 max_loc = max(lv_dic, key=lv_dic.get)
-                test_item = '{}_{}_Brightness_Max_Location'.format(posIdx, pattern)
+                test_item = '{}_{}_Lv_max_pos'.format(posIdx, pattern)
                 test_log.set_measured_value_by_name_ex(test_item, max_loc)
                 # endregion
 
@@ -404,20 +385,12 @@ class pancakeoffaxisStation(test_station.TestStation):
                 # CR at 0deg and 30deg polar angle
                 w = self._station_config.CR_TEST_PATTERNS[0]
                 d = self._station_config.CR_TEST_PATTERNS[1]
-                cr_onaxis = lv_cr_items[w][center_item] / lv_cr_items[d][center_item]
 
-                cr_items = []
-                for item in self._station_config.CR_AT_DEG_30:
-                    cr = lv_cr_items[w][item] / lv_cr_items[d][item]
-                    cr_items.append(cr)
-                cr_offaxis_min = np.array(cr_items).min()
-
-                test_item = '{}_CR_At_0Degree'.format(posIdx)
-                test_log.set_measured_value_by_name_ex(test_item, cr_onaxis)
-
-                test_item = '{}_CR_Min_At_30Degree'.format(posIdx)
-                test_log.set_measured_value_by_name_ex(test_item, cr_offaxis_min)
-
+                for item in self._station_config.CR_AT_POLE_AZI:
+                    item_key = 'P_%d_%d' % item
+                    cr = lv_cr_items[w][item_key] / lv_cr_items[d][item_key]
+                    test_item = '{}_CR_{}_{}'.format(posIdx, *item)
+                    test_log.set_measured_value_by_name_ex(test_item, cr)
             # endregion
 
             self.data_export(serial_number, test_log, pos)
