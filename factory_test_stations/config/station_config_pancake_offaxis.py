@@ -149,7 +149,11 @@ Resolution_Bin_Y = 0
 CAMERA_SN = "Demo"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
-POSITIONS = [('P1', (0, 0)) ] ## ('P2', (0, -18)), ('P4', (18, 0)), ('P6', (0, 18)), ('P8', (-18, 0))]
+POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
+             ('P2', (0, -18), ['W255']),
+             ('P4', (18, 0), ['W255']),
+             ('P6', (0, 18), ['W255']),
+             ('P8', (-18, 0), ['W255'])]
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
@@ -162,7 +166,7 @@ MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255"]
 CR_TEST_PATTERNS = ['W255', 'W000']
 CENTER_AT_POLE_AZI = 'P_0_0'
 
-BRIGHTNESS_AT_POLE_AZI = [(30, 0), (30, 45), (30, 90), (30, 135),
+BRIGHTNESS_AT_POLE_AZI = [(0, 0), (30, 0), (30, 45), (30, 90), (30, 135),
                          (10, 0), (10, 45), (10, 90), (10, 135),
                          (20, 0), (20, 45), (20, 90), (20, 135)]
 BRIGHTNESS_AT_POLE_AZI_PER = [(30, 0), (30, 45), (30, 90), (30, 135), (30, 180), (30, 270)]

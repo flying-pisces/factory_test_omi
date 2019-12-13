@@ -372,7 +372,7 @@ class pancakeuniformityStation(test_station.TestStation):
 
                 keys = [x[0] for x in points]
 
-                u = 2 * cx / (-2 * cx + 12 * cy + 3)
+                u = 4 * cx / (-2 * cx + 12 * cy + 3)
                 v = 9 * cy / (-2 * cx + 12 * cy + 3)
                 center_pos = dict(points)['P1']
                 center_u = u[center_pos]

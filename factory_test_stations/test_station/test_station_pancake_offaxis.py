@@ -203,47 +203,52 @@ class pancakeoffaxisStation(test_station.TestStation):
                 pass
             self._operator_interface.prompt('', 'SystemButtonFace')
 
-    def data_export(self, serial_number, test_log, pos):
+    def data_export(self, serial_number, test_log, tposIdx):
         """
         export csv and png from ttxm database
         :type test_log: test_station.TestRecord
         :type serial_number: str
         """
-        for i in range(len(self._station_config.PATTERNS)):
-            self._operator_interface.print_to_console(
-                "Panel export for Pattern: %s\n" % self._station_config.PATTERNS[i])
-            if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
-                output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
-                                          serial_number + '_' + test_log._start_time.strftime(
-                                              "%Y%m%d-%H%M%S"))
-                if not os.path.exists(output_dir):
-                    os.mkdir(output_dir, 777)
-                meas_list = self._equipment.get_measurement_list()
-                exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
-                for meas in meas_list:
-                    if meas['Measurement Setup'] != self._station_config.MEASUREMENTS[i]:
-                        continue
+        pos_patterns = None
+        for posIdx, pos, pos_patterns in self._station_config.POSITIONS:
+            if posIdx != tposIdx:
+                continue
 
-                    id = meas['Measurement ID']
-                    export_csv_name = "{}_{}_{}_{}.csv".format(serial_number,
-                                                               self._station_config.PATTERNS[i], pos[0], pos[1])
-                    export_png_name = "{}_{}_{}_{}.png".format(serial_number,
-                                                               self._station_config.PATTERNS[i], pos[0], pos[1])
-                    if self._station_config.IS_EXPORT_CSV:
-                        self._equipment.export_measurement(id, output_dir, export_csv_name,
-                                                           self._station_config.Resolution_Bin_X,
-                                                           self._station_config.Resolution_Bin_Y)
-                    if self._station_config.IS_EXPORT_PNG:
-                        self._equipment.export_measurement(id, output_dir, export_png_name,
-                                                           self._station_config.Resolution_Bin_X,
-                                                           self._station_config.Resolution_Bin_Y)
-                    self._operator_interface.print_to_console("Export data for {}\n"
-                                                              .format(self._station_config.PATTERNS[i]))
+            for test_pattern in pos_patterns:
+                i = self._station_config.PATTERNS.index(test_pattern)
+                if i < 0:
+                    continue
+                self._operator_interface.print_to_console(
+                    "Panel export for Pattern: %s\n" % self._station_config.PATTERNS[i])
+                if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
+                    output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
+                                              serial_number + '_' + test_log._start_time.strftime(
+                                                  "%Y%m%d-%H%M%S"))
+                    if not os.path.exists(output_dir):
+                        os.mkdir(output_dir, 777)
+                    meas_list = self._equipment.get_measurement_list()
+                    exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
+                    for meas in meas_list:
+                        if meas['Measurement Setup'] != self._station_config.MEASUREMENTS[i]:
+                            continue
+
+                        id = meas['Measurement ID']
+                        export_csv_name = "{}_{}_{}.csv".format(serial_number, test_pattern, posIdx)
+                        export_png_name = "{}_{}_{}.png".format(serial_number, test_pattern, posIdx)
+                        if self._station_config.IS_EXPORT_CSV:
+                            self._equipment.export_measurement(id, output_dir, export_csv_name,
+                                                               self._station_config.Resolution_Bin_X,
+                                                               self._station_config.Resolution_Bin_Y)
+                        if self._station_config.IS_EXPORT_PNG:
+                            self._equipment.export_measurement(id, output_dir, export_png_name,
+                                                               self._station_config.Resolution_Bin_X,
+                                                               self._station_config.Resolution_Bin_Y)
+                        self._operator_interface.print_to_console("Export data for %s\n" % test_pattern)
 
     def offaxis_test_do(self, serial_number, test_log, the_unit):
         pos_items = self._station_config.POSITIONS
         pre_color = None
-        for posIdx, pos in pos_items:
+        for posIdx, pos, pos_patterns in pos_items:
             uni_file_name = re.sub('_x.log', '_{}.ttxm'.format(posIdx), test_log.get_filename())
             bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
             databaseFileName = os.path.join(bak_dir, uni_file_name)
@@ -262,7 +267,12 @@ class pancakeoffaxisStation(test_station.TestStation):
             center_item = self._station_config.CENTER_AT_POLE_AZI
             lv_cr_items = {}
 
-            for i in range(len(self._station_config.PATTERNS)):
+            for test_pattern in pos_patterns:
+                if test_pattern not in pos_patterns:
+                    self._operator_interface.print_to_console("Can't find pattern {} for position {}.\n"
+                                                              .format(test_pattern, posIdx))
+                    continue
+                i = self._station_config.PATTERNS.index(test_pattern)
                 analysis = self._station_config.ANALYSIS[i]
                 pattern = self._station_config.PATTERNS[i]
                 self._operator_interface.print_to_console(
@@ -331,7 +341,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                     for key in keys:
                         cx = cx_dic[key]
                         cy = cy_dic[key]
-                        u = 2 * cx / (-2 * cx + 12 * cy + 3)
+                        u = 4 * cx / (-2 * cx + 12 * cy + 3)
                         v = 9 * cy / (-2 * cx + 12 * cy + 3)
                         us.append(u)
                         vs.append(v)
@@ -354,7 +364,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                 # Brightness % @30deg wrt on axis brightness
                 brightness_items = []
                 for item in self._station_config.BRIGHTNESS_AT_POLE_AZI_PER:
-                    tlv = lv_dic['P_%d_%d' % item]
+                    tlv = lv_dic['P_%d_%d' % item] / lv_dic[center_item]
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_Proportion_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, tlv)
@@ -393,6 +403,6 @@ class pancakeoffaxisStation(test_station.TestStation):
                     test_log.set_measured_value_by_name_ex(test_item, cr)
             # endregion
 
-            self.data_export(serial_number, test_log, pos)
+            self.data_export(serial_number, test_log, posIdx)
 
         self._operator_interface.print_to_console('complete the off_axis test items.\n')
