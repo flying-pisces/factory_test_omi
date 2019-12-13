@@ -145,8 +145,8 @@ IS_EXPORT_PNG = False
 Resolution_Bin_X = 0
 Resolution_Bin_Y = 0
 
-#CAMERA_SN = "159496752"
-CAMERA_SN = "Demo"
+CAMERA_SN = "159496752"
+# CAMERA_SN = "Demo"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
@@ -172,9 +172,8 @@ BRIGHTNESS_AT_POLE_AZI = [(0, 0), (30, 0), (30, 45), (30, 90), (30, 135),
 BRIGHTNESS_AT_POLE_AZI_PER = [(30, 0), (30, 45), (30, 90), (30, 135), (30, 180), (30, 270)]
 
 COLORSHIFT_AT_POLE_AZI = [(10, 0), (10, 45), (10, 90), (10, 135),
-                         (20, 0), (20, 45), (20, 90), (20, 135)]
-
-COLORSHIFT_CP0_AT_POLE_AZI = [(30, 0), (30, 45), (30, 90), (30, 135),(30, 180), (30, 270)]
+                         (20, 0), (20, 45), (20, 90), (20, 135),
+                         (30, 0), (30, 45), (30, 90), (30, 135),(30, 180), (30, 270)]
 
 CR_AT_POLE_AZI = [(0, 0), (30, 0), (30, 90), (30, 180), (30, 270)]
 
@@ -186,6 +185,6 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\22.ttxm'
-DUT_SIM = True
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False

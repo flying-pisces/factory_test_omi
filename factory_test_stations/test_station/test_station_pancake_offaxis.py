@@ -318,7 +318,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                         cx_match = re.search(r'(P_\d+_\d+)\(cx\)', r, re.I|re.S)
                         if cx_match:
                             cx_dic[cx_match.groups()[0]] = float(result[ra])
-                        cy_match = re.search(r'(P_\d+_\d+)\(cx\)', r, re.I|re.S)
+                        cy_match = re.search(r'(P_\d+_\d+)\(cy\)', r, re.I|re.S)
                         if cy_match:
                             cy_dic[cy_match.groups()[0]] = float(result[ra])
 
@@ -338,6 +338,8 @@ class pancakeoffaxisStation(test_station.TestStation):
                     keys = lv_dic.keys()
                     us = []
                     vs = []
+                    us_dic = {}
+                    vs_dic = {}
                     for key in keys:
                         cx = cx_dic[key]
                         cy = cy_dic[key]
@@ -345,8 +347,11 @@ class pancakeoffaxisStation(test_station.TestStation):
                         v = 9 * cy / (-2 * cx + 12 * cy + 3)
                         us.append(u)
                         vs.append(v)
-
-                    duvs = np.sqrt((np.array(us) - us[0])**2 + (np.array(vs) - vs[0])**2)
+                    us_dic = dict(zip(keys, us))
+                    vs_dic = dict(zip(keys, vs))
+                    us0 = us_dic[center_item]
+                    vs0 = vs_dic[center_item]
+                    duvs = np.sqrt((np.array(us) - us0)**2 + (np.array(vs) - vs0)**2)
                     duv_dic = dict(zip(keys, duvs))
 
                 # endregion
@@ -373,12 +378,6 @@ class pancakeoffaxisStation(test_station.TestStation):
                     duv = duv_dic['P_%d_%d' % item]
                     test_item = '{}_{}_duv_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, duv)
-
-                # Color shift, 30deg off-axis compared to 0deg polar angle (delta u'v')
-                for item in self._station_config.COLORSHIFT_CP0_AT_POLE_AZI:
-                    duv_cp = duv_dic['P_%d_%d' % item]
-                    test_item = '{}_{}_duv_Comp_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, duv_cp)
 
                 # Max brightness location
                 max_loc = max(lv_dic, key=lv_dic.get)

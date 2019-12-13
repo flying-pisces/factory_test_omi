@@ -1032,7 +1032,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>e82c21f9-7d22-465b-8f3d-b40b8f8a8d62</GUID>
+      <GUID>123cacee-0a05-40cb-bad7-1c46e4e50902</GUID>
       <Name>W255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -1062,13 +1062,13 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Degrees</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
+          <SerialNumber>159496752</SerialNumber>
+          <ColorCalID>18</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>0</FlatFieldID>
           <FFType>0</FFType>
@@ -1093,7 +1093,7 @@
         </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
-      <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
+      <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
       <LEDColorPurity>0.8</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
@@ -1230,7 +1230,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>97f3d967-5bd7-434b-bd81-25fa235d2354</GUID>
+      <GUID>05a46863-d9ba-4a38-8e28-23e2bb7b0a00</GUID>
       <Name>W000</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -1260,13 +1260,13 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Degrees</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
+          <SerialNumber>159496752</SerialNumber>
+          <ColorCalID>18</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>0</FlatFieldID>
           <FFType>0</FFType>
@@ -1291,7 +1291,7 @@
         </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
-      <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
+      <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
       <LEDColorPurity>0.8</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
@@ -1428,7 +1428,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>5eecb92c-758f-4de8-8454-92c0d337d8ee</GUID>
+      <GUID>c968d695-2945-418a-8959-507eb744f583</GUID>
       <Name>R255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -1458,13 +1458,13 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Degrees</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
+          <SerialNumber>159496752</SerialNumber>
+          <ColorCalID>18</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>0</FlatFieldID>
           <FFType>0</FFType>
@@ -1489,7 +1489,7 @@
         </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
-      <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
+      <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
       <LEDColorPurity>0.8</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
@@ -1626,7 +1626,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>ebeffeb8-7c5f-4d74-848c-64a4096ee6a3</GUID>
+      <GUID>1ae39043-f43f-47ce-892e-ffded1446376</GUID>
       <Name>G255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -1656,13 +1656,13 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Degrees</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
+          <SerialNumber>159496752</SerialNumber>
+          <ColorCalID>18</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>0</FlatFieldID>
           <FFType>0</FFType>
@@ -1687,7 +1687,7 @@
         </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
-      <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
+      <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
       <LEDColorPurity>0.8</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
@@ -1824,7 +1824,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>11fd60fb-f40c-4cf0-a27f-4bf9f3a3d1a2</GUID>
+      <GUID>66a09a6d-1fd9-4c38-b899-cb029fd9c58d</GUID>
       <Name>B255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -1854,13 +1854,13 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Degrees</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
+          <SerialNumber>159496752</SerialNumber>
+          <ColorCalID>18</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>0</FlatFieldID>
           <FFType>0</FFType>
@@ -1885,7 +1885,7 @@
         </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
-      <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
+      <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
       <LEDColorPurity>0.8</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
