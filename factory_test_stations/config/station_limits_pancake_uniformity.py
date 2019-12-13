@@ -9,8 +9,8 @@ STATION_LIMITS_ARRAYS = [
     ['W255_Brightness_Variation', 0, 0.02, 10],
     ['W127_Brightness_Variation', 0, 0.02, 11],
 
-    ['W255_Brightness_Max',  -1E+12, 1E+12,  12],
-    ['W127_Brightness_Max',  -1E+12, 1E+12, 13],
+    ['W255_Brightness_Max',  None, None,  12],
+    ['W127_Brightness_Max',  None, None, 13],
 
     ['R255_Color_Variation', 0, 0.01, 14],
     ['G255_Color_Variation', 0, 0.01, 15],
