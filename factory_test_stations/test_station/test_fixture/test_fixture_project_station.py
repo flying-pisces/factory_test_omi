@@ -17,3 +17,10 @@ class projectstationFixture(hardware_station_common.test_station.test_fixture.Te
 
     def close(self):
         self._operator_interface.print_to_console("Closing project station Fixture\n")
+
+    def __getattr__(self, item):
+        def not_find(*args, **kwargs):
+            return
+        if item in ['status', 'elminator_off', 'elminator_on', 'mov_abs_xy', 'unload',
+                    'load', 'button_disable', 'button_enable', 'flush_data']:
+            return not_find

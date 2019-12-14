@@ -5,22 +5,22 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\unif_summray'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\offaxis_summray'
 
 
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
+SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM3" #
+FIXTURE_COMPORT = "COM4" #
 FIXTURE_PARTICLE_COMPORT = "COM3" #
-FIXTURE_PARTICLE_ADDR=1
-DUT_COMPORT = "COM4" #
+FIXTURE_PARTICLE_ADDR = 1
+DUT_COMPORT = "COM5" #
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu','hw','fpga']
@@ -37,6 +37,7 @@ COMMAND_DISP_READ = "MIPI.Read"
 COMMAND_DISP_WRITE = "MIPI.Write"
 COMMAND_DISP_2832WRITE = "t.2832_MIPI_WRITE"
 COMMAND_DISP_VSYNC="REFRESHRATE"
+COMMAND_DISP_GETCOLOR = "GetColor"
 
 COMMAND_DISP_POWERON_DLY = 1.5
 COMMAND_DISP_RESET_DLY = 1
@@ -44,19 +45,17 @@ COMMAND_DISP_SHOWIMG_DLY = 1
 COMMAND_DISP_POWEROFF_DLY = 0.2
 
 DISP_CHECKER_ENABLE = False
-DISP_CHECKER_DLY = 2
-DISP_CHECKER_IMG_INDEX = 0
-DISP_CHECKER_CAMERA_INDEX = 0
-DISP_CHECKER_THRESH_LOW = 200
-DISP_CHECKER_THRESH_HIGH = 255
-DISP_CHECKER_MIN = 50
-DISP_CHECKER_L_SCORE = 100
-DISP_CHECKER_H_SCORE = 1000
-DISP_CHECKER_EXL_SCORE = 20000
-DISP_CHECKER_COUNT = 2
-DISP_CHECKER_IMG_SAVED = False
 
-COMMAND_FIXTURE_INFO = "CMD_FIXTURE_INFORMATION\r\n"
+# blue
+# https://blog.csdn.net/a2009374138/article/details/52174856
+DISP_CHECKER_L_HsvH = 220
+DISP_CHECKER_H_HsvH = 250
+DISP_CHECKER_L_HsvS = 0.8
+DISP_CHECKER_H_HsvS = 1
+DISP_CHECKER_COLOR = (0, 0, 255)
+DISP_CHECKER_LOCATION = (25, 5)
+DISP_CHECKER_COUNT = 2
+
 COMMAND_HELP = "CMD_HELP\r\n"
 COMMAND_STATUS = "CMD_STATUS\r\n"
 COMMAND_INITIALSTATUS = "CMD_INITIALSTATUS\r\n"
@@ -64,8 +63,8 @@ COMMAND_RESET = "CMD_RESET\r\n"
 COMMAND_LOAD = "CMD_LOAD\r\n"
 COMMAND_UNLOAD = "CMD_UNLOAD\r\n"
 COMMAND_ID = "CMD_ID\r\n"
-COMMAND_BUTTON_ENABLE = "CMD_BUTTON_ENABLE\r\n"
-COMMAND_BUTTON_DISABLE = "CMD_BUTTON_DISABLE\r\n"
+COMMAND_BUTTON_ENABLE = "CMD_BTN_ENABLE\r\n"
+COMMAND_BUTTON_DISABLE = "CMD_BTN_DISABLE\r\n"
 COMMAND_FLEX_POWER_ON = "CMD_FLEX_POWER_ON\r\n"
 COMMAND_FLEX_POWER_OFF = "CMD_FLEX_POWER_OFF\r\n"
 COMMAND_MICROUSB_POWER_ON = "CMD_MICROUSB_POWER_ON\r\n"
@@ -87,6 +86,12 @@ COMMAND_BUTTON_LIGHT_ON = "CMD_BUTTON_LIGHT_ON\r\n"
 COMMAND_BUTTON_LIGHT_OFF = "CMD_BUTTON_LIGHT_OFF\r\n"
 COMMAND_ELIMINATOR_ON = "CMD_ELIMINATOR_ON\r\n"
 COMMAND_ELIMINATOR_OFF = "CMD_ELIMINATOR_OFF\r\n"
+COMMAND_CARRIER_POSITION = "CMD_LOAD?\r\n"
+COMMAND_POGO_UP = "CMD_POGO_UP\r\n"
+COMMAND_POGO_DOWN = "CMD_POGO_DOWN\r\n"
+COMMAND_ABS_X_Y = "CMD_ABS_X_Y"
+COMMAND_RES_X_Y = "CMD_REG_X_Y"
+COMMAND_MOTOR_HOME = "CMD_MOTOR_HOME\r\n"
 
 # Fixture Status Enum Values
 PTB_POSITION_STATUS = ["Testing Position", "Reset Position", "Outside Position", "Other Position"]
@@ -97,6 +102,7 @@ FIXTURE_PTB_OFF_TIME = 1
 FIXTURE_PTB_ON_TIME = 1
 FIXTURE_USB_OFF_TIME = 1
 FIXTURE_USB_ON_TIME = 1
+FIXTURE_PTB_UNLOAD_DLY = 6
 FIXTURE_PARTICLE_COUNTER = False
 FIXTRUE_PARTICLE_ADDR_READ = 40005
 FIXTRUE_PARTICLE_ADDR_START = 40003
@@ -105,22 +111,24 @@ FIXTRUE_PARTICLE_START_DLY = 0
 ########
 
 ######## DUT Related Parameters which will be defined
-CUSTOM_ADB_RELATIVE_PATH = r'test_station\dut\adb.exe'
-DUT_ON_TIME = 4  ## assuming DUT need 5 seconds to be powered after USB powered on command
-DUT_DISPLAYSLEEPTIME = 1
-DISPLAY_CYCLE_TIME = 2
-DUT_RENDER_ONE_IMAGE_TIMEOUT = 10
-LAUNCH_TIME = 4
-DUT_MAX_WAIT_TIME =60
-DEFAULT_VSYNC_US = 13.8889  # 72  # 111.44646
+# CUSTOM_ADB_RELATIVE_PATH = r'test_station\dut\adb.exe'
+# DUT_ON_TIME = 4  ## assuming DUT need 5 seconds to be powered after USB powered on command
+# DUT_DISPLAYSLEEPTIME = 1
+# DISPLAY_CYCLE_TIME = 2
+# DUT_RENDER_ONE_IMAGE_TIMEOUT = 10
+# LAUNCH_TIME = 4
+# DUT_MAX_WAIT_TIME =60
+# DEFAULT_VSYNC_US = 13.8889  # 72  # 111.44646
 DUT_ON_MAXRETRY = 10
 
+DUT_DISPLAYSLEEPTIME = 1
 ##################################
 # Test Equipment related parameters
-IS_VERBOSE = False
+IS_VERBOSE = True
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
-SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\Myzy_Sequence_10-3-19.seqx'
+SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\I16+Conoscope - POI2.seqx'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
+
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
 
 FOCUS_DISTANCE = 0.45
@@ -134,43 +142,40 @@ HEIGHT = 1400
 IS_SAVEDB = True
 IS_EXPORT_CSV = False
 IS_EXPORT_PNG = False
-Resolution_Bin_X = 100
-Resolution_Bin_Y = 100
+Resolution_Bin_X = 0
+Resolution_Bin_Y = 0
 
-
-# TEST_POINTS = [(0, 0), (0, 18), (12.728, 12.728), (18, 0), (12.728, -12.728), (0, -18),
-#                (-12.728, -12.728), (-18, 0), (-12.728, 12.728)]
-
-TEST_POINTS_POS = [('P1', (22, 22)), ('P2', (22, 5)), ('P3', (32, 10)), ('P4', (30, 22)),
-                   ('P5', (34, 34)), ('P6', (22, 5)),
-                   ('P7', (10, 32)), ('P8', (5, 22)), ('P9', (10, 10))]
-
-Resolution_Bin_REGISTER_SaveImg = True
-Resolution_Bin_REGISTER_THRESH_L = 107
-Resolution_Bin_REGISTER_THRESH_H = 255
-Resolution_Bin_REGISTER_MIN_AREA = 1000
-Resolution_Bin_REGISTER_PATTERN = 'White'
-Resolution_Bin_Y_REGISTER = 45
-Resolution_Bin_X_REGISTER = 45
-
-Resolution_Bin_SCALE = 10
-Resolution_REGISTER_SKIPTEXT = 6
-
-SPECTRAL_RESPONSE = 'PhotoMetric'
-CAMERA_SN = "159486608"
+CAMERA_SN = "159496752"
+# CAMERA_SN = "Demo"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
-PATTERNS = ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
-SAVE_IMAGES = [False, False, False, False, False, False, False, False]
-# SAVE_IMAGES = [True, True, True, True, True, True, True, True]
-COLORS = [(255, 255, 255), (180, 180, 180), (127, 127, 127), (90, 90, 90), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
-# COLORS = ['0008', '0001', '0800', '8000', '0010', '0020', '0040']
-# COLORS = ['1', '2', '3','4','5']
-ANALYSIS = ["MLO_Uniformity W255", "MLO_Uniformity W180", "MLO_Uniformity W127",
-            "MLO_Uniformity W090", "MLO_Uniformity R255", "MLO_Uniformity G255", "MLO_Uniformity B255"]
-MEASUREMENTS = ["W255", "W180", "W127", "W090", "R255", "G255", "B255"]
-#gamma related
-GAMMA_CHECK_GLS = ["255", "180", "127", "090"]
+POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
+             ('P2', (0, -18), ['W255']),
+             ('P4', (18, 0), ['W255']),
+             ('P6', (0, 18), ['W255']),
+             ('P8', (-18, 0), ['W255'])]
+PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
+SAVE_IMAGES = [False, False, False, False, False]
+# SAVE_IMAGES = [True, True, True, True, True, True]
+COLORS = [(255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
+# COLORS = ['0008', '0001', '0800', '8000', '0010']
+ANALYSIS = ["Points Of Interest W255", "Points Of Interest W000", "Points Of Interest R255", "Points Of Interest G255", "Points Of Interest B255"]
+MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255"]
+##################################
+
+CR_TEST_PATTERNS = ['W255', 'W000']
+CENTER_AT_POLE_AZI = 'P_0_0'
+
+BRIGHTNESS_AT_POLE_AZI = [(0, 0), (30, 0), (30, 45), (30, 90), (30, 135),
+                         (10, 0), (10, 45), (10, 90), (10, 135),
+                         (20, 0), (20, 45), (20, 90), (20, 135)]
+BRIGHTNESS_AT_POLE_AZI_PER = [(30, 0), (30, 45), (30, 90), (30, 135), (30, 180), (30, 270)]
+
+COLORSHIFT_AT_POLE_AZI = [(10, 0), (10, 45), (10, 90), (10, 135),
+                         (20, 0), (20, 45), (20, 90), (20, 135),
+                         (30, 0), (30, 45), (30, 90), (30, 135),(30, 180), (30, 270)]
+
+CR_AT_POLE_AZI = [(0, 0), (30, 0), (30, 90), (30, 180), (30, 270)]
 
 ##################################
 # IT and work order
@@ -179,7 +184,7 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\QW_pancake_uniformity-01_20191211-111559.ttxm'
+EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\22.ttxm'
 DUT_SIM = False
 EQUIPMENT_SIM = False
 FIXTURE_SIM = False
