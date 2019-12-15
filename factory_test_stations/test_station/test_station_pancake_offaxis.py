@@ -125,7 +125,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                                 self._fixture.mov_abs_xy(pos[0], pos[1])
                             color = the_unit.readColorSensor()
                             is_screen_on = the_unit.display_color_check(color)
-                            if retries % 4 == 0:  # reboot the driver board to avoid exp from driver board.
+                            if retries % 3 == 0:  # reboot the driver board to avoid exp from driver board.
                                 is_reboot_need = True
 
                     if not is_screen_on:

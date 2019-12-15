@@ -116,7 +116,7 @@ DUT_RENDER_ONE_IMAGE_TIMEOUT = 0
 LAUNCH_TIME = 4
 DUT_MAX_WAIT_TIME =60
 DEFAULT_VSYNC_US = 13.889 #111.44646  #
-DUT_ON_MAXRETRY = 10
+DUT_ON_MAXRETRY = 5
 
 ##################################
 # Test Equipment related parameters
@@ -136,7 +136,7 @@ WIDTH = 3781
 HEIGHT = 3954
 IS_SAVEDB = True
 IS_EXPORT_CSV = False
-IS_EXPORT_PNG = False
+IS_EXPORT_PNG = True
 Resolution_Bin_X_REGISTER = 10
 Resolution_Bin_Y_REGISTER = 10
 Resolution_REGISTER_SKIPTEXT = 6
@@ -146,7 +146,7 @@ Resolution_Bin_Y = 10
 CAMERA_SN = "91738177"
 
 PATTERNS_BRIGHT = ['W028', 'W048', 'W000']  # the first two are used to register data for bright test.
-PATTERNS_DARK = ['W255', "R255", "G255", "B255"]
+PATTERNS_DARK = ['W255'] #, "R255", "G255", "B255"]
 PATTERNS = ["W028", "W048", "W000", "W255", "R255", "G255", "B255"]
 # PATTERNS = ["White","Black","Red","Green","Blue"]
 SAVE_IMAGES = [True, True, True, True, True, True, True]

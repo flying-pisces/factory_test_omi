@@ -3806,7 +3806,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>2fa9a020-7c10-405d-9ce1-bfd669e41cd9</GUID>
+      <GUID>b6728075-126f-44a0-a81a-afb280bbb140</GUID>
       <Name>B255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -3852,17 +3852,17 @@
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1458</X>
-              <Y>463</Y>
+              <X>560</X>
+              <Y>1505</Y>
             </Location>
             <Size>
-              <Width>3605</Width>
-              <Height>3478</Height>
+              <Width>3352</Width>
+              <Height>3558</Height>
             </Size>
-            <X>1458</X>
-            <Y>463</Y>
-            <Width>3605</Width>
-            <Height>3478</Height>
+            <X>560</X>
+            <Y>1505</Y>
+            <Width>3352</Width>
+            <Height>3558</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -3877,9 +3877,9 @@
       <LensfStop>6</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
-      <CameraMirror>false</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>None</CameraRotation>
+      <CameraMirror>true</CameraMirror>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -4004,7 +4004,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>6c0101e4-be9a-4754-a4b4-0439e8b18ac7</GUID>
+      <GUID>be0b1616-52f5-4944-992f-6a88c7fde2c8</GUID>
       <Name>W255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -4050,17 +4050,17 @@
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1458</X>
-              <Y>463</Y>
+              <X>560</X>
+              <Y>1505</Y>
             </Location>
             <Size>
-              <Width>3605</Width>
-              <Height>3478</Height>
+              <Width>3352</Width>
+              <Height>3558</Height>
             </Size>
-            <X>1458</X>
-            <Y>463</Y>
-            <Width>3605</Width>
-            <Height>3478</Height>
+            <X>560</X>
+            <Y>1505</Y>
+            <Width>3352</Width>
+            <Height>3558</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -4075,9 +4075,9 @@
       <LensfStop>6</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
-      <CameraMirror>false</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>None</CameraRotation>
+      <CameraMirror>true</CameraMirror>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -4949,7 +4949,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>1b151665-db28-4f76-bd87-88daa09cac08</GUID>
+      <GUID>29a1c933-95f8-4576-9afd-b89c43cf40d9</GUID>
       <Name>R255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -4979,7 +4979,7 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Millimeters</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
@@ -4995,17 +4995,17 @@
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1458</X>
-              <Y>463</Y>
+              <X>560</X>
+              <Y>1505</Y>
             </Location>
             <Size>
-              <Width>3605</Width>
-              <Height>3478</Height>
+              <Width>3352</Width>
+              <Height>3558</Height>
             </Size>
-            <X>1458</X>
-            <Y>463</Y>
-            <Width>3605</Width>
-            <Height>3478</Height>
+            <X>560</X>
+            <Y>1505</Y>
+            <Width>3352</Width>
+            <Height>3558</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -5020,9 +5020,9 @@
       <LensfStop>6</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
-      <CameraMirror>false</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>None</CameraRotation>
+      <CameraMirror>true</CameraMirror>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -5147,7 +5147,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>fb9284fd-ef19-4ea0-8718-4671f56bdef0</GUID>
+      <GUID>b25f8857-6261-4fc0-84db-04d0d7a7bb76</GUID>
       <Name>G255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -5193,17 +5193,17 @@
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1458</X>
-              <Y>463</Y>
+              <X>560</X>
+              <Y>1505</Y>
             </Location>
             <Size>
-              <Width>3605</Width>
-              <Height>3478</Height>
+              <Width>3352</Width>
+              <Height>3558</Height>
             </Size>
-            <X>1458</X>
-            <Y>463</Y>
-            <Width>3605</Width>
-            <Height>3478</Height>
+            <X>560</X>
+            <Y>1505</Y>
+            <Width>3352</Width>
+            <Height>3558</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -5218,9 +5218,9 @@
       <LensfStop>6</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
-      <CameraMirror>false</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>None</CameraRotation>
+      <CameraMirror>true</CameraMirror>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -5345,7 +5345,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>852a7d4f-d803-4c9a-9dbd-0bcef803498e</GUID>
+      <GUID>4e226e8a-e345-48f5-b76a-45d86c37a008</GUID>
       <Name>W000</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -5375,7 +5375,7 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Millimeters</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
@@ -5391,17 +5391,17 @@
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1458</X>
-              <Y>463</Y>
+              <X>560</X>
+              <Y>1505</Y>
             </Location>
             <Size>
-              <Width>3605</Width>
-              <Height>3478</Height>
+              <Width>3352</Width>
+              <Height>3558</Height>
             </Size>
-            <X>1458</X>
-            <Y>463</Y>
-            <Width>3605</Width>
-            <Height>3478</Height>
+            <X>560</X>
+            <Y>1505</Y>
+            <Width>3352</Width>
+            <Height>3558</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -5416,9 +5416,9 @@
       <LensfStop>6</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
-      <CameraMirror>false</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>None</CameraRotation>
+      <CameraMirror>true</CameraMirror>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -5792,7 +5792,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>4f4085b3-0792-4e53-9c63-490404659417</GUID>
+      <GUID>88091b78-1fec-45e5-af9a-6737f1916633</GUID>
       <Name>W028</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -5838,17 +5838,17 @@
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1458</X>
-              <Y>463</Y>
+              <X>560</X>
+              <Y>1505</Y>
             </Location>
             <Size>
-              <Width>3605</Width>
-              <Height>3478</Height>
+              <Width>3352</Width>
+              <Height>3558</Height>
             </Size>
-            <X>1458</X>
-            <Y>463</Y>
-            <Width>3605</Width>
-            <Height>3478</Height>
+            <X>560</X>
+            <Y>1505</Y>
+            <Width>3352</Width>
+            <Height>3558</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -5863,9 +5863,9 @@
       <LensfStop>6</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
-      <CameraMirror>false</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>None</CameraRotation>
+      <CameraMirror>true</CameraMirror>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -5990,7 +5990,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>910ffa3e-d487-4085-a3f1-8c24530f21a6</GUID>
+      <GUID>ff39a1c3-b13f-4db4-b6f2-a3aa0968ed02</GUID>
       <Name>W048</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -6036,17 +6036,17 @@
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1458</X>
-              <Y>463</Y>
+              <X>560</X>
+              <Y>1505</Y>
             </Location>
             <Size>
-              <Width>3605</Width>
-              <Height>3478</Height>
+              <Width>3352</Width>
+              <Height>3558</Height>
             </Size>
-            <X>1458</X>
-            <Y>463</Y>
-            <Width>3605</Width>
-            <Height>3478</Height>
+            <X>560</X>
+            <Y>1505</Y>
+            <Width>3352</Width>
+            <Height>3558</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -6061,9 +6061,9 @@
       <LensfStop>6</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
-      <CameraMirror>false</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>None</CameraRotation>
+      <CameraMirror>true</CameraMirror>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
