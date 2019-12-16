@@ -140,10 +140,10 @@ TOP = 928
 WIDTH = 1337
 HEIGHT = 1400
 IS_SAVEDB = True
-IS_EXPORT_CSV = False
-IS_EXPORT_PNG = False
-Resolution_Bin_X = 0
-Resolution_Bin_Y = 0
+IS_EXPORT_CSV = True
+IS_EXPORT_PNG = True
+Resolution_Bin_X = 360
+Resolution_Bin_Y = 360
 
 CAMERA_SN = "159496752"
 

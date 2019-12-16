@@ -155,7 +155,7 @@ COLORS = [(28, 28, 28), (48, 48, 48), (0, 0, 0), (255, 255, 255),  (255, 0, 0), 
 # COLORS = ['1', '2', '3','4','5']
 ANALYSIS = ["ParticleDefects W028", "ParticleDefects W048", "ParticleDefects W000", "ParticleDefects W255",
             "ParticleDefects R255", "ParticleDefects G255", "ParticleDefects B255"]
-MEASUREMENTS = ["W028", "W048", "W255", "W000", "R255", "G255", "B255"]
+MEASUREMENTS = ["W028", "W048", "W000", "W255", "R255", "G255", "B255"]
 QUALITY_AREA_R = 18
 SUPER_QUALITY_AREA_R = 7
 SEPARATION_DISTANCE = 5

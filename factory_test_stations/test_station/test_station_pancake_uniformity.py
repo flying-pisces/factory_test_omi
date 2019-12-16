@@ -36,6 +36,7 @@ class pancakeuniformityStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
+        self._sw_version = '1.0.0'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_uniformity.pancakeuniformityFixture(station_config, operator_interface)
@@ -103,8 +104,8 @@ class pancakeuniformityStation(test_station.TestStation):
             if self._station_config.DUT_SIM:
                 the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
             test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
-
-            test_log.set_measured_value_by_name_ex("TT_Version", self._equipment.version())
+            test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+            test_log.set_measured_value_by_name_ex("MPK_API_Version", self._equipment.version())
 
             the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
