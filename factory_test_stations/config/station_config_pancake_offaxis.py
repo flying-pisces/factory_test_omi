@@ -146,14 +146,13 @@ Resolution_Bin_X = 0
 Resolution_Bin_Y = 0
 
 CAMERA_SN = "159496752"
-# CAMERA_SN = "Demo"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
-POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
-             ('P2', (0, -18), ['W255']),
-             ('P4', (18, 0), ['W255']),
-             ('P6', (0, 18), ['W255']),
-             ('P8', (-18, 0), ['W255'])]
+POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),]
+             # ('P2', (0, -18), ['W255']),
+             # ('P4', (18, 0), ['W255']),
+             # ('P6', (0, 18), ['W255']),
+             # ('P8', (-18, 0), ['W255'])]
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
@@ -184,7 +183,8 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\22.ttxm'
-DUT_SIM = False
-EQUIPMENT_SIM = False
-FIXTURE_SIM = False
+EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\1PR00000000022_pancake_offaxis-01_20191212-223914_P1.ttxm'
+CAMERA_SN = "Demo"
+DUT_SIM = True
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True

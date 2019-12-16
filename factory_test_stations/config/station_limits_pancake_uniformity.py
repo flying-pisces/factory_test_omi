@@ -78,7 +78,7 @@ STATION_LIMITS_ARRAYS = [
     ['W255_P9_P2_duv', None, None, 41059],
     ['W255_P9_neighbor_duv_max', -1E+12, 0.05, 41060],
 
-    ['W127_P1_Lv', 400, 600, 42000],
+    ['W127_P1_Lv', None, None, 42000],
     ['W127_P2_Lv', None, None, 42001],
     ['W127_P3_Lv', None, None, 42002],
     ['W127_P4_Lv', None, None, 42003],

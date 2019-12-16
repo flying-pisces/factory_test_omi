@@ -575,7 +575,7 @@ class pancakepixelStation(test_station.TestStation):
                 super_quality_count = 0
                 min_super_sepa_distance = 0
                 quality_count = 0
-                min_sepa_distance = 0
+                min_qaul_sepa_distance = 0
 
                 if num > 0 and len(constrast_lst) > 0:
                     abs_contrast = np.abs(constrast_lst)

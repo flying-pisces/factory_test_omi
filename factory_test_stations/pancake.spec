@@ -22,6 +22,7 @@ if build_target == None:
 
 build_target_exe = build_target.split(".")[0] + ".exe"
 build_target_run = build_target.split(".")[0]
+build_target_station = build_target.split('_run')[0]
 block_cipher = None
 
 def getrootdir():
@@ -39,7 +40,8 @@ searchpaths = [
 a = Analysis([build_target],
              pathex=searchpaths,
              binaries=[],
-             datas=[('config\\*pancake_*.py','config')],
+             datas=[('config\\*%s*.py'%build_target_station,'config'),
+             ('test_station\\test_equipment\\algorithm\\*.seqx','.\test_station\\test_equipment\\algorithm\\')],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
