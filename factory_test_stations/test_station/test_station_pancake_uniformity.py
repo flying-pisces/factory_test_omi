@@ -18,6 +18,7 @@ from factory_test_stations.test_station.dut.dut import  projectDut
 import types
 from itertools import islice
 import cv2
+import glob
 
 class pancakeuniformityError(Exception):
     pass
@@ -36,7 +37,7 @@ class pancakeuniformityStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '1.0.0'
+        self._sw_version = '1.0.2'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_uniformity.pancakeuniformityFixture(station_config, operator_interface)
@@ -170,13 +171,20 @@ class pancakeuniformityStation(test_station.TestStation):
 
             uni_file_name = re.sub('_x.log', '.ttxm', test_log.get_filename())
             bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
-            databaseFileName = os.path.join(bak_dir, uni_file_name)
+
             sequencePath = os.path.join(self._station_config.ROOT_DIR, self._station_config.SEQUENCE_RELATIVEPATH)
-            if self._station_config.EQUIPMENT_SIM:
-                databaseFileName = self._station_config.EQUIPMENT_DEMO_DATABASE
-                self._equipment.set_database(databaseFileName)
-            else:
+            if not self._station_config.EQUIPMENT_SIM:
+                databaseFileName = os.path.join(bak_dir, uni_file_name)
                 self._equipment.create_database(databaseFileName)
+            else:
+                db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
+                fns = glob.glob1(db_dir, '%s_.ttxm' % (serial_number))
+                if len(fns) > 0:
+                    databaseFileName = os.path.join(db_dir, fns[0])
+                    self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
+                    self._equipment.set_database(databaseFileName)
+                else:
+                    raise pancakeuniformityError('unable to find ttxm for SN: {}.\n'.format(serial_number))
             self._equipment.set_sequence(sequencePath)
 
             self._operator_interface.print_to_console('clear registration\n')

@@ -5,13 +5,13 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\unif_summray'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\unif_summary'
 
 
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
+SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 
 ##################################
@@ -190,7 +190,7 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\1PR00000D49265_pancake_uniformity-02_20191114-144907.ttxm'
+EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads'
 DUT_SIM = True
 CAMERA_SN = "Demo"
 EQUIPMENT_SIM = True

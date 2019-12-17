@@ -5,7 +5,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\pixel_summray'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\pixel_summary'
 
 ##################################
 # serial number codes
@@ -189,7 +189,7 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\1PR00000D69265_pancake_pixel-02_20191113-141052.ttxm'
+EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads'
 DUT_SIM = False
 EQUIPMENT_SIM = False
 FIXTURE_SIM = False
