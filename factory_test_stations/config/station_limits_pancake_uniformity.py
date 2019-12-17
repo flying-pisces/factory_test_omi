@@ -5,7 +5,7 @@ STATION_LIMITS_ARRAYS = [
     ["MPK_API_Version", 'MPK_API_CS-1.0.12.0', 'MPK_API_CS-1.0.12.0', 96],
     ["DUT_ScreenOnRetries", 0, 5, 97],
     ["DUT_ScreenOnStatus", True, True, 98],
-    ["ENV_ParticleCounter", 0, 1000, 99],
+    ["ENV_ParticleCounter", None, None, 99],
 
     ['W255_P1_Lv', 400, 600, 41000],
     ['W255_P2_Lv', None, None, 41001],

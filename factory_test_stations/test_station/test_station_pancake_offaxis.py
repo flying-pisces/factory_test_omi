@@ -38,7 +38,7 @@ class pancakeoffaxisStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '1.0.0'
+        self._sw_version = '1.0.1'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_offaxis.pancakeoffaxisFixture(station_config, operator_interface)
@@ -368,6 +368,14 @@ class pancakeoffaxisStation(test_station.TestStation):
                     test_item = '{}_{}_Lv_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, tlv)
 
+                for p0, p180 in self._station_config.BRIGHTNESS_AT_POLE_ASSEM:
+                    lv_x_0 = lv_dic['P_%d_%d' % p0]
+                    lv_x_180 = lv_dic['P_%d_%d' % p180]
+                    lv_0_0 = lv_dic[center_item]
+                    assem = abs((lv_0_0 - lv_x_180)/lv_0_0)
+                    test_item = '{}_{}_ASSEM_{}_{}_{}_{}'.format(posIdx, pattern, *(p0+p180))
+                    test_log.set_measured_value_by_name_ex(test_item, '{0:.4}'.format(assem))
+
                 # Brightness % @30deg wrt on axis brightness
                 brightness_items = []
                 for item in self._station_config.BRIGHTNESS_AT_POLE_AZI_PER:
@@ -386,10 +394,10 @@ class pancakeoffaxisStation(test_station.TestStation):
                 test_item = '{}_{}_Lv_max_pos'.format(posIdx, pattern)
                 test_log.set_measured_value_by_name_ex(test_item, max_loc)
                 inclination, azimuth = tuple(re.split('_', max_loc)[1:])
-                test_item = '{}_{}_Lv_max_pos_inclination'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, inclination)
-                test_item = '{}_{}_Lv_max_pos_azimuth'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, azimuth)
+                test_item = '{}_{}_Lv_max_pos_theta'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, int(inclination))
+                test_item = '{}_{}_Lv_max_pos_phi'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, int(azimuth))
                 # endregion
 
                 if pattern in self._station_config.CR_TEST_PATTERNS:
