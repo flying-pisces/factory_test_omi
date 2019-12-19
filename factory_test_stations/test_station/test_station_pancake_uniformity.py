@@ -178,7 +178,7 @@ class pancakeuniformityStation(test_station.TestStation):
                 self._equipment.create_database(databaseFileName)
             else:
                 db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
-                fns = glob.glob1(db_dir, '%s_.ttxm' % (serial_number))
+                fns = glob.glob1(db_dir, '%s_*.ttxm' % (serial_number))
                 if len(fns) > 0:
                     databaseFileName = os.path.join(db_dir, fns[0])
                     self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
