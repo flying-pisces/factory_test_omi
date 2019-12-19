@@ -16,6 +16,7 @@ from verifiction.dut_checker import DutChecker
 from test_fixture.test_fixture_project_station import projectstationFixture
 import pprint
 import types
+import glob
 
 
 class pancakepixelError(Exception):
@@ -36,6 +37,7 @@ class pancakepixelStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
+        self._sw_version = '1.0.2'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_pixel.pancakepixelFixture(station_config, operator_interface)
@@ -104,7 +106,8 @@ class pancakepixelStation(test_station.TestStation):
             the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
             if self._station_config.DUT_SIM:
                 the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
-            test_log.set_measured_value_by_name_ex("TT_Version", self._equipment.version())
+            test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+            test_log.set_measured_value_by_name_ex("MPK_API_Version", self._equipment.version())
 
             the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
@@ -167,14 +170,21 @@ class pancakepixelStation(test_station.TestStation):
 
             uni_file_name = re.sub('_x.log', '.ttxm', test_log.get_filename())
             bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
-            databaseFileName = os.path.join(bak_dir, uni_file_name)
+
             sequencePath = os.path.join(self._station_config.ROOT_DIR,
                                         self._station_config.SEQUENCE_RELATIVEPATH)
             if not self._station_config.EQUIPMENT_SIM:
+                databaseFileName = os.path.join(bak_dir, uni_file_name)
                 self._equipment.create_database(databaseFileName)
             else:
-                databaseFileName = self._station_config.EQUIPMENT_DEMO_DATABASE
-                self._equipment.set_database(databaseFileName)
+                db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
+                fns = glob.glob1(db_dir, '%s_*.ttxm' % (serial_number))
+                if len(fns) > 0:
+                    databaseFileName = os.path.join(db_dir, fns[0])
+                    self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
+                    self._equipment.set_database(databaseFileName)
+                else:
+                    raise pancakepixelError('unable to find ttxm for SN: %s \n' % (serial_number))
             self._equipment.set_sequence(sequencePath)
 
             self._operator_interface.print_to_console('clear registration\n')
@@ -575,7 +585,7 @@ class pancakepixelStation(test_station.TestStation):
                 super_quality_count = 0
                 min_super_sepa_distance = 0
                 quality_count = 0
-                min_sepa_distance = 0
+                min_qaul_sepa_distance = 0
 
                 if num > 0 and len(constrast_lst) > 0:
                     abs_contrast = np.abs(constrast_lst)

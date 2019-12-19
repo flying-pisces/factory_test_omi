@@ -5,13 +5,13 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\unif_summray'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\unif_summary'
 
 
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
+SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 
 ##################################
@@ -113,7 +113,7 @@ DUT_RENDER_ONE_IMAGE_TIMEOUT = 10
 LAUNCH_TIME = 4
 DUT_MAX_WAIT_TIME =60
 DEFAULT_VSYNC_US = 13.8889  # 72  # 111.44646
-DUT_ON_MAXRETRY = 10
+DUT_ON_MAXRETRY = 5
 
 ##################################
 # Test Equipment related parameters
@@ -141,9 +141,21 @@ Resolution_Bin_Y = 100
 # TEST_POINTS = [(0, 0), (0, 18), (12.728, 12.728), (18, 0), (12.728, -12.728), (0, -18),
 #                (-12.728, -12.728), (-18, 0), (-12.728, 12.728)]
 
+CENTER_POINT_POS = 'P1'
+
 TEST_POINTS_POS = [('P1', (22, 22)), ('P2', (22, 5)), ('P3', (32, 10)), ('P4', (30, 22)),
                    ('P5', (34, 34)), ('P6', (22, 5)),
                    ('P7', (10, 32)), ('P8', (5, 22)), ('P9', (10, 10))]
+
+NEIGHBOR_POINTS = [('P1', ['P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9']),
+                   ('P2', ['P3', 'P1', 'P9']),
+                   ('P3', ['P2', 'P1', 'P4']),
+                   ('P4', ['P3', 'P1', 'P5']),
+                   ('P5', ['P4', 'P1', 'P6']),
+                   ('P6', ['P5', 'P1', 'P7']),
+                   ('P7', ['P6', 'P1', 'P8']),
+                   ('P8', ['P7', 'P1', 'P9']),
+                   ('P9', ['P8', 'P1', 'P2'])]
 
 Resolution_Bin_REGISTER_SaveImg = True
 Resolution_Bin_REGISTER_THRESH_L = 107
@@ -160,17 +172,16 @@ SPECTRAL_RESPONSE = 'PhotoMetric'
 CAMERA_SN = "159486608"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
-PATTERNS = ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
+PATTERNS = ["W255", 'W127', "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True, True, True]
-COLORS = [(255, 255, 255), (180, 180, 180), (127, 127, 127), (90, 90, 90), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
+COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 # COLORS = ['0008', '0001', '0800', '8000', '0010', '0020', '0040']
 # COLORS = ['1', '2', '3','4','5']
-ANALYSIS = ["MLO_Uniformity W255", "MLO_Uniformity W180", "MLO_Uniformity W127",
-            "MLO_Uniformity W090", "MLO_Uniformity R255", "MLO_Uniformity G255", "MLO_Uniformity B255"]
-MEASUREMENTS = ["W255", "W180", "W127", "W090", "R255", "G255", "B255"]
+ANALYSIS = ["MLO_Uniformity W255", "MLO_Uniformity W127", "MLO_Uniformity R255", "MLO_Uniformity G255", "MLO_Uniformity B255"]
+MEASUREMENTS = ["W255", 'W127', "R255", "G255", "B255"]
 #gamma related
-GAMMA_CHECK_GLS = ["255", "180", "127", "090"]
+GAMMA_CHECK_GLS = []#["255", "180", "127", "090"]
 
 ##################################
 # IT and work order
@@ -179,7 +190,8 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\QW_pancake_uniformity-01_20191211-111559.ttxm'
-DUT_SIM = False
-EQUIPMENT_SIM = False
-FIXTURE_SIM = False
+EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads'
+DUT_SIM = True
+CAMERA_SN = "Demo"
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True

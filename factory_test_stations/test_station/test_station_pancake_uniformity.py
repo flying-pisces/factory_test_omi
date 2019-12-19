@@ -18,6 +18,7 @@ from factory_test_stations.test_station.dut.dut import  projectDut
 import types
 from itertools import islice
 import cv2
+import glob
 
 class pancakeuniformityError(Exception):
     pass
@@ -36,6 +37,7 @@ class pancakeuniformityStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
+        self._sw_version = '1.0.2'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_uniformity.pancakeuniformityFixture(station_config, operator_interface)
@@ -103,8 +105,8 @@ class pancakeuniformityStation(test_station.TestStation):
             if self._station_config.DUT_SIM:
                 the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
             test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
-
-            test_log.set_measured_value_by_name_ex("TT_Version", self._equipment.version())
+            test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+            test_log.set_measured_value_by_name_ex("MPK_API_Version", self._equipment.version())
 
             the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
@@ -169,13 +171,20 @@ class pancakeuniformityStation(test_station.TestStation):
 
             uni_file_name = re.sub('_x.log', '.ttxm', test_log.get_filename())
             bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
-            databaseFileName = os.path.join(bak_dir, uni_file_name)
+
             sequencePath = os.path.join(self._station_config.ROOT_DIR, self._station_config.SEQUENCE_RELATIVEPATH)
-            if self._station_config.EQUIPMENT_SIM:
-                databaseFileName = self._station_config.EQUIPMENT_DEMO_DATABASE
-                self._equipment.set_database(databaseFileName)
-            else:
+            if not self._station_config.EQUIPMENT_SIM:
+                databaseFileName = os.path.join(bak_dir, uni_file_name)
                 self._equipment.create_database(databaseFileName)
+            else:
+                db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
+                fns = glob.glob1(db_dir, '%s_*.ttxm' % (serial_number))
+                if len(fns) > 0:
+                    databaseFileName = os.path.join(db_dir, fns[0])
+                    self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
+                    self._equipment.set_database(databaseFileName)
+                else:
+                    raise pancakeuniformityError('unable to find ttxm for SN: {}.\n'.format(serial_number))
             self._equipment.set_sequence(sequencePath)
 
             self._operator_interface.print_to_console('clear registration\n')
@@ -374,7 +383,7 @@ class pancakeuniformityStation(test_station.TestStation):
 
                 u = 4 * cx / (-2 * cx + 12 * cy + 3)
                 v = 9 * cy / (-2 * cx + 12 * cy + 3)
-                center_pos = dict(points)['P1']
+                center_pos = dict(points)[self._station_config.CENTER_POINT_POS]
                 center_u = u[center_pos]
                 center_v = v[center_pos]
 
@@ -382,37 +391,36 @@ class pancakeuniformityStation(test_station.TestStation):
                 u_data = [u[x[1]] for x in points]
                 v_data = [v[x[1]] for x in points]
 
-                duv = np.sqrt((u - center_u)**2 + (v - center_v)**2)
-                lv_points = dict(zip(keys, lv_data))
-                u_points = dict(zip(keys, u_data))
-                v_points = dict(zip(keys, v_data))
+                duv_data = np.sqrt((u_data - center_u)**2 + (v_data - center_v)**2)
+                lv_dic = dict(zip(keys, lv_data))
+                u_dic = dict(zip(keys, u_data))
+                v_dic = dict(zip(keys, v_data))
+                duv_dic = dict(zip(keys, duv_data))
+                for posIdx, tes_pos in self._station_config.TEST_POINTS_POS:
+                    lv = lv_dic[posIdx]
+                    test_item = '{}_{}_Lv'.format(br_pattern, posIdx)
+                    test_log.set_measured_value_by_name_ex(test_item, lv)
 
-                cv_lv = np.std(np.array(lv), dtype=np.float32) / np.mean(np.array(lv))
-                test_item = '{}_Brightness_Variation'.format(br_pattern)
-                test_log.set_measured_value_by_name_ex(test_item, cv_lv)
+                    duv = duv_dic[posIdx]
+                    test_item = '{}_{}_duv'.format(br_pattern, posIdx)
+                    test_log.set_measured_value_by_name_ex(test_item, duv)
 
-                max_lv = np.max(lv)
-                test_item = '{}_Brightness_Max'.format(br_pattern)
-                test_log.set_measured_value_by_name_ex(test_item, max_lv)
+                max_lv = np.max(lv_data)
+                min_lv = np.min(lv_data)
+                test_item = '{}_Lv_max_variation'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item, (max_lv - min_lv) / max_lv)
 
-                cv_color = np.std(np.array(duv), dtype=np.float32) / np.mean(np.array(duv))
-                test_item = '{}_Color_Variation'.format(br_pattern)
-                test_log.set_measured_value_by_name_ex(test_item, cv_color)
-                duv_dic = dict(zip(keys, duv))
-                grps = [['P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9'],
-                       ['P3', 'P1', 'P9'],
-                       ['P2', 'P1', 'P4'],
-                       ['P3', 'P1', 'P5'],
-                       ['P4', 'P1', 'P6'],
-                       ['P5', 'P1', 'P7'],
-                       ['P6', 'P1', 'P8'],
-                       ['P7', 'P1', 'P9'],
-                       ['P8', 'P1', 'P2']]
-                for grp in grps:
+                max_duv = np.max(duv_data)
+                test_item = '{}_duv_max'.format(br_pattern)
+                test_log.set_measured_value_by_name_ex(test_item, max_duv)
+
+                for posIdx, grp in self._station_config.NEIGHBOR_POINTS:
                     tmp = []
                     for c in grp:
-                        tmp.append(duv_dic[c])
-                    cv_color = np.std(np.array(tmp), dtype=np.float32)/np.mean(np.array(tmp))
-                    test_item = '{}_Max_Neighbor_Color_Variation'.format(br_pattern)
-                    test_log.set_measured_value_by_name_ex(test_item, cv_color)
-                pass
+                        duv = duv_dic[c]
+                        tmp.append(duv)
+                        test_item = '{}_{}_{}_duv'.format(br_pattern, posIdx, c)
+                        test_log.set_measured_value_by_name_ex(test_item, duv)
+                    max_duv = np.max(tmp)
+                    test_item = '{}_{}_neighbor_duv_max'.format(br_pattern, posIdx)
+                    test_log.set_measured_value_by_name_ex(test_item, max_duv)

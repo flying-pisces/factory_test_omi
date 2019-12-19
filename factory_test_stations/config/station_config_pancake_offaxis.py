@@ -5,7 +5,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\offaxis_summray'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\offaxis_summary'
 
 
 ##################################
@@ -119,7 +119,7 @@ FIXTRUE_PARTICLE_START_DLY = 0
 # LAUNCH_TIME = 4
 # DUT_MAX_WAIT_TIME =60
 # DEFAULT_VSYNC_US = 13.8889  # 72  # 111.44646
-DUT_ON_MAXRETRY = 10
+DUT_ON_MAXRETRY = 5
 
 DUT_DISPLAYSLEEPTIME = 1
 ##################################
@@ -130,6 +130,7 @@ SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\I16+Conoscope - 
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
+USE_MULTI_DB = True
 
 FOCUS_DISTANCE = 0.45
 APERTURE = 8.0
@@ -140,13 +141,12 @@ TOP = 928
 WIDTH = 1337
 HEIGHT = 1400
 IS_SAVEDB = True
-IS_EXPORT_CSV = False
-IS_EXPORT_PNG = False
-Resolution_Bin_X = 0
-Resolution_Bin_Y = 0
+IS_EXPORT_CSV = True
+IS_EXPORT_PNG = True
+Resolution_Bin_X = 360
+Resolution_Bin_Y = 360
 
 CAMERA_SN = "159496752"
-# CAMERA_SN = "Demo"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
@@ -166,11 +166,11 @@ MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255"]
 CR_TEST_PATTERNS = ['W255', 'W000']
 CENTER_AT_POLE_AZI = 'P_0_0'
 
-BRIGHTNESS_AT_POLE_AZI = [(0, 0), (30, 0), (30, 45), (30, 90), (30, 135),
+BRIGHTNESS_AT_POLE_AZI = [(0, 0), (30, 0), (30, 45), (30, 90), (30, 135), (30, 180),
                          (10, 0), (10, 45), (10, 90), (10, 135),
                          (20, 0), (20, 45), (20, 90), (20, 135)]
 BRIGHTNESS_AT_POLE_AZI_PER = [(30, 0), (30, 45), (30, 90), (30, 135), (30, 180), (30, 270)]
-
+BRIGHTNESS_AT_POLE_ASSEM = [ ((30,0), (30, 180)), ]
 COLORSHIFT_AT_POLE_AZI = [(10, 0), (10, 45), (10, 90), (10, 135),
                          (20, 0), (20, 45), (20, 90), (20, 135),
                          (30, 0), (30, 45), (30, 90), (30, 135),(30, 180), (30, 270)]
@@ -184,7 +184,8 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\22.ttxm'
-DUT_SIM = False
-EQUIPMENT_SIM = False
-FIXTURE_SIM = False
+EQUIPMENT_DEMO_DATABASE = r'E:\2019.12.17 data\offaxis_data 2019.12.17\offaxis_log 2019.12.17'
+CAMERA_SN = "Demo"
+DUT_SIM = True
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True

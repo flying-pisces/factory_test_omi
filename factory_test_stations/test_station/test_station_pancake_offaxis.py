@@ -18,6 +18,7 @@ from dut.dut import projectDut
 from test_fixture.test_fixture_project_station import projectstationFixture
 import pprint
 import types
+import glob
 
 
 class pancakeoffaxisError(Exception):
@@ -38,6 +39,7 @@ class pancakeoffaxisStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
+        self._sw_version = '1.0.2'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_offaxis.pancakeoffaxisFixture(station_config, operator_interface)
@@ -102,7 +104,8 @@ class pancakeoffaxisStation(test_station.TestStation):
             the_unit = pancakeDutOffAxis(serial_number, self._station_config, self._operator_interface)
             if self._station_config.DUT_SIM:
                 the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
-            test_log.set_measured_value_by_name_ex("TT_Version", self._equipment.version())
+            test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+            test_log.set_measured_value_by_name_ex("MPK_API_Version", self._equipment.version())
 
             the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
@@ -125,7 +128,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                                 self._fixture.mov_abs_xy(pos[0], pos[1])
                             color = the_unit.readColorSensor()
                             is_screen_on = the_unit.display_color_check(color)
-                            if retries % 4 == 0:  # reboot the driver board to avoid exp from driver board.
+                            if retries % 3 == 0:  # reboot the driver board to avoid exp from driver board.
                                 is_reboot_need = True
 
                     if not is_screen_on:
@@ -154,6 +157,21 @@ class pancakeoffaxisStation(test_station.TestStation):
 
             sequencePath = os.path.join(self._station_config.ROOT_DIR, self._station_config.SEQUENCE_RELATIVEPATH)
             self._equipment.set_sequence(sequencePath)
+            if not self._station_config.USE_MULTI_DB:
+                if not self._station_config.EQUIPMENT_SIM:
+                    uni_file_name = re.sub('_x.log', '.ttxm', test_log.get_filename())
+                    bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
+                    databaseFileName = os.path.join(bak_dir, uni_file_name)
+                    self._equipment.create_database(databaseFileName)
+                else:
+                    db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
+                    fns = glob.glob1(db_dir, '%s_*.ttxm' % (serial_number))
+                    if len(fns) > 0:
+                        databaseFileName = os.path.join(db_dir, fns[0])
+                        self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
+                        self._equipment.set_database(databaseFileName)
+                    else:
+                        raise pancakeoffaxisError('unable to find ttxm for SN: %s' % (serial_number))
 
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
 
@@ -249,17 +267,21 @@ class pancakeoffaxisStation(test_station.TestStation):
         pos_items = self._station_config.POSITIONS
         pre_color = None
         for posIdx, pos, pos_patterns in pos_items:
-            uni_file_name = re.sub('_x.log', '_{}.ttxm'.format(posIdx), test_log.get_filename())
-            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
-            databaseFileName = os.path.join(bak_dir, uni_file_name)
-            if not self._station_config.EQUIPMENT_SIM:
-                self._equipment.create_database(databaseFileName)
-            else:
-                databaseFileName = self._station_config.EQUIPMENT_DEMO_DATABASE
-                self._equipment.set_database(databaseFileName)
-
             self._operator_interface.print_to_console('clear registration\n')
             self._equipment.clear_registration()
+            if self._station_config.USE_MULTI_DB:
+                if not self._station_config.EQUIPMENT_SIM:
+                    uni_file_name = re.sub('_x.log', '_{}.ttxm'.format(posIdx), test_log.get_filename())
+                    bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
+                    databaseFileName = os.path.join(bak_dir, uni_file_name)
+                    self._equipment.create_database(databaseFileName)
+                else:
+                    db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
+                    fns = glob.glob1(db_dir, '%s_*_%s.ttxm'%(serial_number, posIdx))
+                    if len(fns) > 0:
+                        databaseFileName = os.path.join(db_dir, fns[0])
+                        self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
+                        self._equipment.set_database(databaseFileName)
 
             self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
             self._fixture.mov_abs_xy(pos[0], pos[1])
@@ -366,6 +388,14 @@ class pancakeoffaxisStation(test_station.TestStation):
                     test_item = '{}_{}_Lv_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, tlv)
 
+                for p0, p180 in self._station_config.BRIGHTNESS_AT_POLE_ASSEM:
+                    lv_x_0 = lv_dic['P_%d_%d' % p0]
+                    lv_x_180 = lv_dic['P_%d_%d' % p180]
+                    lv_0_0 = lv_dic[center_item]
+                    assem = abs((lv_x_0 - lv_x_180)/lv_0_0)
+                    test_item = '{}_{}_ASSEM_{}_{}_{}_{}'.format(posIdx, pattern, *(p0+p180))
+                    test_log.set_measured_value_by_name_ex(test_item, '{0:.4}'.format(assem))
+
                 # Brightness % @30deg wrt on axis brightness
                 brightness_items = []
                 for item in self._station_config.BRIGHTNESS_AT_POLE_AZI_PER:
@@ -383,6 +413,11 @@ class pancakeoffaxisStation(test_station.TestStation):
                 max_loc = max(lv_dic, key=lv_dic.get)
                 test_item = '{}_{}_Lv_max_pos'.format(posIdx, pattern)
                 test_log.set_measured_value_by_name_ex(test_item, max_loc)
+                inclination, azimuth = tuple(re.split('_', max_loc)[1:])
+                test_item = '{}_{}_Lv_max_pos_theta'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, int(inclination))
+                test_item = '{}_{}_Lv_max_pos_phi'.format(posIdx, pattern)
+                test_log.set_measured_value_by_name_ex(test_item, int(azimuth))
                 # endregion
 
                 if pattern in self._station_config.CR_TEST_PATTERNS:
