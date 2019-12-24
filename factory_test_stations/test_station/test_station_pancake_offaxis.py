@@ -392,7 +392,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                     lv_x_0 = lv_dic['P_%d_%d' % p0]
                     lv_x_180 = lv_dic['P_%d_%d' % p180]
                     lv_0_0 = lv_dic[center_item]
-                    assem = abs((lv_x_0 - lv_x_180)/lv_0_0)
+                    assem = (lv_x_0 - lv_x_180)/lv_0_0
                     test_item = '{}_{}_ASSEM_{}_{}_{}_{}'.format(posIdx, pattern, *(p0+p180))
                     test_log.set_measured_value_by_name_ex(test_item, '{0:.4}'.format(assem))
 
