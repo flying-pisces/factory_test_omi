@@ -156,6 +156,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         sw = datetime.datetime.now()
 
         recvobj = self._reboot()
+        self.is_screen_poweron = False
         if recvobj is None:
             raise RuntimeError("Fail to reboot because can't receive any data from dut.")
         elif int(recvobj[0]) != 0x00:
@@ -357,10 +358,10 @@ class projectDut(hardware_station_common.test_station.dut.DUT):
         pass
 
     def initialize(self):
-        self._operator_interface.print_to_console("Initializing pancake uniformity Fixture\n")
+        self._operator_interface.print_to_console("Initializing pancake dut...\n")
 
     def close(self):
-        self._operator_interface.print_to_console("Closing pancake uniformity Fixture\n")
+        self._operator_interface.print_to_console("Closing pancake dut...\n")
 
     def __getattr__(self, item):
         def not_find(*args, **kwargs):

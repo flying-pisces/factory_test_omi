@@ -7,6 +7,8 @@ import glob
 import serial
 import serial.tools.list_ports
 import time
+import re
+import pprint
 
 class pancakeuniformityFixtureError(Exception):
     pass
@@ -32,7 +34,14 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self.equipment = None
 
     def is_ready(self):
-        pass
+        if self._serial_port is not None:
+            resp = self._read_response(2)
+            btn_dic = {2 : r'BUTTON_LEFT:\d', 1 : r'BUTTON_RIGHT:\d', 0 : r'BUTTON:\d'}
+            if resp:
+                for key, item in btn_dic.items():
+                    items = filter(lambda r: re.match(item, r, re.I), resp)
+                    if items:
+                        return key
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing auo uniformity Fixture\n")
@@ -74,13 +83,17 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
             print("flushed")
         return bytes_written
 
-    def _read_response(self):
+    def _read_response(self, timeout=5):
         response = []
         line_in = ""
-        while (line_in != "@_@"):
+        tim = time.time()
+        while (not re.search("@_@", line_in, re.IGNORECASE)
+               and (time.time() - tim < timeout)):
             line_in = self._serial_port.readline()
-            if (line_in != ""):
+            if line_in != "":
                 response.append(line_in)
+        if self._verbose and len(response) > 1:
+            pprint.pprint(response)
         return response
 
     ######################
