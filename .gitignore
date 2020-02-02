@@ -2,13 +2,6 @@
 *.un~
 *.md~
 *.xml
-*.xml
-*.xml
-*.xml
-*.xml
-*.xml
-*.xml
-*.xml
 
 # C extensions
 *.so
@@ -55,3 +48,6 @@ output
 *.orig
 *._*
 VERSION.TXT
+*.ttxm
+*.csv
+*.txt
