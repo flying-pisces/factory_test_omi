@@ -30,9 +30,16 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
         if self._serial_port is not None:
             resp = self._read_response(2)
             if resp:
-                items = filter(lambda r: re.match(r'LOAD:\d+', r, re.I), resp)
-                if items:
-                    return int((items[0].split(self._start_delimiter))[1].split(self._end_delimiter)[0]) == 0x00
+                if not hasattr(self._station_config, 'DUT_LITUP_OUTSIDE') or not self._station_config.DUT_LITUP_OUTSIDE:
+                    items = filter(lambda r: re.match(r'LOAD:\d+', r, re.I), resp)
+                    if items:
+                        return int((items[0].split(self._start_delimiter))[1].split(self._end_delimiter)[0]) == 0x00
+                else:
+                    btn_dic = {2 : r'BUTTON_LEFT:\d', 1 : r'BUTTON_RIGHT:\d', 0 : r'BUTTON:\d'}
+                    for key, item in btn_dic.items():
+                        items = filter(lambda r: re.match(item, r, re.I), resp)
+                        if items:
+                            return key
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing offaxis Fixture\n")

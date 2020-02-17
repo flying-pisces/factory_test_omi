@@ -54,6 +54,10 @@ class pancakeoffaxisStation(test_station.TestStation):
                 self._particle_counter_start_time = datetime.datetime.now()
         self._overall_errorcode = ''
         self._first_failed_test_result = None
+        self._lastest_serial_number = None
+        self._the_unit = None
+        self._is_screen_on_by_op = False
+        self._retries_screen_on = 0
 
 
     def initialize(self):
@@ -99,54 +103,49 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._overall_errorcode = ''
         # self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
         try:
+            is_screen_on = False
             self._fixture.flush_data()
             self._operator_interface.print_to_console("Testing Unit %s\n" %serial_number)
-            the_unit = pancakeDutOffAxis(serial_number, self._station_config, self._operator_interface)
-            if self._station_config.DUT_SIM:
-                the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
-            test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
-            test_log.set_measured_value_by_name_ex("MPK_API_Version", self._equipment.version())
-
-            the_unit.initialize()
-            self._operator_interface.print_to_console("Initialize DUT... \n")
-            retries = 0
-            is_screen_on = False
-
             try:
-                while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
-                    is_reboot_need = False
-                    retries += 1
-                    try:
-                        is_screen_on = the_unit.screen_on() or self._station_config.DUT_SIM
-                    except dut.DUTError as e:
-                        is_screen_on = False
-                    else:
-                        if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
-                            the_unit.display_color(self._station_config.DISP_CHECKER_COLOR)
-                            if retries == 1:  # only move the axis in the first loop.
-                                pos = self._station_config.DISP_CHECKER_LOCATION
-                                self._fixture.mov_abs_xy(pos[0], pos[1])
-                            color = the_unit.readColorSensor()
-                            is_screen_on = the_unit.display_color_check(color)
-                            if retries % 3 == 0:  # reboot the driver board to avoid exp from driver board.
-                                is_reboot_need = True
+                if not hasattr(self._station_config, 'DUT_LITUP_OUTSIDE') or not self._station_config.DUT_LITUP_OUTSIDE:
+                    self._the_unit.initialize()
+                    self._operator_interface.print_to_console("Initialize DUT... \n")
+                    self._retries_screen_on = 0
+                    while self._retries_screen_on < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
+                        is_reboot_need = False
+                        self._retries_screen_on += 1
+                        try:
+                            is_screen_on = self._the_unit.screen_on() or self._station_config.DUT_SIM
+                        except dut.DUTError as e:
+                            is_screen_on = False
+                        else:
+                            if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
+                                self._the_unit.display_color(self._station_config.DISP_CHECKER_COLOR)
+                                if self._retries_screen_on == 1:  # only move the axis in the first loop.
+                                    pos = self._station_config.DISP_CHECKER_LOCATION
+                                    self._fixture.mov_abs_xy(pos[0], pos[1])
+                                color = self._the_unit.readColorSensor()
+                                is_screen_on = self._the_unit.display_color_check(color)
+                                if self._retries_screen_on % 3 == 0:  # reboot the driver board to avoid exp from driver board.
+                                    is_reboot_need = True
 
-                    if not is_screen_on:
-                        msg = 'Retry power_on {}/{} times.\n'.format(retries,
-                                                                     self._station_config.DUT_ON_MAXRETRY)
-                        self._operator_interface.print_to_console(msg)
-                        the_unit.screen_off()
-                        if is_reboot_need:
-                            self._operator_interface.print_to_console("try to reboot the driver board... \n")
-                            the_unit.reboot()
-
+                        if not is_screen_on:
+                            msg = 'Retry power_on {}/{} times.\n'.format(self._retries_screen_on,
+                                                                         self._station_config.DUT_ON_MAXRETRY)
+                            self._operator_interface.print_to_console(msg)
+                            self._the_unit.screen_off()
+                            if is_reboot_need:
+                                self._operator_interface.print_to_console("try to reboot the driver board... \n")
+                                self._the_unit.reboot()
             finally:
-                test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", retries)
-                test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", is_screen_on)
+                test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+                test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
+                test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op or is_screen_on)
 
-            if not is_screen_on:
+            if not is_screen_on and not self._retries_screen_on:  # dut can't be lit up
                 raise pancakeoffaxisError("DUT Is unable to Power on.")
 
+            test_log.set_measured_value_by_name_ex("MPK_API_Version", self._equipment.version())
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
@@ -175,14 +174,14 @@ class pancakeoffaxisStation(test_station.TestStation):
 
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
 
-            self.offaxis_test_do(serial_number, test_log, the_unit)
+            self.offaxis_test_do(serial_number, test_log, self._the_unit)
 
         except Exception, e:
             self._operator_interface.print_to_console("Test exception {}.\n".format(e.message))
         finally:
             self._operator_interface.print_to_console('release current test resource.\n')
-            if the_unit is not None:
-                the_unit.close()
+            if self._the_unit is not None:
+                self._the_unit.close()
             if self._fixture is not None:
                 self._fixture.unload()
                 self._fixture.button_disable()
@@ -200,7 +199,89 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._first_failed_test_result = test_log.get_first_failed_test_result()
         return self._overall_result, self._first_failed_test_result
 
+    def validate_sn(self, serial_num):
+        self._lastest_serial_number = serial_num
+        return test_station.TestStation.validate_sn(self, serial_num)
+
     def is_ready(self):
+        serial_number = self._lastest_serial_number
+        self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
+        self._the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
+        if self._station_config.DUT_SIM:
+            self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
+        if not hasattr(self._station_config, 'DUT_LITUP_OUTSIDE') or not self._station_config.DUT_LITUP_OUTSIDE:
+            return self.is_ready_litup_inside()
+        else:
+            return self.is_ready_litup_outside()
+
+    def is_ready_litup_outside(self):
+        ready = False
+        cancel = False
+        power_on_trigger = False
+        self._is_screen_on_by_op = False
+        self._retries_screen_on = 0
+        try:
+            self._fixture.button_enable()
+            timeout_for_btn_idle = 20
+            timeout_for_dual = timeout_for_btn_idle
+            self._the_unit.initialize()
+            self._operator_interface.print_to_console("Initialize DUT... \n")
+            while timeout_for_dual > 0:
+                if ready or cancel:
+                    break
+                msg_prompt = 'Load DUT, and then Press L-Btn(Cancel)/R-Btn(Litup) in %s S...'
+                if power_on_trigger:
+                    msg_prompt = 'Press Dual-Btn(Load)/L-Btn(Cancel)/R-Btn(Re Litup)  in %s S...'
+                self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow');
+                if self._station_config.FIXTURE_SIM:
+                    self._is_screen_on_by_op = True
+                    ready = True
+                ready_status = self._fixture.is_ready()
+                if ready_status is not None:
+                    if ready_status == 0x00:
+                        if not power_on_trigger:
+                            self._operator_interface.print_to_console(
+                                'Press L-Btn(Cancel)/R-Btn(Litup) to lit up firstly.\n')
+                        else:
+                            ready = True  # Start to test.
+                            self._is_screen_on_by_op = True
+                    elif ready_status == 0x01:
+                        self._operator_interface.print_to_console('Try to litup DUT.\n')
+                        self._retries_screen_on += 1
+                        if not power_on_trigger:
+                            self._the_unit.screen_on()
+                            # self._the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
+                            power_on_trigger = True
+                            timeout_for_dual = timeout_for_btn_idle
+                        else:
+                            self._the_unit.screen_off()
+                            self._the_unit.reboot()  # Reboot
+                            self._the_unit.screen_on()
+                            # self._the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
+                            power_on_trigger = True
+                            timeout_for_dual = timeout_for_btn_idle
+                    elif ready_status == 0x02:
+                        cancel = True  # Cancel test.
+                time.sleep(0.1)
+                timeout_for_dual -= 1
+            if not ready:
+                if not cancel:
+                    self._operator_interface.print_to_console(
+                        'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
+                else:
+                    self._operator_interface.print_to_console(
+                        'Cancel start signal from dual %s.\n' % timeout_for_dual)
+                self._the_unit.close()
+                self._the_unit = None
+                raise test_station.TestStationSerialNumberError('Fail to Wait for press dual-btn ...')
+        finally:
+            try:
+                self._fixture.button_disable()
+            except:
+                pass
+            self._operator_interface.prompt('', 'SystemButtonFace')
+
+    def is_ready_litup_inside(self):
         ready = False
         try:
             self._fixture.button_enable()
