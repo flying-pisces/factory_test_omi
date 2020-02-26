@@ -1,7 +1,6 @@
 import hardware_station_common.test_station.test_station as test_station
-import test_station.test_fixture.test_fixture_pancake_uniformity as test_fixture_pancake_uniformity
-import test_station.test_equipment.test_equipment_pancake_uniformity as test_equipment_pancake_uniformity
-import test_station.dut as dut
+
+import hardware_station_common.test_station.dut as dut
 import StringIO
 import numpy as np
 import os
