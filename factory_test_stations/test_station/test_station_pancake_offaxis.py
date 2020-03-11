@@ -412,10 +412,10 @@ class pancakeoffaxisStation(test_station.TestStation):
                     for ra in result:
                         r = re.sub(' ', '', ra)
                         raw_test_item = (pattern + "_" + r)
-                        test_item = re.sub(r'\(Lv\)|Lv', '_Lv', raw_test_item)
+                        test_item = re.sub(r'\((Lv|Luminance)\)', '_Lv', raw_test_item)
                         test_item = re.sub(r'\s|%', '', test_item)
 
-                        lv_match = re.search(r'(P_\d+_\d+)\(lv\)', r, re.I | re.S)
+                        lv_match = re.search(r'(P_\d+_\d+)\((lv|Luminance)\)', r, re.I | re.S)
                         if lv_match:
                             lv_dic[lv_match.groups()[0]] = float(result[ra])
                         cx_match = re.search(r'(P_\d+_\d+)\(cx\)', r, re.I|re.S)
