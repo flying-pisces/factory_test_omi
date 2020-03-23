@@ -327,8 +327,11 @@ class pancakeoffaxisStation(test_station.TestStation):
                         os.mkdir(output_dir, 777)
                     meas_list = self._equipment.get_measurement_list()
                     exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
+                    measurement = self._station_config.MEASUREMENTS[i]
+                    if not self._station_config.USE_MULTI_DB :
+                        measurement = '{}_{}'.format(measurement, posIdx)
                     for meas in meas_list:
-                        if meas['Measurement Setup'] != self._station_config.MEASUREMENTS[i]:
+                        if meas['Measurement Setup'] != measurement:
                             continue
 
                         id = meas['Measurement ID']
@@ -376,8 +379,11 @@ class pancakeoffaxisStation(test_station.TestStation):
                                                               .format(test_pattern, posIdx))
                     continue
                 i = self._station_config.PATTERNS.index(test_pattern)
-                analysis = self._station_config.ANALYSIS[i]
+
                 pattern = self._station_config.PATTERNS[i]
+                analysis = self._station_config.ANALYSIS[i]
+                if not self._station_config.USE_MULTI_DB:
+                    analysis = '{}_{}'.format(analysis, posIdx)
                 self._operator_interface.print_to_console(
                     "Panel Measurement Pattern: %s , Position Id %s.\n" % (pattern, posIdx))
                 # the_unit.display_color(self._station_config.COLORS[i])
@@ -474,7 +480,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                     lv_x_180 = lv_dic['P_%d_%d' % p180]
                     lv_0_0 = lv_dic[center_item]
                     assem = (lv_x_0 - lv_x_180)/lv_0_0
-                    test_item = '{}_{}_ASSEM_{}_{}_{}_{}'.format(posIdx, pattern, *(p0+p180))
+                    test_item = '{}_{}_ASYM_{}_{}_{}_{}'.format(posIdx, pattern, *(p0+p180))
                     test_log.set_measured_value_by_name_ex(test_item, '{0:.4}'.format(assem))
 
                 # Brightness % @30deg wrt on axis brightness
