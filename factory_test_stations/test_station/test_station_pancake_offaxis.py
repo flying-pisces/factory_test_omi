@@ -142,7 +142,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
                 test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op or is_screen_on)
 
-            if not is_screen_on and not self._retries_screen_on:  # dut can't be lit up
+            if not is_screen_on and not self._is_screen_on_by_op:  # dut can't be lit up
                 raise pancakeoffaxisError("DUT Is unable to Power on.")
 
             test_log.set_measured_value_by_name_ex("MPK_API_Version", self._equipment.version())
@@ -206,7 +206,7 @@ class pancakeoffaxisStation(test_station.TestStation):
     def is_ready(self):
         serial_number = self._lastest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
-        self._the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
+        self._the_unit = dut.pancakeDutOffAxis(serial_number, self._station_config, self._operator_interface)
         if self._station_config.DUT_SIM:
             self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
         if not hasattr(self._station_config, 'DUT_LITUP_OUTSIDE') or not self._station_config.DUT_LITUP_OUTSIDE:
@@ -421,13 +421,13 @@ class pancakeoffaxisStation(test_station.TestStation):
                         test_item = re.sub(r'\((Lv|Luminance)\)', '_Lv', raw_test_item)
                         test_item = re.sub(r'\s|%', '', test_item)
 
-                        lv_match = re.search(r'(P_\d+_\d+)\((lv|Luminance)\)', r, re.I | re.S)
+                        lv_match = re.search(r'(P_[0-9.]+\d*_[0-9.]+\d*)\((lv|Luminance)\)', r, re.I | re.S)
                         if lv_match:
                             lv_dic[lv_match.groups()[0]] = float(result[ra])
-                        cx_match = re.search(r'(P_\d+_\d+)\(cx\)', r, re.I|re.S)
+                        cx_match = re.search(r'(P_[0-9.]+\d*_[0-9.]+\d*)\(cx\)', r, re.I|re.S)
                         if cx_match:
                             cx_dic[cx_match.groups()[0]] = float(result[ra])
-                        cy_match = re.search(r'(P_\d+_\d+)\(cy\)', r, re.I|re.S)
+                        cy_match = re.search(r'(P_[0-9.]+\d*_[0-9.]+\d*)\(cy\)', r, re.I|re.S)
                         if cy_match:
                             cy_dic[cy_match.groups()[0]] = float(result[ra])
 
@@ -470,14 +470,14 @@ class pancakeoffaxisStation(test_station.TestStation):
                 # Brightness at 30deg polar angle (nits)
                 brightness_items = []
                 for item in self._station_config.BRIGHTNESS_AT_POLE_AZI:
-                    tlv = lv_dic['P_%d_%d' % item]
+                    tlv = lv_dic['P_%s_%s' % item]
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, tlv)
 
                 for p0, p180 in self._station_config.BRIGHTNESS_AT_POLE_ASSEM:
-                    lv_x_0 = lv_dic['P_%d_%d' % p0]
-                    lv_x_180 = lv_dic['P_%d_%d' % p180]
+                    lv_x_0 = lv_dic['P_%s_%s' % p0]
+                    lv_x_180 = lv_dic['P_%s_%s' % p180]
                     lv_0_0 = lv_dic[center_item]
                     assem = (lv_x_0 - lv_x_180)/lv_0_0
                     test_item = '{}_{}_ASYM_{}_{}_{}_{}'.format(posIdx, pattern, *(p0+p180))
@@ -486,13 +486,13 @@ class pancakeoffaxisStation(test_station.TestStation):
                 # Brightness % @30deg wrt on axis brightness
                 brightness_items = []
                 for item in self._station_config.BRIGHTNESS_AT_POLE_AZI_PER:
-                    tlv = lv_dic['P_%d_%d' % item] / lv_dic[center_item]
+                    tlv = lv_dic['P_%s_%s' % item] / lv_dic[center_item]
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_Proportion_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, tlv)
 
                 for item in self._station_config.COLORSHIFT_AT_POLE_AZI:
-                    duv = duv_dic['P_%d_%d' % item]
+                    duv = duv_dic['P_%s_%s' % item]
                     test_item = '{}_{}_duv_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, duv)
 
@@ -518,7 +518,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                 d = self._station_config.CR_TEST_PATTERNS[1]
 
                 for item in self._station_config.CR_AT_POLE_AZI:
-                    item_key = 'P_%d_%d' % item
+                    item_key = 'P_%s_%s' % item
                     cr = lv_cr_items[w][item_key] / lv_cr_items[d][item_key]
                     test_item = '{}_CR_{}_{}'.format(posIdx, *item)
                     test_log.set_measured_value_by_name_ex(test_item, cr)

@@ -4,6 +4,7 @@ from pymodbus.register_write_message import WriteSingleRegisterResponse
 from pymodbus.register_read_message import ReadHoldingRegistersResponse
 from pymodbus.constants import Defaults
 import time
+import ctypes
 sys.path.append('../../')
 import station_config
 
@@ -21,9 +22,12 @@ class ParticleCounter(object):
     def initialize(self):
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
             if not self._init:
+                parity = 'E'
+                if hasattr(station_config, 'PARTICLE_COUNTER_APC') and station_config.PARTICLE_COUNTER_APC:
+                    parity = 'N'
                 Defaults.Retries = 5
                 Defaults.RetryOnEmpty = True
-                self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity='E',
+                self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
                                                                    stopbits=1,
                                                                    port=self._station_config.FIXTURE_PARTICLE_COMPORT,
                                                                    timeout=2000)
@@ -61,7 +65,11 @@ class ParticleCounter(object):
                     retries += 1
                     time.sleep(0.5)
                 else:
-                    val = rs.registers[0] * 65535 + rs.registers[1]
+                    # val = rs.registers[0] * 65535 + rs.registers[1]
+                    # modified by elton.  for apc-r210/310
+                    val = ctypes.c_int32(rs.registers[0]  + (rs.registers[1] << 16)).value
+                    if hasattr(station_config, 'PARTICLE_COUNTER_APC') and station_config.PARTICLE_COUNTER_APC:
+                        val = (ctypes.c_int32((rs.registers[0] << 16) + rs.registers[1])).value
                     break
             if val is None:
                 raise ParticleCounterError('Failed to read data from particle counter.')
@@ -69,7 +77,7 @@ class ParticleCounter(object):
 
     def particle_counter_state(self):
         if self._particle_counter_client is not None:
-            rs = self._particle_counter_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
+            rs = self._particle_counter_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
                                                                       2,
                                                                       unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
             if rs is None or rs.isError():
@@ -90,9 +98,23 @@ if __name__ == '__main__':
     print 'Self check for %s' % (__file__,)
     station_config.load_station('pancake_uniformity')
     station_config.FIXTURE_PARTICLE_COUNTER = True
+    station_config.FIXTURE_PARTICLE_COMPORT = 'COM5'
+    station_config.FIXTRUE_PARTICLE_ADDR_READ = 8
+    station_config.FIXTRUE_PARTICLE_ADDR_START = 30
+    station_config.FIXTRUE_PARTICLE_ADDR_STATUS = 30
+
 
     the_particle_counter = ParticleCounter(station_config)
     the_particle_counter.initialize()
+
+    print the_particle_counter.particle_counter_state()
+
+    the_particle_counter.particle_counter_on()
+
+    print the_particle_counter.particle_counter_read_val()
+
+    the_particle_counter.particle_counter_off()
+
     # the_particle_counter.particle_counter_on()
     # the_particle_counter.particle_counter_off()
     # if the_particle_counter.particle_counter_state() == 0:

@@ -317,14 +317,14 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
     def _setColor(self, c = (255,255,255)):
         command = '{0},0x{1[0]:X},0x{1[1]:X},0x{1[2]:X}'.format(self._station_config.COMMAND_DISP_SETCOLOR, c)
         self._write_serial_cmd(command)
-        time.sleep(1)
+        # time.sleep(1)
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_SETCOLOR, response)
 
     def _MIPI_read(self, reg, typ):
         command = '{0},{1},{2}'.format(self._station_config.COMMAND_DISP_READ, reg, typ)
         self._write_serial_cmd(command)
-        time.sleep(1)
+        # time.sleep(1)
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_READ, response)
 
