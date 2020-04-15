@@ -22,9 +22,7 @@ class ParticleCounter(object):
     def initialize(self):
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
             if not self._init:
-                parity = 'E'
-                if hasattr(station_config, 'PARTICLE_COUNTER_APC') and station_config.PARTICLE_COUNTER_APC:
-                    parity = 'N'
+                parity = 'N'
                 Defaults.Retries = 5
                 Defaults.RetryOnEmpty = True
                 self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
@@ -96,24 +94,24 @@ if __name__ == '__main__':
     import hardware_station_common.operator_interface.operator_interface
 
     print 'Self check for %s' % (__file__,)
-    station_config.load_station('pancake_uniformity')
+    station_config.load_station('pancake_offaxis')
     station_config.FIXTURE_PARTICLE_COUNTER = True
-    station_config.FIXTURE_PARTICLE_COMPORT = 'COM5'
-    station_config.FIXTRUE_PARTICLE_ADDR_READ = 8
-    station_config.FIXTRUE_PARTICLE_ADDR_START = 30
-    station_config.FIXTRUE_PARTICLE_ADDR_STATUS = 30
+    station_config.FIXTURE_PARTICLE_COMPORT = 'COM3'
+    # station_config.FIXTRUE_PARTICLE_ADDR_READ = 8
+    # station_config.FIXTRUE_PARTICLE_ADDR_START = 30
+    # station_config.FIXTRUE_PARTICLE_ADDR_STATUS = 30
 
 
     the_particle_counter = ParticleCounter(station_config)
     the_particle_counter.initialize()
 
-    print the_particle_counter.particle_counter_state()
+    # print the_particle_counter.particle_counter_state()
 
-    the_particle_counter.particle_counter_on()
+    # the_particle_counter.particle_counter_on()
 
     print the_particle_counter.particle_counter_read_val()
 
-    the_particle_counter.particle_counter_off()
+    # the_particle_counter.particle_counter_off()
 
     # the_particle_counter.particle_counter_on()
     # the_particle_counter.particle_counter_off()
