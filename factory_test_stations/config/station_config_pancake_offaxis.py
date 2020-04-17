@@ -4,7 +4,7 @@
 # Where is the root directory.
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
-ROOT_DIR = r'C:\oculus\factory_test_omi_0413\factory_test_stations'
+ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\offaxis_summary'
 
 
@@ -105,7 +105,7 @@ FIXTURE_PTB_ON_TIME = 1
 FIXTURE_USB_OFF_TIME = 1
 FIXTURE_USB_ON_TIME = 1
 FIXTURE_PTB_UNLOAD_DLY = 6
-FIXTURE_PARTICLE_COUNTER = True
+FIXTURE_PARTICLE_COUNTER = False
 
 FIXTRUE_PARTICLE_ADDR_READ = 40006
 FIXTRUE_PARTICLE_ADDR_START = 40003
@@ -176,14 +176,14 @@ CR_TEST_PATTERNS = ['W255', 'W000']
 CENTER_AT_POLE_AZI = 'P_0_0'
 
 BRIGHTNESS_AT_POLE_AZI = [(0, 0),
-                         (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315),
-                         (10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10, 180), (10, 225), (10, 270), (10, 315),
-                         (20, 0), (20, 22), (20, 45), (20, 90), (20, 135), (20, 180), (20, 225), (20, 270), (20, 315),]
+                         (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338),
+                         (10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10, 180), (10, 225), (10, 270), (10, 315), (10, 68), (10, 112), (10, 158), (10, 202), (10, 248), (10, 292), (10, 338),
+                         (20, 0), (20, 22), (20, 45), (20, 90), (20, 135), (20, 180), (20, 225), (20, 270), (20, 315), (20, 68), (20, 112), (20, 158), (20, 202), (20, 248), (20, 292), (20, 338)]
 BRIGHTNESS_AT_POLE_AZI_PER = [(30, 0), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315)]
 BRIGHTNESS_AT_POLE_ASSEM = [ ((30, 0), (30, 180)), ]
-COLORSHIFT_AT_POLE_AZI = [(10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10, 180), (10, 225), (10, 270), (10, 315),
-                         (20, 0), (20, 22), (20, 45), (20, 90), (20, 135), (20, 180), (20, 225), (20, 270), (20, 315),
-                         (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315)]
+COLORSHIFT_AT_POLE_AZI = [(10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10, 180), (10, 225), (10, 270), (10, 315), (10, 68), (10, 112), (10, 158), (10, 202), (10, 248), (10, 292), (10, 338),
+                         (20, 0), (20, 22), (20, 45), (20, 90), (20, 135), (20, 180), (20, 225), (20, 270), (20, 315), (20, 68), (20, 112), (20, 158), (20, 202), (20, 248), (20, 292), (20, 338),
+                         (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338)]
 
 CR_AT_POLE_AZI = [(0, 0), (30, 0), (30, 90), (30, 180), (30, 270)]
 
@@ -195,8 +195,8 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis'
-#CAMERA_SN = "Demo"
-DUT_SIM = False
-EQUIPMENT_SIM = False
-FIXTURE_SIM = False
+CAMERA_SN = "Demo"
+DUT_SIM = True
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True
 
