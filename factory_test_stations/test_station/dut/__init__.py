@@ -1,2 +1,2 @@
 __all__ = ['dut','dut_offaxis']
-from dut import *
+from test_station.dut.dut import *

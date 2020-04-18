@@ -1,5 +1,4 @@
 import hardware_station_common.test_station.test_station as test_station
-
 import hardware_station_common.test_station.dut as dut
 import StringIO
 import numpy as np
@@ -12,8 +11,8 @@ import re
 import filecmp
 from verifiction.particle_counter import ParticleCounter
 from verifiction.dut_checker import DutChecker
-from factory_test_stations.test_station.test_fixture.test_fixture_project_station import projectstationFixture
-from factory_test_stations.test_station.dut.dut import  projectDut
+#from factory_test_stations.test_station.test_fixture.test_fixture_project_station import projectstationFixture
+#from factory_test_stations.test_station.dut.dut import  projectDut
 import types
 from itertools import islice
 import cv2

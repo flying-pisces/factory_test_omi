@@ -14,35 +14,20 @@ my_ds.launch_displayserver()
 print("White 255")
 my_ds.display_color((255,255,255))
 
-print("gray 180")
-my_ds.display_color((180,180,180))
+print("centersquare")
+my_ds.display_image("CenterSquare.png")
 
-print("gray 127")
-my_ds.display_color((127, 127, 127))
-
-print("gray 090")
-my_ds.display_color((90, 90, 90))
-
-print("gray 64")
-my_ds.display_color((64, 64, 64))
-
-print("gray 35")
-my_ds.display_color((35, 35, 35))
-
-print("gray 25")
-my_ds.display_color((25, 25, 25))
-
-print("gray 12")
-my_ds.display_color((12, 12, 12))
-
-print("red")
-my_ds.display_color((255, 0, 0))
+print("Checkerboard9x9AUO")
+my_ds.display_image("Checkerboard9x9AUO.png")
 
 print("green")
 my_ds.display_color((0, 255, 0))
 
 print("blue")
 my_ds.display_color((0, 0, 255))
+
+print("red")
+my_ds.display_color((255, 0, 0))
 
 
 my_ds.screen_off()

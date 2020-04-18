@@ -1,0 +1,45 @@
+2020/04/09 01:04:30.973 | _ComputeRawData
+2020/04/09 01:04:31.040 | Defect correction enabled
+2020/04/09 01:04:31.043 | Bias substraction enabled
+2020/04/09 01:04:31.249 | PRNU correction enabled
+2020/04/09 01:04:31.249 | Apply New PRNU Correction
+2020/04/09 21:18:37.582 | _ComputeRawData
+2020/04/09 21:18:37.645 | Defect correction enabled
+2020/04/09 21:18:37.645 | Bias substraction enabled
+2020/04/09 21:18:37.848 | PRNU correction enabled
+2020/04/09 21:18:37.863 | Apply New PRNU Correction
+2020/04/09 21:18:44.034 | _ComputeRawData
+2020/04/09 21:18:44.096 | Defect correction enabled
+2020/04/09 21:18:44.096 | Bias substraction enabled
+2020/04/09 21:18:44.299 | PRNU correction enabled
+2020/04/09 21:18:44.299 | Apply New PRNU Correction
+2020/04/09 21:31:25.104 | _ComputeRawData
+2020/04/09 21:31:25.166 | Defect correction enabled
+2020/04/09 21:31:25.166 | Bias substraction enabled
+2020/04/09 21:31:25.370 | PRNU correction enabled
+2020/04/09 21:31:25.370 | Apply New PRNU Correction
+2020/04/09 21:31:31.071 | _ComputeRawData
+2020/04/09 21:31:31.134 | Defect correction enabled
+2020/04/09 21:31:31.134 | Bias substraction enabled
+2020/04/09 21:31:31.337 | PRNU correction enabled
+2020/04/09 21:31:31.337 | Apply New PRNU Correction
+2020/04/09 21:34:19.516 | _ComputeRawData
+2020/04/09 21:34:19.579 | Defect correction enabled
+2020/04/09 21:34:19.594 | Bias substraction enabled
+2020/04/09 21:34:19.797 | PRNU correction enabled
+2020/04/09 21:34:19.797 | Apply New PRNU Correction
+2020/04/09 21:34:25.468 | _ComputeRawData
+2020/04/09 21:34:25.546 | Defect correction enabled
+2020/04/09 21:34:25.546 | Bias substraction enabled
+2020/04/09 21:34:25.749 | PRNU correction enabled
+2020/04/09 21:34:25.749 | Apply New PRNU Correction
+2020/04/09 22:03:51.907 | _ComputeRawData
+2020/04/09 22:03:51.979 | Defect correction enabled
+2020/04/09 22:03:51.981 | Bias substraction enabled
+2020/04/09 22:03:52.205 | PRNU correction enabled
+2020/04/09 22:03:52.205 | Apply New PRNU Correction
+2020/04/09 22:03:58.187 | _ComputeRawData
+2020/04/09 22:03:58.262 | Defect correction enabled
+2020/04/09 22:03:58.264 | Bias substraction enabled
+2020/04/09 22:03:58.489 | PRNU correction enabled
+2020/04/09 22:03:58.490 | Apply New PRNU Correction
