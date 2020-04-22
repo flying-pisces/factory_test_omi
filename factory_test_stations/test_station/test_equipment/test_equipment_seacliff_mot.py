@@ -51,7 +51,6 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                 self._operator_interface.print_to_console("Equipment Version is \n" + str(self._version))
         return self._version
 
-
     def get_config(self):
         if self._config is None:
             ret = self._device.CmdGetConfig()
@@ -75,14 +74,145 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
             self._operator_interface.print_to_console("Open Status is \n" + str(self._open))
         return self._open
 
+    def reset(self):
+        ret = self._device.CmdReset()
+        if self._verbose:
+            self._operator_interface.print_to_console("Open Status is \n" + str(self._log(ret, "CmdReset")))
+        else:
+            self._log(ret, "CmdReset")
+        return self._log(ret, "CmdReset")
+
+    def close(self):
+        ret = self._device.CmdClose()
+        if self._verbose:
+            self._operator_interface.print_to_console("Open Status is \n" + str(self._log(ret, "CmdClose")))
+        else:
+            self._log(ret, "CmdClose")
+        return self._log(ret, "CmdClose")
+
+    def kill(self):
+        self._device.QuitApplication()
+
     def is_ready(self):
         pass
 
-    def initialize(self):
-        self._operator_interface.print_to_console("Initializing project station Fixture\n")
+    ########### Measure ###########
+    def measure_and_export(self, measuretype):
+        if measuretype == 0:
+            self.__perform_capture()
+        elif measuretype == 1:
+            self._perform_capture_sequence()
+        else:
+            self._operator_interface.print_to_console("TestType Setting is Wrong \n" + self._error_message)
+        return
 
-    def close(self):
-        self._operator_interface.print_to_console("Closing project station Fixture\n")
+    def __perform_capture(self):
+        setupConfig = {"sensorTemperature": 25.0,
+                       "eFilter": Conoscope.Filter.Yb.value,
+                       "eNd": Conoscope.Nd.Nd_3.value,
+                       "eIris": Conoscope.Iris.aperture_4mm.value}
+        ret = self._device.CmdSetup(setupConfig)
+        self._log(ret, "CmdSetup")
+
+        ret = self._device.CmdSetupStatus()
+        self._log(ret, "CmdSetupStatus")
+
+        measureConfig = {"exposureTimeUs": 100000,
+                         "nbAcquisition": 1}
+
+        ret = self._device.CmdMeasure(measureConfig)
+        self._log(ret, "CmdMeasure")
+
+        ret = self._device.CmdExportRaw()
+        self._log(ret, "CmdExportRaw")
+
+        ret = self._device.CmdExportProcessed()
+        self._log(ret, "CmdExportProcessed")
+
+        # change capture path
+
+        config = {"capturePath": "./CaptureFolder2"}
+        ret = self._device.CmdSetConfig(config)
+        self._log(ret, "CmdSetup")
+
+        setupConfig = {"sensorTemperature": 25.0,
+                       "eFilter": Conoscope.Filter.Xz.value,
+                       "eNd": Conoscope.Nd.Nd_1.value,
+                       "eIris": Conoscope.Iris.aperture_2mm.value}
+        ret = self._device.CmdSetup(setupConfig)
+        self._log(ret, "CmdSetup")
+
+        ret = self._device.CmdSetupStatus()
+        self._log(ret, "CmdSetupStatus")
+
+        measureConfig = {"exposureTimeUs": 90000,
+                         "nbAcquisition": 1}
+
+        ret = self._device.CmdMeasure(measureConfig)
+        self._log(ret, "CmdMeasure")
+
+        ret = self._device.CmdExportRaw()
+        self._log(ret, "CmdExportRaw")
+
+        ret = self._device.CmdExportProcessed()
+        self._log(ret, "CmdExportProcessed")
+        return
+
+    def __perform_capture_sequence(self):
+        # check capture sequence
+        ret = self._device.CmdGetCaptureSequence()
+        self._log(ret, "CmdGetCaptureSequence")
+
+        captureSequenceConfig = {"sensorTemperature": 24.0,
+                                 "bWaitForSensorTemperature": False,
+                                 "eNd": Conoscope.Nd.Nd_1.value,
+                                 "eIris": Conoscope.Iris.aperture_4mm.value,
+                                 "exposureTimeUs": 12000,
+                                 "nbAcquisition": 1,
+                                 "bAutoExposure": False,
+                                 "bUseExpoFile": False}
+
+        ret = self._device.CmdCaptureSequence(captureSequenceConfig)
+        self._log(ret, "CmdCaptureSequence")
+
+        # wait for the end of the processing
+        done = False
+
+        processStateCurrent = None
+        processStepCurrent = None
+
+        print("wait for the sequence to be finished")
+
+        while done is False:
+            ret = self._device.CmdCaptureSequenceStatus()
+            # LogFunction(ret, "CmdCaptureSequenceStatus")
+
+            processState = ret['state']
+            processStep = ret['currentSteps']
+            processNbSteps = ret['nbSteps']
+
+            if (processStateCurrent is None) or (processStateCurrent != processState) or (
+                    processStepCurrent != processStep):
+                print("  step {0}/{1} state {2}".format(processStep, processNbSteps, processState))
+
+                processStateCurrent = processState
+                processStepCurrent = processStep
+
+            if processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Error:
+                done = True
+                print("Error happened")
+            elif processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Done:
+                done = True
+                print("Process Done")
+
+            if done is False:
+                time.sleep(1)
+            return
+
+    ########### Export ###########
+    def initialize(self):
+        self._operator_interface.print_to_console("Initializing Seacliff MOT Equipment \n")
+
 
 def print_to_console(self, msg):
     pass
@@ -93,7 +223,6 @@ if __name__ == "__main__":
     import types
     import station_config
     import hardware_station_common.operator_interface.operator_interface
-    import station_config
 
     station_config.load_station('seacliff_mot')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
@@ -104,3 +233,8 @@ if __name__ == "__main__":
               "cfgPath": "./Cfg"}
     print(the_equipment.set_config(config))
     print(the_equipment.open())
+    the_equipment.measure_and_export(station_config.TESTTYPE)
+    print(the_equipment.reset())
+    print(the_equipment.close())
+
+    the_equipment.kill()

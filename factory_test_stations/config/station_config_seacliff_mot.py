@@ -118,10 +118,9 @@ DUT_ON_MAXRETRY = 5
 ##################################
 # Test Equipment related parameters
 IS_VERBOSE = True
-MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
-SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\Myzy_Sequence_10-3-19.seqx'
-CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
-ANALYSIS_RELATIVEPATH = r'factory-test_logs'
+CFG_PATH = r'test_station\Cfg'
+CAPTURE_PATH = r'test_station\CaptureFolder1'
+TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
 
 FOCUS_DISTANCE = 0.45
 APERTURE = 8.0
