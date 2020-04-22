@@ -19,8 +19,10 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         self._device = Conoscope()
         self._error_message = self.name + "is out of work"
         self._version = None
+        self._config = None
+        self._open = None
 
-## Eldim specific return.
+    ## Eldim specific return.
     def _log(self, ret, functionName):
         print("  {0}".format(functionName))
 
@@ -49,6 +51,30 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                 self._operator_interface.print_to_console("Equipment Version is \n" + str(self._version))
         return self._version
 
+
+    def get_config(self):
+        if self._config is None:
+            ret = self._device.CmdGetConfig()
+            self._config = self._log(ret, "CmdGetConfig")
+            if self._verbose:
+                self._operator_interface.print_to_console("Current Configuration is \n" + str(self._config))
+        return self._config
+
+    def set_config(self, configsetting):
+        ret = self._device.CmdSetConfig(configsetting)
+        self._config = self._log(ret, "CmdSetConfig")
+        if self._verbose:
+            self._operator_interface.print_to_console("Current Configuration is \n" + str(self._config))
+        return self._config
+
+    ########### Equipment Operation ###########
+    def open(self):
+        ret = self._device.CmdOpen()
+        self._open = self._log(ret, "CmdOpen")
+        if self._verbose:
+            self._operator_interface.print_to_console("Open Status is \n" + str(self._open))
+        return self._open
+
     def is_ready(self):
         pass
 
@@ -72,4 +98,9 @@ if __name__ == "__main__":
     station_config.load_station('seacliff_mot')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
     the_equipment = seacliffmotEquipment(station_config, station_config)
-    the_equipment.version()
+    print(the_equipment.version())
+    print(the_equipment.get_config())
+    config = {"capturePath": "./CaptureFolder1",
+              "cfgPath": "./Cfg"}
+    print(the_equipment.set_config(config))
+    print(the_equipment.open())
