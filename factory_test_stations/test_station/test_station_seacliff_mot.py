@@ -22,7 +22,7 @@ class seacliffmotStation(test_station.TestStation):
 
     def initialize(self):
         try:
-            self._operator_interface.print_to_console("Initializing project station station...\n")
+            self._operator_interface.print_to_console("Initializing Seacliff MOT station...\n")
             self._fixture.initialize()
         except:
             raise

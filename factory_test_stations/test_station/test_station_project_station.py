@@ -2,7 +2,7 @@ import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_project_station as test_fixture_project_station
 import test_station.dut as dut
 import time
-
+import os
 
 class projectstationError(Exception):
     pass
@@ -52,10 +52,14 @@ class projectstationStation(test_station.TestStation):
             test_log.set_measured_value_by_name("TEST ITEM 2", a_result)
             self._operator_interface.print_to_console("Log the test item 2 value %f\n" % a_result)
 
-            a_result = 1.8
-            self._operator_interface.wait(a_result, "\n***********Testing Item 3 ***************\n")
-            test_log.set_measured_value_by_name("TEST ITEM 3", a_result)
-            self._operator_interface.print_to_console("Log the test item 3 value %f\n" % a_result)
+            if os.path.exists(os.path.join(self._station_config.RAW_DIR, "testimage.png")):
+                b_result = True
+                self._operator_interface.display_image(os.path.join(self._station_config.RAW_DIR, "testimage.png"))
+            else:
+                b_result = False
+            self._operator_interface.wait(a_result, "\n***********Testing Item 2 ***************\n")
+            test_log.set_measured_value_by_name("NON PARAMETRIC TEST ITEM 3", b_result)
+            self._operator_interface.print_to_console("Saved Test Image %f\n" % b_result)
 
         except projectstationError:
             self._operator_interface.print_to_console("Non-parametric Test Failure\n")
@@ -72,7 +76,6 @@ class projectstationStation(test_station.TestStation):
 
     def is_ready(self):
         return True
-
         self._fixture.is_ready()
         timeout_for_dual = 5
         for idx in range(timeout_for_dual, 0, -1):

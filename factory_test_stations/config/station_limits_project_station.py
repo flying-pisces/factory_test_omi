@@ -1,8 +1,7 @@
-
 STATION_LIMITS_ARRAYS = [
     ["TEST ITEM 1", 1, 2, 11],
     ["TEST ITEM 2", None, None, 12],
-    ["TEST ITEM 3", 1, 2, 13],
+    ["NON PARAMETRIC TEST ITEM 3", True, True, 13],
 ]
 
 global STATION_LIMITS

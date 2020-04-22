@@ -1,0 +1,11 @@
+Index, TestName, MeasuredVal, LoLim, HiLim, Timestamp, Result, ErrorCode
+0, UUT_Serial_Number, 1TJ30000000000,  ,  , 20200418-230645, (LOG), 0
+0, Station_ID, seacliff_mot-01,  ,  , 20200418-230645, (LOG), 0
+0, Start_Time, 20200418-230641,  ,  , 20200418-230645, (LOG), 0
+0, End_Time, 20200418-230645,  ,  , 20200418-230645, (LOG), 0
+0, Overall_Result, PASS,  ,  , 20200418-230645, (LOG), 0
+0, Overall_ErrorCode, 0,  ,  , 20200418-230645, (LOG), 0
+0, elapsed_seconds, 4.390055,  ,  , 20200418-230645, (LOG), 0
+11, TEST ITEM 1, 1.1, 1, 2, 20200418-230642, PASS, 0
+12, TEST ITEM 2, 1.4,  ,  , 20200418-230643, (LOG), 0
+13, TEST ITEM 3, 1.8, 1, 2, 20200418-230645, PASS, 0

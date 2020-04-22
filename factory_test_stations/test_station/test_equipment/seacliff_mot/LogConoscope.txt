@@ -2104,3 +2104,140 @@
 2020/04/17 21:04:43.419 | [temp]               StopThread
 2020/04/17 21:04:43.420 | [tempWorker]         CancelCmd
 2020/04/17 21:04:43.421 | [temp]               <<
+2020/04/18 21:21:02.256 | [conoscope]          >>
+2020/04/18 21:21:02.265 | [conoscopeWorker]    >>
+2020/04/18 21:21:02.276 | [temp]               >>
+2020/04/18 21:21:02.277 | [tempWorker]         >>
+2020/04/18 21:21:02.278 | [conoscope]            ConoscopeLib  0.8.18     [2020/03/10]
+2020/04/18 21:21:02.280 | [conoscope]            PipelineLib   0.2.5      [2020/03/05]
+2020/04/18 21:21:02.331 | [conoscope]          > CmdGetDebugConfig
+2020/04/18 21:21:02.332 | [conoscope]              debugMode      0
+2020/04/18 21:21:02.332 | [conoscope]              emulateCamera  0
+2020/04/18 21:21:02.333 | [conoscope]              imagePath      
+2020/04/18 21:21:02.334 | [conoscope]          > CmdSetDebugConfig
+2020/04/18 21:21:02.335 | [conoscope]              debugMode      0
+2020/04/18 21:21:02.335 | [conoscope]              emulateCamera  0
+2020/04/18 21:21:02.336 | [conoscope]              imagePath     
+2020/04/18 21:21:02.337 | [conoscope]          > CmdGetConfig
+2020/04/18 21:21:02.338 | [conoscope]              cfgPath     ./Cfg
+2020/04/18 21:21:02.338 | [conoscope]              capturePath ./CaptureFolder2
+2020/04/18 21:21:02.338 | [conoscope]              autoExposure  0 (max = 80)
+2020/04/18 21:21:02.338 | [conoscope]          > CmdSetConfig
+2020/04/18 21:21:02.339 | [conoscope]              cfgPath       ./Cfg
+2020/04/18 21:21:02.339 | [conoscope]              capturePath   ./CaptureFolder1
+2020/04/18 21:21:02.339 | [conoscope]              autoExposure  0 (max = 80)
+2020/04/18 21:21:02.340 | [conoscope]          > CmdOpen
+2020/04/18 21:21:02.340 | [conoscopeProcess]   _CmdOpen
+2020/04/18 21:21:04.390 | [conoscopeProcess]   _OpeningInfo
+2020/04/18 21:21:04.495 | [temp]               CmdReset
+2020/04/18 21:21:04.495 | [conoscopeProcess]   _CmdOpen Ok
+2020/04/18 21:21:04.495 | [conoscope]          < CmdOpen - Ok
+2020/04/18 21:21:04.495 | [conoscope]          < CmdOpen - Cfg/19041831
+2020/04/18 21:21:04.496 | [conoscope]          > CmdSetup
+2020/04/18 21:21:04.496 | [conoscope]            temp   25
+2020/04/18 21:21:04.496 | [conoscope]            filter X
+2020/04/18 21:21:04.496 | [conoscope]            nd     0
+2020/04/18 21:21:04.497 | [conoscope]            iris   2
+2020/04/18 21:21:04.497 | [conoscopeProcess]   _CmdSetup
+2020/04/18 21:21:07.760 | [temp]               CmdSetTemperature
+2020/04/18 21:21:07.761 | [temp]               * processing
+2020/04/18 21:21:07.766 | [conoscopeProcess]   _CmdSetup Ok
+2020/04/18 21:21:07.767 | [tempWorker]         OnWorkRequest [CmdSetTemperature]
+2020/04/18 21:21:07.767 | [conoscope]          < CmdSetup - Ok
+2020/04/18 21:21:07.768 | [tempWorker]         _CmdSetTemperature
+2020/04/18 21:21:07.768 | [conoscope]          > CmdSetupStatus
+2020/04/18 21:21:07.768 | [tempWorker]         _SetupTemperature
+2020/04/18 21:21:07.769 | [conoscopeProcess]   _CmdSetupStatus
+2020/04/18 21:21:07.769 | [tempWorker]         GetTemperature
+2020/04/18 21:21:08.151 | [conoscopeProcess]   _CmdSetupStatus Ok
+2020/04/18 21:21:08.151 | [conoscope]          > CmdMeasure
+2020/04/18 21:21:08.151 | [conoscope]          CmdMeasureProcessing
+2020/04/18 21:21:08.151 | [conoscopeProcess]   _CmdMeasure
+2020/04/18 21:21:08.151 | [conoscopeProcess]     exposureTimeUs 100000
+2020/04/18 21:21:08.151 | [conoscopeProcess]     nbAcquisition  1
+2020/04/18 21:21:08.151 | [conoscopeProcess]     binningFactor  1
+2020/04/18 21:21:08.151 | [conoscopeProcess]     bTestPattern   0
+2020/04/18 21:21:08.653 | [tempWorker]         GetTemperature
+2020/04/18 21:21:08.654 | [conoscopeProcess]   _CmdMeasure Ok
+2020/04/18 21:21:08.654 | [conoscope]          CmdMeasureProcessing Done
+2020/04/18 21:21:08.654 | [conoscope]          < CmdMeasure - Ok
+2020/04/18 21:21:08.655 | [conoscope]          > CmdExportRaw
+2020/04/18 21:21:08.655 | [conoscopeProcess]   _CmdExportRaw
+2020/04/18 21:21:08.655 | [conoscopeProcess]   _WriteImageFile
+2020/04/18 21:21:08.656 | [conoscopeProcess]   _WriteImageFile
+2020/04/18 21:21:08.801 | [conoscopeProcess]   _WriteImageInfo
+2020/04/18 21:21:08.802 | [conoscopeProcess]   _CmdExportRaw Ok
+2020/04/18 21:21:08.803 | [conoscope]          > CmdExportProcessed
+2020/04/18 21:21:08.803 | [conoscopeProcess]   _CmdExportProcessed
+2020/04/18 21:21:08.804 | [conoscopeProcess]     bBiasCompensation       1
+2020/04/18 21:21:08.804 | [conoscopeProcess]     bSensorDefectCorrection 1
+2020/04/18 21:21:08.804 | [conoscopeProcess]     bSensorPrnuCorrection   1
+2020/04/18 21:21:08.804 | [conoscopeProcess]     bLinearisation          1
+2020/04/18 21:21:08.804 | [conoscopeProcess]     bFlatField              1
+2020/04/18 21:21:08.804 | [conoscopeProcess]     bAbsolute               1
+2020/04/18 21:21:08.805 | [conoscopeProcess]   _Process (1, 1, 1, 1, 1, 1)
+2020/04/18 21:21:08.805 | [conoscopeProcess]     CameraCfg: read Cfg/19041831/AIRSHIP_19041831.cfg
+2020/04/18 21:21:08.806 | [conoscopeProcess]   Can not read configuration file
+2020/04/18 21:21:08.807 | [conoscopeProcess]   _CmdExportProcessed Failed
+2020/04/18 21:21:08.807 | [conoscope]          > CmdSetConfig
+2020/04/18 21:21:08.807 | [conoscope]              cfgPath       ./Cfg
+2020/04/18 21:21:08.807 | [conoscope]              capturePath   ./CaptureFolder2
+2020/04/18 21:21:08.808 | [conoscope]              autoExposure  0 (max = 80)
+2020/04/18 21:21:08.808 | [conoscope]          > CmdSetup
+2020/04/18 21:21:08.808 | [conoscope]            temp   25
+2020/04/18 21:21:08.808 | [conoscope]            filter Xz
+2020/04/18 21:21:08.809 | [conoscope]            nd     1
+2020/04/18 21:21:08.809 | [conoscope]            iris   2
+2020/04/18 21:21:08.809 | [conoscopeProcess]   _CmdSetup
+2020/04/18 21:21:12.212 | [conoscopeProcess]   _CmdSetup Ok
+2020/04/18 21:21:12.213 | [conoscope]          < CmdSetup - Ok
+2020/04/18 21:21:12.214 | [conoscope]          > CmdSetupStatus
+2020/04/18 21:21:12.215 | [conoscopeProcess]   _CmdSetupStatus
+2020/04/18 21:21:12.215 | [tempWorker]         GetTemperature
+2020/04/18 21:21:12.342 | [conoscopeProcess]   _CmdSetupStatus Ok
+2020/04/18 21:21:12.342 | [conoscope]          > CmdMeasure
+2020/04/18 21:21:12.343 | [conoscope]          CmdMeasureProcessing
+2020/04/18 21:21:12.343 | [conoscopeProcess]   _CmdMeasure
+2020/04/18 21:21:12.343 | [conoscopeProcess]     exposureTimeUs 90000
+2020/04/18 21:21:12.343 | [conoscopeProcess]     nbAcquisition  1
+2020/04/18 21:21:12.343 | [conoscopeProcess]     binningFactor  1
+2020/04/18 21:21:12.344 | [conoscopeProcess]     bTestPattern   0
+2020/04/18 21:21:12.784 | [tempWorker]         GetTemperature
+2020/04/18 21:21:12.785 | [conoscopeProcess]   _CmdMeasure Ok
+2020/04/18 21:21:12.785 | [conoscope]          CmdMeasureProcessing Done
+2020/04/18 21:21:12.786 | [conoscope]          < CmdMeasure - Ok
+2020/04/18 21:21:12.786 | [conoscope]          > CmdExportRaw
+2020/04/18 21:21:12.786 | [conoscopeProcess]   _CmdExportRaw
+2020/04/18 21:21:12.787 | [conoscopeProcess]   _WriteImageFile
+2020/04/18 21:21:12.787 | [conoscopeProcess]   _WriteImageFile
+2020/04/18 21:21:12.954 | [conoscopeProcess]   _WriteImageInfo
+2020/04/18 21:21:12.954 | [conoscopeProcess]   _CmdExportRaw Ok
+2020/04/18 21:21:12.954 | [conoscope]          > CmdExportProcessed
+2020/04/18 21:21:12.954 | [conoscopeProcess]   _CmdExportProcessed
+2020/04/18 21:21:12.954 | [conoscopeProcess]     bBiasCompensation       1
+2020/04/18 21:21:12.954 | [conoscopeProcess]     bSensorDefectCorrection 1
+2020/04/18 21:21:12.954 | [conoscopeProcess]     bSensorPrnuCorrection   1
+2020/04/18 21:21:12.954 | [conoscopeProcess]     bLinearisation          1
+2020/04/18 21:21:12.954 | [conoscopeProcess]     bFlatField              1
+2020/04/18 21:21:12.954 | [conoscopeProcess]     bAbsolute               1
+2020/04/18 21:21:12.954 | [conoscopeProcess]   _Process (1, 1, 1, 1, 1, 1)
+2020/04/18 21:21:12.954 | [conoscopeProcess]     CameraCfg: read Cfg/19041831/AIRSHIP_19041831.cfg
+2020/04/18 21:21:12.954 | [conoscopeProcess]   Can not read configuration file
+2020/04/18 21:21:12.954 | [conoscopeProcess]   _CmdExportProcessed Failed
+2020/04/18 21:21:12.954 | [conoscope]          > CmdReset
+2020/04/18 21:21:12.954 | [conoscopeProcess]   _CmdReset
+2020/04/18 21:21:12.954 | [temp]               CmdCancel
+2020/04/18 21:21:12.954 | [tempWorker]         CancelCmd
+2020/04/18 21:21:46.801 | [conoscopeProcess]   _OpeningInfo
+2020/04/18 21:21:46.916 | [conoscopeProcess]   _CmdReset Ok
+2020/04/18 21:21:46.917 | [conoscope]          > CmdClose
+2020/04/18 21:21:46.918 | [conoscopeProcess]   _CmdClose
+2020/04/18 21:21:46.919 | [temp]               CmdCancel
+2020/04/18 21:21:46.919 | [tempWorker]         CancelCmd
+2020/04/18 21:21:58.706 | [temp]               CmdReset
+2020/04/18 21:21:58.715 | [conoscopeProcess]   _CmdClose Ok
+2020/04/18 21:21:58.716 | [conoscope]          <<
+2020/04/18 21:21:58.716 | [temp]               Stop
+2020/04/18 21:21:58.716 | [temp]               StopThread
+2020/04/18 21:21:58.716 | [tempWorker]         CancelCmd
+2020/04/18 21:21:58.717 | [temp]               <<

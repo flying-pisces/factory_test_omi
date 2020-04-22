@@ -1,0 +1,31 @@
+[20200419-160057]: Running Test.
+[20200419-160057]: Checking Unit 1TJ30000000000...
+[20200419-160057]: Testing Unit 1TJ30000000000
+[20200419-160057]: Sleeping for 1.1: 
+***********Testing Item 1 ***************
+ 
+[20200419-160058]: Log the test item 1 value 1.100000
+[20200419-160058]: Sleeping for 1.4: 
+***********Testing Item 2 ***************
+ 
+[20200419-160059]: Log the test item 2 value 1.400000
+[20200419-160059]: Sleeping for 1.8: 
+***********Testing Item 3 ***************
+ 
+[20200419-160101]: Log the test item 3 value 1.800000
+[20200419-160101]: Testing Unit 1TJ30000000000 Complete
+[20200419-160101]: 
+-----------------------------------
+
+Unit [ 1TJ30000000000 ] Passed!
+
+-----------------------------------
+Error Code = [0]
+
+-----------------------------------
+
+
+[20200419-160101]: waiting for sn
+[20200419-160102]: Close...
+[20200419-160102]: 	here, I'm shutting the station down..
+[20200419-160102]: Closing project station Fixture

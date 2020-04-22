@@ -1,0 +1,11 @@
+Index, TestName, MeasuredVal, LoLim, HiLim, Timestamp, Result, ErrorCode
+0, UUT_Serial_Number, 1TJ3000000000,  ,  , 20200419-195653, (LOG), 0
+0, Station_ID, project_station-0,  ,  , 20200419-195653, (LOG), 0
+0, Start_Time, 20200419-195649,  ,  , 20200419-195653, (LOG), 0
+0, End_Time, 20200419-195653,  ,  , 20200419-195653, (LOG), 0
+0, Overall_Result, PASS,  ,  , 20200419-195653, (LOG), 0
+0, Overall_ErrorCode, 0,  ,  , 20200419-195653, (LOG), 0
+0, elapsed_seconds, 3.936007,  ,  , 20200419-195653, (LOG), 0
+11, TEST ITEM 1, 1.1, 1, 2, 20200419-195650, PASS, 0
+12, TEST ITEM 2, 1.4,  ,  , 20200419-195651, (LOG), 0
+13, NON PARAMETRIC TEST ITEM 3, True, True, True, 20200419-195653, PASS, 0
