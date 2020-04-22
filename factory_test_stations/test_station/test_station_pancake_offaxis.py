@@ -1,7 +1,4 @@
 import hardware_station_common.test_station.test_station as test_station
-import test_station.test_fixture.test_fixture_pancake_offaxis as test_fixture_pancake_offaxis
-import test_station.test_equipment.test_equipment_pancake_offaxis as test_equipment_pancake_offaxis
-import test_station.dut as dut
 import StringIO
 import numpy as np
 import os
@@ -13,9 +10,10 @@ import re
 import filecmp
 from verifiction.particle_counter import ParticleCounter
 from verifiction.dut_checker import DutChecker
-from dut.dut_offaxis import pancakeDutOffAxis
-from dut.dut import projectDut
+import dut
+from test_fixture.test_fixture_pancake_offaxis import pancakeoffaxisFixture
 from test_fixture.test_fixture_project_station import projectstationFixture
+from test_equipment.test_equipment_pancake_offaxis import pancakeoffaxisEquipment
 import pprint
 import types
 import glob
@@ -23,6 +21,7 @@ import glob
 
 class pancakeoffaxisError(Exception):
     pass
+
 
 def chk_and_set_measured_value_by_name(test_log, item, value):
     """
@@ -33,6 +32,7 @@ def chk_and_set_measured_value_by_name(test_log, item, value):
         test_log.set_measured_value_by_name(item, value)
     pass
 
+
 class pancakeoffaxisStation(test_station.TestStation):
     """
         pancakeoffaxis Station
@@ -42,10 +42,10 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._sw_version = '1.0.2'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
-        self._fixture = test_fixture_pancake_offaxis.pancakeoffaxisFixture(station_config, operator_interface)
+        self._fixture = pancakeoffaxisFixture(station_config, operator_interface)  # type: pancakeoffaxisFixture
         if station_config.FIXTURE_SIM:
             self._fixture = projectstationFixture(station_config, operator_interface)
-        self._equipment = test_equipment_pancake_offaxis.pancakeoffaxisEquipment(station_config)
+        self._equipment = pancakeoffaxisEquipment(station_config)  # type: pancakeoffaxisEquipment
         self._particle_counter = ParticleCounter(station_config)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
             self._particle_counter.initialize()
@@ -54,11 +54,10 @@ class pancakeoffaxisStation(test_station.TestStation):
                 self._particle_counter_start_time = datetime.datetime.now()
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._lastest_serial_number = None
-        self._the_unit = None
+        self._latest_serial_number = None  # type: str
+        self._the_unit = None   # type: pancakeDutOffAxis
         self._is_screen_on_by_op = False
         self._retries_screen_on = 0
-
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
@@ -192,7 +191,6 @@ class pancakeoffaxisStation(test_station.TestStation):
             self._operator_interface.print_to_console('--- do test finished ---\n')
             return overall_result, first_failed_test_result
 
-
     def close_test(self, test_log):
         ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###
         self._overall_result = test_log.get_overall_result()
@@ -200,11 +198,11 @@ class pancakeoffaxisStation(test_station.TestStation):
         return self._overall_result, self._first_failed_test_result
 
     def validate_sn(self, serial_num):
-        self._lastest_serial_number = serial_num
+        self._latest_serial_number = serial_num
         return test_station.TestStation.validate_sn(self, serial_num)
 
     def is_ready(self):
-        serial_number = self._lastest_serial_number
+        serial_number = self._latest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
         self._the_unit = dut.pancakeDutOffAxis(serial_number, self._station_config, self._operator_interface)
         if self._station_config.DUT_SIM:
@@ -238,18 +236,17 @@ class pancakeoffaxisStation(test_station.TestStation):
                     ready = True
                 ready_status = self._fixture.is_ready()
                 if ready_status is not None:
-                    if ready_status == 0x00:
-                        if not power_on_trigger:
-                            self._operator_interface.print_to_console(
-                                'Press L-Btn(Cancel)/R-Btn(Litup) to lit up firstly.\n')
-                        else:
-                            ready = True  # Start to test.
-                            self._is_screen_on_by_op = True
+                    if ready_status == 0x00: # load DUT automatically and then screen on
+                        ready = True  # Start to test.
+                        self._is_screen_on_by_op = True
+                        self._the_unit.screen_on()
                     elif ready_status == 0x01:
                         self._operator_interface.print_to_console('Try to litup DUT.\n')
                         self._retries_screen_on += 1
                         if not power_on_trigger:
                             self._the_unit.screen_on()
+                            self._fixture.press_ctrl_up(False)
+                            self._fixture.pogo_state_up(True)
                             # self._the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
                             power_on_trigger = True
                             timeout_for_dual = timeout_for_btn_idle
@@ -271,6 +268,8 @@ class pancakeoffaxisStation(test_station.TestStation):
                 else:
                     self._operator_interface.print_to_console(
                         'Cancel start signal from dual %s.\n' % timeout_for_dual)
+                self._fixture.pogo_state_up(False)
+                self._fixture.press_ctrl_up(True)
                 self._the_unit.close()
                 self._the_unit = None
                 raise test_station.TestStationSerialNumberError('Fail to Wait for press dual-btn ...')

@@ -54,9 +54,11 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
             raise pancakeoffaxisFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
             return False
         else:  # disable the buttons automatically
+            self.set_tri_color('y')
             self.button_enable()
             self.unload()
             self.button_disable()
+            self.set_tri_color('g')
             if self._verbose:
                 print "Fixture %s Initialized" % self._station_config.FIXTURE_COMPORT
             return True
@@ -95,7 +97,7 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
         self._write_serial(self._station_config.COMMAND_HELP)
         response = self.read_response()
         if self._verbose:
-            print response
+            pprint.pprint(response)
         return response
 
     def reset(self):
@@ -119,11 +121,12 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
         if hasattr(self, '_serial_port') \
                 and self._serial_port is not None \
                 and self._station_config.FIXTURE_COMPORT:
+            self.set_tri_color('y')
             self.button_disable()
             self._serial_port.close()
             self._serial_port = None
             if self._verbose:
-                print "====== Fixture Close ========="
+                pprint.pprint( "====== Fixture Close =========")
         return True
 
     ######################
@@ -147,19 +150,11 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
             print(response)
         return self._prase_response(r'ABS_X_Y:\d+', response)
 
-    def mov_res_xy(self, x, y):
-        CMD_MOVE_STRING = self._station_config.COMMAND_RES_X_Y + ' ' + str(x) + " " + str(y) + "\r\n"
-        self._write_serial(CMD_MOVE_STRING)
-        response = self.read_response()
-        if self._verbose:
-            print(response)
-        return self._prase_response(r'REG_X_Y:\d+', response)
-
-    def pogo_state(self, up):
-        cmd = self._station_config.COMMAND_POGO_DOWN
+    def pogo_state_up(self, up):
+        cmd = self._station_config.COMMAND_POGO_DOWN # OFF
         r = r'POGO_DOWN:\d+'
         if up:
-            cmd = self._station_config.COMMAND_POGO_UP
+            cmd = self._station_config.COMMAND_POGO_UP # ON
             r = r'POGO_UP:\d+'
         self._write_serial(cmd)
         response = self.read_response()
@@ -189,6 +184,33 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
             raise pancakeoffaxisFixtureError('unable to parse msg. {}'.format(items))
         return (items[0].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
 
+    def press_ctrl_up(self, up=True):
+        cmd = self._station_config.COMMAND_PRESS_DOWN # ON
+        r = r'PRESS_DOWN:\d+'
+        if up:
+            cmd = self._station_config.COMMAND_PRESS_UP # OFF
+            r = r'PRESS_UP:\d+'
+        self._write_serial(cmd)
+        response = self.read_response()
+        return self._prase_response(r, response)
+
+    def set_tri_color(self, color):
+        """
+        :type color: str
+        """
+        cmd = None
+        if color == 'r':
+            cmd = self._station_config.COMMAND_TRI_LED_R
+        elif color == 'y':
+            cmd = self._station_config.COMMAND_TRI_LED_Y
+        elif color == 'g':
+            cmd = self._station_config.COMMAND_TRI_LED_G
+        if cmd:
+            self._write_serial(cmd)
+            response = self.read_response()
+            r = r'LED_[R|Y|G]:\d+'
+            return self._prase_response(r, response)
+
 def print_to_console(self, msg):
     pass
 
@@ -200,7 +222,7 @@ if __name__ == "__main__":
 
         print 'Self check for pancake_offaxis'
         station_config.load_station('pancake_offaxis')
-        station_config.FIXTURE_COMPORT = 'COM7'
+        station_config.FIXTURE_COMPORT = 'COM15'
         station_config.print_to_console = types.MethodType(print_to_console, station_config)
         the_fixture = pancakeoffaxisFixture(station_config, station_config)
         the_fixture._verbose = True
@@ -209,22 +231,21 @@ if __name__ == "__main__":
             the_fixture.initialize()
 
             # the_fixture.mov_abs_xy(5, 1)
-            the_fixture.button_enable()
+            print 'Id = %s'%the_fixture.id()
 
-            time.sleep(1)
-            # for i in range(0, 100):
-            #     the_fixture.load()
-            #     the_fixture.mov_abs_xy(0, 0)
-            #     time.sleep(1)
-            #     the_fixture.unload()
-            #     time.sleep(1)
-            for idx in range(10, 0, -1):
-                print 'Press the Dual-Start Btn in %s S...' % idx, 'yellow'
-                if the_fixture.is_ready():
-                    ready = True
-                    break
-                time.sleep(1)
-            the_fixture.button_disable()
+            the_fixture.press_ctrl_up(False)
+            the_fixture.pogo_state_up(True)
+            the_fixture.load()
+
+            the_fixture.button_enable()
+            pprint.pprint(the_fixture.help())
+            the_fixture.mov_abs_xy(0, 18)
+            the_fixture.mov_abs_xy(0, -18)
+            the_fixture.mov_abs_xy(18, 0)
+            the_fixture.mov_abs_xy(-18, 0)
+            the_fixture.mov_abs_xy(0, 0)
+
+            the_fixture.unload()
 
         except pancakeoffaxisFixtureError as e:
             print 'exception {}'.format(e.message)
