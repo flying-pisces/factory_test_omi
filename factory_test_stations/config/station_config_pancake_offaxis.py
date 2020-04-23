@@ -12,7 +12,7 @@ CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-tes
 # serial number codes
 #
 SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
+SERIAL_NUMBER_MODEL_NUMBER = 'PRP'  # Peak panel SN
 
 ##################################
 # Fixture parameters
@@ -22,7 +22,7 @@ FIXTURE_PARTICLE_COMPORT = "COM3" #
 FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = "COM5" #
 
-DUT_LITUP_OUTSIDE = True
+DUT_LITUP_OUTSIDE = False
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu','hw','fpga']
@@ -155,8 +155,8 @@ TOP = 928
 WIDTH = 1337
 HEIGHT = 1400
 IS_SAVEDB = True
-IS_EXPORT_CSV = True
-IS_EXPORT_PNG = True
+IS_EXPORT_CSV = False
+IS_EXPORT_PNG = False
 Resolution_Bin_X = 360
 Resolution_Bin_Y = 360
 
@@ -199,9 +199,9 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis'
+EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis_2'
 CAMERA_SN = "Demo"
 DUT_SIM = True
 EQUIPMENT_SIM = True
-FIXTURE_SIM = False
+FIXTURE_SIM = True
 
