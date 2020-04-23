@@ -1,0 +1,29 @@
+{
+    "Camera": {
+        "Height": 6004,
+        "SerialNumber": "19041831",
+        "Width": 7920
+    },
+    "Info": {
+        "Date": "22/04/2020",
+        "File": "20200422_092020_filt_X_nd_0_iris_2_raw_1.bin",
+        "Temperature": 25,
+        "Time": "09:20:20"
+    },
+    "Measure": {
+        "BinningFactor": 1,
+        "ExposureTimeUs": 100000,
+        "NbAcquisition": 1,
+        "TestPattern": false
+    },
+    "Setup": {
+        "filter": "X",
+        "iris": "2",
+        "nd": "0",
+        "sensorTemperature": 25
+    },
+    "Software": {
+        "SwDate": "2020/03/10",
+        "SwVersion": "0.8.18"
+    }
+}

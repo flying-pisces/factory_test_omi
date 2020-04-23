@@ -108,9 +108,9 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
 
     def __perform_capture(self):
         setupConfig = {"sensorTemperature": 25.0,
-                       "eFilter": Conoscope.Filter.Yb.value,
-                       "eNd": Conoscope.Nd.Nd_3.value,
-                       "eIris": Conoscope.Iris.aperture_4mm.value}
+                       "eFilter": self._device.Filter.Yb.value,
+                       "eNd": self._device.Nd.Nd_3.value,
+                       "eIris": self._device.Iris.aperture_02.value}
         ret = self._device.CmdSetup(setupConfig)
         self._log(ret, "CmdSetup")
 
@@ -136,9 +136,9 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         self._log(ret, "CmdSetup")
 
         setupConfig = {"sensorTemperature": 25.0,
-                       "eFilter": Conoscope.Filter.Xz.value,
-                       "eNd": Conoscope.Nd.Nd_1.value,
-                       "eIris": Conoscope.Iris.aperture_2mm.value}
+                       "eFilter": self._device.Filter.Xz.value,
+                       "eNd": self._device.Nd.Nd_1.value,
+                       "eIris": self._device.Iris.aperture_02.value}
         ret = self._device.CmdSetup(setupConfig)
         self._log(ret, "CmdSetup")
 

@@ -27,7 +27,7 @@
     "Settings": {
         "autoExposure": false,
         "autoExposurePixelMax": 80,
-        "capturePath": "./CaptureFolder1",
+        "capturePath": "./CaptureFolder2",
         "cfgPath": "./Cfg"
     },
     "SettingsI": {
