@@ -33,7 +33,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         self._start_delimiter = "$"
         self._end_delimiter = '\r\n'
         self._spliter = ','
-        self._renderImgTool = r'CambriaTools\exe\CambriaTools-cmd.exe'
+        self._renderImgTool = os.path.join(os.getcwd(), r'CambrialTools\exe\CambriaTools-cmd.exe')
 
     def initialize(self):
         self.is_screen_poweron = False
@@ -130,7 +130,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             grpf = re.match(r'(\d*[\.]?\d*)', recvobj[2])
             if grpf is None or grpt is None:
                 raise RuntimeError("Exit display_color because rev err msg. Msg = {}".format(recvobj))
-            return string.atof(grpt.group(0))
+            return float(grpt.group(0))
 
     def get_version(self):
         return self._version("mcu")
@@ -175,21 +175,21 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         return res
 
     def _write_serial(self, input_bytes):
-        bytes_written = self._serial_port.write(input_bytes)
+        bytes_written = self._serial_port.write(str.encode(input_bytes))
         self._serial_port.flush()
         return bytes_written
 
     def _write_serial_cmd(self, command):
         cmd = '$c.{}\r\n'.format(command)
-        self._serial_port.write(cmd)
+        self._serial_port.write(str.encode(cmd))
         self._serial_port.flush()
 
     def _read_response(self):
         response = []
         while True:
             line_in = self._serial_port.readline()
-            if line_in != '':
-                response.append(line_in)
+            if line_in != b'':
+                response.append(line_in.decode('utf-8'))
             else:
                 break
         print ("<--- {}".format(response))
@@ -257,8 +257,15 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_RESET, response)
 
-    def _showImage(self, imageindex):
-        command ='{},{}'.format(self._station_config.COMMAND_DISP_SHOWIMAGE, imageindex)
+    def _showImage(self, image_index, is_ddr_img):
+        # type: (int, bool) -> str
+        command = ''
+        if isinstance(image_index, str):
+            command = '{},{}'.format(self._station_config.COMMAND_DISP_SHOWIMAGE, image_index)
+        elif isinstance(image_index, int):
+            if is_ddr_img:
+                image_index = 0x20 + image_index
+            command = '{},{}'.format(self._station_config.COMMAND_DISP_SHOWIMAGE, hex(image_index))
         self._write_serial_cmd(command)
         time.sleep(self._station_config.COMMAND_DISP_SHOWIMG_DLY)
         response = self._read_response()
@@ -285,6 +292,13 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_WRITE, response)
 
+    def _reboot(self):
+        cmd = 'Reboot'
+        if hasattr(self._station_config, 'COMMAND_REBOOT'):
+            cmd = self._station_config.COMMAND_REBOOT
+        self._write_serial_cmd(cmd)
+        response = self._read_response()
+        return self._prase_respose(cmd, response)
     # </editor-fold>
 
 ############ projectDut is just an example
@@ -340,29 +354,50 @@ if __name__ == "__main__" :
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
 
-    station_config.load_station('pancake_pixel')
+    station_config.load_station('seacliff_mot')
     # station_config.load_station('pancake_uniformity')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
+    station_config.IS_VERBOSE = True
 
     the_unit = pancakeDut(station_config, station_config, station_config)
+    for idx in range(0, 100):
 
-    the_unit.render_image(['1.bmp', '2.bmp'])
+        print ('Loop ---> {}'.format(idx))
 
-    the_unit.initialize()
-    try:
-        the_unit.connect_display()
-        # the_unit.screen_on()
-        # time.sleep(1)
-        # the_unit.display_color()
-        time.sleep(1)
-        print (the_unit.vsync_microseconds())
-        # for c in [(0,0,0), (255,255,255), (255,0,0), (0,255,0), (0,0,255)]:
-        #     the_unit.display_color(c)
-        #     time.sleep(0.5)
-        # the_unit.screen_off()
-        for c in ['0x20', '0x21']:
-            the_unit.display_image(c)
-            time.sleep(1)
-    finally:
-        time.sleep(2)
-        the_unit.close()
+        pics = []
+        # for i in range(3, 5):
+        #     pics.append(r'img\line_{}.bmp'.format(i))
+        #     # pics.append(r'img\line_r_{}.bmp'.format(i))
+        #
+        # for i in range(4, 11, 2):
+        #     pics.append(r'img\spot_{}.bmp'.format(i))
+        #     # pics.append(r'img\spot_r_{}.bmp'.format(i))
+        if os.path.exists('img'):
+            for c in os.listdir('img'):
+                if c.endswith(".bmp"):
+                    pics.append(r'img\{}'.format(c))
+
+        print ('pic - count {0}'.format(len(pics)))
+
+        # the_unit.render_image(pics)
+        the_unit.initialize()
+#        the_unit.reboot()
+
+        try:
+            the_unit.connect_display()
+            # the_unit.screen_on()
+            # time.sleep(1)
+            # the_unit.display_color()
+            # time.sleep(1)
+            # print the_unit.vsync_microseconds()
+            # for c in [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255)]:
+            for c in range(0, len(pics)):
+                the_unit.display_image(c, True)
+                # the_unit.display_color(c)
+                time.sleep(0.5)
+            the_unit.screen_off()
+        except DUTError as e:
+            print (e.message)
+        finally:
+            time.sleep(2)
+            the_unit.close()

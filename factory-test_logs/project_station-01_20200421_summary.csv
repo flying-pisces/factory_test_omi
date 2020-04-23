@@ -1,2 +1,0 @@
-UUT_Serial_Number, Station_ID, StartTime, EndTime, OverallResult, OverallErrorCode, elapsed_seconds, TEST ITEM 1, TEST ITEM 2, NON PARAMETRIC TEST ITEM 3
-1TJ30000000000, project_station-01, 20200421-094348, 20200421-094352, PASS, 0, 3.952193, 1.1, 1.4, True
