@@ -94,7 +94,7 @@ FIXTRUE_PARTICLE_START_DLY = 0
 
 ##################################
 # Test Equipment related parameters
-IS_VERBOSE = True
+IS_VERBOSE = False # some path bug at
 CFG_PATH = r'test_station\Cfg'
 CAPTURE_PATH = r'test_station\CaptureFolder1'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.

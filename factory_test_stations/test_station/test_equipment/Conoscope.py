@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import threading
 import ctypes
+from ctypes import cdll
 import time
 from enum import Enum
 import json
+import os
 
 class Conoscope:
     class Filter(Enum):
@@ -113,30 +115,12 @@ class Conoscope:
         self.conoscopeDebugSettings = Conoscope.ConoscopeDebugSettings()
         self.setupConfig = Conoscope.SetupConfig()
         self.measureConfig = Conoscope.MeasureConfig(200000, 1, 1, False)
-
-        conoscopeDll = ctypes.WinDLL(os.path.join(os.getcwd(), "test_station\\test_equipment\\ConoscopeLib.dll"))
-
-        # hllApiProto = ctypes.WINFUNCTYPE (
-        #  ctypes.c_int,      # Return type.
-        #  ctypes.c_void_p,   # Parameters 1 ...
-        #  ctypes.c_void_p,
-        #  ctypes.c_void_p,
-        #  ctypes.c_void_p)   # ... thru 4.
-
-        # hllApiParams = (1, "p1", 0), (1, "p2", 0), (1, "p3",0), (1, "p4",0),
-
-        # Actually map the call ("HLLAPI(...)") to a Python name.
-        # hllApi = hllApiProto (("HLLAPI", conoscopeDll), hllApiParams)
-
-        # p1 = ctypes.c_int (1)
-        # p2 = ctypes.c_char_p (sessionVar)
-        # p3 = ctypes.c_int (1)
-        # p4 = ctypes.c_int (0)
-        # hllApi (ctypes.byref (p1), p2, ctypes.byref (p3), ctypes.byref (p4))
-
-        #RunApplicationProto = ctypes.WINFUNCTYPE(
-        #    ctypes.c_char_p)  # Return type.
-        #self.__RunApplication = RunApplicationProto(("RunApplication", conoscopeDll)),
+        dllPath = os.path.join(os.path.join(os.getcwd(), "test_station\\test_equipment\\ConoscopeLib.dll")) # ugly hack
+        if os.path.isfile(dllPath):
+            os.chdir(os.path.dirname(dllPath))
+            conoscopeDll = cdll.LoadLibrary("ConoscopeLib.dll")
+        else:
+            conoscopeDll = cdll.LoadLibrary("ConoscopeLib.dll")
 
         CmdRunApp_Proto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p)  # Return type.

@@ -1,6 +1,11 @@
 import hardware_station_common.test_station.test_equipment
 import json
-from test_station.test_equipment.Conoscope import Conoscope
+try:
+    from test_station.test_equipment.Conoscope import Conoscope
+except:
+    from Conoscope import Conoscope
+finally:
+    pass
 import time
 
 class seacliffmotEquipmentError(Exception):
@@ -222,11 +227,11 @@ if __name__ == "__main__":
     sys.path.append("../../")
     import types
     import station_config
-    import hardware_station_common.operator_interface.operator_interface
+    import hardware_station_common.operator_interface.operator_interface as operator_interface
 
     station_config.load_station('seacliff_mot')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
-    the_equipment = seacliffmotEquipment(station_config, station_config)
+    the_equipment = seacliffmotEquipment(station_config, operator_interface)
     print(the_equipment.version())
     print(the_equipment.get_config())
     config = {"capturePath": "./CaptureFolder1",
