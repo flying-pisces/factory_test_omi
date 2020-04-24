@@ -114,7 +114,7 @@ class Conoscope:
         self.setupConfig = Conoscope.SetupConfig()
         self.measureConfig = Conoscope.MeasureConfig(200000, 1, 1, False)
 
-        conoscopeDll = ctypes.WinDLL("ConoscopeLib.dll")
+        conoscopeDll = ctypes.WinDLL(os.path.join(os.getcwd(), "test_station\\test_equipment\\ConoscopeLib.dll"))
 
         # hllApiProto = ctypes.WINFUNCTYPE (
         #  ctypes.c_int,      # Return type.

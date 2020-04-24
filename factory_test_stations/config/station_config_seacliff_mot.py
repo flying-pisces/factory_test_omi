@@ -43,18 +43,6 @@ COMMAND_DISP_RESET_DLY = 1
 COMMAND_DISP_SHOWIMG_DLY = 0.5
 COMMAND_DISP_POWEROFF_DLY = 0.2
 
-DISP_CHECKER_ENABLE = False
-DISP_CHECKER_DLY = 2
-DISP_CHECKER_IMG_INDEX = 0
-DISP_CHECKER_CAMERA_INDEX = 0
-DISP_CHECKER_THRESH_LOW = 200
-DISP_CHECKER_THRESH_HIGH = 255
-DISP_CHECKER_MIN = 50
-DISP_CHECKER_L_SCORE = 100
-DISP_CHECKER_H_SCORE = 1000
-DISP_CHECKER_EXL_SCORE = 20000
-DISP_CHECKER_COUNT = 2
-DISP_CHECKER_IMG_SAVED = False
 
 COMMAND_FIXTURE_INFO = "CMD_FIXTURE_INFORMATION\r\n"
 COMMAND_HELP = "CMD_HELP\r\n"
@@ -104,17 +92,6 @@ FIXTRUE_PARTICLE_ADDR_STATUS = 40003
 FIXTRUE_PARTICLE_START_DLY = 0
 ########
 
-######## DUT Related Parameters which will be defined
-CUSTOM_ADB_RELATIVE_PATH = r'test_station\dut\adb.exe'
-DUT_ON_TIME = 4  ## assuming DUT need 5 seconds to be powered after USB powered on command
-DUT_DISPLAYSLEEPTIME = 1
-DISPLAY_CYCLE_TIME = 2
-DUT_RENDER_ONE_IMAGE_TIMEOUT = 10
-LAUNCH_TIME = 4
-DUT_MAX_WAIT_TIME =60
-DEFAULT_VSYNC_US = 13.8889  # 72  # 111.44646
-DUT_ON_MAXRETRY = 5
-
 ##################################
 # Test Equipment related parameters
 IS_VERBOSE = True
@@ -122,53 +99,7 @@ CFG_PATH = r'test_station\Cfg'
 CAPTURE_PATH = r'test_station\CaptureFolder1'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
 
-FOCUS_DISTANCE = 0.45
-APERTURE = 8.0
-ROTATION = 0
-IS_AUTOEXPOSURE = False
-LEFT = 1764
-TOP = 928
-WIDTH = 1337
-HEIGHT = 1400
-IS_SAVEDB = True
-IS_EXPORT_CSV = False
-IS_EXPORT_PNG = False
-Resolution_Bin_X = 100
-Resolution_Bin_Y = 100
 
-
-# TEST_POINTS = [(0, 0), (0, 18), (12.728, 12.728), (18, 0), (12.728, -12.728), (0, -18),
-#                (-12.728, -12.728), (-18, 0), (-12.728, 12.728)]
-
-CENTER_POINT_POS = 'P1'
-
-TEST_POINTS_POS = [('P1', (22, 22)), ('P2', (22, 5)), ('P3', (32, 10)), ('P4', (30, 22)),
-                   ('P5', (34, 34)), ('P6', (22, 5)),
-                   ('P7', (10, 32)), ('P8', (5, 22)), ('P9', (10, 10))]
-
-NEIGHBOR_POINTS = [('P1', ['P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9']),
-                   ('P2', ['P3', 'P1', 'P9']),
-                   ('P3', ['P2', 'P1', 'P4']),
-                   ('P4', ['P3', 'P1', 'P5']),
-                   ('P5', ['P4', 'P1', 'P6']),
-                   ('P6', ['P5', 'P1', 'P7']),
-                   ('P7', ['P6', 'P1', 'P8']),
-                   ('P8', ['P7', 'P1', 'P9']),
-                   ('P9', ['P8', 'P1', 'P2'])]
-
-Resolution_Bin_REGISTER_SaveImg = True
-Resolution_Bin_REGISTER_THRESH_L = 107
-Resolution_Bin_REGISTER_THRESH_H = 255
-Resolution_Bin_REGISTER_MIN_AREA = 1000
-Resolution_Bin_REGISTER_PATTERN = 'White'
-Resolution_Bin_Y_REGISTER = 45
-Resolution_Bin_X_REGISTER = 45
-
-Resolution_Bin_SCALE = 10
-Resolution_REGISTER_SKIPTEXT = 6
-
-SPECTRAL_RESPONSE = 'PhotoMetric'
-CAMERA_SN = "159486608"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 PATTERNS = ["W255", 'W127', "R255", "G255", "B255"]

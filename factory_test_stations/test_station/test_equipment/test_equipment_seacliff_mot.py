@@ -1,6 +1,6 @@
 import hardware_station_common.test_station.test_equipment
 import json
-from Conoscope import Conoscope
+from test_station.test_equipment.Conoscope import Conoscope
 import time
 
 class seacliffmotEquipmentError(Exception):
