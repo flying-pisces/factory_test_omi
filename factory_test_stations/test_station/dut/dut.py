@@ -91,13 +91,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def screen_off(self):
         if self.is_screen_poweron:
-            recvobj = self._power_off()
-            if recvobj is None:
-                raise RuntimeError("Exit power_off because can't receive any data from dut.")
-            elif int(recvobj[0]) != 0x00:
-                raise DUTError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
-            else:
-                self.is_screen_poweron = False
+            self._power_off()
+            self.is_screen_poweron = False
 
     def close(self):
         self._operator_interface.print_to_console("Turn Off display................\n")
@@ -292,7 +287,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         self._write_serial_cmd(self._station_config.COMMAND_DISP_POWEROFF)
         time.sleep(self._station_config.COMMAND_DISP_POWEROFF_DLY)
         response = self._read_response()
-        return self._prase_respose(self._station_config.COMMAND_DISP_POWEROFF, response)
+        # return self._prase_respose(self._station_config.COMMAND_DISP_POWEROFF, response)
 
     def _reset(self):
         self._write_serial_cmd(self._station_config.COMMAND_DISP_RESET)

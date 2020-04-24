@@ -206,12 +206,16 @@ class pancakepixelStation(test_station.TestStation):
             self._operator_interface.print_to_console("Test exception . {}\n".format(e))
         finally:
             self._operator_interface.print_to_console('release current test resource.\n')
-            if self._the_unit is not None:
-                self._the_unit.close()
-                self._the_unit = None
-            if self._fixture is not None:
-                self._fixture.unload()
-                self._fixture.elminator_off()
+            # noinspection PyBroadException
+            try:
+                if self._the_unit is not None:
+                    self._the_unit.close()
+                    self._the_unit = None
+                if self._fixture is not None:
+                    self._fixture.unload()
+                    self._fixture.elminator_off()
+            except:
+                pass
 
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
             overall_result, first_failed_test_result = self.close_test(test_log)
@@ -243,9 +247,9 @@ class pancakepixelStation(test_station.TestStation):
         self._the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
         if self._station_config.DUT_SIM:
             self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
-        self._the_unit.initialize()
 
         try:
+            self._the_unit.initialize()
             self._fixture.button_enable()
             timeout_for_btn_idle = 20
             timeout_for_dual = timeout_for_btn_idle
@@ -297,7 +301,10 @@ class pancakepixelStation(test_station.TestStation):
                 self._the_unit.close()
                 self._the_unit = None
                 raise test_station.TestStationSerialNumberError('Fail to Wait for press dual-btn ...')
+        except Exception as e:
+            self._operator_interface.print_to_console('Fixture is not ready for reason: %s.\n' % e.message)
         finally:
+            # noinspection PyBroadException
             try:
                 self._fixture.button_disable()
             except:

@@ -179,11 +179,15 @@ class pancakeoffaxisStation(test_station.TestStation):
             self._operator_interface.print_to_console("Test exception {}.\n".format(e.message))
         finally:
             self._operator_interface.print_to_console('release current test resource.\n')
-            if self._the_unit is not None:
-                self._the_unit.close()
-            if self._fixture is not None:
-                self._fixture.unload()
-                self._fixture.button_disable()
+            # noinspection PyBroadException
+            try:
+                if self._the_unit is not None:
+                    self._the_unit.close()
+                if self._fixture is not None:
+                    self._fixture.unload()
+                    self._fixture.button_disable()
+            except:
+                pass
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
             overall_result, first_failed_test_result = self.close_test(test_log)
 
@@ -274,6 +278,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                 self._the_unit = None
                 raise test_station.TestStationSerialNumberError('Fail to Wait for press dual-btn ...')
         finally:
+            # noinspection PyBroadException
             try:
                 self._fixture.button_disable()
             except:
@@ -295,6 +300,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                 self._operator_interface.print_to_console('Unable to get start signal in %s from fixture.\n'%timeout_for_dual)
                 raise test_station.TestStationSerialNumberError('Fail to Wait for press dual-btn ...')
         finally:
+            # noinspection PyBroadException
             try:
                 self._fixture.button_disable()
             except:
