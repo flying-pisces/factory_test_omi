@@ -56,7 +56,8 @@ class seacliffmotStation(test_station.TestStation):
         retries = 0
         is_screen_on = False
         try:
-            the_unit.screen_on()
+            the_unit.connect_display()
+
             the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
 
             a_result = 1.1

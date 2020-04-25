@@ -94,7 +94,7 @@ FIXTRUE_PARTICLE_START_DLY = 0
 
 ##################################
 # Test Equipment related parameters
-IS_VERBOSE = False # some path bug at
+IS_VERBOSE = False # some path bug, temp set False and work on True later
 CFG_PATH = r'test_station\Cfg'
 CAPTURE_PATH = r'test_station\CaptureFolder1'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
@@ -106,6 +106,7 @@ PATTERNS = ["W255", 'W127', "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True, True, True]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
+
 # COLORS = ['0008', '0001', '0800', '8000', '0010', '0020', '0040']
 # COLORS = ['1', '2', '3','4','5']
 ANALYSIS = ["MLO_Uniformity W255", "MLO_Uniformity W127", "MLO_Uniformity R255", "MLO_Uniformity G255", "MLO_Uniformity B255"]
