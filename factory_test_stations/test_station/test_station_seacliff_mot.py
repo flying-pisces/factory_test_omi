@@ -58,16 +58,21 @@ class seacliffmotStation(test_station.TestStation):
             the_unit.connect_display()
 
             for c in [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255)]:
+                self._operator_interface.print_to_console("\n*********** Display color %s ***************\n" %str(c))
                 the_unit.display_color(c)
                 config = {"capturePath": self._station_config.RAW_IMAGE_LOG_DIR,
                           "cfgPath": os.path.join(self._station_config.ROOT_DIR, r"test_stations\test_equipment\Cfg")}
                 self._equipment.set_config(config)
                 self._equipment.open()
+                self._operator_interface.print_to_console("\n*********** Eldim Capturing Bin File for color %s ***************\n"%str(c))
                 self._equipment.measure_and_export(self._station_config.TESTTYPE)
             for c in range(0, 5):
                 self._operator_interface.print_to_console("\n*********** Display image %s ***************\n" %str(c))
                 the_unit.display_image(c, False)
-
+                self._equipment.set_config(config)
+                self._equipment.open()
+                self._operator_interface.print_to_console("\n*********** Eldim Capturing Bin File for color %s ***************\n"%str(c))
+                self._equipment.measure_and_export(self._station_config.TESTTYPE)
         except seacliffmotStationError:
             self._operator_interface.print_to_console("Non-parametric Test Failure\n")
             return self.close_test(test_log)
