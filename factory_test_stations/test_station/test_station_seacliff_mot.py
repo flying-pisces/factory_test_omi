@@ -44,6 +44,7 @@ class seacliffmotStation(test_station.TestStation):
     def _do_test(self, serial_number, test_log):
         self._overall_result = False
         self._overall_errorcode = ''
+        self._operator_interface.print_to_console("\n*********** Fixture at %s to load DUT %s ***************\n" %self._station_config.FIXTURE_COMPORT)
         self._fixture.load()
         the_unit = pancakeDut(serial_number, self._station_config, self._operator_interface)
         self._operator_interface.print_to_console("Testing Unit %s\n" % the_unit.serial_number)
