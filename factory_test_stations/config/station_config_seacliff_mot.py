@@ -6,7 +6,7 @@
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\unif_summary'
-
+RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 
 ##################################
 # serial number codes
@@ -106,7 +106,7 @@ PATTERNS = ["W255", 'W127', "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True, True, True]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
-
+DUT_DISPLAYSLEEPTIME = 1
 # COLORS = ['0008', '0001', '0800', '8000', '0010', '0020', '0040']
 # COLORS = ['1', '2', '3','4','5']
 ANALYSIS = ["MLO_Uniformity W255", "MLO_Uniformity W127", "MLO_Uniformity R255", "MLO_Uniformity G255", "MLO_Uniformity B255"]

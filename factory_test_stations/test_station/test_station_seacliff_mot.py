@@ -2,9 +2,9 @@ import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_seacliff_mot as test_fixture_seacliff_mot
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 import test_station.test_equipment.test_equipment_seacliff_mot as test_equipment_seacliff_mot
-import test_station.dut as dut
+from test_station.dut import pancakeDut
 import time
-
+import os
 
 class seacliffmotStationError(Exception):
     pass
@@ -47,34 +47,26 @@ class seacliffmotStation(test_station.TestStation):
         self._overall_result = False
         self._overall_errorcode = ''
         self._fixture.load()
-        the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
-        if self._station_config.DUT_SIM:
-            the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
+        the_unit = pancakeDut(serial_number, self._station_config, self._operator_interface)
         self._operator_interface.print_to_console("Testing Unit %s\n" % the_unit.serial_number)
         the_unit.initialize()
         self._operator_interface.print_to_console("Initialize DUT... \n")
         retries = 0
         is_screen_on = False
+        self._operator_interface.print_to_console("\n Equipment Version: %s\n" %self._equipment.version())
         try:
             the_unit.connect_display()
 
-            the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
-
-            a_result = 1.1
-            self._operator_interface.wait(a_result, "\n***********Testing Item 1 ***************\n")
-
-            test_log.set_measured_value_by_name("TEST ITEM 1", a_result)
-            self._operator_interface.print_to_console("Log the test item 1 value %f\n" % a_result)
-
-            a_result = 1.4
-            self._operator_interface.wait(a_result, "\n***********Testing Item 2 ***************\n")
-            test_log.set_measured_value_by_name("TEST ITEM 2", a_result)
-            self._operator_interface.print_to_console("Log the test item 2 value %f\n" % a_result)
-
-            a_result = 1.8
-            self._operator_interface.wait(a_result, "\n***********Testing Item 3 ***************\n")
-            test_log.set_measured_value_by_name("TEST ITEM 3", a_result)
-            self._operator_interface.print_to_console("Log the test item 3 value %f\n" % a_result)
+            for c in [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255)]:
+                the_unit.display_color(c)
+                config = {"capturePath": self._station_config.RAW_IMAGE_LOG_DIR,
+                          "cfgPath": os.path.join(self._station_config.ROOT_DIR, r"test_stations\test_equipment\Cfg")}
+                self._equipment.set_config(config)
+                self._equipment.open()
+                self._equipment.measure_and_export(self._station_config.TESTTYPE)
+            for c in range(0, 5):
+                self._operator_interface.print_to_console("\n*********** Display image %s ***************\n" %str(c))
+                the_unit.display_image(c, False)
 
         except seacliffmotStationError:
             self._operator_interface.print_to_console("Non-parametric Test Failure\n")

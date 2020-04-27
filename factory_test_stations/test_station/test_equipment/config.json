@@ -26,9 +26,9 @@
     },
     "Settings": {
         "autoExposure": false,
-        "autoExposurePixelMax": 80,
+        "autoExposurePixelMax": 0,
         "capturePath": "./CaptureFolder2",
-        "cfgPath": "./Cfg"
+        "cfgPath": "C:\\oculus\\factory_test_omi\\factory_test_stations\\test_stations\\test_equipment\\Cfg"
     },
     "SettingsI": {
         "cfgFileIsZip": true,

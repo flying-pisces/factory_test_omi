@@ -13,6 +13,7 @@ import string
 import win32process
 import win32event
 import pywintypes
+import datetime
 
 class DUTError(Exception):
     def __init__(self, value):
@@ -56,8 +57,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             return False
         else:
             self.first_boot = True
-            if self._verbose:
-                print('DUT %s Initialised. ' % self._station_config.DUT_COMPORT)
+            print('DUT %s Initialised. ' % self._station_config.DUT_COMPORT)
             return True
         return False
 
@@ -386,7 +386,7 @@ if __name__ == "__main__" :
 
     station_config.load_station('seacliff_mot')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
-    the_unit = pancakeDut(station_config, station_config, station_config)
+    the_unit = pancakeDut("1PR01231231234", station_config, station_config)
     for idx in range(0, 2):
 
         print('Loop ---> {}'.format(idx))
@@ -415,7 +415,7 @@ if __name__ == "__main__" :
                 time.sleep(0.1)
 
             # for c in range(0, len(pics)): # DDR Image
-            for c in range(0, 5):
+            for c in range(0, 10):
                 the_unit.display_image(c, False)
                 time.sleep(0.5)
             the_unit.screen_off()
