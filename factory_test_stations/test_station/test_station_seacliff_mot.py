@@ -13,8 +13,6 @@ class seacliffmotStation(test_station.TestStation):
     def __init__(self, station_config, operator_interface):
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_seacliff_mot.seacliffmotFixture(station_config, operator_interface)
-        if station_config.FIXTURE_SIM:
-            self._fixture = projectstationFixture(station_config, operator_interface)
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
@@ -32,7 +30,7 @@ class seacliffmotStation(test_station.TestStation):
             try:
                 self._operator_interface.print_to_console("Close...\n")
                 self._fixture.status()
-                self._fixture.elminator_off()
+#                self._fixture.elminator_off()
             finally:
                 self._fixture.close()
                 self._fixture = None
@@ -56,7 +54,7 @@ class seacliffmotStation(test_station.TestStation):
         self._operator_interface.print_to_console("\n Equipment Version: %s\n" %self._equipment.version())
         try:
             the_unit.connect_display()
-
+            test_item = 0
             for c in [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255)]:
                 self._operator_interface.print_to_console("\n*********** Display color %s ***************\n" %str(c))
                 the_unit.display_color(c)
@@ -65,7 +63,12 @@ class seacliffmotStation(test_station.TestStation):
                 self._equipment.set_config(config)
                 self._equipment.open()
                 self._operator_interface.print_to_console("\n*********** Eldim Capturing Bin File for color %s ***************\n"%str(c))
-                self._equipment.measure_and_export(self._station_config.TESTTYPE)
+                self._equipment.measure_and_export(self._station_config.TESTTYPE) ## Need Eldim to open access
+                test_item+=1
+                test_item_raw_files = sum([len(files) for r, d, files in os.walk(self._station_config.RAW_IMAGE_LOG_DIR)])
+                if test_item_raw_files == 2*test_item:
+                    test_log.set_measured_value_by_name("TEST_RAW_IMAGE_SAVE_SUCCESS_%s"%str(test_item), 1)
+
             for c in range(0, 5):
                 self._operator_interface.print_to_console("\n*********** Display image %s ***************\n" %str(c))
                 the_unit.display_image(c, False)
@@ -73,6 +76,10 @@ class seacliffmotStation(test_station.TestStation):
                 self._equipment.open()
                 self._operator_interface.print_to_console("\n*********** Eldim Capturing Bin File for color %s ***************\n"%str(c))
                 self._equipment.measure_and_export(self._station_config.TESTTYPE)
+                test_item+=1
+                test_item_raw_files = sum([len(files) for r, d, files in os.walk(self._station_config.RAW_IMAGE_LOG_DIR)])
+                if test_item_raw_files == 2*test_item:
+                    test_log.set_measured_value_by_name("TEST_RAW_IMAGE_SAVE_SUCCESS_%s"%str(test_item), 1)
         except seacliffmotStationError:
             self._operator_interface.print_to_console("Non-parametric Test Failure\n")
             return self.close_test(test_log)

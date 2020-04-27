@@ -95,8 +95,7 @@ FIXTRUE_PARTICLE_START_DLY = 0
 ##################################
 # Test Equipment related parameters
 IS_VERBOSE = False # some path bug, temp set False and work on True later
-CFG_PATH = r'test_station\Cfg'
-CAPTURE_PATH = r'test_station\CaptureFolder1'
+CFG_PATH = r'test_station\test_equipment\Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
 
 
@@ -107,12 +106,7 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True, True, True]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 1
-# COLORS = ['0008', '0001', '0800', '8000', '0010', '0020', '0040']
-# COLORS = ['1', '2', '3','4','5']
-ANALYSIS = ["MLO_Uniformity W255", "MLO_Uniformity W127", "MLO_Uniformity R255", "MLO_Uniformity G255", "MLO_Uniformity B255"]
-MEASUREMENTS = ["W255", 'W127', "R255", "G255", "B255"]
-#gamma related
-GAMMA_CHECK_GLS = []#["255", "180", "127", "090"]
+
 
 ##################################
 # IT and work order
@@ -120,12 +114,6 @@ GAMMA_CHECK_GLS = []#["255", "180", "127", "090"]
 FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
-
-EQUIPMENT_DEMO_DATABASE = r'C:\project'
-DUT_SIM = True
-CAMERA_SN = "Demo"
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
 
 VERSION = 'SunnyP2-PreBuild-Alpha'
 
