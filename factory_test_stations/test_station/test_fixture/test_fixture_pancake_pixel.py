@@ -7,8 +7,7 @@ import glob
 import serial
 import serial.tools.list_ports
 import time
-import re
-import pprint
+import math
 from pymodbus.client.sync import ModbusSerialClient
 from pymodbus.register_write_message import WriteSingleRegisterResponse
 from pymodbus.register_read_message import ReadHoldingRegistersResponse
@@ -37,14 +36,7 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
         self.equipment = None
 
     def is_ready(self):
-        if self._serial_port is not None:
-            resp = self._read_response(2)
-            btn_dic = {2 : r'BUTTON_LEFT:\d', 1 : r'BUTTON_RIGHT:\d', 0 : r'BUTTON:\d'}
-            if resp:
-                for key, item in btn_dic.items():
-                    items = filter(lambda r: re.match(item, r, re.I), resp)
-                    if items:
-                        return key
+        pass
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing Fixture\n")
@@ -87,17 +79,13 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
             print("flushed")
         return bytes_written
 
-    def _read_response(self, timeout=5):
+    def _read_response(self):
         response = []
         line_in = ""
-        tim = time.time()
-        while (not re.search("@_@", line_in, re.IGNORECASE)
-               and (time.time() - tim < timeout)):
+        while (line_in != "@_@"):
             line_in = self._serial_port.readline()
-            if line_in != "":
+            if (line_in != ""):
                 response.append(line_in)
-        if self._verbose and len(response) > 1:
-            pprint.pprint(response)
         return response
 
     ######################

@@ -16,8 +16,8 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Fake model number requirement, need config
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM3" #
-FIXTURE_PARTICLE_COMPORT="COM1" #
+FIXTURE_COMPORT = "COM10" #
+FIXTURE_PARTICLE_COMPORT="COM3" #
 FIXTURE_PARTICLE_ADDR=1
 DUT_COMPORT = "COM9" #
 
@@ -190,6 +190,6 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads'
-DUT_SIM = True
-EQUIPMENT_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
 FIXTURE_SIM = False
