@@ -9,6 +9,12 @@ import serial
 import serial.tools.list_ports
 import time
 import pprint
+from pymodbus.client.sync import ModbusSerialClient
+from pymodbus.register_write_message import WriteSingleRegisterResponse
+from pymodbus.register_read_message import ReadHoldingRegistersResponse
+from pymodbus.constants import Defaults
+import time
+import ctypes
 
 class pancakeoffaxisFixtureError(Exception):
     pass
@@ -25,6 +31,7 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
         self._start_delimiter = ':'
         self._end_delimiter = '@_@'
         self._error_msg = r'Please scanf "CMD_HELP" check help command'
+        self._particle_counter_client = None  # type: ModbusSerialClient
 
     def is_ready(self):
         if self._serial_port is not None:
@@ -50,9 +57,20 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
                                           timeout=1,
                                           xonxoff=0,
                                           rtscts=0)
+        if self._station_config.FIXTURE_PARTICLE_COUNTER:
+                parity = 'N'
+                Defaults.Retries = 5
+                Defaults.RetryOnEmpty = True
+                self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
+                                                                   stopbits=1,
+                                                                   port=self._station_config.FIXTURE_PARTICLE_COMPORT,
+                                                                   timeout=2000)
+                if not self._particle_counter_client.connect():
+                    raise pancakeoffaxisFixtureError( 'Unable to open particle counter port: %s'
+                                                      % self._station_config.FIXTURE_PARTICLE_COMPORT)
+
         if not self._serial_port:
             raise pancakeoffaxisFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
-            return False
         else:  # disable the buttons automatically
             self.set_tri_color('y')
             self.button_enable()
@@ -125,8 +143,13 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
             self.button_disable()
             self._serial_port.close()
             self._serial_port = None
-            if self._verbose:
-                pprint.pprint( "====== Fixture Close =========")
+        if hasattr(self, '_particle_counter_client') and \
+                self._particle_counter_client is not None \
+                and self._station_config.FIXTURE_PARTICLE_COUNTER:
+            self._particle_counter_client.close()
+            self._particle_counter_client = None
+        if self._verbose:
+            pprint.pprint( "====== Fixture Close =========")
         return True
 
     ######################
@@ -198,18 +221,66 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
         """
         :type color: str
         """
-        cmd = None
-        if color == 'r':
-            cmd = self._station_config.COMMAND_TRI_LED_R
-        elif color == 'y':
-            cmd = self._station_config.COMMAND_TRI_LED_Y
-        elif color == 'g':
-            cmd = self._station_config.COMMAND_TRI_LED_G
+        switch = {
+            'r':self._station_config.COMMAND_TRI_LED_R,
+            'y':self._station_config.COMMAND_TRI_LED_Y,
+            'g':self._station_config.COMMAND_TRI_LED_G,
+        }
+        cmd = switch.get(color)
         if cmd:
             self._write_serial(cmd)
             response = self.read_response()
             r = r'LED_[R|Y|G]:\d+'
             return self._prase_response(r, response)
+
+    ######################
+    # Particle Counter Control
+    ######################
+    def particle_counter_on(self):
+        if self._particle_counter_client is not None:
+            wrs = self._particle_counter_client.\
+                write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                               1, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
+            if wrs is None or wrs.isError():
+                raise pancakeoffaxisFixtureError('Failed to start particle counter .')
+
+    def particle_counter_off(self):
+        if self._particle_counter_client is not None:
+            self._particle_counter_client. write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                                                          0, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: WriteSingleRegisterResponse
+
+    def particle_counter_read_val(self):
+        if self._particle_counter_client is not None:
+            val = None
+            retries = 1
+            while retries <= 10:
+                rs = self._particle_counter_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
+                                                                          2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
+                if rs is None or rs.isError():
+                    if self._station_config.IS_VERBOSE:
+                        print "Retries to read data from particle counter {}/10. ".format(retries)
+                    retries += 1
+                    time.sleep(0.5)
+                else:
+                    # val = rs.registers[0] * 65535 + rs.registers[1]
+                    # modified by elton.  for apc-r210/310
+                    val = ctypes.c_int32(rs.registers[0]  + (rs.registers[1] << 16)).value
+                    if hasattr(station_config, 'PARTICLE_COUNTER_APC') and station_config.PARTICLE_COUNTER_APC:
+                        val = (ctypes.c_int32((rs.registers[0] << 16) + rs.registers[1])).value
+                    break
+            if val is None:
+                raise pancakeoffaxisFixtureError('Failed to read data from particle counter.')
+            return val
+
+    def particle_counter_state(self):
+        if self._particle_counter_client is not None:
+            rs = self._particle_counter_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
+                                                                      2,
+                                                                      unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
+            if rs is None or rs.isError():
+                raise pancakeoffaxisFixtureError('Fail to read data from particle counter. ')
+            else:
+                return rs.registers[0]
 
 def print_to_console(self, msg):
     pass

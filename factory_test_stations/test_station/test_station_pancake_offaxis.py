@@ -8,8 +8,6 @@ import math
 import datetime
 import re
 import filecmp
-from verifiction.particle_counter import ParticleCounter
-from verifiction.dut_checker import DutChecker
 import dut
 from test_fixture.test_fixture_pancake_offaxis import pancakeoffaxisFixture
 from test_fixture.test_fixture_project_station import projectstationFixture
@@ -46,11 +44,9 @@ class pancakeoffaxisStation(test_station.TestStation):
         if station_config.FIXTURE_SIM:
             self._fixture = projectstationFixture(station_config, operator_interface)
         self._equipment = pancakeoffaxisEquipment(station_config)  # type: pancakeoffaxisEquipment
-        self._particle_counter = ParticleCounter(station_config)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
-            self._particle_counter.initialize()
-            if self._particle_counter.particle_counter_state() == 0:
-                self._particle_counter.particle_counter_on()
+            if self._fixture.particle_counter_state() == 0:
+                self._fixture.particle_counter_on()
                 self._particle_counter_start_time = datetime.datetime.now()
         self._overall_errorcode = ''
         self._first_failed_test_result = None
@@ -72,28 +68,12 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._operator_interface.print_to_console("Initialize Camera %s\n" %self._station_config.CAMERA_SN)
         self._equipment.initialize()
 
-    def _close_fixture(self):
-        if self._fixture is not None:
-            try:
-                self._operator_interface.print_to_console("Close...\n")
-            finally:
-                self._fixture.close()
-                self._fixture = None
-
-    def _close_particle_counter(self):
-        if self._particle_counter is not None:
-            try:
-                pass
-                # turn off the particle_counter manually.
-                # self._particle_counter.particle_counter_off()
-            finally:
-                self._particle_counter.close()
-                self._particle_counter = None
-
     def close(self):
-        self._close_fixture()
-        self._close_particle_counter()
+        if self._fixture is not None:
+            self._fixture.close()
+            self._fixture = None
         self._equipment.close()
+        self._equipment = None
 
     def _do_test(self, serial_number, test_log):
         # type: (str, test_station.test_log) -> tuple
@@ -148,7 +128,7 @@ class pancakeoffaxisStation(test_station.TestStation):
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
-                particle_count = self._particle_counter.particle_counter_read_val()
+                particle_count = self._fixture.particle_counter_read_val()
             test_log.set_measured_value_by_name_ex("ENV_ParticleCounter", particle_count)
 
             self._operator_interface.print_to_console("Set Camera Database. %s\n" % self._station_config.CAMERA_SN)
@@ -175,7 +155,7 @@ class pancakeoffaxisStation(test_station.TestStation):
 
             self.offaxis_test_do(serial_number, test_log, self._the_unit)
 
-        except Exception, e:
+        except Exception as e:
             self._operator_interface.print_to_console("Test exception {}.\n".format(e.message))
         finally:
             self._operator_interface.print_to_console('release current test resource.\n')

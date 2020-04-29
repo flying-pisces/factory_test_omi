@@ -16,7 +16,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Fake model number requirement, need config
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM3" #
+FIXTURE_COMPORT = "COM2" #
 FIXTURE_PARTICLE_COMPORT="COM1" #
 FIXTURE_PARTICLE_ADDR=1
 DUT_COMPORT = "COM9" #
@@ -189,7 +189,8 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads'
+EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\pixel'
+CAMERA_SN = "Demo"
 DUT_SIM = True
 EQUIPMENT_SIM = True
 FIXTURE_SIM = False

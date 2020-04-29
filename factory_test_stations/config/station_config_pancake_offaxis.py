@@ -17,7 +17,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PRP'  # Peak panel SN
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM4" #
+FIXTURE_COMPORT = "COM2" #
 FIXTURE_PARTICLE_COMPORT = "COM3" #
 FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = "COM5" #
@@ -200,8 +200,9 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis_2'
-CAMERA_SN = "Demo"
+
 DUT_SIM = True
+CAMERA_SN = "Demo"
 EQUIPMENT_SIM = True
 FIXTURE_SIM = True
 
