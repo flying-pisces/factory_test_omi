@@ -17,9 +17,9 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM4" #
+FIXTURE_COMPORT = "COM2" #
 FIXTURE_PARTICLE_COMPORT = "COM4" #
-FIXTURE_PARTICLE_ADDR=1
+FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = "COM3" #
 
 COMMAND_DISP_HELP = "$c.help"
