@@ -52,7 +52,7 @@ class pancakeuniformityStation(test_station.TestStation):
         self._the_unit = None
         self._is_screen_on_by_op = False
         self._retries_screen_on = 0
-
+        self._is_cancel_test_by_op = False
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
@@ -214,10 +214,10 @@ class pancakeuniformityStation(test_station.TestStation):
 
     def is_ready(self):
         ready = False
-        cancel = False
         power_on_trigger = False
         self._is_screen_on_by_op = False
         self._retries_screen_on = 0
+        self._is_cancel_test_by_op = False
 
         serial_number = self._lastest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
@@ -225,14 +225,14 @@ class pancakeuniformityStation(test_station.TestStation):
         if self._station_config.DUT_SIM:
             self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
 
+        timeout_for_btn_idle = 20
+        timeout_for_dual = timeout_for_btn_idle
         try:
             self._the_unit.initialize()
             self._fixture.button_enable()
-            timeout_for_btn_idle = 20
-            timeout_for_dual = timeout_for_btn_idle
 
             while timeout_for_dual > 0:
-                if ready or cancel:
+                if ready or self._is_cancel_test_by_op:
                     break
                 msg_prompt = 'Load DUT, and then Press L-Btn(Cancel)/R-Btn(Litup) in %s S...'
                 if power_on_trigger:
@@ -266,25 +266,25 @@ class pancakeuniformityStation(test_station.TestStation):
                             power_on_trigger = True
                             timeout_for_dual = timeout_for_btn_idle
                     elif ready_status == 0x02:
-                        cancel = True  # Cancel test.
+                        self._is_cancel_test_by_op = True  # Cancel test.
                 time.sleep(0.1)
                 timeout_for_dual -= 1
-            if not ready:
-                self._the_unit.close()
-                self._the_unit = None
-                if not cancel:
-                    self._operator_interface.print_to_console(
-                        'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
-                    raise test_station.TestStationSerialNumberError('Fail to Wait for press dual-btn ...')
-                else:
-                    self._operator_interface.print_to_console(
-                        'Cancel start signal from dual %s.\n' % timeout_for_dual)
         except Exception as e:
-            self._operator_interface.print_to_console('Fixture is not ready for reason: %s.\n' % e.message)
+            self._operator_interface.print_to_console('Fixture is not ready for reason: %s.\n' % e)
         finally:
             # noinspection PyBroadException
             try:
                 self._fixture.button_disable()
+                if not ready:
+                    self._the_unit.close()
+                    self._the_unit = None
+                    if not self._is_cancel_test_by_op:
+                        self._operator_interface.print_to_console(
+                            'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
+                        raise test_station.TestStationSerialNumberError('Fail to Wait for press dual-btn ...')
+                    else:
+                        self._operator_interface.print_to_console(
+                            'Cancel start signal from dual %s.\n' % timeout_for_dual)
             except:
                 pass
             self._operator_interface.prompt('', 'SystemButtonFace')
