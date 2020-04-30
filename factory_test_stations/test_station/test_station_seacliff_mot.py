@@ -2,12 +2,26 @@ import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_seacliff_mot as test_fixture_seacliff_mot
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 import test_station.test_equipment.test_equipment_seacliff_mot as test_equipment_seacliff_mot
-from test_station.dut import pancakeDut
+from test_station.dut import pancakeDut, projectDut
 import time
 import os
+import types
+import re
+
+
+def chk_and_set_measured_value_by_name(test_log, item, value):
+    """
+
+    :type test_log: test_station.TestRecord
+    """
+    if item in test_log.results_array():
+        test_log.set_measured_value_by_name(item, value)
+    pass
+
 
 class seacliffmotStationError(Exception):
     pass
+
 
 class seacliffmotStation(test_station.TestStation):
     def __init__(self, station_config, operator_interface):
@@ -16,6 +30,12 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
+        self._sw_version = '0.0.1'
+        self._latest_serial_number = None  # type: str
+        self._the_unit = None  # type: Optional[pancakeDut]
+        self._retries_screen_on = 0
+        self._is_screen_on_by_op = False
+        self._is_cancel_test_by_op = False
 
     def initialize(self):
         try:
@@ -41,52 +61,146 @@ class seacliffmotStation(test_station.TestStation):
         self._close_fixture()
         self._equipment.close()
 
+    def get_test_item_pattern(self, name):
+        test_item_patterns = [
+            {'name': 'W255', 'pattern': (255, 255, 255), 'exposure': 3100},
+            {'name': 'G127', 'pattern': (127, 127, 127), },
+            {'name': 'W000', 'pattern': (0, 0, 0), },
+            {'name': 'RGB', 'pattern': (127, 127, 127), },
+            {'name': 'R255', 'pattern': (255, 0, 0), },
+            {'name': 'G255', 'pattern': (0, 255, 0), },
+            {'name': 'B255', 'pattern': (0, 0, 255), },
+            {'name': 'GreenContrast', 'pattern': 1, },
+            {'name': 'WhiteContrast', 'pattern': 2, },
+            {'name': 'GreenSharpness', 'pattern': 3, },
+            {'name': 'GreenDistortion', 'pattern': 4, }
+        ]
+        for c in test_item_patterns:
+            if c.has_key('name') and c['name'] == name:
+                return c
+
     def _do_test(self, serial_number, test_log):
+        """
+
+        @type test_log: test_station.test_log.test_log
+        """
         self._overall_result = False
         self._overall_errorcode = ''
-        self._operator_interface.print_to_console("\n*********** Fixture at %s to load DUT %s ***************\n" %self._station_config.FIXTURE_COMPORT)
-        self._fixture.load()
-        the_unit = pancakeDut(serial_number, self._station_config, self._operator_interface)
-        self._operator_interface.print_to_console("Testing Unit %s\n" % the_unit.serial_number)
-        the_unit.initialize()
+        self._operator_interface.print_to_console(
+            "\n*********** Fixture at %s to load DUT %s ***************\n"
+            % (self._station_config.FIXTURE_COMPORT, self._station_config.DUT_COMPORT))
+
+        self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
         self._operator_interface.print_to_console("Initialize DUT... \n")
-        retries = 0
-        is_screen_on = False
-        self._operator_interface.print_to_console("\n Equipment Version: %s\n" %self._equipment.version())
+
+        test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
+
+        self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
+        test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+        equip_version = self._equipment.version()
+        test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version)
+        self._operator_interface.print_to_console("Equipment Version: %s\n" % equip_version)
+        test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
+        test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
+        test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
+        # hard coded.
+        test_item_pos = [
+            {'name': 'normal', 'pos': (0, 0, 15),
+             'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
+                         'GreenSharpness', 'GreenDistortion']},
+            {'name': 'extendedz', 'pos': (0, 0, 27), },
+            {'name': 'extendedxpos', 'pos': (5.071, 0, 16.124)},
+            {'name': 'extendedxneg', 'pos': (-5.071, 0, 16.124)},
+            {'name': 'extendedypos', 'pos': (0, 5.071, 16.124)},
+            {'name': 'extendedyneg', 'pos': (0, -5.071, 16.124)},
+            {'name': 'blemish', 'pos': (0, 0, 5.000), }
+        ]
         try:
-            the_unit.connect_display()
-            test_item = 0
-            for c in [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255)]:
-                self._operator_interface.print_to_console("\n*********** Display color %s ***************\n" %str(c))
-                the_unit.display_color(c)
-                config = {"capturePath": self._station_config.RAW_IMAGE_LOG_DIR,
-                          "cfgPath": os.path.join(self._station_config.ROOT_DIR, r"test_stations\test_equipment\Cfg")}
-                self._equipment.set_config(config)
-                self._equipment.open()
-                self._operator_interface.print_to_console("\n*********** Eldim Capturing Bin File for color %s ***************\n"%str(c))
-                self._equipment.measure_and_export(self._station_config.TESTTYPE) ## Need Eldim to open access
-                test_item+=1
-                test_item_raw_files = sum([len(files) for r, d, files in os.walk(self._station_config.RAW_IMAGE_LOG_DIR)])
-                if test_item_raw_files == 2*test_item:
-                    test_log.set_measured_value_by_name("TEST_RAW_IMAGE_SAVE_SUCCESS_%s"%str(test_item), 1)
+            if not self._is_screen_on_by_op:
+                raise seacliffmotStationError('fail to power screen on normally.')
 
-            for c in range(0, 5):
-                self._operator_interface.print_to_console("\n*********** Display image %s ***************\n" %str(c))
-                the_unit.display_image(c, False)
-                self._equipment.set_config(config)
-                self._equipment.open()
-                self._operator_interface.print_to_console("\n*********** Eldim Capturing Bin File for color %s ***************\n"%str(c))
-                self._equipment.measure_and_export(self._station_config.TESTTYPE)
-                test_item+=1
-                test_item_raw_files = sum([len(files) for r, d, files in os.walk(self._station_config.RAW_IMAGE_LOG_DIR)])
-                if test_item_raw_files == 2*test_item:
-                    test_log.set_measured_value_by_name("TEST_RAW_IMAGE_SAVE_SUCCESS_%s"%str(test_item), 1)
-        except seacliffmotStationError:
-            self._operator_interface.print_to_console("Non-parametric Test Failure\n")
-            return self.close_test(test_log)
+            for pos_item in test_item_pos:
+                pos_name = pos_item['name']
+                pos_val = pos_item['pos']
+                item_patterns = []
+                if pos_item.has_key['pattern']:
+                    item_patterns = pos_item['pattern']
+                self._operator_interface.print_to_console('move dut to pos = {0}\n'.format(pos_name))
+                self._fixture.mov_abs_xya(*pos_val)
+                # capture path accorded with test_log.
+                uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+                capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
+                test_station.utils.os_utils.mkdir_p(capture_path)
+                os.chmod(capture_path, 755)
 
-        else:
-            return self.close_test(test_log)
+                test_item = 0
+                for pattern_name in item_patterns:
+                    pattern_info = self.get_test_item_pattern(pattern_name)
+                    if not pattern_info:
+                        self._operator_interface.print_to_console(
+                            'Unable to find information for pattern: %s \n' % pattern_name)
+                        continue
+                    self._operator_interface.print_to_console('test pattern name = {0}\n'.format(pattern_name))
+                    pattern_value = pattern_info['pattern']
+                    if isinstance(pattern_value, int):
+                        the_unit.display_image(pattern_value)
+                    elif isinstance(pattern_value, (int, int, int)):
+                        the_unit.display_color(pattern_value, False)
+                    else:
+                        self._operator_interface.print_to_console('Unable to change pattern: %s = %s \n'
+                                                                  % (pattern_name, pattern_value))
+                        continue
+
+                    config = {"capturePath": capture_path,
+                              "cfgPath": os.path.join(self._station_config.ROOT_DIR,
+                                                      r"test_stations\test_equipment\Cfg")}
+                    self._equipment.set_config(config)
+                    self._equipment.open()
+                    self._operator_interface.print_to_console(
+                        "*********** Eldim Capturing Bin File for color %s ***************\n" % pattern_value)
+                    self._equipment.measure_and_export(self._station_config.TESTTYPE)
+                    test_item += 1
+                    test_item_raw_files = sum([len(files) for r, d, files in os.walk(capture_path)])
+
+                    measure_item_name = 'Test_RAW_IMAGE_SAVE_SUCCESS_{0}_{1}'.format(pos_name, pattern_name)
+                    if test_item_raw_files == 2 * test_item:
+                        test_log.set_measured_value_by_name(measure_item_name, True)
+                    else:
+                        break
+
+                self._operator_interface.print_to_console('..........\n\n')
+
+            # for c in [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255)]:
+            #     self._operator_interface.print_to_console("\n*********** Display color %s ***************\n" % str(c))
+            #     the_unit.display_color(c)
+            #     config = {"capturePath": self._station_config.RAW_IMAGE_LOG_DIR,
+            #               "cfgPath": os.path.join(self._station_config.ROOT_DIR, r"test_stations\test_equipment\Cfg")}
+            #     self._equipment.set_config(config)
+            #     self._equipment.open()
+            #     self._operator_interface.print_to_console("\n*********** Eldim Capturing Bin File for color %s ***************\n" % str(c))
+            #     self._equipment.measure_and_export(self._station_config.TESTTYPE) ## Need Eldim to open access
+            #     test_item += 1
+            #     test_item_raw_files = sum([len(files) for r, d, files in os.walk(self._station_config.RAW_IMAGE_LOG_DIR)])
+            #     if test_item_raw_files == 2*test_item:
+            #         test_log.set_measured_value_by_name("TEST_RAW_IMAGE_SAVE_SUCCESS_%s"%str(test_item), 1)
+            #
+            # for c in range(0, 5):
+            #     self._operator_interface.print_to_console("\n*********** Display image %s ***************\n" % str(c))
+            #     the_unit.display_image(c, False)
+            #     self._equipment.set_config(config)
+            #     self._equipment.open()
+            #     self._operator_interface.print_to_console("\n*********** Eldim Capturing Bin File for color %s ***************\n" % str(c))
+            #     self._equipment.measure_and_export(self._station_config.TESTTYPE)
+            #     test_item += 1
+            #     test_item_raw_files = sum([len(files) for r, d, files in os.walk(self._station_config.RAW_IMAGE_LOG_DIR)])
+            #     if test_item_raw_files == 2*test_item:
+            #         test_log.set_measured_value_by_name("TEST_RAW_IMAGE_SAVE_SUCCESS_%s"%str(test_item), 1)
+        except seacliffmotStationError as e:
+            self._operator_interface.print_to_console(e)
+        finally:
+            self._the_unit.close()
+            self._the_unit = None
+        return self.close_test(test_log)
 
     def close_test(self, test_log):
         ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###
@@ -94,15 +208,86 @@ class seacliffmotStation(test_station.TestStation):
         self._first_failed_test_result = test_log.get_first_failed_test_result()
         return self._overall_result, self._first_failed_test_result
 
+    def validate_sn(self, serial_num):
+        self._latest_serial_number = serial_num
+        return test_station.TestStation.validate_sn(self, serial_num)
+
     def is_ready(self):
+        serial_number = self._latest_serial_number
+        self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
+        self._the_unit = pancakeDut(serial_number, self._station_config, self._operator_interface)
+        if hasattr(self._station_config, 'DUT_SIM') and self._station_config.DUT_SIM:
+            self._the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
+        return self.is_ready_litup_outside()
+
+    def is_ready_litup_outside(self):
+        # TODO:  Initialized the DUT Simply
+        self._the_unit.initialize()
+        self._is_screen_on_by_op = True
+        self._is_cancel_test_by_op = False
         return True
 
-        self._fixture.is_ready()
-        timeout_for_dual = 5
-        for idx in range(timeout_for_dual, 0, -1):
-            self._operator_interface.prompt('Press the Dual-Start Btn in %s S...\n' % idx, 'yellow');
-            time.sleep(1)
+        ready = False
+        power_on_trigger = False
+        self._is_screen_on_by_op = False
+        self._is_cancel_test_by_op = False
+        self._retries_screen_on = 0
+        try:
+            self._fixture.button_enable()
+            timeout_for_btn_idle = 20
+            timeout_for_dual = timeout_for_btn_idle
+            self._the_unit.initialize()
+            self._operator_interface.print_to_console("Initialize DUT... \n")
+            while timeout_for_dual > 0:
+                if ready or self._is_cancel_test_by_op:
+                    break
+                msg_prompt = 'Load DUT, and then Press L-Btn(Cancel)/R-Btn(Litup) in %s S...'
+                if power_on_trigger:
+                    msg_prompt = 'Press Dual-Btn(Load)/L-Btn(Cancel)/R-Btn(Re Litup)  in %s S...'
+                self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow')
+                if self._station_config.FIXTURE_SIM:
+                    self._is_screen_on_by_op = True
+                    ready = True
 
-        self._operator_interface.print_to_console('Unable to get start signal from fixture.')
-        self._operator_interface.prompt('', 'SystemButtonFace')
-        raise test_station.TestStationSerialNumberError('Fail to Wait for press dual-btn ...')
+                ready_status = self._fixture.is_ready()
+                if ready_status is not None:
+                    if ready_status == 0x00:  # load DUT automatically and then screen on
+                        ready = True  # Start to test.
+                        self._is_screen_on_by_op = True
+                        if self._retries_screen_on == 0:
+                            self._the_unit.screen_on()
+                    elif ready_status == 0x01:
+                        self._operator_interface.print_to_console('Try to litup DUT.\n')
+                        self._retries_screen_on += 1
+                        if not power_on_trigger:
+                            self._the_unit.screen_on()
+                            power_on_trigger = True
+                            timeout_for_dual = timeout_for_btn_idle
+                        else:
+                            self._the_unit.screen_off()
+                            self._the_unit.reboot()  # Reboot
+                            self._the_unit.screen_on()
+                            power_on_trigger = True
+                            timeout_for_dual = timeout_for_btn_idle
+                    elif ready_status == 0x02:
+                        self._is_cancel_test_by_op = True  # Cancel test.
+                time.sleep(0.1)
+                timeout_for_dual -= 1
+        except (seacliffmotStationError, DUTError, RuntimeError) as e:
+            self._operator_interface.print_to_console('exception msg %s.\n' % e)
+        finally:
+            # noinspection PyBroadException
+            try:
+                self._fixture.button_disable()
+                if not ready:
+                    if not self._is_cancel_test_by_op:
+                        self._operator_interface.print_to_console(
+                            'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
+                    else:
+                        self._operator_interface.print_to_console(
+                            'Cancel start signal from dual %s.\n' % timeout_for_dual)
+                    self._the_unit.close()
+                    self._the_unit = None
+            except:
+                pass
+            self._operator_interface.prompt('', 'SystemButtonFace')

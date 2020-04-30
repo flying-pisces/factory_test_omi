@@ -14,6 +14,7 @@ import win32process
 import win32event
 import pywintypes
 import datetime
+import pprint
 
 class DUTError(Exception):
     def __init__(self, value):
