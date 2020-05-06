@@ -231,6 +231,7 @@ if __name__ == "__main__":
 
     station_config.load_station('seacliff_mot')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
+    station_config._verbose = True
     the_equipment = seacliffmotEquipment(station_config, operator_interface)
     print(the_equipment.version())
     print(the_equipment.get_config())
