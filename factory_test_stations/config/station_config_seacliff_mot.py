@@ -11,7 +11,7 @@ RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-t
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
+SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 
 ##################################
@@ -116,4 +116,9 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 VERSION = 'SunnyP2-PreBuild-Alpha'
+EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads'
+DUT_SIM = True
+CAMERA_SN = "Demo"
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True
 

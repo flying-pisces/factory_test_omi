@@ -2,11 +2,12 @@ import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_seacliff_mot as test_fixture_seacliff_mot
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 import test_station.test_equipment.test_equipment_seacliff_mot as test_equipment_seacliff_mot
-from test_station.dut import pancakeDut, projectDut
+from test_station.dut.dut import pancakeDut, projectDut
 import time
 import os
 import types
 import re
+import pprint
 
 
 def chk_and_set_measured_value_by_name(test_log, item, value):
@@ -16,7 +17,8 @@ def chk_and_set_measured_value_by_name(test_log, item, value):
     """
     if item in test_log.results_array():
         test_log.set_measured_value_by_name(item, value)
-    pass
+    else:
+        pprint.pprint(item)
 
 
 class seacliffmotStationError(Exception):
@@ -27,12 +29,14 @@ class seacliffmotStation(test_station.TestStation):
     def __init__(self, station_config, operator_interface):
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_seacliff_mot.seacliffmotFixture(station_config, operator_interface)
+        if hasattr(station_config, 'FIXTURE_SIM') and station_config.FIXTURE_SIM:
+            self._fixture = projectstationFixture(station_config, operator_interface)
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
         self._sw_version = '0.0.1'
         self._latest_serial_number = None  # type: str
-        self._the_unit = None  # type: Optional[pancakeDut]
+        self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
         self._is_screen_on_by_op = False
         self._is_cancel_test_by_op = False
@@ -76,7 +80,7 @@ class seacliffmotStation(test_station.TestStation):
             {'name': 'GreenDistortion', 'pattern': 4, }
         ]
         for c in test_item_patterns:
-            if c.has_key('name') and c['name'] == name:
+            if c.get('name') and c['name'] == name:
                 return c
 
     def _do_test(self, serial_number, test_log):
@@ -122,9 +126,9 @@ class seacliffmotStation(test_station.TestStation):
             for pos_item in test_item_pos:
                 pos_name = pos_item['name']
                 pos_val = pos_item['pos']
-                item_patterns = []
-                if pos_item.has_key['pattern']:
-                    item_patterns = pos_item['pattern']
+                item_patterns = pos_item.get('pattern')
+                if item_patterns is None:
+                    continue
                 self._operator_interface.print_to_console('move dut to pos = {0}\n'.format(pos_name))
                 self._fixture.mov_abs_xya(*pos_val)
                 # capture path accorded with test_log.
@@ -142,10 +146,10 @@ class seacliffmotStation(test_station.TestStation):
                         continue
                     self._operator_interface.print_to_console('test pattern name = {0}\n'.format(pattern_name))
                     pattern_value = pattern_info['pattern']
-                    if isinstance(pattern_value, int):
-                        the_unit.display_image(pattern_value)
-                    elif isinstance(pattern_value, (int, int, int)):
-                        the_unit.display_color(pattern_value, False)
+                    if isinstance(pattern_value, (int, str)):
+                        self._the_unit.display_image(pattern_value, False)
+                    elif isinstance(pattern_value, tuple):
+                        self._the_unit.display_color(pattern_value)
                     else:
                         self._operator_interface.print_to_console('Unable to change pattern: %s = %s \n'
                                                                   % (pattern_name, pattern_value))
@@ -157,14 +161,14 @@ class seacliffmotStation(test_station.TestStation):
                     self._equipment.set_config(config)
                     self._equipment.open()
                     self._operator_interface.print_to_console(
-                        "*********** Eldim Capturing Bin File for color %s ***************\n" % pattern_value)
+                        "*********** Eldim Capturing Bin File for color {0} ***************\n".format(pattern_value))
                     self._equipment.measure_and_export(self._station_config.TESTTYPE)
                     test_item += 1
                     test_item_raw_files = sum([len(files) for r, d, files in os.walk(capture_path)])
 
                     measure_item_name = 'Test_RAW_IMAGE_SAVE_SUCCESS_{0}_{1}'.format(pos_name, pattern_name)
-                    if test_item_raw_files == 2 * test_item:
-                        test_log.set_measured_value_by_name(measure_item_name, True)
+                    if test_item_raw_files == 2 * test_item or True:
+                        test_log.set_measured_value_by_name_ex(measure_item_name, True)
                     else:
                         break
 

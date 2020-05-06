@@ -195,8 +195,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if self._verbose:
             print('writing: ' + input_bytes)
         cmd = '{0}\r\n'.format(input_bytes)
-        bytes_written = self._serial_port.write(cmd.encode())
         self._serial_port.flush()
+        bytes_written = self._serial_port.write(cmd.encode())
         return bytes_written
 
     def flush_data(self):
