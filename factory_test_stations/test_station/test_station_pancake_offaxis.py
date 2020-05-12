@@ -157,7 +157,7 @@ class pancakeoffaxisStation(test_station.TestStation):
             self.offaxis_test_do(serial_number, test_log, self._the_unit)
 
         except Exception as e:
-            self._operator_interface.print_to_console("Test exception {}.\n".format(e.message))
+            self._operator_interface.print_to_console("Test exception {0}.\n".format(e))
         finally:
             self._operator_interface.print_to_console('release current test resource.\n')
             # noinspection PyBroadException
@@ -249,7 +249,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                 time.sleep(0.1)
                 timeout_for_dual -= 1
         except Exception as e:
-            self._operator_interface.print_to_console('exception msg %s.\n' % e)
+            self._operator_interface.print_to_console('exception msg {0}.\n'.format(e))
         finally:
             # noinspection PyBroadException
             try:
@@ -281,7 +281,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                     break
                 time.sleep(0.1)
         except Exception as e:
-            self._operator_interface.print_to_console('exception msg %s.\n' % e)
+            self._operator_interface.print_to_console('exception msg {0}.\n' .format(e))
         finally:
             # noinspection PyBroadException
             try:

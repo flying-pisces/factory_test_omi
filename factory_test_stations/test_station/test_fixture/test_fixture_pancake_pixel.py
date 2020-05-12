@@ -78,14 +78,11 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
         return value
 
     def _write_serial(self, input_bytes):
-        if self._verbose:
-            print('writing: ' + input_bytes)
-        bytes_written = self._serial_port.write(input_bytes)
-        if self._verbose:
-            print("wrote, flushing")
         self._serial_port.flush()
         if self._verbose:
             print("flushed")
+            print('writing: ' + input_bytes)
+        bytes_written = self._serial_port.write(input_bytes)
         return bytes_written
 
     def _read_response(self, timeout=5):

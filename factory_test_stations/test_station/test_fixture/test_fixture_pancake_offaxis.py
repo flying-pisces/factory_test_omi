@@ -82,10 +82,11 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
             return True
 
     def _write_serial(self, input_bytes):
+        self._serial_port.flush()
         if self._verbose:
+            print("flushed")
             print('writing: ' + input_bytes)
         bytes_written = self._serial_port.write(input_bytes)
-        self._serial_port.flush()
         return bytes_written
 
     def flush_data(self):

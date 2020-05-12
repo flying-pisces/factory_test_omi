@@ -209,8 +209,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         return res
 
     def _write_serial(self, input_bytes):
-        bytes_written = self._serial_port.write(input_bytes)
         self._serial_port.flush()
+        bytes_written = self._serial_port.write(input_bytes)
         return bytes_written
 
     def _write_serial_cmd(self, command):
