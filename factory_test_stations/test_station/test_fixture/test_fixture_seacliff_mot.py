@@ -36,6 +36,7 @@ class StationCommunicationProxy(object):
             self._sock.close()
 
     def readline(self, timeout=1):
+        import io
         self._sock.settimeout(timeout)
         data = b''
         try:
@@ -48,7 +49,7 @@ class StationCommunicationProxy(object):
                             data += d2
                     except:
                         pass
-        except BlockingIOError as e:
+        except io.BlockingIOError as e:
             data = None
 
         self._sock.settimeout(None)
@@ -57,6 +58,7 @@ class StationCommunicationProxy(object):
     def __getattr__(self, item):
         def not_find(*args, **kwargs):
             pass
+
         if item in ['flush']:
             return not_find
 
@@ -132,6 +134,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._end_delimiter = '@_@'
         self._error_msg = r'Please scanf "CMD_HELP" check help command'
         self._rotate_scale = 65 * 1000
+        self._y_protect_pos = 10 * 1000
         self._re_space_sub = re.compile(' ')
         # status of the platform
         self.PTB_Position = None
@@ -148,7 +151,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                     if items:
                         return int((items[0].split(self._start_delimiter))[1].split(self._end_delimiter)[0]) == 0x00
                 else:
-                    btn_dic = {2 : r'BUTTON_LEFT:\d', 1 : r'BUTTON_RIGHT:\d', 0 : r'BUTTON:\d'}
+                    btn_dic = {2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d', 0: r'BUTTON:\d'}
                     for key, item in btn_dic.items():
                         items = list(filter(lambda r: re.match(item, r, re.I | re.S), resp))
                         if items:
@@ -156,10 +159,9 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing offaxis Fixture\n")
-        if hasattr(self._station_config, 'IS_PROXY_COMMUNICATION') and\
+        if hasattr(self._station_config, 'IS_PROXY_COMMUNICATION') and \
                 self._station_config.IS_PROXY_COMMUNICATION:
             self._serial_port = StationCommunicationProxy(self._station_config.PROXY_ENDPOINT)
-
         else:
             self._serial_port = serial.Serial(self._station_config.FIXTURE_COMPORT,
                                               115200,
@@ -177,6 +179,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
 
             self._operator_interface.print_to_console(
                 "Fixture %s Initialized.\n" % self._station_config.FIXTURE_COMPORT)
+            return True
+
             if self._PTB_Power_Status != '0':
                 self.poweron_ptb()
                 self._operator_interface.print_to_console("Power on PTB {}\n".format(self._PTB_Power_Status))
@@ -312,24 +316,47 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
     ######################
     # Fixture control
     ######################
-    def button_enable(self):
+    def button_power_on_status(self, on):
         """
+        @type on : bool
+        enable the power on button
+        @return:
+        """
+        status_dic = {
+            False: (self._station_config.COMMAND_BUTTON_LITUP_ENABLE, r'START_BUTTON_ENABLE:(\d+)'),
+            True: (self._station_config.COMMAND_BUTTON_LITUP_DISABLE, r'START_BUTTON_ENABLE:(\d+)'),
+        }
+        cmd = status_dic[on]
+        self._write_serial(cmd[0])
+        response = self.read_response()
+        if int(self._parse_response(cmd[1], response).group(1)) != 0:
+            raise seacliffmotFixtureError('fail to send command. %s' % response)
+
+    def query_button_power_on_status(self):
+        """
+        query the power on button
+        @return:
+        """
+        cmd = (self._station_config.COMMAND_LITUP_STATUS, r'START_BUTTON_ENABLE:(\d+)')
+        self._write_serial(cmd[0])
+        response = self.read_response()
+        if int(self._parse_response(cmd[1], response).group(1)) != 0:
+            raise seacliffmotFixtureError('fail to send command. %s' % response)
+
+    def start_button_status(self, on):
+        """
+        @type on : bool
         enable the start button
         @return:
         """
-        self._write_serial(self._station_config.COMMAND_BUTTON_ENABLE)
+        status_dic = {
+            False: (self._station_config.COMMAND_BUTTON_ENABLE, r'START_BUTTON_ENABLE:(\d+)'),
+            True: (self._station_config.COMMAND_BUTTON_DISABLE, r'START_BUTTON_DISABLE:(\d+)'),
+        }
+        cmd = status_dic[on]
+        self._write_serial(cmd[0])
         response = self.read_response()
-        if int(self._parse_response(r'START_BUTTON_ENABLE:(\d+)', response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
-
-    def button_disable(self):
-        """
-        disable the start button
-        @return:
-        """
-        self._write_serial(self._station_config.COMMAND_BUTTON_DISABLE)
-        response = self.read_response()
-        if int(self._parse_response(r'START_BUTTON_DISABLE:(\d+)', response).group(1)) != 0:
+        if int(self._parse_response(cmd[1], response).group(1)) != 0:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
     def reset(self):
@@ -338,7 +365,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         @return:
         """
         self._write_serial(self._station_config.COMMAND_RESET)
-        response = self.read_response()
+        response = self.read_response(timeout=10)
         if int(self._parse_response(r'RESET:(\d+)', response).group(1)) != 0:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
@@ -347,15 +374,18 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         move the module to position(x: um, y: um, a: degree)
         @type x: int
         @type y: int
-        @param a: angle for module
+        @param a: angle for module 0-360
         @type a: float
         @return:
         """
-        theta = math.sin(a) * self._rotate_scale
-        cmd_mov = '{0}:{1},{2},{3}'.format(self._station_config.COMMAND_MODULE_MOVE,
-                                           x, y, theta)
+        if y <= self._y_protect_pos and math.isclose(a, 0):
+            raise seacliffmotFixtureError('fail to move abs_xya.  y = {} < {} and a = 0'.format(y, self._y_protect_pos))
+        theta = int(math.sin(a) * self._rotate_scale)
+        minus_y = -1 * y
+        cmd_mov = '{0}:{1}, {2}, {3}'.format(self._station_config.COMMAND_MODULE_MOVE,
+                                             x, minus_y, theta)
         self._write_serial(cmd_mov)
-        response = self.read_response()
+        response = self.read_response(timeout=20)
         if int(self._parse_response(r'MODULE_MOVE:(\d+)', response).group(1)) != 0:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
@@ -368,9 +398,9 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(cmd)
         response = self.read_response()
         response = [self._re_space_sub.sub('', c) for c in response]
-        delimiter = r'MODULE_POSITION:([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?)'
+        delimiter = r'MODULE_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?)'
         deters = self._parse_response(delimiter, response)
-        return int(deters[0].group(1)), int(deters[0].group(2)), float(deters[1].group(3))/self._rotate_scale
+        return int(deters[1]), int(deters[2]), float(deters[3]) / self._rotate_scale
 
     def camera_pos(self):
         """
@@ -381,7 +411,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(cmd)
         response = self.read_response()
         response = [self._re_space_sub.sub('', c) for c in response]
-        delimiter = r'CAMERA_POSITION:([+-]?[0-9]*(?:\.[0-9]*)?)'
+        delimiter = r'CAMERA_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?)'
         return int(self._parse_response(delimiter, response).group(1))
 
     def mov_camera_z(self, z):
@@ -397,13 +427,13 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if int(self._parse_response(r'CAMERA_MOVE:(\d+)', response).group(1)) != 0:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
-    def btn_status(self):
+    def status(self):
         """
         query the button status
         @return:
         """
-        cmd_mov = '{0}:{1}'.format(self._station_config.COMMAND_START_BUTTON)
-        self._write_serial(cmd_mov)
+        cmd_status = '{0}'.format(self._station_config.COMMAND_STATUS)
+        self._write_serial(cmd_status)
         response = self.read_response()
         return self._parse_response(r'START_BUTTON:(\d+)', response).group(1)
 
@@ -422,7 +452,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         cmd = '{0}:{1}'.format(self._station_config.COMMAND_STATUS_LIGHT_ON, switch[status])
         self._write_serial(cmd)
         response = self.read_response()
-        if int(self._parse_response(r'CMD_STATUS_LIGHT_ON:(\d+)', response).group(1)) != 0:
+        if int(self._parse_response(r'StatusLight_ON:(\d+)', response).group(1)) != 0:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
     def set_tri_color_off(self):
@@ -433,7 +463,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         cmd = self._station_config.COMMAND_STATUS_LIGHT_OFF
         self._write_serial(cmd)
         response = self.read_response()
-        if int(self._parse_response(r'CMD_STATUS_LIGHT_OFF:(\d+)', response).group(1)) != 0:
+        if int(self._parse_response(r'StatusLight_OFF:(\d+)', response).group(1)) != 0:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
     def load(self):
@@ -454,7 +484,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(self._station_config.COMMAND_UNLOAD)
         response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
         if int(self._parse_response(r'UNLOAD:(\d+)', response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s'%response)
+            raise seacliffmotFixtureError('fail to send command. %s' % response)
 
     def _parse_response(self, regex, resp):
         """
@@ -470,7 +500,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         items = list(filter(lambda r: re.search(regex, r, re.I | re.S), resp))
         if not items:
             raise seacliffmotFixtureError('unable to parse msg. {}'.format(resp))
-        return re.search(regex, items[0])
+        return re.search(regex, items[0], re.I | re.S)
 
 
 def print_to_console(self, msg):
@@ -482,10 +512,13 @@ if __name__ == "__main__":
     class station_config_fake(object):
         pass
 
+
     import sys
     import types
+
     sys.path.append(r'../..')
     import logging
+
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
     logging.getLogger(__name__).addHandler(ch)
@@ -500,12 +533,17 @@ if __name__ == "__main__":
     sta_cfg.COMMAND_BUTTON_DISABLE = 'CMD_START_BUTTON_DISABLE'
     sta_cfg.COMMAND_RESET = 'CMD_RESET'
     sta_cfg.COMMAND_MODULE_MOVE = 'CMD_MODULE_MOVE'
-    sta_cfg.COMMAND_MODULE_POSIT = 'COMMAND_MODULE_POSIT'
+    sta_cfg.COMMAND_MODULE_POSIT = 'CMD_MODULE_POSIT'
     sta_cfg.COMMAND_CAMERA_MOVE = 'CMD_CAMERA_MOVE'
-    sta_cfg.COMMAND_CAMERA_POSIT = 'COMMAND_CAMERA_POSIT'
-    sta_cfg.COMMAND_START_BUTTON = 'CMD_START_BUTTON'
+    sta_cfg.COMMAND_CAMERA_POSIT = 'CMD_CAMERA_POSIT'
     sta_cfg.COMMAND_STATUS_LIGHT_ON = 'CMD_STATUS_LIGHT_ON'
     sta_cfg.COMMAND_STATUS_LIGHT_OFF = 'CMD_STATUS_LIGHT_OFF'
+    sta_cfg.COMMAND_LOAD = "CMD_LOAD"
+    sta_cfg.COMMAND_UNLOAD = "CMD_UNLOAD"
+
+    sta_cfg.COMMAND_BUTTON_LITUP_ENABLE = 'CMD_LITUP_ENABLE'
+    sta_cfg.COMMAND_BUTTON_LITUP_DISABLE = 'CMD_LITUP_DISABLE'
+    sta_cfg.COMMAND_LITUP_STATUS = 'CMD_START_BUTTON'
 
     sta_cfg.COMMAND_USB_POWER_ON = "CMD_USB_POWER_ON"
     sta_cfg.COMMAND_USB_POWER_OFF = "CMD_USB_POWER_OFF"
@@ -517,11 +555,10 @@ if __name__ == "__main__":
     sta_cfg.FIXTURE_PTB_ON_TIME = 1
     sta_cfg.FIXTURE_USB_ON_TIME = 1
 
-
     sta_cfg.print_to_console = types.MethodType(print_to_console, sta_cfg)
     sta_cfg.IS_VERBOSE = True
     sta_cfg.IS_PROXY_COMMUNICATION = False
-    sta_cfg.FIXTURE_COMPORT = 'COM2'
+    sta_cfg.FIXTURE_COMPORT = 'COM4'
     sta_cfg.PROXY_ENDPOINT = 9999
     try:
         the_unit = seacliffmotFixture(sta_cfg, sta_cfg)
@@ -529,9 +566,18 @@ if __name__ == "__main__":
         for idx in range(0, 100):
             print('Loop ---> {}'.format(idx))
             try:
-                # the_unit.help()
+                the_unit.help()
                 the_unit.id()
                 the_unit.version()
+                the_unit.button_power_on_status(True)
+                time.sleep(1)
+                the_unit.button_power_on_status(False)
+                the_unit.module_pos()
+                the_unit.load()
+
+                the_unit.mov_abs_xya(5000, 100000, 00)
+
+                the_unit.mov_abs_xya(10000, 100000, 25)
 
                 the_unit.set_tri_color(TriColorStatus.RED)
                 time.sleep(1)
