@@ -2,7 +2,7 @@ import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_seacliff_mot as test_fixture_seacliff_mot
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 import test_station.test_equipment.test_equipment_seacliff_mot as test_equipment_seacliff_mot
-from test_station.dut.dut import pancakeDut, projectDut
+from test_station.dut.dut import pancakeDut, projectDut, DUTError
 import time
 import os
 import types
@@ -26,8 +26,12 @@ class seacliffmotStationError(Exception):
 
 
 class seacliffmotStation(test_station.TestStation):
+
+    _fixture: test_fixture_seacliff_mot.seacliffmotFixture
+
     def __init__(self, station_config, operator_interface):
         test_station.TestStation.__init__(self, station_config, operator_interface)
+        self._fixture = None
         self._fixture = test_fixture_seacliff_mot.seacliffmotFixture(station_config, operator_interface)
         if hasattr(station_config, 'FIXTURE_SIM') and station_config.FIXTURE_SIM:
             self._fixture = projectstationFixture(station_config, operator_interface)
@@ -200,7 +204,7 @@ class seacliffmotStation(test_station.TestStation):
             #     if test_item_raw_files == 2*test_item:
             #         test_log.set_measured_value_by_name("TEST_RAW_IMAGE_SAVE_SUCCESS_%s"%str(test_item), 1)
         except seacliffmotStationError as e:
-            self._operator_interface.print_to_console(e)
+            self._operator_interface.print_to_console(str(e))
         finally:
             self._the_unit.close()
             self._the_unit = None
@@ -229,7 +233,7 @@ class seacliffmotStation(test_station.TestStation):
         self._the_unit.initialize()
         self._is_screen_on_by_op = True
         self._is_cancel_test_by_op = False
-        return True
+        # return True
 
         ready = False
         power_on_trigger = False
@@ -237,17 +241,17 @@ class seacliffmotStation(test_station.TestStation):
         self._is_cancel_test_by_op = False
         self._retries_screen_on = 0
         try:
-            self._fixture.button_enable()
-            timeout_for_btn_idle = 20
+            self._fixture.power_on_button_status(True)
+            timeout_for_btn_idle = 10
             timeout_for_dual = timeout_for_btn_idle
             self._the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
             while timeout_for_dual > 0:
                 if ready or self._is_cancel_test_by_op:
                     break
-                msg_prompt = 'Load DUT, and then Press L-Btn(Cancel)/R-Btn(Litup) in %s S...'
+                msg_prompt = 'Load DUT, and then Press PowerOn-Btn (Lit up) in %s S...'
                 if power_on_trigger:
-                    msg_prompt = 'Press Dual-Btn(Load)/L-Btn(Cancel)/R-Btn(Re Litup)  in %s S...'
+                    msg_prompt = 'Press Dual-Btn(Load)/PowerOn-Btn(Re Lit up)  in %s S...'
                 self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow')
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
@@ -260,13 +264,14 @@ class seacliffmotStation(test_station.TestStation):
                         self._is_screen_on_by_op = True
                         if self._retries_screen_on == 0:
                             self._the_unit.screen_on()
-                    elif ready_status == 0x01:
-                        self._operator_interface.print_to_console('Try to litup DUT.\n')
+                    elif ready_status == 0x03:
+                        self._operator_interface.print_to_console('Try to lit up DUT.\n')
                         self._retries_screen_on += 1
                         if not power_on_trigger:
                             self._the_unit.screen_on()
                             power_on_trigger = True
                             timeout_for_dual = timeout_for_btn_idle
+                            self._fixture.start_button_status(True)
                         else:
                             self._the_unit.screen_off()
                             self._the_unit.reboot()  # Reboot
@@ -278,11 +283,12 @@ class seacliffmotStation(test_station.TestStation):
                 time.sleep(0.1)
                 timeout_for_dual -= 1
         except (seacliffmotStationError, DUTError, RuntimeError) as e:
-            self._operator_interface.print_to_console('exception msg %s.\n' % e)
+            self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
         finally:
             # noinspection PyBroadException
             try:
-                self._fixture.button_disable()
+                self._fixture.start_button_status(False)
+                self._fixture.power_on_button_status(False)
                 if not ready:
                     if not self._is_cancel_test_by_op:
                         self._operator_interface.print_to_console(
@@ -291,7 +297,6 @@ class seacliffmotStation(test_station.TestStation):
                         self._operator_interface.print_to_console(
                             'Cancel start signal from dual %s.\n' % timeout_for_dual)
                     self._the_unit.close()
-                    self._the_unit = None
             except:
                 pass
             self._operator_interface.prompt('', 'SystemButtonFace')

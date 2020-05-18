@@ -134,7 +134,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._end_delimiter = '@_@'
         self._error_msg = r'Please scanf "CMD_HELP" check help command'
         self._rotate_scale = 65 * 1000
-        self._y_protect_pos = 10 * 1000
+        self._y_limit_pos = 10 * 1000
+        self._a_limit_pos = 10
         self._re_space_sub = re.compile(' ')
         # status of the platform
         self.PTB_Position = None
@@ -151,7 +152,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                     if items:
                         return int((items[0].split(self._start_delimiter))[1].split(self._end_delimiter)[0]) == 0x00
                 else:
-                    btn_dic = {2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d', 0: r'BUTTON:\d'}
+                    btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d', 0: r'BUTTON:\d'}
                     for key, item in btn_dic.items():
                         items = list(filter(lambda r: re.match(item, r, re.I | re.S), resp))
                         if items:
@@ -173,9 +174,11 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if not self._serial_port:
             raise seacliffmotFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
         else:  # disable the buttons automatically
-            # self.button_enable()
-            # self.unload()
-            # self.button_disable()
+            self.start_button_status(True)
+            self.power_on_button_status(True)
+            self.unload()
+            self.start_button_status(False)
+            self.power_on_button_status(False)
 
             self._operator_interface.print_to_console(
                 "Fixture %s Initialized.\n" % self._station_config.FIXTURE_COMPORT)
@@ -316,15 +319,15 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
     ######################
     # Fixture control
     ######################
-    def button_power_on_status(self, on):
+    def power_on_button_status(self, on):
         """
         @type on : bool
         enable the power on button
         @return:
         """
         status_dic = {
-            False: (self._station_config.COMMAND_BUTTON_LITUP_ENABLE, r'START_BUTTON_ENABLE:(\d+)'),
-            True: (self._station_config.COMMAND_BUTTON_LITUP_DISABLE, r'START_BUTTON_ENABLE:(\d+)'),
+            True: (self._station_config.COMMAND_BUTTON_LITUP_ENABLE, r'PowerOnButton_ENABLE:(\d+)'),
+            False: (self._station_config.COMMAND_BUTTON_LITUP_DISABLE, r'PowerOnButton_DISABLE:(\d+)'),
         }
         cmd = status_dic[on]
         self._write_serial(cmd[0])
@@ -337,7 +340,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         query the power on button
         @return:
         """
-        cmd = (self._station_config.COMMAND_LITUP_STATUS, r'START_BUTTON_ENABLE:(\d+)')
+        cmd = (self._station_config.COMMAND_LITUP_STATUS, r'POWERON_BUTTON:(\d+)')
         self._write_serial(cmd[0])
         response = self.read_response()
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
@@ -350,8 +353,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         @return:
         """
         status_dic = {
-            False: (self._station_config.COMMAND_BUTTON_ENABLE, r'START_BUTTON_ENABLE:(\d+)'),
-            True: (self._station_config.COMMAND_BUTTON_DISABLE, r'START_BUTTON_DISABLE:(\d+)'),
+            True: (self._station_config.COMMAND_BUTTON_ENABLE, r'START_BUTTON_ENABLE:(\d+)'),
+            False: (self._station_config.COMMAND_BUTTON_DISABLE, r'START_BUTTON_DISABLE:(\d+)'),
         }
         cmd = status_dic[on]
         self._write_serial(cmd[0])
@@ -378,9 +381,11 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         @type a: float
         @return:
         """
-        if y <= self._y_protect_pos and math.isclose(a, 0):
-            raise seacliffmotFixtureError('fail to move abs_xya.  y = {} < {} and a = 0'.format(y, self._y_protect_pos))
-        theta = int(math.sin(a) * self._rotate_scale)
+        if y <= self._y_limit_pos and not math.isclose(a, 0):
+            raise seacliffmotFixtureError('fail to move abs_xya.  y = {} < {} and a = 0'.format(y, self._y_limit_pos))
+        if a > math.fabs(self._a_limit_pos):
+            raise seacliffmotFixtureError('fail to move abs_xya.  | a | = {} < {} '.format(a, self._a_limit_pos))
+        theta = int(math.sin(math.radians(a)) * self._rotate_scale)
         minus_y = -1 * y
         cmd_mov = '{0}:{1}, {2}, {3}'.format(self._station_config.COMMAND_MODULE_MOVE,
                                              x, minus_y, theta)
@@ -400,7 +405,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         response = [self._re_space_sub.sub('', c) for c in response]
         delimiter = r'MODULE_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?)'
         deters = self._parse_response(delimiter, response)
-        return int(deters[1]), int(deters[2]), float(deters[3]) / self._rotate_scale
+        return int(deters[1]), int(deters[2]), math.degrees(math.asin(float(deters[3]) / self._rotate_scale))
 
     def camera_pos(self):
         """
@@ -541,9 +546,9 @@ if __name__ == "__main__":
     sta_cfg.COMMAND_LOAD = "CMD_LOAD"
     sta_cfg.COMMAND_UNLOAD = "CMD_UNLOAD"
 
-    sta_cfg.COMMAND_BUTTON_LITUP_ENABLE = 'CMD_LITUP_ENABLE'
-    sta_cfg.COMMAND_BUTTON_LITUP_DISABLE = 'CMD_LITUP_DISABLE'
-    sta_cfg.COMMAND_LITUP_STATUS = 'CMD_START_BUTTON'
+    sta_cfg.COMMAND_BUTTON_LITUP_ENABLE = 'CMD_POWERON_BUTTON_ENABLE'
+    sta_cfg.COMMAND_BUTTON_LITUP_DISABLE = 'CMD_POWERON_BUTTON_DISABLE'
+    sta_cfg.COMMAND_LITUP_STATUS = 'CMD_POWERON_BUTTON'
 
     sta_cfg.COMMAND_USB_POWER_ON = "CMD_USB_POWER_ON"
     sta_cfg.COMMAND_USB_POWER_OFF = "CMD_USB_POWER_OFF"
@@ -569,15 +574,21 @@ if __name__ == "__main__":
                 the_unit.help()
                 the_unit.id()
                 the_unit.version()
-                the_unit.button_power_on_status(True)
+                the_unit.start_button_status(True)
                 time.sleep(1)
-                the_unit.button_power_on_status(False)
-                the_unit.module_pos()
+                the_unit.start_button_status(False)
+
+                the_unit.unload()
+
                 the_unit.load()
+
+                the_unit.power_on_button_status(True)
 
                 the_unit.mov_abs_xya(5000, 100000, 00)
 
-                the_unit.mov_abs_xya(10000, 100000, 25)
+                the_unit.mov_abs_xya(10000, 100000, 5)
+
+                x, y, a = the_unit.module_pos()
 
                 the_unit.set_tri_color(TriColorStatus.RED)
                 time.sleep(1)
