@@ -94,39 +94,39 @@ class seacliffmotStation(test_station.TestStation):
         """
         self._overall_result = False
         self._overall_errorcode = ''
-        self._operator_interface.print_to_console(
-            "\n*********** Fixture at %s to load DUT %s ***************\n"
-            % (self._station_config.FIXTURE_COMPORT, self._station_config.DUT_COMPORT))
-
-        self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
-        self._operator_interface.print_to_console("Initialize DUT... \n")
-
-        test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
-
-        self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
-        test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
-        equip_version = self._equipment.version()
-        test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version)
-        self._operator_interface.print_to_console("Equipment Version: %s\n" % equip_version)
-        test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
-        test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
-        test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
-        # hard coded.
-        test_item_pos = [
-            {'name': 'normal', 'pos': (0, 0, 15),
-             'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
-                         'GreenSharpness', 'GreenDistortion']},
-            {'name': 'extendedz', 'pos': (0, 0, 27), },
-            {'name': 'extendedxpos', 'pos': (5.071, 0, 16.124)},
-            {'name': 'extendedxneg', 'pos': (-5.071, 0, 16.124)},
-            {'name': 'extendedypos', 'pos': (0, 5.071, 16.124)},
-            {'name': 'extendedyneg', 'pos': (0, -5.071, 16.124)},
-            {'name': 'blemish', 'pos': (0, 0, 5.000), }
-        ]
         try:
+            self._operator_interface.print_to_console(
+                "\n*********** Fixture at %s to load DUT %s ***************\n"
+                % (self._station_config.FIXTURE_COMPORT, self._station_config.DUT_COMPORT))
+
+            self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
+            self._operator_interface.print_to_console("Initialize DUT... \n")
+
+            test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
+
+            self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
+            test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+
+            test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
+            test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
+            test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
+            # hard coded.
+            test_item_pos = [
+                {'name': 'normal', 'pos': (0, 0, 15),
+                 'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
+                             'GreenSharpness', 'GreenDistortion']},
+                {'name': 'extendedz', 'pos': (0, 0, 27), },
+                {'name': 'extendedxpos', 'pos': (5.071, 0, 16.124)},
+                {'name': 'extendedxneg', 'pos': (-5.071, 0, 16.124)},
+                {'name': 'extendedypos', 'pos': (0, 5.071, 16.124)},
+                {'name': 'extendedyneg', 'pos': (0, -5.071, 16.124)},
+                {'name': 'blemish', 'pos': (0, 0, 5.000), }
+            ]
             if not self._is_screen_on_by_op:
                 raise seacliffmotStationError('fail to power screen on normally.')
-
+            equip_version = self._equipment.version()
+            test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version)
+            self._operator_interface.print_to_console("Equipment Version: %s\n" % equip_version)
             for pos_item in test_item_pos:
                 pos_name = pos_item['name']
                 pos_val = pos_item['pos']
@@ -206,8 +206,11 @@ class seacliffmotStation(test_station.TestStation):
         except seacliffmotStationError as e:
             self._operator_interface.print_to_console(str(e))
         finally:
-            self._the_unit.close()
-            self._the_unit = None
+            try:
+                self._the_unit.close()
+                self._fixture.unload()
+            except:
+                self._the_unit = None
         return self.close_test(test_log)
 
     def close_test(self, test_log):
