@@ -5,6 +5,7 @@ STATION_LIMITS_ARRAYS = [
     ["DUT_ScreenOnRetries", 0, 5, 97],
     ["DUT_ScreenOnStatus", True, True, 98],
     ["DUT_CancelByOperator", False, False, 99],
+    ["DUT_AlignmentSuccess", True, True, 100],
 
     ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_W255", True, True, 10001],
     ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_G127", True, True, 10002],

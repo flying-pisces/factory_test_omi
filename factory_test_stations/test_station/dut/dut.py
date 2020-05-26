@@ -148,17 +148,20 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             raise RuntimeError("Fail to reboot because can't receive any data from dut.")
         if int(recvobj[0]) != 0x00:
             raise DUTError("Fail to reboot because rev err msg. Msg = {}".format(recvobj))
-
+        response = []
         while True:
             dt = datetime.datetime.now()
             if (dt - sw).total_seconds() > delay_seconds:
                 raise DUTError('Fail to reboot because waiting msg timeout {0:4f}s. '.format((dt - sw).total_seconds()))
-            response = self._serial_port.readline()
-            if response is None or len(response) <= 0:
+            line_in = self._serial_port.readline()
+            if line_in == b'':
                 time.sleep(1)
                 if self._verbose:
                     print('.')
                 continue
+            response.append(line_in.decode())
+            if self._verbose and len(response) > 1:
+                pprint.pprint(response)
             recvobj = self._prase_respose('System OK', response)
             if int(recvobj[0]) != 0x00:
                 raise DUTError("Fail to reboot because rev err msg. Msg = {}".format(recvobj))
@@ -246,8 +249,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def _prase_respose(self, command, response):
 
-        if self._verbose:
-            print("command : {},,,{}".format(command, response))
+
+        print("command : {},,,{}".format(command, response))
 
         if response is None:
             return None
@@ -380,6 +383,7 @@ if __name__ == "__main__":
             # the_unit.reboot()
             the_unit.connect_display()
             time.sleep(0.5)
+            the_unit.reboot()
             # the_unit.screen_on()
             # time.sleep(1)
             # the_unit.display_color()
@@ -390,9 +394,9 @@ if __name__ == "__main__":
                 time.sleep(0.1)
 
             # for c in range(0, len(pics)): # DDR Image
-            for c in range(0, 10):
-                the_unit.display_image(c, False)
-                time.sleep(0.5)
+            # for c in range(0, 10):
+            #     the_unit.display_image(c, False)
+            #     time.sleep(0.5)
             the_unit.screen_off()
         except Exception as e:
             print(e)

@@ -223,7 +223,7 @@ class Conoscope:
 
         # configure conoscope in normal mode
         ret = self.CmdSetDebugConfig({"debugMode": False,
-                                                "emulatedCamera": True})
+                                                "emulatedCamera": False})
         print("instance done")
 
     def __del__(self):
