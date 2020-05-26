@@ -132,9 +132,9 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._verbose = station_config.IS_VERBOSE
         self._start_delimiter = ':'
         self._end_delimiter = '@_@'
-        self._error_msg = r'Please scanf "CMD_HELP" check help command'
+        self._error_msg = r'imcomplete command'
         self._rotate_scale = 65 * 1000
-        self._y_limit_pos = 10 * 1000
+        self._y_limit_pos = 12 * 1000
         self._a_limit_pos = 10
         self._re_space_sub = re.compile(' ')
         # status of the platform
@@ -142,6 +142,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._Button_Status = None
         self._PTB_Power_Status = None
         self._USB_Power_Status = None
+        self._alignment_pos = None
 
     def is_ready(self):
         if self._serial_port is not None:
@@ -372,6 +373,20 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if int(self._parse_response(r'RESET:(\d+)', response).group(1)) != 0:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
+    def mov_abs_xy_wrt_alignment(self, x, y):
+        """
+        move the module to position(x: um, y: um, a: degree)
+        @type x: int
+        @type y: int
+        @return:
+        """
+        if self._alignment_pos is None:
+            raise seacliffmotFixtureError('alignment command should be executed firstly.')
+        a = math.radians(self._alignment_pos[2])
+        xx = x * math.cos(a) + self._alignment_pos[0]
+        yy = y * math.sin(a) + self._alignment_pos[1]
+        self.mov_abs_xya(xx, yy, a)
+
     def mov_abs_xya(self, x, y, a):
         """
         move the module to position(x: um, y: um, a: degree)
@@ -417,7 +432,18 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         response = self.read_response()
         response = [self._re_space_sub.sub('', c) for c in response]
         delimiter = r'CAMERA_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?)'
-        return int(self._parse_response(delimiter, response).group(1))
+        return (self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM
+                - int(self._parse_response(delimiter, response).group(1)))
+
+    def mov_camera_z_wrt_alignment(self, z):
+        """
+        move the camera to z(um) position
+        @type z: int
+        @param z:
+        @return:
+        """
+        zz = z - self._alignment_pos[3]
+        self.mov_camera_z(zz)
 
     def mov_camera_z(self, z):
         """
@@ -426,7 +452,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         @param z:
         @return:
         """
-        cmd_mov = '{0}:{1}'.format(self._station_config.COMMAND_CAMERA_MOVE, z)
+        z0 = self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM - z
+        cmd_mov = '{0}:{1}'.format(self._station_config.COMMAND_CAMERA_MOVE, z0)
         self._write_serial(cmd_mov)
         response = self.read_response()
         if int(self._parse_response(r'CAMERA_MOVE:(\d+)', response).group(1)) != 0:
@@ -476,6 +503,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         load carrier
         @return:
         """
+        self._alignment_pos = None
         self._write_serial(self._station_config.COMMAND_LOAD)
         response = self.read_response()
         if int(self._parse_response(r'LOAD:(\d+)', response).group(1)) != 0:
@@ -486,10 +514,27 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         unload carrier
         @return:
         """
+        self._alignment_pos = None
         self._write_serial(self._station_config.COMMAND_UNLOAD)
         response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
         if int(self._parse_response(r'UNLOAD:(\d+)', response).group(1)) != 0:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
+
+    def alignment(self):
+        self._alignment_pos = None
+        self._write_serial(self._station_config.COMMAND_ALIGNMENT)
+        response = self.read_response(timeout=self._station_config.FIXTURE_ALIGNMENT_DLY)
+        if self._parse_response(r'ALIGNMENT:(\w+)', response).group(1).upper().find(r'ERROR') >= 0:
+            return
+
+        delimiter = r'ALIGNMENT:([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?),' \
+                    r'([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?)'
+        deters = self._parse_response(delimiter, response)
+        res = int(deters[1]), int(deters[2]), \
+            math.degrees(math.asin(float(deters[3]) / self._rotate_scale)), int(deters[4])
+        module_pos = self.module_pos()
+        self._alignment_pos = (*module_pos, res[3])
+        return res
 
     def _parse_response(self, regex, resp):
         """
@@ -555,16 +600,18 @@ if __name__ == "__main__":
     sta_cfg.COMMAND_PTB_POWER_ON = "CMD_PTB_POWER_ON"
     sta_cfg.COMMAND_PTB_POWER_OFF = "CMD_PTB_POWER_OFF"
     sta_cfg.COMMAND_STATUS = "CMD_STATUS"
+    sta_cfg.COMMAND_ALIGNMENT = "CMD_ALIGNMENT"
 
+    sta_cfg.FIXTURE_ALIGNMENT_DLY = 20
     sta_cfg.FIXTURE_UNLOAD_DLY = 10
     sta_cfg.FIXTURE_PTB_ON_TIME = 1
     sta_cfg.FIXTURE_USB_ON_TIME = 1
 
     sta_cfg.print_to_console = types.MethodType(print_to_console, sta_cfg)
     sta_cfg.IS_VERBOSE = True
-    sta_cfg.IS_PROXY_COMMUNICATION = False
+    sta_cfg.IS_PROXY_COMMUNICATION = True
     sta_cfg.FIXTURE_COMPORT = 'COM4'
-    sta_cfg.PROXY_ENDPOINT = 9999
+    sta_cfg.PROXY_ENDPOINT = 8000
     try:
         the_unit = seacliffmotFixture(sta_cfg, sta_cfg)
         the_unit.initialize()
@@ -574,28 +621,32 @@ if __name__ == "__main__":
                 the_unit.help()
                 the_unit.id()
                 the_unit.version()
+
+                the_unit.load()
+
+                alignment_result = the_unit.alignment()
+                if alignment_result is None:
+                    print('unable to alignment.')
+                else:
+                    print('alignment: x: {0}, y: {1}, a: {2}, z: {3}'.format(*alignment_result))
+                the_unit.mov_abs_xy_wrt_alignment(1000, 1000)
+
                 the_unit.start_button_status(True)
                 time.sleep(1)
                 the_unit.start_button_status(False)
 
-                the_unit.unload()
-
-                the_unit.load()
-
                 the_unit.power_on_button_status(True)
 
-                the_unit.mov_abs_xya(5000, 100000, 00)
+                the_unit.mov_abs_xya(5000, 130 * 1000, 00)
 
-                the_unit.mov_abs_xya(10000, 100000, 5)
-
-                x, y, a = the_unit.module_pos()
+                the_unit.mov_abs_xya(10000, 130 * 1000, 5)
 
                 the_unit.set_tri_color(TriColorStatus.RED)
                 time.sleep(1)
                 the_unit.set_tri_color(TriColorStatus.GREEN)
                 time.sleep(1)
-                the_unit.set_tri_color(TriColorStatus.BUZZER)
-                time.sleep(1)
+                # the_unit.set_tri_color(TriColorStatus.BUZZER)
+                # time.sleep(1)
                 the_unit.set_tri_color(TriColorStatus.YELLOW)
                 time.sleep(1)
                 the_unit.set_tri_color_off()

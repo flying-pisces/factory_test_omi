@@ -44,6 +44,7 @@ class seacliffmotStation(test_station.TestStation):
         self._retries_screen_on = 0
         self._is_screen_on_by_op = False
         self._is_cancel_test_by_op = False
+        self._is_alignment_success = False
 
     def initialize(self):
         try:
@@ -110,6 +111,7 @@ class seacliffmotStation(test_station.TestStation):
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
             test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
+            test_log.set_measured_value_by_name_ex("DUT_AlignmentSuccess", self._is_alignment_success)
             # hard coded.
             test_item_pos = [
                 {'name': 'normal', 'pos': (0, 0, 15),
@@ -124,6 +126,8 @@ class seacliffmotStation(test_station.TestStation):
             ]
             if not self._is_screen_on_by_op:
                 raise seacliffmotStationError('fail to power screen on normally.')
+            if not self._is_alignment_success:
+                raise seacliffmotStationError('Fail to alignment.')
             equip_version = self._equipment.version()
             test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version)
             self._operator_interface.print_to_console("Equipment Version: %s\n" % equip_version)
@@ -133,8 +137,9 @@ class seacliffmotStation(test_station.TestStation):
                 item_patterns = pos_item.get('pattern')
                 if item_patterns is None:
                     continue
-                self._operator_interface.print_to_console('move dut to pos = {0}\n'.format(pos_name))
-                self._fixture.mov_abs_xya(*pos_val)
+                self._operator_interface.print_to_console('mov dut to pos = {0}\n'.format(pos_name))
+                self._fixture.mov_abs_xy_wrt_alignment(pos_val[0], pos_val[1])
+                # self._fixture.mov_camera_z_wrt_alignment(pos_val[2])
                 # capture path accorded with test_log.
                 uni_file_name = re.sub('_x.log', '', test_log.get_filename())
                 capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
@@ -233,9 +238,10 @@ class seacliffmotStation(test_station.TestStation):
 
     def is_ready_litup_outside(self):
         # TODO:  Initialized the DUT Simply
-        self._the_unit.initialize()
-        self._is_screen_on_by_op = True
-        self._is_cancel_test_by_op = False
+        # self._the_unit.initialize()
+        # self._is_screen_on_by_op = True
+        # self._is_cancel_test_by_op = False
+        # self._is_alignment_success = False
         # return True
 
         ready = False
@@ -258,7 +264,10 @@ class seacliffmotStation(test_station.TestStation):
                 self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow')
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
+                    self._is_alignment_success = True
+                    self._fixture._alignment_pos = (0, 0, 0, 0)
                     ready = True
+                    continue
 
                 ready_status = self._fixture.is_ready()
                 if ready_status is not None:
@@ -267,6 +276,11 @@ class seacliffmotStation(test_station.TestStation):
                         self._is_screen_on_by_op = True
                         if self._retries_screen_on == 0:
                             self._the_unit.screen_on()
+                        self._the_unit.display_color((255, 0, 0))
+                        alignment_result = self._fixture.alignment()
+                        if isinstance(alignment_result, tuple):
+                            self._is_alignment_success = True
+
                     elif ready_status == 0x03:
                         self._operator_interface.print_to_console('Try to lit up DUT.\n')
                         self._retries_screen_on += 1
