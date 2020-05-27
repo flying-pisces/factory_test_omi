@@ -112,6 +112,10 @@ class seacliffmotStation(test_station.TestStation):
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
             test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
             test_log.set_measured_value_by_name_ex("DUT_AlignmentSuccess", self._is_alignment_success)
+            particle_count = 0
+            if self._station_config.FIXTURE_PARTICLE_COUNTER:
+                particle_count = self._fixture.particle_counter_read_val()
+            test_log.set_measured_value_by_name_ex("ENV_ParticleCounter", particle_count)
             # hard coded.
             test_item_pos = [
                 {'name': 'normal', 'pos': (0, 0, 15),
@@ -284,17 +288,22 @@ class seacliffmotStation(test_station.TestStation):
                     elif ready_status == 0x03:
                         self._operator_interface.print_to_console('Try to lit up DUT.\n')
                         self._retries_screen_on += 1
-                        if not power_on_trigger:
-                            self._the_unit.screen_on()
-                            power_on_trigger = True
-                            timeout_for_dual = timeout_for_btn_idle
-                            self._fixture.start_button_status(True)
-                        else:
+                        if power_on_trigger:
                             self._the_unit.screen_off()
                             self._the_unit.reboot()  # Reboot
-                            self._the_unit.screen_on()
-                            power_on_trigger = True
-                            timeout_for_dual = timeout_for_btn_idle
+                        self._the_unit.screen_on()
+                        power_on_trigger = True
+                        # check the color sensor
+                        timeout_for_dual = timeout_for_btn_idle
+                        color_check_result = True
+                        if self._station_config.DISP_CHECKER_ENABLE:
+                            color_check_result = False
+                            color = self._the_unit.get_color_ext(False)
+                            if self._the_unit.display_color_check(color):
+                                color_check_result = True
+                        if color_check_result:
+                            self._fixture.power_on_button_status(False)
+                            self._fixture.start_button_status(True)
                     elif ready_status == 0x02:
                         self._is_cancel_test_by_op = True  # Cancel test.
                 time.sleep(0.1)

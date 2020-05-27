@@ -2,12 +2,17 @@ import os
 import re
 import socket
 import serial
-import time
 import select
 import pprint
 import math
 from enum import Enum, unique
 import serial.tools.list_ports
+from pymodbus.client.sync import ModbusSerialClient
+from pymodbus.register_write_message import WriteSingleRegisterResponse
+from pymodbus.register_read_message import ReadHoldingRegistersResponse
+from pymodbus.constants import Defaults
+import time
+import ctypes
 
 import hardware_station_common.test_station.test_fixture
 import hardware_station_common.test_station.dut
@@ -137,6 +142,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._y_limit_pos = 12 * 1000
         self._a_limit_pos = 10
         self._re_space_sub = re.compile(' ')
+        self._particle_counter_client = None  # type: ModbusSerialClient
         # status of the platform
         self.PTB_Position = None
         self._Button_Status = None
@@ -172,6 +178,17 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                                               timeout=1,
                                               xonxoff=0,
                                               rtscts=0)
+        if self._station_config.FIXTURE_PARTICLE_COUNTER:
+            parity = 'N'
+            Defaults.Retries = 5
+            Defaults.RetryOnEmpty = True
+            self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
+                                                               stopbits=1,
+                                                               port=self._station_config.FIXTURE_PARTICLE_COMPORT,
+                                                               timeout=2000)
+            if not self._particle_counter_client.connect():
+                raise seacliffmotFixtureError('Unable to open particle counter port: %s'
+                                                 % self._station_config.FIXTURE_PARTICLE_COMPORT)
         if not self._serial_port:
             raise seacliffmotFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
         else:  # disable the buttons automatically
@@ -185,15 +202,15 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                 "Fixture %s Initialized.\n" % self._station_config.FIXTURE_COMPORT)
             return True
 
-            if self._PTB_Power_Status != '0':
-                self.poweron_ptb()
-                self._operator_interface.print_to_console("Power on PTB {}\n".format(self._PTB_Power_Status))
-            if self._USB_Power_Status != '0':
-                self.poweron_usb()
-                self._operator_interface.print_to_console("Power on USB {}\n".format(self._USB_Power_Status))
-            isinit = bool(self._serial_port) and not bool(int(self._PTB_Power_Status)) and not bool(
-                int(self._USB_Power_Status))
-            return isinit
+            # if self._PTB_Power_Status != '0':
+            #     self.poweron_ptb()
+            #     self._operator_interface.print_to_console("Power on PTB {}\n".format(self._PTB_Power_Status))
+            # if self._USB_Power_Status != '0':
+            #     self.poweron_usb()
+            #     self._operator_interface.print_to_console("Power on USB {}\n".format(self._USB_Power_Status))
+            # isinit = bool(self._serial_port) and not bool(int(self._PTB_Power_Status)) and not bool(
+            #     int(self._USB_Power_Status))
+            # return isinit
 
     def _write_serial(self, input_bytes):
         """
@@ -261,8 +278,13 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             # self.button_disable()
             self._serial_port.close()
             self._serial_port = None
-            if self._verbose:
-                print("====== Fixture Close =========")
+        if hasattr(self, '_particle_counter_client') and \
+                self._particle_counter_client is not None \
+                and self._station_config.FIXTURE_PARTICLE_COUNTER:
+            self._particle_counter_client.close()
+            self._particle_counter_client = None
+        if self._verbose:
+            pprint.pprint("====== Fixture Close =========")
         return True
 
     def status(self):
@@ -551,6 +573,58 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if not items:
             raise seacliffmotFixtureError('unable to parse msg. {}'.format(resp))
         return re.search(regex, items[0], re.I | re.S)
+
+    ######################
+    # Particle Counter Control
+    ######################
+    def particle_counter_on(self):
+        if self._particle_counter_client is not None:
+            wrs = self._particle_counter_client. \
+                write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                               1, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
+            if wrs is None or wrs.isError():
+                raise seacliffmotFixtureError('Failed to start particle counter .')
+
+    def particle_counter_off(self):
+        if self._particle_counter_client is not None:
+            self._particle_counter_client.write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                                                         0,
+                                                         unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: WriteSingleRegisterResponse
+
+    def particle_counter_read_val(self):
+        if self._particle_counter_client is not None:
+            val = None
+            retries = 1
+            while retries <= 10:
+                rs = self._particle_counter_client.read_holding_registers(
+                    self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
+                    2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
+                if rs is None or rs.isError():
+                    if self._station_config.IS_VERBOSE:
+                        print("Retries to read data from particle counter {}/10. ".format(retries))
+                    retries += 1
+                    time.sleep(0.5)
+                else:
+                    # val = rs.registers[0] * 65535 + rs.registers[1]
+                    # modified by elton.  for apc-r210/310
+                    val = ctypes.c_int32(rs.registers[0] + (rs.registers[1] << 16)).value
+                    if hasattr(self._station_config, 'PARTICLE_COUNTER_APC') and self._station_config.PARTICLE_COUNTER_APC:
+                        val = (ctypes.c_int32((rs.registers[0] << 16) + rs.registers[1])).value
+                    break
+            if val is None:
+                raise seacliffmotFixtureError('Failed to read data from particle counter.')
+            return val
+
+    def particle_counter_state(self):
+        if self._particle_counter_client is not None:
+            rs = self._particle_counter_client.read_holding_registers(
+                self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
+                2,
+                unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
+            if rs is None or rs.isError():
+                raise seacliffmotFixtureError('Fail to read data from particle counter. ')
+            else:
+                return rs.registers[0]
 
 
 def print_to_console(self, msg):
