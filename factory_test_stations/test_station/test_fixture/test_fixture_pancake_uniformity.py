@@ -293,7 +293,7 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
                     # val = rs.registers[0] * 65535 + rs.registers[1]
                     # modified by elton.  for apc-r210/310
                     val = ctypes.c_int32(rs.registers[0]  + (rs.registers[1] << 16)).value
-                    if hasattr(station_config, 'PARTICLE_COUNTER_APC') and station_config.PARTICLE_COUNTER_APC:
+                    if hasattr(self._station_config, 'PARTICLE_COUNTER_APC') and self._station_config.PARTICLE_COUNTER_APC:
                         val = (ctypes.c_int32((rs.registers[0] << 16) + rs.registers[1])).value
                     break
             if val is None:
