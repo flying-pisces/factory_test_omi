@@ -6,7 +6,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\unif_summary'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 
 ##################################
@@ -21,7 +21,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 IS_PROXY_COMMUNICATION = True
 PROXY_ENDPOINT = 8000
 FIXTURE_COMPORT = "COM4" #
-FIXTURE_PARTICLE_COMPORT = "COM2" #
+FIXTURE_PARTICLE_COMPORT = "COM8" #
 FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = "COM5" #
 
@@ -77,6 +77,7 @@ COMMAND_ALIGNMENT = "CMD_ALIGNMENT"
 COMMAND_BUTTON_LITUP_ENABLE = 'CMD_POWERON_BUTTON_ENABLE'
 COMMAND_BUTTON_LITUP_DISABLE = 'CMD_POWERON_BUTTON_DISABLE'
 COMMAND_LITUP_STATUS = 'CMD_POWERON_BUTTON'
+COMMAND_QUERY_TEMP = 'CMD_GET_TEMPERATURE'
 
 COMMAND_USB_POWER_ON = "CMD_USB_POWER_ON"
 COMMAND_USB_POWER_OFF = "CMD_USB_POWER_OFF"
@@ -85,7 +86,7 @@ COMMAND_PTB_POWER_OFF = "CMD_PTB_POWER_OFF"
 COMMAND_STATUS = "CMD_STATUS"
 
 DUT_LITUP_OUTSIDE = True
-FIXTURE_UNLOAD_DLY = 10
+FIXTURE_UNLOAD_DLY = 20
 FIXTURE_ALIGNMENT_DLY = 10
 
 FIXTURE_PARTICLE_COUNTER = False
@@ -123,8 +124,6 @@ IS_VERBOSE = True # some path bug, temp set False and work on True later
 CFG_PATH = r'test_station\test_equipment\Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
 
-
-
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 PATTERNS = ["W255", 'W127', "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False, False, False, False]
@@ -132,6 +131,44 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 1
 
+TEST_ITEM_PATTERNS = [
+    {'name': 'W255', 'pattern': (255, 255, 255), 'exposure': 3100},
+    {'name': 'G127', 'pattern': (127, 127, 127), },
+    {'name': 'W000', 'pattern': (0, 0, 0), },
+    {'name': 'RGB', 'pattern': 0, },
+    {'name': 'R255', 'pattern': (255, 0, 0), },
+    {'name': 'G255', 'pattern': (0, 255, 0), },
+    {'name': 'B255', 'pattern': (0, 0, 255), },
+    {'name': 'GreenContrast', 'pattern': 1, },
+    {'name': 'WhiteContrast', 'pattern': 2, },
+    {'name': 'GreenSharpness', 'pattern': 3, },
+    {'name': 'GreenDistortion', 'pattern': 4, }
+]
+
+TEST_ITEM_POS = [
+    {'name': 'normal', 'pos': (0, 0, 15000),
+     'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
+                 'GreenSharpness', 'GreenDistortion']
+     },
+    {'name': 'extendedz', 'pos': (0, 0, 27000),
+     'pattern': ['GreenDistortion']
+     },
+    {'name': 'blemish', 'pos': (0, 0, 5000),
+     'pattern': ['W255']
+     },
+    {'name': 'extendedxpos', 'pos': (5071, 0, 16124),
+     'pattern': ['W255']
+     },
+    {'name': 'extendedxneg', 'pos': (-5071, 0, 16124),
+     'pattern': ['W255']
+     },
+    {'name': 'extendedypos', 'pos': (0, -5071, 16124),
+     'pattern': ['W255']
+     },
+    {'name': 'extendedyneg', 'pos': (0, +5071, 16124),
+     'pattern': ['W255']
+     },
+]
 
 ##################################
 # IT and work order
@@ -144,5 +181,5 @@ VERSION = 'SunnyP2-PreBuild-Alpha'
 EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads'
 DUT_SIM = False
 CAMERA_SN = "Demo"
-EQUIPMENT_SIM = True
+EQUIPMENT_SIM = False
 FIXTURE_SIM = False

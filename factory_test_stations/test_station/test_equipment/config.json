@@ -22,7 +22,7 @@
     "DebugSettings": {
         "debugMode": false,
         "dummyRawImagePath": "",
-        "emulateCamera": true
+        "emulateCamera": false
     },
     "Settings": {
         "autoExposure": false,
