@@ -8,6 +8,8 @@ import win32process
 import win32event
 import pywintypes
 import serial
+import cv as cv2
+import numpy as np
 import hardware_station_common.test_station.dut
 
 
@@ -63,7 +65,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             time.sleep(0.5)
             recvobj = self._power_on()
             if recvobj is None:
-                raise RuntimeError("Exit power_on because can't receive any data from dut.")
+                raise DUTError("Exit power_on because can't receive any data from dut.")
             self.is_screen_poweron = True
             if recvobj[0] != '0000':
                 raise DUTError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
@@ -76,7 +78,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             time.sleep(0.5)
             recvobj = self._power_on()
             if recvobj is None:
-                raise RuntimeError("Exit power_on because can't receive any data from dut.")
+                raise DUTError("Exit power_on because can't receive any data from dut.")
             self.is_screen_poweron = True
             if recvobj[0] != '0000':
                 raise DUTError("Exit power_off because rev err msg. Msg = {}".format(recvobj))
@@ -96,19 +98,40 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             self._serial_port.close()
             self._serial_port = None
 
+    def get_color_ext(self, internal_or_external):
+        """
+
+        @type internal_or_external: bool
+        """
+        recvobj = self._get_color_ext(internal_or_external)
+        if recvobj is None:
+            raise DUTError("Exit get_color because can't receive any data from dut.")
+        if int(recvobj[0]) != 0x00:
+            raise DUTError("Exit get_color because rev err msg. Msg = {}".format(recvobj))
+        return tuple([int(x, 16) for x in recvobj[1:]])
+
+    def display_color_check(self, color):
+        norm_color = tuple([c / 255.0 for c in color])
+        color1 = np.float32([[norm_color]])
+        hsv = cv2.cvtColor(color1, cv2.COLOR_RGB2HSV)
+        h, s, v = tuple(hsv[0, 0, :])
+        self._operator_interface.print_to_console('COLOR: = {},{},{}\n'.format(h, s, v))
+        return (self._station_config.DISP_CHECKER_L_HsvH <= h <= self._station_config.DISP_CHECKER_H_HsvH and
+                self._station_config.DISP_CHECKER_L_HsvS <= s <= self._station_config.DISP_CHECKER_H_HsvS)
+
     def display_color(self, color=(255, 255, 255)):  # (r,g,b)
         if self.is_screen_poweron:
             recvobj = self._setColor(color)
             if recvobj is None:
-                raise RuntimeError("Exit display_color because can't receive any data from dut.")
+                raise DUTError("Exit display_color because can't receive any data from dut.")
             if int(recvobj[0]) != 0x00:
-                raise RuntimeError("Exit display_color because rev err msg. Msg = {}".format(recvobj))
+                raise DUTError("Exit display_color because rev err msg. Msg = {}".format(recvobj))
         time.sleep(self._station_config.DUT_DISPLAYSLEEPTIME)
 
     def display_image(self, image, is_ddr_data=False):
         recvobj = self._showImage(image, is_ddr_data)
         if recvobj is None:
-            raise RuntimeError("Exit disp_image because can't receive any data from dut.")
+            raise DUTError("Exit disp_image because can't receive any data from dut.")
         if int(recvobj[0]) != 0x00:
             raise DUTError("Exit disp_image because rev err msg. Msg = {}".format(recvobj))
         time.sleep(self._station_config.DUT_DISPLAYSLEEPTIME)
@@ -116,11 +139,11 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
     def vsync_microseconds(self):
         recvobj = self._vsyn_time()
         if recvobj is None:
-            raise RuntimeError("Exit display_color because can't receive any data from dut.")
+            raise DUTError("Exit display_color because can't receive any data from dut.")
         grpt = re.match(r'(\d*[\.]?\d*)', recvobj[1])
         grpf = re.match(r'(\d*[\.]?\d*)', recvobj[2])
         if grpf is None or grpt is None:
-            raise RuntimeError("Exit display_color because rev err msg. Msg = {}".format(recvobj))
+            raise DUTError("Exit display_color because rev err msg. Msg = {}".format(recvobj))
         return float(grpt.group(0))
 
     def get_version(self):
@@ -145,7 +168,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         recvobj = self._reboot()
         self.is_screen_poweron = False
         if recvobj is None:
-            raise RuntimeError("Fail to reboot because can't receive any data from dut.")
+            raise DUTError("Fail to reboot because can't receive any data from dut.")
         if int(recvobj[0]) != 0x00:
             raise DUTError("Fail to reboot because rev err msg. Msg = {}".format(recvobj))
         response = []
@@ -248,10 +271,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         return self._prase_respose(self._station_config.COMMAND_DISP_GETBOARDID, response)
 
     def _prase_respose(self, command, response):
-
-
         print("command : {},,,{}".format(command, response))
-
         if response is None:
             return None
         cmd1 = command.split(self._spliter)[0]
@@ -261,7 +281,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             return None
         values = respstr.split(self._spliter)
         if len(values) == 1:
-            raise RuntimeError('display ctrl rev data format error. <- ' + respstr)
+            raise DUTError('display ctrl rev data format error. <- ' + respstr)
         return values[1:]
 
     def _power_on(self):
@@ -321,6 +341,16 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         cmd = 'Reboot'
         if hasattr(self._station_config, 'COMMAND_REBOOT'):
             cmd = self._station_config.COMMAND_REBOOT
+        self._write_serial_cmd(cmd)
+        response = self._read_response()
+        return self._prase_respose(cmd, response)
+
+    def _get_color_ext(self, internal_or_external):
+        internal_external_dic = {
+            True: 'INTERNAL',
+            False: 'EXTERNAL'
+        }
+        cmd = '{0}:{1}'.format(self._station_config.COMMAND_DISP_GET_COLOR, internal_external_dic[internal_or_external])
         self._write_serial_cmd(cmd)
         response = self._read_response()
         return self._prase_respose(cmd, response)

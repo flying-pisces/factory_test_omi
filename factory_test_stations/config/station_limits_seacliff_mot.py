@@ -1,10 +1,11 @@
 
 STATION_LIMITS_ARRAYS = [
-    ["SW_VERSION", None, None, 95],
-    ["EQUIP_VERSION", None, None, 96],
-    ["DUT_ScreenOnRetries", 0, 5, 97],
-    ["DUT_ScreenOnStatus", True, True, 98],
-    ["DUT_CancelByOperator", False, False, 99],
+    ["SW_VERSION", None, None, 94],
+    ["EQUIP_VERSION", None, None, 95],
+    ["DUT_ScreenOnRetries", 0, 5, 96],
+    ["DUT_ScreenOnStatus", True, True, 97],
+    ["DUT_CancelByOperator", False, False, 98],
+    ["ENV_ParticleCounter", None, None, 99],
     ["DUT_AlignmentSuccess", True, True, 100],
 
     ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_W255", True, True, 10001],
