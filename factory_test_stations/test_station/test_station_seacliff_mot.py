@@ -69,22 +69,10 @@ class seacliffmotStation(test_station.TestStation):
         self._operator_interface.print_to_console("\there, I'm shutting the station down..\n")
         self._close_fixture()
         self._equipment.close()
+        self._equipment.kill()
 
     def get_test_item_pattern(self, name):
-        test_item_patterns = [
-            {'name': 'W255', 'pattern': (255, 255, 255), 'exposure': 3100},
-            {'name': 'G127', 'pattern': (127, 127, 127), },
-            {'name': 'W000', 'pattern': (0, 0, 0), },
-            {'name': 'RGB', 'pattern': (127, 127, 127), },
-            {'name': 'R255', 'pattern': (255, 0, 0), },
-            {'name': 'G255', 'pattern': (0, 255, 0), },
-            {'name': 'B255', 'pattern': (0, 0, 255), },
-            {'name': 'GreenContrast', 'pattern': 1, },
-            {'name': 'WhiteContrast', 'pattern': 2, },
-            {'name': 'GreenSharpness', 'pattern': 3, },
-            {'name': 'GreenDistortion', 'pattern': 4, }
-        ]
-        for c in test_item_patterns:
+        for c in self._station_config.TEST_ITEM_PATTERNS:
             if c.get('name') and c['name'] == name:
                 return c
 
@@ -112,30 +100,22 @@ class seacliffmotStation(test_station.TestStation):
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
             test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
             test_log.set_measured_value_by_name_ex("DUT_AlignmentSuccess", self._is_alignment_success)
+
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
                 particle_count = self._fixture.particle_counter_read_val()
             test_log.set_measured_value_by_name_ex("ENV_ParticleCounter", particle_count)
-            # hard coded.
-            test_item_pos = [
-                {'name': 'normal', 'pos': (0, 0, 15),
-                 'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
-                             'GreenSharpness', 'GreenDistortion']},
-                {'name': 'extendedz', 'pos': (0, 0, 27), },
-                {'name': 'extendedxpos', 'pos': (5.071, 0, 16.124)},
-                {'name': 'extendedxneg', 'pos': (-5.071, 0, 16.124)},
-                {'name': 'extendedypos', 'pos': (0, 5.071, 16.124)},
-                {'name': 'extendedyneg', 'pos': (0, -5.071, 16.124)},
-                {'name': 'blemish', 'pos': (0, 0, 5.000), }
-            ]
+            ambient_temp = self._fixture.query_temp()
+            test_log.set_measured_value_by_name_ex("ENV_AmbientTemp", ambient_temp)
+
             if not self._is_screen_on_by_op:
                 raise seacliffmotStationError('fail to power screen on normally.')
             if not self._is_alignment_success:
-                raise seacliffmotStationError('Fail to alignment.')
+                raise seacliffmotStationError('Fail to alignment.\n')
             equip_version = self._equipment.version()
-            test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version)
-            self._operator_interface.print_to_console("Equipment Version: %s\n" % equip_version)
-            for pos_item in test_item_pos:
+            if isinstance(equip_version, dict):
+                test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version.get('Lib_Version'))
+            for pos_item in self._station_config.TEST_ITEM_POS:
                 pos_name = pos_item['name']
                 pos_val = pos_item['pos']
                 item_patterns = pos_item.get('pattern')
@@ -143,12 +123,13 @@ class seacliffmotStation(test_station.TestStation):
                     continue
                 self._operator_interface.print_to_console('mov dut to pos = {0}\n'.format(pos_name))
                 self._fixture.mov_abs_xy_wrt_alignment(pos_val[0], pos_val[1])
-                # self._fixture.mov_camera_z_wrt_alignment(pos_val[2])
+                self._fixture.mov_camera_z_wrt_alignment(pos_val[2])
                 # capture path accorded with test_log.
                 uni_file_name = re.sub('_x.log', '', test_log.get_filename())
                 capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
                 test_station.utils.os_utils.mkdir_p(capture_path)
-                os.chmod(capture_path, 755)
+                if not os.path.exists(capture_path):
+                    os.chmod(capture_path, 777)
 
                 test_item = 0
                 for pattern_name in item_patterns:
@@ -169,8 +150,7 @@ class seacliffmotStation(test_station.TestStation):
                         continue
 
                     config = {"capturePath": capture_path,
-                              "cfgPath": os.path.join(self._station_config.ROOT_DIR,
-                                                      r"test_stations\test_equipment\Cfg")}
+                              "cfgPath": os.path.join(self._station_config.ROOT_DIR, self._station_config.CFG_PATH)}
                     self._equipment.set_config(config)
                     self._equipment.open()
                     self._operator_interface.print_to_console(
@@ -186,32 +166,6 @@ class seacliffmotStation(test_station.TestStation):
                         break
 
                 self._operator_interface.print_to_console('..........\n\n')
-
-            # for c in [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255)]:
-            #     self._operator_interface.print_to_console("\n*********** Display color %s ***************\n" % str(c))
-            #     the_unit.display_color(c)
-            #     config = {"capturePath": self._station_config.RAW_IMAGE_LOG_DIR,
-            #               "cfgPath": os.path.join(self._station_config.ROOT_DIR, r"test_stations\test_equipment\Cfg")}
-            #     self._equipment.set_config(config)
-            #     self._equipment.open()
-            #     self._operator_interface.print_to_console("\n*********** Eldim Capturing Bin File for color %s ***************\n" % str(c))
-            #     self._equipment.measure_and_export(self._station_config.TESTTYPE) ## Need Eldim to open access
-            #     test_item += 1
-            #     test_item_raw_files = sum([len(files) for r, d, files in os.walk(self._station_config.RAW_IMAGE_LOG_DIR)])
-            #     if test_item_raw_files == 2*test_item:
-            #         test_log.set_measured_value_by_name("TEST_RAW_IMAGE_SAVE_SUCCESS_%s"%str(test_item), 1)
-            #
-            # for c in range(0, 5):
-            #     self._operator_interface.print_to_console("\n*********** Display image %s ***************\n" % str(c))
-            #     the_unit.display_image(c, False)
-            #     self._equipment.set_config(config)
-            #     self._equipment.open()
-            #     self._operator_interface.print_to_console("\n*********** Eldim Capturing Bin File for color %s ***************\n" % str(c))
-            #     self._equipment.measure_and_export(self._station_config.TESTTYPE)
-            #     test_item += 1
-            #     test_item_raw_files = sum([len(files) for r, d, files in os.walk(self._station_config.RAW_IMAGE_LOG_DIR)])
-            #     if test_item_raw_files == 2*test_item:
-            #         test_log.set_measured_value_by_name("TEST_RAW_IMAGE_SAVE_SUCCESS_%s"%str(test_item), 1)
         except seacliffmotStationError as e:
             self._operator_interface.print_to_console(str(e))
         finally:
@@ -242,12 +196,6 @@ class seacliffmotStation(test_station.TestStation):
 
     def is_ready_litup_outside(self):
         # TODO:  Initialized the DUT Simply
-        # self._the_unit.initialize()
-        # self._is_screen_on_by_op = True
-        # self._is_cancel_test_by_op = False
-        # self._is_alignment_success = False
-        # return True
-
         ready = False
         power_on_trigger = False
         self._is_screen_on_by_op = False
@@ -281,6 +229,7 @@ class seacliffmotStation(test_station.TestStation):
                         if self._retries_screen_on == 0:
                             self._the_unit.screen_on()
                         self._the_unit.display_color((255, 0, 0))
+                        self._fixture.power_on_button_status(False)
                         alignment_result = self._fixture.alignment()
                         if isinstance(alignment_result, tuple):
                             self._is_alignment_success = True
@@ -301,8 +250,11 @@ class seacliffmotStation(test_station.TestStation):
                             color = self._the_unit.get_color_ext(False)
                             if self._the_unit.display_color_check(color):
                                 color_check_result = True
-                        if color_check_result:
-                            self._fixture.power_on_button_status(False)
+                            if color_check_result:
+                                self._fixture.power_on_button_status(False)
+                                self._fixture.start_button_status(True)
+                        else:
+                            self._fixture.power_on_button_status(True)
                             self._fixture.start_button_status(True)
                     elif ready_status == 0x02:
                         self._is_cancel_test_by_op = True  # Cancel test.

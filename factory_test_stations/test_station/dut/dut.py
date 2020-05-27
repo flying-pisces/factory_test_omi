@@ -350,7 +350,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             True: 'INTERNAL',
             False: 'EXTERNAL'
         }
-        cmd = '{0}:{1}'.format(self._station_config.COMMAND_DISP_GET_COLOR, internal_external_dic[internal_or_external])
+        cmd = '{0},{1}'.format(self._station_config.COMMAND_DISP_GET_COLOR, internal_external_dic[internal_or_external])
         self._write_serial_cmd(cmd)
         response = self._read_response()
         return self._prase_respose(cmd, response)
@@ -412,6 +412,9 @@ if __name__ == "__main__":
         try:
             # the_unit.reboot()
             the_unit.connect_display()
+            the_unit.display_color((255, 255, 255))
+            color2 = the_unit.get_color_ext(False)
+            the_unit.display_color_check(color2)
             time.sleep(0.5)
             the_unit.reboot()
             # the_unit.screen_on()
