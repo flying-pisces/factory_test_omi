@@ -6,7 +6,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_summary'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\unif_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 
 ##################################
@@ -18,6 +18,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 ##################################
 # Fixture parameters
 # Fixture commands
+PROXY_COMMUNICATION_PATH = r"D:\Version\Release\vision.exe"
 IS_PROXY_COMMUNICATION = True
 PROXY_ENDPOINT = 8000
 FIXTURE_COMPORT = "COM4" #
