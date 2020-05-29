@@ -19,7 +19,7 @@ import hardware_station_common.test_station.dut
 
 
 class StationCommunicationProxy(object):
-    _communication_proxy_name = r"..\Version\Vison.exe"
+    _communication_proxy_name = r"D:\Version\Release\vision.exe"
     _progress_handle = None
 
     def __init__(self, port=9999):
@@ -169,6 +169,9 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._operator_interface.print_to_console("Initializing offaxis Fixture\n")
         if hasattr(self._station_config, 'IS_PROXY_COMMUNICATION') and \
                 self._station_config.IS_PROXY_COMMUNICATION:
+            StationCommunicationProxy._communication_proxy_name = self._station_config.PROXY_COMMUNICATION_PATH
+            StationCommunicationProxy.run_daemon_application()
+            time.sleep(1)
             self._serial_port = StationCommunicationProxy(self._station_config.PROXY_ENDPOINT)
         else:
             self._serial_port = serial.Serial(self._station_config.FIXTURE_COMPORT,
@@ -271,18 +274,23 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         return self._parse_response(r'VERSION:(.+)', response).group(1)
 
     def close(self):
-        self._operator_interface.print_to_console("Closing pancake eyecup Fixture\n")
-        if hasattr(self, '_serial_port') \
-                and self._serial_port is not None \
-                and self._station_config.FIXTURE_COMPORT:
-            # self.button_disable()
-            self._serial_port.close()
-            self._serial_port = None
-        if hasattr(self, '_particle_counter_client') and \
-                self._particle_counter_client is not None \
-                and self._station_config.FIXTURE_PARTICLE_COUNTER:
-            self._particle_counter_client.close()
-            self._particle_counter_client = None
+        try:
+            self._operator_interface.print_to_console("Closing pancake eyecup Fixture\n")
+            if hasattr(self, '_serial_port') \
+                    and self._serial_port is not None \
+                    and self._station_config.FIXTURE_COMPORT:
+                # self.button_disable()
+                self._serial_port.close()
+                self._serial_port = None
+            if hasattr(self, '_particle_counter_client') and \
+                    self._particle_counter_client is not None \
+                    and self._station_config.FIXTURE_PARTICLE_COUNTER:
+                self._particle_counter_client.close()
+                self._particle_counter_client = None
+            if self._station_config.IS_PROXY_COMMUNICATION:
+                StationCommunicationProxy.close_application()
+        except:
+            pass
         if self._verbose:
             pprint.pprint("====== Fixture Close =========")
         return True
@@ -656,16 +664,14 @@ def print_to_console(self, msg):
 
 
 if __name__ == "__main__":
-
-    class station_config_fake(object):
-        pass
-
-
     import sys
     import types
 
     sys.path.append(r'../..')
     import logging
+    import station_config
+    station_config.load_station('seacliff_mot')
+    station_config.print_to_console = types.MethodType(print_to_console, station_config)
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
@@ -673,57 +679,8 @@ if __name__ == "__main__":
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
 
-    sta_cfg = station_config_fake()
-    sta_cfg.COMMAND_HELP = 'CMD_HELP'
-    sta_cfg.COMMAND_ID = 'CMD_ID'
-    sta_cfg.COMMAND_VERSION = 'CMD_VERSION'
-    sta_cfg.COMMAND_BUTTON_ENABLE = 'CMD_START_BUTTON_ENABLE'
-    sta_cfg.COMMAND_BUTTON_DISABLE = 'CMD_START_BUTTON_DISABLE'
-    sta_cfg.COMMAND_RESET = 'CMD_RESET'
-    sta_cfg.COMMAND_MODULE_MOVE = 'CMD_MODULE_MOVE'
-    sta_cfg.COMMAND_MODULE_POSIT = 'CMD_MODULE_POSIT'
-    sta_cfg.COMMAND_CAMERA_MOVE = 'CMD_CAMERA_MOVE'
-    sta_cfg.COMMAND_CAMERA_POSIT = 'CMD_CAMERA_POSIT'
-    sta_cfg.COMMAND_STATUS_LIGHT_ON = 'CMD_STATUS_LIGHT_ON'
-    sta_cfg.COMMAND_STATUS_LIGHT_OFF = 'CMD_STATUS_LIGHT_OFF'
-    sta_cfg.COMMAND_LOAD = "CMD_LOAD"
-    sta_cfg.COMMAND_UNLOAD = "CMD_UNLOAD"
-
-    sta_cfg.COMMAND_BUTTON_LITUP_ENABLE = 'CMD_POWERON_BUTTON_ENABLE'
-    sta_cfg.COMMAND_BUTTON_LITUP_DISABLE = 'CMD_POWERON_BUTTON_DISABLE'
-    sta_cfg.COMMAND_LITUP_STATUS = 'CMD_POWERON_BUTTON'
-
-    sta_cfg.COMMAND_USB_POWER_ON = "CMD_USB_POWER_ON"
-    sta_cfg.COMMAND_USB_POWER_OFF = "CMD_USB_POWER_OFF"
-    sta_cfg.COMMAND_PTB_POWER_ON = "CMD_PTB_POWER_ON"
-    sta_cfg.COMMAND_PTB_POWER_OFF = "CMD_PTB_POWER_OFF"
-    sta_cfg.COMMAND_STATUS = "CMD_STATUS"
-    sta_cfg.COMMAND_ALIGNMENT = "CMD_ALIGNMENT"
-
-    sta_cfg.FIXTURE_ALIGNMENT_DLY = 20
-    sta_cfg.FIXTURE_UNLOAD_DLY = 20
-    sta_cfg.FIXTURE_PTB_ON_TIME = 1
-    sta_cfg.FIXTURE_USB_ON_TIME = 1
-
-    sta_cfg.print_to_console = types.MethodType(print_to_console, sta_cfg)
-    sta_cfg.IS_VERBOSE = True
-    sta_cfg.IS_PROXY_COMMUNICATION = True
-    sta_cfg.FIXTURE_COMPORT = 'COM4'
-    sta_cfg.FIXTURE_PARTICLE_COMPORT = 'COM8'
-    sta_cfg.PROXY_ENDPOINT = 8000
-    sta_cfg.DISTANCE_BETWEEN_CAMERA_AND_DATUM = 26041
-    sta_cfg.FIXTURE_PARTICLE_COUNTER = True
-
-    sta_cfg.FIXTURE_PARTICLE_ADDR = 1
-    sta_cfg.FIXTRUE_PARTICLE_ADDR_READ = 8
-    sta_cfg.FIXTRUE_PARTICLE_ADDR_START = 30
-    sta_cfg.FIXTRUE_PARTICLE_ADDR_STATUS = 30
-    sta_cfg.PARTICLE_COUNTER_APC = True  # use apc-r210
-    sta_cfg.FIXTRUE_PARTICLE_START_DLY = 0
-    sta_cfg.COMMAND_QUERY_TEMP = 'CMD_GET_TEMPERATURE'
-
     try:
-        the_unit = seacliffmotFixture(sta_cfg, sta_cfg)
+        the_unit = seacliffmotFixture(station_config, station_config)
         the_unit.initialize()
         for idx in range(0, 100):
             print('Loop ---> {}'.format(idx))
@@ -735,6 +692,7 @@ if __name__ == "__main__":
                 # the_unit.particle_counter_read_val()
 
                 the_unit.load()
+                the_unit.power_on_button_status(True)
 
                 alignment_result = the_unit.alignment()
                 if alignment_result is None:

@@ -56,13 +56,9 @@ class seacliffmotStation(test_station.TestStation):
 
     def _close_fixture(self):
         if self._fixture is not None:
-            try:
-                self._operator_interface.print_to_console("Close...\n")
-                self._fixture.status()
-#                self._fixture.elminator_off()
-            finally:
-                self._fixture.close()
-                self._fixture = None
+            self._operator_interface.print_to_console("Close...\n")
+            self._fixture.close()
+            self._fixture = None
 
     def close(self):
         self._operator_interface.print_to_console("Close...\n")
