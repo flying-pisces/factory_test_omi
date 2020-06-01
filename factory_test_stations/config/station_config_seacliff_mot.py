@@ -6,6 +6,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
+CONOSCOPE_DLL_PATH = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\unif_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 
@@ -19,7 +20,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 # Fixture parameters
 # Fixture commands
 PROXY_COMMUNICATION_PATH = r"D:\Version\Release\vision.exe"
-IS_PROXY_COMMUNICATION = True
+IS_PROXY_COMMUNICATION = False
 PROXY_ENDPOINT = 8000
 FIXTURE_COMPORT = "COM4" #
 FIXTURE_PARTICLE_COMPORT = "COM8" #
@@ -180,7 +181,6 @@ USE_WORKORDER_ENTRY = False
 
 VERSION = 'SunnyP2-PreBuild-Alpha'
 EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads'
-DUT_SIM = False
-CAMERA_SN = "Demo"
-EQUIPMENT_SIM = False
-FIXTURE_SIM = False
+DUT_SIM = True
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True

@@ -22,13 +22,13 @@
     "DebugSettings": {
         "debugMode": false,
         "dummyRawImagePath": "",
-        "emulateCamera": false
+        "emulateCamera": true
     },
     "Settings": {
         "autoExposure": false,
         "autoExposurePixelMax": 0,
         "capturePath": "./CaptureFolder2",
-        "cfgPath": "C:\\oculus\\factory_test_omi\\factory_test_stations\\test_stations\\test_equipment\\Cfg"
+        "cfgPath": "C:\\oculus\\factory_test_omi\\factory_test_stations\\test_station\\test_equipment\\Cfg"
     },
     "SettingsI": {
         "cfgFileIsZip": true,
