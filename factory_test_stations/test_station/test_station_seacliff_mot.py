@@ -156,7 +156,7 @@ class seacliffmotStation(test_station.TestStation):
                     test_item_raw_files = sum([len(files) for r, d, files in os.walk(capture_path)])
 
                     measure_item_name = 'Test_RAW_IMAGE_SAVE_SUCCESS_{0}_{1}'.format(pos_name, pattern_name)
-                    if test_item_raw_files == 2 * test_item or True:
+                    if test_item_raw_files == 2 * test_item:
                         test_log.set_measured_value_by_name_ex(measure_item_name, True)
                     else:
                         break

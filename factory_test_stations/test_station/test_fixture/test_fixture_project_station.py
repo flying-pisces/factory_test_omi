@@ -23,5 +23,6 @@ class projectstationFixture(hardware_station_common.test_station.test_fixture.Te
             return
         if item in ['status', 'elminator_off', 'elminator_on', 'mov_abs_xy', 'unload',
                     'load', 'button_disable', 'button_enable', 'flush_data', 'mov_abs_xya',
-                    'is_ready']:
+                    'is_ready', 'power_on_button_status', 'start_button_status', 'query_temp',
+                    'mov_abs_xy_wrt_alignment', 'mov_camera_z_wrt_alignment']:
             return not_find

@@ -8,6 +8,7 @@ import json
 import os
 
 class Conoscope:
+    DLL_PATH = None
     class Filter(Enum):
         BK7 = 0
         Mirror = 1
@@ -108,19 +109,21 @@ class Conoscope:
             ("bFlatField", ctypes.c_bool),
             ("bAbsolute", ctypes.c_bool)]
 
-    def __init__(self):
+    def __init__(self, emulate_camera=False):
         print("create an instance of the conoscope")
 
         self.conoscopeConfig = Conoscope.ConoscopeConfig()
         self.conoscopeDebugSettings = Conoscope.ConoscopeDebugSettings()
         self.setupConfig = Conoscope.SetupConfig()
         self.measureConfig = Conoscope.MeasureConfig(200000, 1, 1, False)
-        dllPath = os.path.join(os.path.join(os.getcwd(), "test_station\\test_equipment\\ConoscopeLib.dll")) # ugly hack
+
+        dllPath = os.path.join(os.path.join(os.getcwd(), Conoscope.DLL_PATH, 'ConoscopeLib.dll'))  # ugly hack
         if os.path.isfile(dllPath):
+            os.environ['PATH'] += ';' + os.path.dirname(dllPath)
             os.chdir(os.path.dirname(dllPath))
-            conoscopeDll = cdll.LoadLibrary("ConoscopeLib.dll")
+            conoscopeDll = cdll.LoadLibrary(os.path.basename(dllPath))
         else:
-            conoscopeDll = cdll.LoadLibrary("ConoscopeLib.dll")
+            raise FileNotFoundError(dllPath)
 
         CmdRunApp_Proto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p)  # Return type.
@@ -223,7 +226,7 @@ class Conoscope:
 
         # configure conoscope in normal mode
         ret = self.CmdSetDebugConfig({"debugMode": False,
-                                                "emulatedCamera": False})
+                                                "emulatedCamera": emulate_camera})
         print("instance done")
 
     def __del__(self):

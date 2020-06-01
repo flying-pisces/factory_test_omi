@@ -7,6 +7,11 @@ except:
 finally:
     pass
 import time
+import sys
+sys.path.append("../")
+sys.path.append("../../")
+sys.path.append("../../../")
+
 
 class seacliffmotEquipmentError(Exception):
     pass
@@ -17,11 +22,13 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
             this is for doing all the specific things necessary to interface with equipment
     """
     def __init__(self, station_config, operator_interface):
+        _dll_path = None
         hardware_station_common.test_station.test_equipment.TestEquipment.__init__(self, station_config, operator_interface)
         self.name = "eldim"
         self._verbose = station_config.IS_VERBOSE
         self._station_config = station_config
-        self._device = Conoscope()
+        Conoscope.DLL_PATH = self._station_config.CONOSCOPE_DLL_PATH
+        self._device = Conoscope(self._station_config.EQUIPMENT_SIM)
         self._error_message = self.name + "is out of work"
         self._version = None
         self._config = None
