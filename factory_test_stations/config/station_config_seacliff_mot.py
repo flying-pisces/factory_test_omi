@@ -90,6 +90,7 @@ COMMAND_STATUS = "CMD_STATUS"
 DUT_LITUP_OUTSIDE = True
 FIXTURE_UNLOAD_DLY = 20
 FIXTURE_ALIGNMENT_DLY = 10
+FIXTURE_MECH_STABLE_DLY = 0.05
 
 FIXTURE_PARTICLE_COUNTER = False
 
@@ -131,7 +132,7 @@ PATTERNS = ["W255", 'W127', "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True, True, True]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
-DUT_DISPLAYSLEEPTIME = 1
+DUT_DISPLAYSLEEPTIME = 0.1
 
 TEST_ITEM_PATTERNS = [
     {'name': 'W255', 'pattern': (255, 255, 255), 'exposure': 3100},
