@@ -120,6 +120,7 @@ class seacliffmotStation(test_station.TestStation):
                 self._operator_interface.print_to_console('mov dut to pos = {0}\n'.format(pos_name))
                 self._fixture.mov_abs_xy_wrt_alignment(pos_val[0], pos_val[1])
                 self._fixture.mov_camera_z_wrt_alignment(pos_val[2])
+                time.sleep(self._station_config.FIXTURE_MECH_STABLE_DLY)
                 # capture path accorded with test_log.
                 uni_file_name = re.sub('_x.log', '', test_log.get_filename())
                 capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
