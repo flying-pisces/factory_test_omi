@@ -7,7 +7,7 @@
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 CONOSCOPE_DLL_PATH = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\unif_summary'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 
 ##################################
@@ -124,7 +124,7 @@ DISTANCE_BETWEEN_CAMERA_AND_DATUM = 26041
 ##################################
 # Test Equipment related parameters
 IS_VERBOSE = True # some path bug, temp set False and work on True later
-CFG_PATH = r'test_station\test_equipment\Cfg'
+CFG_PATH = r'Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]

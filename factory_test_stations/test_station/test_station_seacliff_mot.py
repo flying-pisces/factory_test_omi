@@ -147,7 +147,9 @@ class seacliffmotStation(test_station.TestStation):
                         continue
 
                     config = {"capturePath": capture_path,
-                              "cfgPath": os.path.join(self._station_config.ROOT_DIR, self._station_config.CFG_PATH)}
+                              "cfgPath": os.path.join(self._station_config.CONOSCOPE_DLL_PATH,
+                                                      self._station_config.CFG_PATH)}
+                    self._operator_interface.print_to_console("set current config = {0}\n".format(config))
                     self._equipment.set_config(config)
                     self._equipment.open()
                     self._operator_interface.print_to_console(
