@@ -77,6 +77,13 @@ class seacliffmotStation(test_station.TestStation):
 
         @type test_log: test_station.test_log.test_log
         """
+        msg0 = 'info --> lit up: {0}, dut: {1}, equip: {2}, fixture: {3}, particle:{4}, dut_checker:{5} ver: {6}\n' \
+            .format(
+                self._station_config.DUT_LITUP_OUTSIDE, self._station_config.DUT_SIM,
+                self._station_config.EQUIPMENT_SIM, self._station_config.FIXTURE_SIM,
+                self._station_config.FIXTURE_PARTICLE_COUNTER, self._station_config.DISP_CHECKER_ENABLE,
+                self._sw_version)
+        self._operator_interface.print_to_console(msg0)
         self._overall_result = False
         self._overall_errorcode = ''
         try:

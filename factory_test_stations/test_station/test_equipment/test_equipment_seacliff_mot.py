@@ -143,32 +143,32 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
 
         # change capture path
 
-        config = {"capturePath": "./CaptureFolder2"}
-        ret = self._device.CmdSetConfig(config)
-        self._log(ret, "CmdSetup")
-
-        setupConfig = {"sensorTemperature": 25.0,
-                       "eFilter": self._device.Filter.Xz.value,
-                       "eNd": self._device.Nd.Nd_1.value,
-                       "eIris": self._device.Iris.aperture_02.value}
-        ret = self._device.CmdSetup(setupConfig)
-        self._log(ret, "CmdSetup")
-
-        ret = self._device.CmdSetupStatus()
-        self._log(ret, "CmdSetupStatus")
-
-        measureConfig = {"exposureTimeUs": 90000,
-                         "nbAcquisition": 1}
-
-        ret = self._device.CmdMeasure(measureConfig)
-        self._log(ret, "CmdMeasure")
-
-        ret = self._device.CmdExportRaw()
-        self._log(ret, "CmdExportRaw")
-
-        ret = self._device.CmdExportProcessed()
-        self._log(ret, "CmdExportProcessed")
-        return
+        # config = {"capturePath": "./CaptureFolder2"}
+        # ret = self._device.CmdSetConfig(config)
+        # self._log(ret, "CmdSetup")
+        #
+        # setupConfig = {"sensorTemperature": 25.0,
+        #                "eFilter": self._device.Filter.Xz.value,
+        #                "eNd": self._device.Nd.Nd_1.value,
+        #                "eIris": self._device.Iris.aperture_02.value}
+        # ret = self._device.CmdSetup(setupConfig)
+        # self._log(ret, "CmdSetup")
+        #
+        # ret = self._device.CmdSetupStatus()
+        # self._log(ret, "CmdSetupStatus")
+        #
+        # measureConfig = {"exposureTimeUs": 90000,
+        #                  "nbAcquisition": 1}
+        #
+        # ret = self._device.CmdMeasure(measureConfig)
+        # self._log(ret, "CmdMeasure")
+        #
+        # ret = self._device.CmdExportRaw()
+        # self._log(ret, "CmdExportRaw")
+        #
+        # ret = self._device.CmdExportProcessed()
+        # self._log(ret, "CmdExportProcessed")
+        # return
 
     def __perform_capture_sequence(self):
         # check capture sequence
