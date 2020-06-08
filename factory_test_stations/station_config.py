@@ -32,6 +32,6 @@ def load_station(station):
         #execfile(station_config_file, globals())  # imports station_config into current namespace
         #execfile(station_limits_file, globals())
         exec(open(station_config_file).read(), globals())
-        exec(open(station_limits_file).read(), globals())
+        #exec(open(station_limits_file).read(), globals())
     except:
         raise

@@ -166,7 +166,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                             return key
 
     def initialize(self):
-        self._operator_interface.print_to_console("Initializing offaxis Fixture\n")
+        self._operator_interface.print_to_console("Initializing seacliff_mot Fixture\n")
         if hasattr(self._station_config, 'IS_PROXY_COMMUNICATION') and \
                 self._station_config.IS_PROXY_COMMUNICATION:
             StationCommunicationProxy._communication_proxy_name = self._station_config.PROXY_COMMUNICATION_PATH
@@ -275,7 +275,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
 
     def close(self):
         try:
-            self._operator_interface.print_to_console("Closing pancake eyecup Fixture\n")
+            self._operator_interface.print_to_console("Closing seacliff_mot Fixture\n")
             if hasattr(self, '_serial_port') \
                     and self._serial_port is not None \
                     and self._station_config.FIXTURE_COMPORT:
