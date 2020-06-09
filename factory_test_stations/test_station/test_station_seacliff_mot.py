@@ -77,7 +77,8 @@ class seacliffmotStation(test_station.TestStation):
 
         @type test_log: test_station.test_log.test_log
         """
-        msg0 = 'info --> lit up: {0}, dut: {1}, equip: {2}, fixture: {3}, particle:{4}, dut_checker:{5} ver: {6}\n' \
+        msg0 = 'info --> lit up: {0}, emulator_dut: {1}, emulator_equip: {2}, emulator_fixture: {3},' \
+               ' particle:{4}, dut_checker:{5} ver: {6}\n' \
             .format(
                 self._station_config.DUT_LITUP_OUTSIDE, self._station_config.DUT_SIM,
                 self._station_config.EQUIPMENT_SIM, self._station_config.FIXTURE_SIM,

@@ -482,7 +482,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         @param z:
         @return:
         """
-        self._operator_interface.print_to_console('mov z to wrt {0}'.format(z))
+        self._operator_interface.print_to_console('mov z to wrt {0}\n'.format(z))
         zz = z + self._alignment_pos[3]
         self.mov_camera_z(zz)
 

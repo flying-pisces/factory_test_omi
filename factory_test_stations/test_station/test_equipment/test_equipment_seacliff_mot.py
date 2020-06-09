@@ -60,7 +60,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
             ret = self._device.CmdGetVersion()
             self._version = self._log(ret, "CmdGetVersion")
             if self._verbose:
-                self._operator_interface.print_to_console("Equipment Version is \n" + str(self._version))
+                self._operator_interface.print_to_console("Equipment Version is \n{0}\n".format(str(self._version)))
         return self._version
 
     def get_config(self):
@@ -68,14 +68,14 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
             ret = self._device.CmdGetConfig()
             self._config = self._log(ret, "CmdGetConfig")
             if self._verbose:
-                self._operator_interface.print_to_console("Current Configuration is \n" + str(self._config))
+                self._operator_interface.print_to_console("Current Configuration is \n{0}\n".format(str(self._config)))
         return self._config
 
     def set_config(self, configsetting):
         ret = self._device.CmdSetConfig(configsetting)
         self._config = self._log(ret, "CmdSetConfig")
         if self._verbose:
-            self._operator_interface.print_to_console("Current Configuration is \n" + str(self._config))
+            self._operator_interface.print_to_console("Current Configuration is \n{0}\n".format(str(self._config)))
         return self._config
 
     ########### Equipment Operation ###########
@@ -83,13 +83,13 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         ret = self._device.CmdOpen()
         self._open = self._log(ret, "CmdOpen")
         if self._verbose:
-            self._operator_interface.print_to_console("Open Status is \n" + str(self._open))
+            self._operator_interface.print_to_console("Open Status is \n{0}\n".format(str(self._open)))
         return self._open
 
     def reset(self):
         ret = self._device.CmdReset()
         if self._verbose:
-            self._operator_interface.print_to_console("Open Status is \n" + str(self._log(ret, "CmdReset")))
+            self._operator_interface.print_to_console("Open Status is \n{0}\n".format(str(self._log(ret, "CmdReset"))))
         else:
             self._log(ret, "CmdReset")
         return self._log(ret, "CmdReset")
@@ -97,7 +97,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
     def close(self):
         ret = self._device.CmdClose()
         if self._verbose:
-            self._operator_interface.print_to_console("Open Status is \n" + str(self._log(ret, "CmdClose")))
+            self._operator_interface.print_to_console("Open Status is \n{0}\n".format(str(self._log(ret, "CmdClose"))))
         else:
             self._log(ret, "CmdClose")
         return self._log(ret, "CmdClose")
@@ -115,7 +115,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         elif measuretype == 1:
             self._perform_capture_sequence()
         else:
-            self._operator_interface.print_to_console("TestType Setting is Wrong \n" + self._error_message)
+            self._operator_interface.print_to_console("TestType Setting is Wrong \n{0}\n".format(self._error_message))
         return
 
     def __perform_capture(self):
