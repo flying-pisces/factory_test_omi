@@ -7,10 +7,6 @@ except:
 finally:
     pass
 import time
-import sys
-sys.path.append("../")
-sys.path.append("../../")
-sys.path.append("../../../")
 
 
 class seacliffmotEquipmentError(Exception):

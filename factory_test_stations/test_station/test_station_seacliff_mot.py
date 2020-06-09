@@ -51,6 +51,7 @@ class seacliffmotStation(test_station.TestStation):
             self._operator_interface.print_to_console("Initializing Seacliff MOT station...\n")
             self._fixture.initialize()
             self._equipment.initialize()
+            self._equipment.open()
         except:
             raise
 
@@ -159,7 +160,6 @@ class seacliffmotStation(test_station.TestStation):
                                                       self._station_config.CFG_PATH)}
                     self._operator_interface.print_to_console("set current config = {0}\n".format(config))
                     self._equipment.set_config(config)
-                    self._equipment.open()
                     self._operator_interface.print_to_console(
                         "*********** Eldim Capturing Bin File for color {0} ***************\n".format(pattern_value))
                     self._equipment.measure_and_export(self._station_config.TESTTYPE)
