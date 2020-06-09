@@ -388,6 +388,16 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
+    def query_probe_status(self):
+        """
+        query the power on button
+        @return:
+        """
+        cmd = (self._station_config.COMMAND_PROBE_BUTTON, r'Probe_BUTTON:(\d+)')
+        self._write_serial(cmd[0])
+        response = self.read_response()
+        return int(self._parse_response(cmd[1], response).group(1))
+
     def start_button_status(self, on):
         """
         @type on : bool

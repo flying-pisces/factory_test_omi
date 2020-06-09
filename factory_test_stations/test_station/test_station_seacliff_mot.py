@@ -45,6 +45,7 @@ class seacliffmotStation(test_station.TestStation):
         self._is_screen_on_by_op = False
         self._is_cancel_test_by_op = False
         self._is_alignment_success = False
+        self._probe_con_status = False
 
     def initialize(self):
         try:
@@ -101,6 +102,7 @@ class seacliffmotStation(test_station.TestStation):
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
 
+            test_log.set_measured_value_by_name_ex('Carrier_ProbeConnectStatus', self._probe_con_status)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
             test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
@@ -120,6 +122,13 @@ class seacliffmotStation(test_station.TestStation):
             equip_version = self._equipment.version()
             if isinstance(equip_version, dict):
                 test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version.get('Lib_Version'))
+            # capture path accorded with test_log.
+            uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+            capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
+            test_station.utils.os_utils.mkdir_p(capture_path)
+            if not os.path.exists(capture_path):
+                os.chmod(capture_path, 777)
+
             for pos_item in self._station_config.TEST_ITEM_POS:
                 pos_name = pos_item['name']
                 pos_val = pos_item['pos']
@@ -130,14 +139,7 @@ class seacliffmotStation(test_station.TestStation):
                 self._fixture.mov_abs_xy_wrt_alignment(pos_val[0], pos_val[1])
                 self._fixture.mov_camera_z_wrt_alignment(pos_val[2])
                 time.sleep(self._station_config.FIXTURE_MECH_STABLE_DLY)
-                # capture path accorded with test_log.
-                uni_file_name = re.sub('_x.log', '', test_log.get_filename())
-                capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
-                test_station.utils.os_utils.mkdir_p(capture_path)
-                if not os.path.exists(capture_path):
-                    os.chmod(capture_path, 777)
 
-                test_item = 0
                 for pattern_name in item_patterns:
                     pattern_info = self.get_test_item_pattern(pattern_name)
                     if not pattern_info:
@@ -155,6 +157,7 @@ class seacliffmotStation(test_station.TestStation):
                                                                   % (pattern_name, pattern_value))
                         continue
 
+                    test_item_raw_files_pre = sum([len(files) for r, d, files in os.walk(capture_path)])
                     config = {"capturePath": capture_path,
                               "cfgPath": os.path.join(self._station_config.CONOSCOPE_DLL_PATH,
                                                       self._station_config.CFG_PATH)}
@@ -163,14 +166,11 @@ class seacliffmotStation(test_station.TestStation):
                     self._operator_interface.print_to_console(
                         "*********** Eldim Capturing Bin File for color {0} ***************\n".format(pattern_value))
                     self._equipment.measure_and_export(self._station_config.TESTTYPE)
-                    test_item += 1
-                    test_item_raw_files = sum([len(files) for r, d, files in os.walk(capture_path)])
+                    test_item_raw_files_post = sum([len(files) for r, d, files in os.walk(capture_path)])
 
                     measure_item_name = 'Test_RAW_IMAGE_SAVE_SUCCESS_{0}_{1}'.format(pos_name, pattern_name)
-                    if test_item_raw_files == 2 * test_item:
-                        test_log.set_measured_value_by_name_ex(measure_item_name, True)
-                    else:
-                        break
+                    raw_success_save = (test_item_raw_files_pre + 2) == test_item_raw_files_post
+                    test_log.set_measured_value_by_name_ex(measure_item_name, raw_success_save)
 
                 self._operator_interface.print_to_console('..........\n\n')
         except seacliffmotStationError as e:
@@ -207,6 +207,7 @@ class seacliffmotStation(test_station.TestStation):
         power_on_trigger = False
         self._is_screen_on_by_op = False
         self._is_cancel_test_by_op = False
+        self._probe_con_status = False
         self._retries_screen_on = 0
         try:
             self._fixture.power_on_button_status(True)
@@ -244,6 +245,11 @@ class seacliffmotStation(test_station.TestStation):
                     elif ready_status == 0x03:
                         self._operator_interface.print_to_console('Try to lit up DUT.\n')
                         self._retries_screen_on += 1
+                        self._probe_con_status = self._fixture.query_probe_status() == 0
+                        if not self._station_config.FIXTURE_SIM and not self._probe_con_status:
+                            self._operator_interface.print_to_console('Please check the carrier connection.\n')
+                            continue
+                        # power the dut on normally.
                         if power_on_trigger:
                             self._the_unit.screen_off()
                             self._the_unit.reboot()  # Reboot
