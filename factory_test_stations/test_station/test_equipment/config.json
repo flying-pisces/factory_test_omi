@@ -14,9 +14,9 @@
         "bSensorPrnuCorrection": true
     },
     "CmdSetup": {
-        "eFilter": 3,
+        "eFilter": 5,
         "eIris": 0,
-        "eNd": 1,
+        "eNd": 3,
         "sensorTemperature": 25
     },
     "DebugSettings": {
@@ -27,7 +27,7 @@
     "Settings": {
         "autoExposure": false,
         "autoExposurePixelMax": 0,
-        "capturePath": "./CaptureFolder2",
+        "capturePath": "C:\\oculus\\factory_test_omi\\factory_test_stations\\factory-test_logs\\raw\\AA_seacliff_mot-01_20200610-180912",
         "cfgPath": "C:\\oculus\\factory_test_omi\\factory_test_stations\\test_station\\test_equipment\\Cfg"
     },
     "SettingsI": {
