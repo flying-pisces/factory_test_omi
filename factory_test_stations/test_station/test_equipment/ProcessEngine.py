@@ -50,7 +50,7 @@ class ProcessEngine:
         ret = self.conoscope.CmdSetup({"sensorTemperature": 25.0,
                                   "eFilter": Conoscope.Filter.X.value,
                                   "eNd": Conoscope.Nd.Nd_0.value,
-                                  "eIris": Conoscope.Iris.aperture_02.value})
+                                  "eIris": Conoscope.Iris.aperture_2mm.value})
         LogFunction(ret, "CmdSetup")
 
     def __del__(self):
@@ -102,8 +102,8 @@ class ProcessEngine:
                                          "nbAcquisition": 1})
         LogFunction(ret, "CmdMeasure")
 
-        ret = self.conoscope.CmdExportRaw()
-        LogFunction(ret, "CmdExportRaw")
+        #ret = self.conoscope.CmdExportRaw()
+        #LogFunction(ret, "CmdExportRaw")
 
         ret = self.conoscope.CmdExportProcessed(processConfig)
         LogFunction(ret, "CmdExportProcessed")
