@@ -135,18 +135,25 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 0.1
 
+TEST_SENSOR_TEMPERATURE = 25.0
+TEST_ITEM_AUTO_EXPOSURE = True
+TEST_SEQ_ND = 0
+TEST_SEQ_EIRIS = 0
+
+# 'setup': (filter, nd, iris) is used for capture image,
+# 'exposure': if not set , use seq-file.
 TEST_ITEM_PATTERNS = [
-    {'name': 'W255', 'pattern': (255, 255, 255), 'exposure': 3100},
-    {'name': 'G127', 'pattern': (127, 127, 127), },
-    {'name': 'W000', 'pattern': (0, 0, 0), },
-    {'name': 'RGB', 'pattern': 0, },
-    {'name': 'R255', 'pattern': (255, 0, 0), },
-    {'name': 'G255', 'pattern': (0, 255, 0), },
-    {'name': 'B255', 'pattern': (0, 0, 255), },
-    {'name': 'GreenContrast', 'pattern': 1, },
-    {'name': 'WhiteContrast', 'pattern': 2, },
-    {'name': 'GreenSharpness', 'pattern': 3, },
-    {'name': 'GreenDistortion', 'pattern': 4, }
+    {'name': 'W255', 'pattern': (255, 255, 255), 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'G127', 'pattern': (127, 127, 127), 'exposure': 5000},
+    {'name': 'W000', 'pattern': (0, 0, 0), 'exposure': 5000},
+    {'name': 'RGB', 'pattern': 0, 'exposure': 5000},
+    {'name': 'R255', 'pattern': (255, 0, 0), 'exposure': 5000},
+    {'name': 'G255', 'pattern': (0, 255, 0), 'exposure': 5000},
+    {'name': 'B255', 'pattern': (0, 0, 255), 'exposure': 5000},
+    {'name': 'GreenContrast', 'pattern': 1, 'exposure': 5000},
+    {'name': 'WhiteContrast', 'pattern': 2, 'exposure': 5000},
+    {'name': 'GreenSharpness', 'pattern': 3, 'exposure': 5000},
+    {'name': 'GreenDistortion', 'pattern': 4, 'exposure': 5000}
 ]
 
 TEST_ITEM_POS = [

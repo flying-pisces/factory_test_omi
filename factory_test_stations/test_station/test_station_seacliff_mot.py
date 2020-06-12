@@ -75,6 +75,14 @@ class seacliffmotStation(test_station.TestStation):
             if c.get('name') and c['name'] == name:
                 return c
 
+    def get_filenames_in_folder(self, parent_dir, pattern):
+        file_names = []
+        for home, dirs, files in os.walk(parent_dir):
+            for file_name in files:
+                if re.search(pattern, file_name, re.I):
+                    file_names.append(os.path.join(parent_dir, file_name))
+        return file_names
+
     def _do_test(self, serial_number, test_log):
         """
 
@@ -125,10 +133,6 @@ class seacliffmotStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version.get('Lib_Version'))
             # capture path accorded with test_log.
             uni_file_name = re.sub('_x.log', '', test_log.get_filename())
-            capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
-            test_station.utils.os_utils.mkdir_p(capture_path)
-            if not os.path.exists(capture_path):
-                os.chmod(capture_path, 777)
 
             for pos_item in self._station_config.TEST_ITEM_POS:
                 pos_name = pos_item['name']
@@ -136,6 +140,7 @@ class seacliffmotStation(test_station.TestStation):
                 item_patterns = pos_item.get('pattern')
                 if item_patterns is None:
                     continue
+
                 self._operator_interface.print_to_console('mov dut to pos = {0}\n'.format(pos_name))
                 self._fixture.mov_abs_xy_wrt_alignment(pos_val[0], pos_val[1])
                 self._fixture.mov_camera_z_wrt_alignment(pos_val[2])
@@ -158,15 +163,23 @@ class seacliffmotStation(test_station.TestStation):
                                                                   % (pattern_name, pattern_value))
                         continue
 
-                    test_item_raw_files_pre = sum([len(files) for r, d, files in os.walk(capture_path)])
+                    capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
+                    test_station.utils.os_utils.mkdir_p(capture_path)
+                    if not os.path.exists(capture_path):
+                        os.chmod(capture_path, 777)
                     config = {"capturePath": capture_path,
+                              'fileNamePrepend': '{0}_{1}_'.format(pos_name, pattern_name),
                               "cfgPath": os.path.join(self._station_config.CONOSCOPE_DLL_PATH,
                                                       self._station_config.CFG_PATH)}
                     self._operator_interface.print_to_console("set current config = {0}\n".format(config))
                     self._equipment.set_config(config)
+
+                    test_item_raw_files_pre = sum([len(files) for r, d, files in os.walk(capture_path)])
                     self._operator_interface.print_to_console(
                         "*********** Eldim Capturing Bin File for color {0} ***************\n".format(pattern_value))
-                    self._equipment.measure_and_export(self._station_config.TESTTYPE)
+                    # self._equipment.measure_and_export(self._station_config.TESTTYPE)
+                    self._equipment.do_measure_and_export(pos_name, pattern_name)
+
                     test_item_raw_files_post = sum([len(files) for r, d, files in os.walk(capture_path)])
 
                     measure_item_name = 'Test_RAW_IMAGE_SAVE_SUCCESS_{0}_{1}'.format(pos_name, pattern_name)
