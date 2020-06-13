@@ -8,6 +8,7 @@ import os
 import types
 import re
 import pprint
+import numpy as np
 
 
 def chk_and_set_measured_value_by_name(test_log, item, value):
@@ -38,7 +39,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.0.2'
+        self._sw_version = '0.1.0'
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -80,8 +81,27 @@ class seacliffmotStation(test_station.TestStation):
         for home, dirs, files in os.walk(parent_dir):
             for file_name in files:
                 if re.search(pattern, file_name, re.I):
-                    file_names.append(os.path.join(parent_dir, file_name))
+                    file_names.append(os.path.join(home, file_name))
         return file_names
+
+    def get_export_data(self, filename):
+        """
+        @type: filename: str
+        """
+        split_text = filename.split('_')
+        data_bin = None
+        if 'raw' in split_text:
+            row = 6004
+            col = 7920
+            dtype = np.uint16
+        else:
+            row = 6001
+            col = 6001
+            dtype = np.int16
+        with open(filename, 'rb') as f:
+            frame3 = np.frombuffer(f.read(), dtype=dtype)
+            data_bin = frame3.reshape(row, col)
+        return data_bin
 
     def _do_test(self, serial_number, test_log):
         """
@@ -133,6 +153,15 @@ class seacliffmotStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version.get('Lib_Version'))
             # capture path accorded with test_log.
             uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+            capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
+            test_station.utils.os_utils.mkdir_p(capture_path)
+            if not os.path.exists(capture_path):
+                os.chmod(capture_path, 777)
+            config = {"capturePath": capture_path,
+                      "cfgPath": os.path.join(self._station_config.CONOSCOPE_DLL_PATH,
+                                              self._station_config.CFG_PATH)}
+            self._operator_interface.print_to_console("set current config = {0}\n".format(config))
+            self._equipment.set_config(config)
 
             for pos_item in self._station_config.TEST_ITEM_POS:
                 pos_name = pos_item['name']
@@ -162,31 +191,37 @@ class seacliffmotStation(test_station.TestStation):
                         self._operator_interface.print_to_console('Unable to change pattern: %s = %s \n'
                                                                   % (pattern_name, pattern_value))
                         continue
-
-                    capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
-                    test_station.utils.os_utils.mkdir_p(capture_path)
-                    if not os.path.exists(capture_path):
-                        os.chmod(capture_path, 777)
-                    config = {"capturePath": capture_path,
-                              'fileNamePrepend': '{0}_{1}_'.format(pos_name, pattern_name),
-                              "cfgPath": os.path.join(self._station_config.CONOSCOPE_DLL_PATH,
-                                                      self._station_config.CFG_PATH)}
+                    pre_file_name = '{0}_{1}_'.format(pos_name, pattern_name)
+                    config = {'fileNamePrepend': pre_file_name}
                     self._operator_interface.print_to_console("set current config = {0}\n".format(config))
                     self._equipment.set_config(config)
+                    pattern: dict
+                    pattern = [c for c in self._station_config.TEST_ITEM_PATTERNS if c['name'] == pattern_name][-1]
+                    exposure_cfg = pattern.get('exposure')  # type: (str, int)
+                    file_count_per_capture = 4 if isinstance(exposure_cfg, int) else 8
 
                     test_item_raw_files_pre = sum([len(files) for r, d, files in os.walk(capture_path)])
-                    self._operator_interface.print_to_console(
-                        "*********** Eldim Capturing Bin File for color {0} ***************\n".format(pattern_value))
-                    # self._equipment.measure_and_export(self._station_config.TESTTYPE)
-                    self._equipment.do_measure_and_export(pos_name, pattern_name)
-
-                    test_item_raw_files_post = sum([len(files) for r, d, files in os.walk(capture_path)])
-
+                    test_item_raw_files_post = test_item_raw_files_pre
+                    if not self._station_config.EQUIPMENT_SIM or isinstance(exposure_cfg, int):
+                        msg = '********* Eldim Capturing Bin File for color {0} ***************\n'.format(pattern_value)
+                        self._operator_interface.print_to_console(msg)
+                        # self._equipment.measure_and_export(self._station_config.TESTTYPE)
+                        self._equipment.do_measure_and_export(pos_name, pattern_name)
+                        test_item_raw_files_post = sum([len(files) for r, d, files in os.walk(capture_path)])
+                    else:
+                        self._operator_interface.print_to_console(
+                            "Skip to Capture Bin File for color {0} in emulator mode\n".format(pattern_value))
+                        test_item_raw_files_post += file_count_per_capture
                     measure_item_name = 'Test_RAW_IMAGE_SAVE_SUCCESS_{0}_{1}'.format(pos_name, pattern_name)
-                    raw_success_save = (test_item_raw_files_pre + 2) == test_item_raw_files_post
+                    raw_success_save = (test_item_raw_files_pre + file_count_per_capture) == test_item_raw_files_post
+                    self._operator_interface.print_to_console(
+                        'file count detect {0} --> {1}. \n'.format(test_item_raw_files_pre, test_item_raw_files_post))
                     test_log.set_measured_value_by_name_ex(measure_item_name, raw_success_save)
-
                 self._operator_interface.print_to_console('..........\n\n')
+
+            self._operator_interface.print_to_console("all images captured, now start to analyze data. \n")
+            self.data_export(serial_number, capture_path, test_log)
+
         except seacliffmotStationError as e:
             self._operator_interface.print_to_console(str(e))
         finally:
@@ -307,3 +342,29 @@ class seacliffmotStation(test_station.TestStation):
             except:
                 pass
             self._operator_interface.prompt('', 'SystemButtonFace')
+
+    def data_export(self, serial_number, capture_path,  test_log):
+        """
+        @param serial_number: str
+        @param capture_path: str
+        @param test_log: test_station.test_log.test_log
+        @return:
+        """
+        data_items = {}
+        for pos_item in self._station_config.TEST_ITEM_POS:
+            pos_name = pos_item['name']
+            item_patterns = pos_item.get('pattern')
+            if item_patterns is None:
+                continue
+            for pattern_name in item_patterns:
+                pattern_info = self.get_test_item_pattern(pattern_name)
+                if not pattern_info:
+                    continue
+                pre_file_name = '{0}_{1}'.format(pos_name, pattern_name)
+                file_x = self.get_filenames_in_folder(capture_path, r'{0}_.*_X_float\.bin'.format(pre_file_name))
+                file_y = self.get_filenames_in_folder(capture_path, r'{0}_.*_Y_float\.bin'.format(pre_file_name))
+                file_z = self.get_filenames_in_folder(capture_path, r'{0}_.*_Z_float\.bin'.format(pre_file_name))
+                if len(file_x) == 1 and len(file_y) == 1 and len(file_z) == 1:
+                    group_data = [self.get_export_data(fn) for fn in (file_x[0], file_y[0], file_z[0])]
+                    data_items[pre_file_name] = np.dstack(group_data)
+        pass

@@ -52,6 +52,7 @@ VERSION.TXT
 *.ttxm
 *.csv
 *.txt
+*.json
 
 # conoscope temp files
 LogConoscope*
