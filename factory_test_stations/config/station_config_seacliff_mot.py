@@ -6,7 +6,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CONOSCOPE_DLL_PATH = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment'
+CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 
@@ -135,25 +135,28 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 0.1
 
+# set sensor_temperature
 TEST_SENSOR_TEMPERATURE = 25.0
-TEST_ITEM_AUTO_EXPOSURE = True
-TEST_SEQ_ND = 0
-TEST_SEQ_EIRIS = 0
+TEST_AUTO_EXPOSURE = False
+
+# parameters for test sequence.
+TEST_SEQ_WAIT_FOR_TEMPERATURE = False
+TEST_SEQ_USE_EXPO_FILE = True
 
 # 'setup': (filter, nd, iris) is used for capture image,
 # 'exposure': if not set , use seq-file.
 TEST_ITEM_PATTERNS = [
     {'name': 'W255', 'pattern': (255, 255, 255), 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'G127', 'pattern': (127, 127, 127), 'exposure': 5000},
-    {'name': 'W000', 'pattern': (0, 0, 0), 'exposure': 5000},
-    {'name': 'RGB', 'pattern': 0, 'exposure': 5000},
-    {'name': 'R255', 'pattern': (255, 0, 0), 'exposure': 5000},
-    {'name': 'G255', 'pattern': (0, 255, 0), 'exposure': 5000},
-    {'name': 'B255', 'pattern': (0, 0, 255), 'exposure': 5000},
-    {'name': 'GreenContrast', 'pattern': 1, 'exposure': 5000},
-    {'name': 'WhiteContrast', 'pattern': 2, 'exposure': 5000},
-    {'name': 'GreenSharpness', 'pattern': 3, 'exposure': 5000},
-    {'name': 'GreenDistortion', 'pattern': 4, 'exposure': 5000}
+    {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'W000', 'pattern': (0, 0, 0), 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'RGB', 'pattern': 0, 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'R255', 'pattern': (255, 0, 0), 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'G255', 'pattern': (0, 255, 0), 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'B255', 'pattern': (0, 0, 255), 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'GreenContrast', 'pattern': 1, 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'WhiteContrast', 'pattern': 2, 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'GreenSharpness', 'pattern': 3, 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'GreenDistortion', 'pattern': 4, 'setup': (5, 0, 0), 'exposure': 5000}
 ]
 
 TEST_ITEM_POS = [
@@ -190,6 +193,7 @@ USE_WORKORDER_ENTRY = False
 
 VERSION = 'SunnyP2-PreBuild-Alpha'
 EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads'
+DummyRawImagePath = r'C:\Users\Jason\Desktop\rawdata\20200529_131128_filt_Yb_nd_3_iris_2_raw_1.bin'
 DUT_SIM = True
 EQUIPMENT_SIM = True
 FIXTURE_SIM = True

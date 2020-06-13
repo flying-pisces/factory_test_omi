@@ -143,18 +143,40 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         pattern = [c for c in self._station_config.TEST_ITEM_PATTERNS if c['name'] == pattern_name][-1]  # type: dict
         setup_cfg = pattern.get('setup')  # type: dict
         exposure_cfg = pattern.get('exposure')  # type: (int, str)
+        if setup_cfg is None:
+            raise seacliffmotEquipmentError('Fail to set setup_config.')
 
-        # TODO:
-        if self._station_config.EQUIPMENT_SIM:
-            ret = self._device.CmdSetDebugConfig(
-                {'dummyRawImagePath': r'C:\Users\Jason\Desktop\rawdata\20200529_131128_filt_Yb_nd_3_iris_2_raw_1.bin'})
+        if isinstance(exposure_cfg, str):
+            if self._station_config.TEST_SEQ_USE_EXPO_FILE:
+                capture_seq_exposure = os.path.join(self._station_config.CONOSCOPE_DLL_PATH,
+                                                    'algorithm', exposure_cfg + '.json')
+                target_seq_name = os.path.join(self._station_config.CONOSCOPE_DLL_PATH, 'CaptureSequenceExposureTime.json')
+                if not os.path.exists(capture_seq_exposure):
+                    raise seacliffmotEquipmentError('Fail to Find config for {0}.'.format(capture_seq_exposure))
+                shutil.copyfile(capture_seq_exposure, target_seq_name)
+            if self._station_config.EQUIPMENT_SIM:
+                # TODO: add section named FilePath to json.
+                pass
 
-        if setup_cfg is not None:
+            self.__check_seq_finish()
+
+            captureSequenceConfig = {"sensorTemperature": self._station_config.TEST_SENSOR_TEMPERATURE,
+                                     "bWaitForSensorTemperature": self._station_config.TEST_SEQ_WAIT_FOR_TEMPERATURE,
+                                     "eNd": setup_cfg[1],  # Conoscope.Nd.Nd_1.value,
+                                     "eIris": setup_cfg[2],  # Conoscope.Iris.aperture_4mm.value,
+                                     "nbAcquisition": 1,
+                                     "bAutoExposure": self._station_config.TEST_AUTO_EXPOSURE,
+                                     "bUseExpoFile": self._station_config.TEST_SEQ_USE_EXPO_FILE}
+            ret = self._device.CmdCaptureSequence(captureSequenceConfig)
+            if ret['Error'] != 0:
+                seacliffmotEquipmentError('Fail to CmdCaptureSequence.')
+            self.__check_seq_finish()
+        elif isinstance(exposure_cfg, int):
             setupConfig = {"sensorTemperature": self._station_config.TEST_SENSOR_TEMPERATURE,
                            "eFilter": setup_cfg[0],  # self._device.Filter.Yb.value,
                            "eNd": setup_cfg[1],  # self._device.Nd.Nd_3.value,
                            "eIris": setup_cfg[2],  # self._device.Iris.aperture_2mm.value
-                           'autoExposure': False
+                           'autoExposure': self._station_config.TEST_AUTO_EXPOSURE,
                            }
             ret = self._device.CmdSetup(setupConfig)
             self._log(ret, "CmdSetup")
@@ -166,28 +188,9 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
             if ret['Error'] != 0:
                 raise seacliffmotEquipmentError('Fail to CmdSetupStatus.')
 
-        if isinstance(exposure_cfg, str):
-            capture_seq_exposure = os.path.join(self._station_config.CONOSCOPE_DLL_PATH,
-                                                'algorithm', exposure_cfg + '.json')
-            target_seq_name = os.path.join(self._station_config.CONOSCOPE_DLL_PATH, 'CaptureSequenceExposureTime.json')
-            if not os.path.exists(capture_seq_exposure):
-                raise seacliffmotEquipmentError('Fail to Find config for {0}.'.format(capture_seq_exposure))
-            shutil.copyfile(capture_seq_exposure, target_seq_name)
-
-            self.__check_seq_finish()
-
-            captureSequenceConfig = {"sensorTemperature": self._station_config.TEST_SENSOR_TEMPERATURE,
-                                     "bWaitForSensorTemperature": False,
-                                     "eNd": self._station_config.TEST_SEQ_ND,  # Conoscope.Nd.Nd_1.value,
-                                     "eIris": self._station_config.TEST_SEQ_EIRIS,  # Conoscope.Iris.aperture_4mm.value,
-                                     "nbAcquisition": 1,
-                                     "bAutoExposure": False,
-                                     "bUseExpoFile": True}
-            ret = self._device.CmdCaptureSequence(captureSequenceConfig)
-            if ret['Error'] != 0:
-                seacliffmotEquipmentError('Fail to CmdCaptureSequence.')
-            self.__check_seq_finish()
-        elif isinstance(exposure_cfg, int):
+            # equipment_sim
+            if self._station_config.EQUIPMENT_SIM:
+                self._device.CmdSetDebugConfig({'dummyRawImagePath': self._station_config.DummyRawImagePath})
             measureConfig = {"exposureTimeUs": exposure_cfg,
                              "nbAcquisition": 1}
             ret = self._device.CmdMeasure(measureConfig)
@@ -199,12 +202,11 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
             self._log(ret, "CmdExportRaw")
             if ret['Error'] != 0:
                 raise seacliffmotEquipmentError('Fail to CmdExportRaw.')
-
-            ret = self._device.CmdExportProcessed()
-            self._log(ret, "CmdExportProcessed")
-
-            if ret['Error'] != 0:
-                raise seacliffmotEquipmentError('Fail to CmdExportProcessed.')
+            if not self._station_config.EQUIPMENT_SIM:
+                ret = self._device.CmdExportProcessed()
+                self._log(ret, "CmdExportProcessed")
+                if ret['Error'] != 0:
+                    raise seacliffmotEquipmentError('Fail to CmdExportProcessed.')
 
     def measure_and_export(self, measuretype):
         if measuretype == 0:
