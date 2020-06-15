@@ -592,10 +592,10 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             return
 
         delimiter = r'ALIGNMENT:([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?),' \
-                    r'([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?)'
+                    r'([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?)(?:,([l|r]))'
         deters = self._parse_response(delimiter, response)
         res = int(deters[1]), int(deters[2]), \
-            math.degrees(math.asin(float(deters[3]) / self._rotate_scale)), int(deters[4])
+            math.degrees(math.asin(float(deters[3]) / self._rotate_scale)), int(deters[4]), deters[5]
         module_pos = self.module_pos()
         self._alignment_pos = (*module_pos, res[3])
         return res

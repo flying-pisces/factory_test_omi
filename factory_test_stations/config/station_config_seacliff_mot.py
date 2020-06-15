@@ -145,6 +145,11 @@ TEST_SEQ_USE_EXPO_FILE = True
 
 # 'setup': (filter, nd, iris) is used for capture image,
 # 'exposure': if not set , use seq-file.
+# !!! image in Nand: comborgb, Green_Checkerboard_Contrast_Left, Green_Checkerboard_Contrast_Right,
+#                          White_CAC_Checkerboard_Contrast_Left, White_CAC_Contrast_Contrast_Right,
+#                Green_Sharpness_Pattern,
+#                          Green_Distortion_Grid_Left, Green_Distortion_Grid_Right !!!
+
 TEST_ITEM_PATTERNS = [
     {'name': 'W255', 'pattern': (255, 255, 255), 'setup': (5, 0, 0), 'exposure': 5000},
     {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (5, 0, 0), 'exposure': 5000},
@@ -153,10 +158,10 @@ TEST_ITEM_PATTERNS = [
     {'name': 'R255', 'pattern': (255, 0, 0), 'setup': (5, 0, 0), 'exposure': 5000},
     {'name': 'G255', 'pattern': (0, 255, 0), 'setup': (5, 0, 0), 'exposure': 5000},
     {'name': 'B255', 'pattern': (0, 0, 255), 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'GreenContrast', 'pattern': 1, 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'WhiteContrast', 'pattern': 2, 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'GreenSharpness', 'pattern': 3, 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'GreenDistortion', 'pattern': 4, 'setup': (5, 0, 0), 'exposure': 5000}
+    {'name': 'GreenContrast', 'pattern': (1, 2), 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'WhiteContrast', 'pattern': (3, 4), 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'GreenSharpness', 'pattern': 5, 'setup': (5, 0, 0), 'exposure': 5000},
+    {'name': 'GreenDistortion', 'pattern': (6, 7), 'setup': (5, 0, 0), 'exposure': 5000}
 ]
 
 TEST_ITEM_POS = [

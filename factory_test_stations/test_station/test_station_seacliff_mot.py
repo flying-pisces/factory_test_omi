@@ -46,6 +46,7 @@ class seacliffmotStation(test_station.TestStation):
         self._is_screen_on_by_op = False
         self._is_cancel_test_by_op = False
         self._is_alignment_success = False
+        self._module_left_or_right = None
         self._probe_con_status = False
 
     def initialize(self):
@@ -136,6 +137,7 @@ class seacliffmotStation(test_station.TestStation):
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
             test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
             test_log.set_measured_value_by_name_ex("DUT_AlignmentSuccess", self._is_alignment_success)
+            test_log.set_measured_value_by_name_ex("DUT_ModuleType", self._module_left_or_right)
 
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
@@ -183,13 +185,23 @@ class seacliffmotStation(test_station.TestStation):
                         continue
                     self._operator_interface.print_to_console('test pattern name = {0}\n'.format(pattern_name))
                     pattern_value = pattern_info['pattern']
+                    pattern_value_valid = True
                     if isinstance(pattern_value, (int, str)):
                         self._the_unit.display_image(pattern_value, False)
                     elif isinstance(pattern_value, tuple):
-                        self._the_unit.display_color(pattern_value)
+                        if len(pattern_value) == 0x03:
+                            self._the_unit.display_color(pattern_value)
+                        elif len(pattern_value) == 0x02 and self._module_left_or_right == 'L':
+                            self._the_unit.display_image(pattern_value[0])
+                        elif len(pattern_value) == 0x02 and self._module_left_or_right == 'R':
+                            self._the_unit.display_image(pattern_value[1])
+                        else:
+                            pattern_value_valid = False
                     else:
-                        self._operator_interface.print_to_console('Unable to change pattern: %s = %s \n'
-                                                                  % (pattern_name, pattern_value))
+                        pattern_value_valid = False
+                    if not pattern_value_valid:
+                        self._operator_interface.print_to_console('Unable to change pattern: {0} = {1} \n'
+                                                                  .format(pattern_name, pattern_value))
                         continue
                     pre_file_name = '{0}_{1}_'.format(pos_name, pattern_name)
                     config = {'fileNamePrepend': pre_file_name}
@@ -198,7 +210,7 @@ class seacliffmotStation(test_station.TestStation):
                     pattern: dict
                     pattern = [c for c in self._station_config.TEST_ITEM_PATTERNS if c['name'] == pattern_name][-1]
                     exposure_cfg = pattern.get('exposure')  # type: (str, int)
-                    file_count_per_capture = 4 if isinstance(exposure_cfg, int) else 8
+                    file_count_per_capture = 4 if isinstance(exposure_cfg, int) else 13
 
                     test_item_raw_files_pre = sum([len(files) for r, d, files in os.walk(capture_path)])
                     test_item_raw_files_post = test_item_raw_files_pre
@@ -258,6 +270,7 @@ class seacliffmotStation(test_station.TestStation):
         self._is_cancel_test_by_op = False
         self._probe_con_status = False
         self._retries_screen_on = 0
+        self._module_left_or_right = None
         try:
             self._fixture.power_on_button_status(True)
             timeout_for_btn_idle = 10
@@ -274,6 +287,7 @@ class seacliffmotStation(test_station.TestStation):
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
                     self._is_alignment_success = True
+                    self._module_left_or_right = 'L'
                     self._fixture._alignment_pos = (0, 0, 0, 0)
                     ready = True
                     continue
@@ -289,6 +303,7 @@ class seacliffmotStation(test_station.TestStation):
                         self._fixture.power_on_button_status(False)
                         alignment_result = self._fixture.alignment()
                         if isinstance(alignment_result, tuple):
+                            self._module_left_or_right = str(alignment_result[4]).upper()
                             self._is_alignment_success = True
 
                     elif ready_status == 0x03:
