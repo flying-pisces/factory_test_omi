@@ -3,6 +3,7 @@ STATION_LIMITS_ARRAYS = [
     ["SW_VERSION", None, None, 79],
     ["EQUIP_VERSION", None, None, 80],
 
+    ["DUT_ModuleType", None, None, 93],
     ["Carrier_ProbeConnectStatus", None, None, 94],
     ["DUT_ScreenOnRetries", 0, 5, 95],
     ["DUT_ScreenOnStatus", True, True, 96],
