@@ -185,6 +185,8 @@ class seacliffmotStation(test_station.TestStation):
                         continue
                     self._operator_interface.print_to_console('test pattern name = {0}\n'.format(pattern_name))
                     pattern_value = pattern_info['pattern']
+                    self._operator_interface.print_to_console('try to render image  {0} -> {1}.\n'
+                                                              .format(pattern_name, pattern_value))
                     pattern_value_valid = True
                     if isinstance(pattern_value, (int, str)):
                         self._the_unit.display_image(pattern_value, False)
@@ -210,7 +212,7 @@ class seacliffmotStation(test_station.TestStation):
                     pattern: dict
                     pattern = [c for c in self._station_config.TEST_ITEM_PATTERNS if c['name'] == pattern_name][-1]
                     exposure_cfg = pattern.get('exposure')  # type: (str, int)
-                    file_count_per_capture = 4 if isinstance(exposure_cfg, int) else 13
+                    file_count_per_capture = self._station_config.FILE_COUNT_INC
 
                     test_item_raw_files_pre = sum([len(files) for r, d, files in os.walk(capture_path)])
                     test_item_raw_files_post = test_item_raw_files_pre
