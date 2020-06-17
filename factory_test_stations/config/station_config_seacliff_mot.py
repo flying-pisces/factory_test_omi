@@ -135,6 +135,8 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 0.1
 
+FILE_COUNT_INC = 4
+
 # set sensor_temperature
 TEST_SENSOR_TEMPERATURE = 25.0
 TEST_AUTO_EXPOSURE = False

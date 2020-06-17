@@ -107,6 +107,25 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         pass
 
     ########### Measure ###########
+    def __check_ae_finish(self):
+        # wait for the measurement is done
+        bDone = False
+        aeExpo = 0
+        while bDone is not True:
+            ret = self._device.CmdMeasureAEStatus()
+            aeState = ret["state"]
+            if aeExpo != ret["exposureTimeUs"]:
+                aeExpo = ret["exposureTimeUs"]
+                print("  state = {0} ({1} us)".format(aeState, aeExpo))
+            if (aeState == Conoscope.MeasureAEState.MeasureAEState_Done) or \
+                    (aeState == Conoscope.MeasureAEState.MeasureAEState_Error) or \
+                    (aeState == Conoscope.MeasureAEState.MeasureAEState_Cancel):
+                bDone = True
+
+                print("  state = {0} ({1} us)".format(aeState, ret["exposureTimeUs"]))
+            else:
+                time.sleep(0.1)
+
     def __check_seq_finish(self):
         done = False
         processStateCurrent = None
@@ -157,8 +176,11 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
             if self._station_config.EQUIPMENT_SIM:
                 # TODO: add section named FilePath to json.
                 pass
-
-            self.__check_seq_finish()
+            ret = self._device.CmdCaptureSequenceStatus()
+            processState = ret['state']
+            if not (processState == Conoscope.CaptureSequenceState.CaptureSequenceState_NotStarted or
+                    processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Done):
+                raise seacliffmotEquipmentError('Fail to CmdMeasureSequence.{0}'.format(processState))
 
             captureSequenceConfig = {"sensorTemperature": self._station_config.TEST_SENSOR_TEMPERATURE,
                                      "bWaitForSensorTemperature": self._station_config.TEST_SEQ_WAIT_FOR_TEMPERATURE,
@@ -193,10 +215,21 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                 self._device.CmdSetDebugConfig({'dummyRawImagePath': self._station_config.DummyRawImagePath})
             measureConfig = {"exposureTimeUs": exposure_cfg,
                              "nbAcquisition": 1}
-            ret = self._device.CmdMeasure(measureConfig)
-            self._log(ret, "CmdMeasure")
-            if ret['Error'] != 0:
-                raise seacliffmotEquipmentError('Fail to CmdMeasure.')
+            if not self._station_config.TEST_AUTO_EXPOSURE:
+                ret = self._device.CmdMeasure(measureConfig)
+                self._log(ret, "CmdMeasure")
+                if ret['Error'] != 0:
+                    raise seacliffmotEquipmentError('Fail to CmdMeasure.')
+            else:
+                #  measureAE
+                ret = self._device.CmdMeasureAEStatus()
+                aeState = ret['state']
+                if not (aeState == Conoscope.MeasureAEState.MeasureAEState_NotStarted or
+                        aeState == Conoscope.MeasureAEState.MeasureAEState_Done):
+                    raise seacliffmotEquipmentError('Fail to CmdMeasureAE.{0}'.format(aeState))
+                ret = self._device.CmdMeasureAE(measureConfig)
+                self._log(ret, "CmdMeasureAEStatus")
+                self.__check_ae_finish()
 
             ret = self._device.CmdExportRaw()
             self._log(ret, "CmdExportRaw")
