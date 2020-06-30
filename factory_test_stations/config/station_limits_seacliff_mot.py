@@ -25,11 +25,12 @@ STATION_LIMITS_ARRAYS = [
     ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_GreenDistortion", True, True, 10011],
 
     ["Test_RAW_IMAGE_SAVE_SUCCESS_extendedz_GreenDistortion", True, True, 10012],
-    ["Test_RAW_IMAGE_SAVE_SUCCESS_blemish_W255", True, True, 10013],
-    ["Test_RAW_IMAGE_SAVE_SUCCESS_extendedxpos_W255", True, True, 10014],
-    ["Test_RAW_IMAGE_SAVE_SUCCESS_extendedxneg_W255", True, True, 10015],
-    ["Test_RAW_IMAGE_SAVE_SUCCESS_extendedypos_W255", True, True, 10016],
-    ["Test_RAW_IMAGE_SAVE_SUCCESS_extendedyneg_W255", True, True, 10017],
+    ["Test_RAW_IMAGE_SAVE_SUCCESS_extendedz_W255", True, True, 10013],
+    ["Test_RAW_IMAGE_SAVE_SUCCESS_blemish_W255", True, True, 10014],
+    ["Test_RAW_IMAGE_SAVE_SUCCESS_extendedxpos_W255", True, True, 10015],
+    ["Test_RAW_IMAGE_SAVE_SUCCESS_extendedxneg_W255", True, True, 10016],
+    ["Test_RAW_IMAGE_SAVE_SUCCESS_extendedypos_W255", True, True, 10017],
+    ["Test_RAW_IMAGE_SAVE_SUCCESS_extendedyneg_W255", True, True, 10018],
 ]
 
 global STATION_LIMITS

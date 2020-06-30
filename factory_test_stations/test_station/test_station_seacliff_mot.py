@@ -39,7 +39,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.1.0'
+        self._sw_version = '0.1.1'
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -185,8 +185,9 @@ class seacliffmotStation(test_station.TestStation):
                         continue
                     self._operator_interface.print_to_console('test pattern name = {0}\n'.format(pattern_name))
                     pattern_value = pattern_info['pattern']
-                    self._operator_interface.print_to_console('try to render image  {0} -> {1}.\n'
-                                                              .format(pattern_name, pattern_value))
+                    msg = 'try to render image  {0} -> {1} to {2} module.\n'\
+                        .format(pattern_name, pattern_value, self._module_left_or_right)
+                    self._operator_interface.print_to_console(msg)
                     pattern_value_valid = True
                     if isinstance(pattern_value, (int, str)):
                         self._the_unit.display_image(pattern_value, False)

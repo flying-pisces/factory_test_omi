@@ -6,7 +6,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment'
+CONOSCOPE_DLL_PATH = r'C:\oculus\run\test_equipment'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 
@@ -20,7 +20,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 # Fixture parameters
 # Fixture commands
 PROXY_COMMUNICATION_PATH = r"D:\Version\Release\vision.exe"
-IS_PROXY_COMMUNICATION = False
+IS_PROXY_COMMUNICATION = True
 PROXY_ENDPOINT = 8000
 FIXTURE_COMPORT = "COM4" #
 FIXTURE_PARTICLE_COMPORT = "COM8" #
@@ -93,7 +93,7 @@ FIXTURE_UNLOAD_DLY = 20
 FIXTURE_ALIGNMENT_DLY = 10
 FIXTURE_MECH_STABLE_DLY = 0.05
 
-FIXTURE_PARTICLE_COUNTER = False
+FIXTURE_PARTICLE_COUNTER = True
 
 # FIXTRUE_PARTICLE_ADDR_READ = 40006
 # FIXTRUE_PARTICLE_ADDR_START = 40003
@@ -135,15 +135,15 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 0.1
 
-FILE_COUNT_INC = 4
+FILE_COUNT_INC = 13
 
 # set sensor_temperature
 TEST_SENSOR_TEMPERATURE = 25.0
-TEST_AUTO_EXPOSURE = False
+TEST_AUTO_EXPOSURE = True
 
 # parameters for test sequence.
 TEST_SEQ_WAIT_FOR_TEMPERATURE = False
-TEST_SEQ_USE_EXPO_FILE = True
+TEST_SEQ_USE_EXPO_FILE = False
 
 # 'setup': (filter, nd, iris) is used for capture image,
 # 'exposure': if not set , use seq-file.
@@ -151,19 +151,21 @@ TEST_SEQ_USE_EXPO_FILE = True
 #                          White_CAC_Checkerboard_Contrast_Left, White_CAC_Contrast_Contrast_Right,
 #                Green_Sharpness_Pattern,
 #                          Green_Distortion_Grid_Left, Green_Distortion_Grid_Right !!!
+# Follow instruction from Evan(fb), pattern named with left, should be render to right-module.
+#                                   pattern named with right, should be render to left-module.
 
 TEST_ITEM_PATTERNS = [
-    {'name': 'W255', 'pattern': (255, 255, 255), 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'W000', 'pattern': (0, 0, 0), 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'RGB', 'pattern': 0, 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'R255', 'pattern': (255, 0, 0), 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'G255', 'pattern': (0, 255, 0), 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'B255', 'pattern': (0, 0, 255), 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'GreenContrast', 'pattern': (1, 2), 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'WhiteContrast', 'pattern': (3, 4), 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'GreenSharpness', 'pattern': 5, 'setup': (5, 0, 0), 'exposure': 5000},
-    {'name': 'GreenDistortion', 'pattern': (6, 7), 'setup': (5, 0, 0), 'exposure': 5000}
+    {'name': 'W255', 'pattern': (255, 255, 255), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'W000', 'pattern': (0, 0, 0), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'RGB', 'pattern': 0, 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'R255', 'pattern': (255, 0, 0), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'G255', 'pattern': (0, 255, 0), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'B255', 'pattern': (0, 0, 255), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'GreenContrast', 'pattern': (2, 1), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'WhiteContrast', 'pattern': (4, 3), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'GreenSharpness', 'pattern': 5, 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'GreenDistortion', 'pattern': (7, 6), 'setup': (7, 0, 3), 'exposure': '5000'}
 ]
 
 TEST_ITEM_POS = [
@@ -172,7 +174,7 @@ TEST_ITEM_POS = [
                  'GreenSharpness', 'GreenDistortion']
      },
     {'name': 'extendedz', 'pos': (0, 0, 27000),
-     'pattern': ['GreenDistortion']
+     'pattern': ['W255', 'GreenDistortion']
      },
     {'name': 'blemish', 'pos': (0, 0, 5000),
      'pattern': ['W255']
@@ -183,10 +185,10 @@ TEST_ITEM_POS = [
     {'name': 'extendedxneg', 'pos': (-5071, 0, 16124),
      'pattern': ['W255']
      },
-    {'name': 'extendedypos', 'pos': (0, -5071, 16124),
+    {'name': 'extendedypos', 'pos': (0, 5071, 16124),
      'pattern': ['W255']
      },
-    {'name': 'extendedyneg', 'pos': (0, +5071, 16124),
+    {'name': 'extendedyneg', 'pos': (0, -5071, 16124),
      'pattern': ['W255']
      },
 ]
