@@ -3,13 +3,15 @@ import json
 import os
 import shutil
 import pprint
+import re
+import time
+import glob
 try:
     from test_station.test_equipment.Conoscope import Conoscope
 except:
     from Conoscope import Conoscope
 finally:
     pass
-import time
 
 
 class seacliffmotEquipmentError(Exception):
@@ -164,6 +166,20 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         exposure_cfg = pattern.get('exposure')  # type: (int, str)
         if setup_cfg is None:
             raise seacliffmotEquipmentError('Fail to set setup_config.')
+        current_config = self._device.CmdGetConfig()
+        capture_path = current_config['CapturePath']
+        path_prefix = os.path.basename(capture_path).split('_')[0]
+        filename_prepend = current_config['FileNamePrepend']
+
+        file_names = []
+        uut_dirs = [c for c in glob.glob(os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, r'*'))
+                   if os.path.isdir(c)
+                   and os.path.relpath(c, self._station_config.RAW_IMAGE_LOG_DIR).startswith(path_prefix)]
+        for uut_dir in uut_dirs:
+            for home, dirs, files in os.walk(os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uut_dir)):
+                for file_name in files:
+                    if re.search(r'\.bin', file_name, re.I) and re.search(filename_prepend, file_name, re.I):
+                        file_names.append(os.path.join(home, file_name))
 
         if isinstance(exposure_cfg, str):
             if self._station_config.TEST_SEQ_USE_EXPO_FILE:
@@ -173,9 +189,28 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                 if not os.path.exists(capture_seq_exposure):
                     raise seacliffmotEquipmentError('Fail to Find config for {0}.'.format(capture_seq_exposure))
                 shutil.copyfile(capture_seq_exposure, target_seq_name)
+
+            json_file = os.path.join(self._station_config.CONOSCOPE_DLL_PATH, 'captureSequenceCaptures.json')
+            if os.path.exists(json_file):
+                os.remove(json_file)
             if self._station_config.EQUIPMENT_SIM:
-                # TODO: add section named FilePath to json.
-                pass
+                seq_filters = ['X', 'Xz', 'Ya', 'Yb', 'Z']
+                proc_files = {}
+                for f in seq_filters:
+                    filter_name = 'Filter_{0}'.format(f)
+                    proc_files[filter_name] = None
+                    fns = [c for c in file_names if re.match('{0}.*_filt_{1}_.*_proc_.*'.format(filename_prepend, f),
+                                                             os.path.basename(c), re.I)]
+                    if len(fns) > 0:
+                        proc_files[filter_name] = fns[-1]
+                capture_sequence_captures = {'FilePath': proc_files}
+                with open(json_file, 'w') as f:
+                    json.dump(capture_sequence_captures, f, sort_keys=True, indent=4)
+                self._operator_interface.print_to_console('update capture_sequence_captures.\n')
+                msg = json.dumps(capture_sequence_captures, sort_keys=True, indent=4)
+                self._operator_interface.print_to_console(msg)
+
+            # assert the initialize status is correct.
             ret = self._device.CmdCaptureSequenceStatus()
             processState = ret['state']
             if not (processState == Conoscope.CaptureSequenceState.CaptureSequenceState_NotStarted or
@@ -212,7 +247,12 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
 
             # equipment_sim
             if self._station_config.EQUIPMENT_SIM:
-                self._device.CmdSetDebugConfig({'dummyRawImagePath': self._station_config.DummyRawImagePath})
+                fns = [c for c in file_names if re.match('{0}.*_filt_.*_raw_.*'.format(filename_prepend),
+                                                         os.path.basename(c), re.I)]
+                if len(fns) > 0:
+                    self._operator_interface.print_to_console('update capture dummy {0}.\n'.format(fns[-1]))
+                    self._device.CmdSetDebugConfig({'dummyRawImagePath': fns[-1]})
+
             measureConfig = {"exposureTimeUs": exposure_cfg,
                              "nbAcquisition": 1}
             if not self._station_config.TEST_AUTO_EXPOSURE:
@@ -230,16 +270,17 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                 ret = self._device.CmdMeasureAE(measureConfig)
                 self._log(ret, "CmdMeasureAEStatus")
                 self.__check_ae_finish()
-
-            ret = self._device.CmdExportRaw()
-            self._log(ret, "CmdExportRaw")
-            if ret['Error'] != 0:
-                raise seacliffmotEquipmentError('Fail to CmdExportRaw.')
+            # only export raw while not in emulated mode.
             if not self._station_config.EQUIPMENT_SIM:
-                ret = self._device.CmdExportProcessed()
-                self._log(ret, "CmdExportProcessed")
+                ret = self._device.CmdExportRaw()
+                self._log(ret, "CmdExportRaw")
                 if ret['Error'] != 0:
-                    raise seacliffmotEquipmentError('Fail to CmdExportProcessed.')
+                    raise seacliffmotEquipmentError('Fail to CmdExportRaw.')
+            # export processed data.
+            ret = self._device.CmdExportProcessed()
+            self._log(ret, "CmdExportProcessed")
+            if ret['Error'] != 0:
+                raise seacliffmotEquipmentError('Fail to CmdExportProcessed.')
 
     def measure_and_export(self, measuretype):
         if measuretype == 0:

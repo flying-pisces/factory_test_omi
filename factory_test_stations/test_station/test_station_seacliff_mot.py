@@ -8,6 +8,7 @@ import os
 import types
 import re
 import pprint
+import glob
 import numpy as np
 
 
@@ -89,16 +90,22 @@ class seacliffmotStation(test_station.TestStation):
         """
         @type: filename: str
         """
-        split_text = filename.split('_')
+        split_text = os.path.splitext(os.path.basename(filename))[0].split('_')
         data_bin = None
         if 'raw' in split_text:
             row = 6004
             col = 7920
             dtype = np.uint16
-        else:
+        elif 'proc' in split_text:
             row = 6001
             col = 6001
             dtype = np.int16
+        elif 'float' in split_text:
+            row = 6001
+            col = 6001
+            dtype = np.float32
+        else:
+            raise seacliffmotStationError('unsupported bin file. {0}'.format(filename))
         with open(filename, 'rb') as f:
             frame3 = np.frombuffer(f.read(), dtype=dtype)
             data_bin = frame3.reshape(row, col)
@@ -156,6 +163,13 @@ class seacliffmotStation(test_station.TestStation):
             # capture path accorded with test_log.
             uni_file_name = re.sub('_x.log', '', test_log.get_filename())
             capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
+            if self._station_config.EQUIPMENT_SIM:
+                uut_dirs = [c for c in glob.glob(os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, r'*'))
+                            if os.path.isdir(c)
+                            and os.path.relpath(c, self._station_config.RAW_IMAGE_LOG_DIR)
+                                .upper().startswith(serial_number.upper())]
+                if len(uut_dirs) > 0:
+                    capture_path = uut_dirs[-1]
             test_station.utils.os_utils.mkdir_p(capture_path)
             if not os.path.exists(capture_path):
                 os.chmod(capture_path, 777)
@@ -217,16 +231,17 @@ class seacliffmotStation(test_station.TestStation):
 
                     test_item_raw_files_pre = sum([len(files) for r, d, files in os.walk(capture_path)])
                     test_item_raw_files_post = test_item_raw_files_pre
-                    if not self._station_config.EQUIPMENT_SIM or isinstance(exposure_cfg, int):
-                        msg = '********* Eldim Capturing Bin File for color {0} ***************\n'.format(pattern_value)
-                        self._operator_interface.print_to_console(msg)
-                        # self._equipment.measure_and_export(self._station_config.TESTTYPE)
-                        self._equipment.do_measure_and_export(pos_name, pattern_name)
-                        test_item_raw_files_post = sum([len(files) for r, d, files in os.walk(capture_path)])
-                    else:
+
+                    if self._station_config.EQUIPMENT_SIM and not self._station_config.EQUIPMENT_SIM_CAPTURE_FROM_DIR:
                         self._operator_interface.print_to_console(
                             "Skip to Capture Bin File for color {0} in emulator mode\n".format(pattern_value))
                         test_item_raw_files_post += file_count_per_capture
+                    else:
+                        msg = '********* Eldim Capturing Bin File for color {0} ***************\n'.format(pattern_value)
+                        self._operator_interface.print_to_console(msg)
+                        self._equipment.do_measure_and_export(pos_name, pattern_name)
+                        test_item_raw_files_post = sum([len(files) for r, d, files in os.walk(capture_path)])
+
                     measure_item_name = 'Test_RAW_IMAGE_SAVE_SUCCESS_{0}_{1}'.format(pos_name, pattern_name)
                     raw_success_save = (test_item_raw_files_pre + file_count_per_capture) == test_item_raw_files_post
                     self._operator_interface.print_to_console(
