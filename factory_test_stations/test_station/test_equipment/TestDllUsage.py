@@ -26,11 +26,13 @@ class TestType(Enum):
     Capture = 0
     CaptureAE = 1
     CaptureSequence = 2
-
+    CaptureSequenceNoSave = 3
+    CaptureSequenceRoi = 4
+    CaptureSequenceLoop = 5
 
 def main_f(testType):
     print("connect to conoscope")
-    conoscope = Conoscope(True)
+    conoscope = Conoscope()
 
     ret = conoscope.CmdGetVersion()
     LogFunction(ret, "CmdGetVersion")
@@ -42,11 +44,24 @@ def main_f(testType):
               "cfgPath": "./Cfg"}
 
     config = {"capturePath": "./CaptureFolder1",
-              "cfgPath": "./Cfg",
-              "fileNamePrepend": "",
+              "cfgPath": "E:\\TmpConoscope\\15\\Cfg",
+              "fileNamePrepend": "pre_",
               "fileNameAppend": "",
               "exportFileNameFormat": "",
-              "exportFormat": Conoscope.ExportFormat.BinJpg.value}
+              "exportFormat": Conoscope.ExportFormat.Bin.value,
+              "AEMinExpoTimeUs": 10,
+              "AEMaxExpoTimeUs": 980000,
+              "AEExpoTimeGranularityUs": 100,
+              "AELevelPercent": 80.0,
+              "AEMeasAreaHeight": 200,
+              "AEMeasAreaWidth": 288,
+              "AEMeasAreaX": 3808,
+              "AEMeasAreaY": 2902,
+              "bUseRoi": False,
+              "RoiXLeft": 0,
+              "RoiXRight": 3000,
+              "RoiYTop": 0,
+              "RoiYBottom": 3000}
 
     ret = conoscope.CmdSetConfig(config)
     LogFunction(ret, "CmdSetConfig")
@@ -54,12 +69,21 @@ def main_f(testType):
     ret = conoscope.CmdOpen()
     LogFunction(ret, "CmdOpen")
 
+    ret = 0
+    errorMessage = ""
+
     if testType == TestType.Capture:
-        __perform_capture(conoscope)
+        ret, errorMessage = __perform_capture(conoscope)
     elif testType == TestType.CaptureAE:
         ret, errorMessage = __perform_captureAE(conoscope)
     elif testType == TestType.CaptureSequence:
         __perform_capture_sequence(conoscope)
+    elif testType == TestType.CaptureSequenceNoSave:
+        __perform_capture_sequence(conoscope, saveCapture=False)
+    elif testType == TestType.CaptureSequenceRoi:
+        __perform_capture_sequence(conoscope, roi=True)
+    elif testType == TestType.CaptureSequenceLoop:
+        __perform_capture_sequence_loop(conoscope)
 
     print("*************")
     if ret == 0:
@@ -139,7 +163,6 @@ def __measureAE(conoscope, measureConfig):
     aeState = ret["state"]
 
     # check the measurement is not processing
-    # if Conoscope.MeasureAEState(conoscope.measureAEStatus.state) == Conoscope.MeasureAEState.MeasureAEState_NotStarted:
     if aeState == Conoscope.MeasureAEState.MeasureAEState_NotStarted or \
         aeState == Conoscope.MeasureAEState.MeasureAEState_Done :
         # set start values
@@ -173,6 +196,12 @@ def __measureAE(conoscope, measureConfig):
 
 
 def __perform_captureAE(conoscope):
+    # change prepend
+    config = {"fileNamePrepend": "captureAE_"}
+
+    ret = conoscope.CmdSetConfig(config)
+    LogFunction(ret, "CmdSetConfig")
+
     setupConfig = {"sensorTemperature": 25.0,
                    "eFilter": Conoscope.Filter.Yb.value,
                    "eNd": Conoscope.Nd.Nd_3.value,
@@ -252,7 +281,32 @@ def __perform_captureAE(conoscope):
 
     return 0, "Done"
 
-def __perform_capture_sequence(conoscope):
+
+def __perform_capture_sequence(conoscope, save_capture=True, roi=False, prepend="Seq"):
+    # change prepend
+    if save_capture is True:
+        config = {"fileNamePrepend": prepend + "_"}
+    else:
+        config = {"fileNamePrepend": prepend + "NoSave_"}
+
+    if roi is not False:
+        config["bUseRoi"] = True
+
+        config["RoiXLeft"] = 0
+        config["RoiXRight"] = 3000
+        config["RoiYTop"] = 0
+        config["RoiYBottom"] = 3000
+    else:
+        config["bUseRoi"] = False
+
+        config["RoiXLeft"] = 0
+        config["RoiXRight"] = 3000
+        config["RoiYTop"] = 0
+        config["RoiYBottom"] = 3000
+
+    ret = conoscope.CmdSetConfig(config)
+    LogFunction(ret, "CmdSetConfig")
+
     # check capture sequence
     ret = conoscope.CmdGetCaptureSequence()
     LogFunction(ret, "CmdGetCaptureSequence")
@@ -264,7 +318,8 @@ def __perform_capture_sequence(conoscope):
                              "exposureTimeUs": 12000,
                              "nbAcquisition": 1,
                              "bAutoExposure": False,
-                             "bUseExpoFile": False}
+                             "bUseExpoFile": False,
+                             "bSaveCapture": save_capture}
 
     ret = conoscope.CmdCaptureSequence(captureSequenceConfig)
     LogFunction(ret, "CmdCaptureSequence")
@@ -301,6 +356,18 @@ def __perform_capture_sequence(conoscope):
         if done is False:
             time.sleep(1)
 
+    return ret, "No message"
+
+
+def __perform_capture_sequence_loop(conoscope):
+
+    for index in range(30):
+        print("CAPTURE SEQUENCE loop {0}".format(index))
+        prepend_string = "seq_{0:02}".format(index)
+
+        __perform_capture_sequence(conoscope, save_capture=True, roi=True, prepend=prepend_string)
+
+
 def __perform_capture(conoscope):
     setupConfig = {"sensorTemperature": 25.0,
                    "eFilter": Conoscope.Filter.Yb.value,
@@ -325,7 +392,6 @@ def __perform_capture(conoscope):
     LogFunction(ret, "CmdExportProcessed")
 
     # change capture path
-
     config = {"capturePath": "./CaptureFolder2"}
     ret = conoscope.CmdSetConfig(config)
     LogFunction(ret, "CmdSetup")
@@ -351,6 +417,8 @@ def __perform_capture(conoscope):
 
     ret = conoscope.CmdExportProcessed()
     LogFunction(ret, "CmdExportProcessed")
+
+    return 0, "No message"
 
 
 if __name__ == '__main__':

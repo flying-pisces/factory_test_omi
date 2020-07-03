@@ -141,9 +141,29 @@ FILE_COUNT_INC = 13
 TEST_SENSOR_TEMPERATURE = 25.0
 TEST_AUTO_EXPOSURE = True
 
+# config
+CAM_INIT_CONFIG = {
+    "exportFormat": 0,
+    "AEMinExpoTimeUs": 10,
+    "AEMaxExpoTimeUs": 980000,
+    "AEExpoTimeGranularityUs": 100,
+    "AELevelPercent": 80.0,
+    "AEMeasAreaHeight": 200,
+    "AEMeasAreaWidth": 288,
+    "AEMeasAreaX": 3808,
+    "AEMeasAreaY": 2902,
+
+    "bUseRoi": False,
+    "RoiXLeft": 0,
+    "RoiXRight": 3000,
+    "RoiYTop": 0,
+    "RoiYBottom": 3000
+}
+
 # parameters for test sequence.
 TEST_SEQ_WAIT_FOR_TEMPERATURE = False
 TEST_SEQ_USE_EXPO_FILE = False
+TEST_SEQ_SAVE_CAPTURE = False
 
 # 'setup': (filter, nd, iris) is used for capture image,
 # 'exposure': if not set , use seq-file.

@@ -40,7 +40,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.1.1'
+        self._sw_version = '0.2.0'
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -173,9 +173,11 @@ class seacliffmotStation(test_station.TestStation):
             test_station.utils.os_utils.mkdir_p(capture_path)
             if not os.path.exists(capture_path):
                 os.chmod(capture_path, 777)
-            config = {"capturePath": capture_path,
-                      "cfgPath": os.path.join(self._station_config.CONOSCOPE_DLL_PATH,
-                                              self._station_config.CFG_PATH)}
+            config = dict(self._station_config.CAM_INIT_CONFIG)
+
+            config["capturePath"] = capture_path
+            config['cfgPath'] = os.path.join(self._station_config.CONOSCOPE_DLL_PATH, self._station_config.CFG_PATH)
+
             self._operator_interface.print_to_console("set current config = {0}\n".format(config))
             self._equipment.set_config(config)
 

@@ -435,7 +435,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if self._alignment_pos is None:
             raise seacliffmotFixtureError('alignment command should be executed firstly.')
         a = -1 * math.radians(self._alignment_pos[2])
-        xx = self._alignment_pos[0] - (x * math.cos(a) + y * math.sin(a))
+        xx = self._alignment_pos[0] + (x * math.cos(a) + y * math.sin(a))
         yy = self._alignment_pos[1] + (y * math.cos(a) - x * math.sin(a))
         self.mov_abs_xya(xx, yy, a)
 
