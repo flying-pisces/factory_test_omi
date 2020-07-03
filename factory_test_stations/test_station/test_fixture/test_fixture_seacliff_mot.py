@@ -559,9 +559,9 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(cmd)
         response = self.read_response()
         response = [self._re_space_sub.sub('', c) for c in response]
-        delimiter = r'GetTemperature:([+-]?[0-9]*)'
+        delimiter = r'GetTemperature:([+-]?[0-9]*(?:\.[0-9]*)?)'
         deters = self._parse_response(delimiter, response)
-        return int(deters[1])
+        return float(deters[1])
 
     def load(self):
         """
