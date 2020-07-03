@@ -7,7 +7,7 @@ from enum import Enum
 import json
 import os
 
-VERSION_REVISION = 35
+VERSION_REVISION = 38
 
 class Conoscope:
     DLL_PATH = '.'
@@ -101,12 +101,23 @@ class Conoscope:
         _fields_ = [
             ("cfgPath", ctypes.c_char_p),
             ("capturePath", ctypes.c_char_p),
-            ("autoExposure", ctypes.c_bool),
-            ("autoExposurePixelMax", ctypes.c_float),
             ("fileNamePrepend", ctypes.c_char_p),
             ("fileNameAppend", ctypes.c_char_p),
             ("exportFileNameFormat", ctypes.c_char_p),
-            ("exportFormat", ctypes.c_int)]
+            ("exportFormat", ctypes.c_int),
+            ("AEMinExpoTimeUs", ctypes.c_int),
+            ("AEMaxExpoTimeUs", ctypes.c_int),
+            ("AEExpoTimeGranularityUs", ctypes.c_int),
+            ("AELevelPercent", ctypes.c_float),
+            ("AEMeasAreaHeight", ctypes.c_int),
+            ("AEMeasAreaWidth", ctypes.c_int),
+            ("AEMeasAreaX", ctypes.c_int),
+            ("AEMeasAreaY", ctypes.c_int),
+            ("bUseRoi", ctypes.c_bool),
+            ("RoiXLeft", ctypes.c_int),
+            ("RoiXRight", ctypes.c_int),
+            ("RoiYTop", ctypes.c_int),
+            ("RoiYBottom", ctypes.c_int)]
 
     class ConoscopeDebugSettings(ctypes.Structure):
         _fields_ = [
@@ -162,7 +173,8 @@ class Conoscope:
             ("exposureTimeUs", ctypes.c_int),
             ("nbAcquisition", ctypes.c_int),
             ("bAutoExposure", ctypes.c_bool),
-            ("bUseExpoFile", ctypes.c_bool)]
+            ("bUseExpoFile", ctypes.c_bool),
+            ("bSaveCapture", ctypes.c_bool)]
      
     class CaptureSequenceStatus(ctypes.Structure):
         _fields_ = [
@@ -403,8 +415,7 @@ class Conoscope:
 
         # configure conoscope in normal mode
         ret = self.CmdSetDebugConfig({"debugMode": False,
-                                      "emulatedCamera": emulate_camera,
-                                      'dummyRawImagePath': ''})
+                                      "emulatedCamera": emulate_camera})
         print("instance done")
 
     def __del__(self):
