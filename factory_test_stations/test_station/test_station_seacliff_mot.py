@@ -10,6 +10,7 @@ import re
 import pprint
 import glob
 import numpy as np
+import sys
 
 
 def chk_and_set_measured_value_by_name(test_log, item, value):
@@ -31,8 +32,15 @@ class seacliffmotStation(test_station.TestStation):
 
     _fixture: test_fixture_seacliff_mot.seacliffmotFixture
 
+    def write(self, s):
+        self._operator_interface.print_to_console(s)
+        pass
+
     def __init__(self, station_config, operator_interface):
         test_station.TestStation.__init__(self, station_config, operator_interface)
+        if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
+            sys.stdout = self
+            sys.stderr = self
         self._fixture = None
         self._fixture = test_fixture_seacliff_mot.seacliffmotFixture(station_config, operator_interface)
         if hasattr(station_config, 'FIXTURE_SIM') and station_config.FIXTURE_SIM:
