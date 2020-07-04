@@ -124,6 +124,7 @@ DISTANCE_BETWEEN_CAMERA_AND_DATUM = 26041
 
 ##################################
 # Test Equipment related parameters
+IS_PRINT_TO_LOG = True
 IS_VERBOSE = True # some path bug, temp set False and work on True later
 CFG_PATH = r'Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
