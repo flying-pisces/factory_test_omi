@@ -12,7 +12,7 @@ build_target = None
 if len(sys.argv) < 3:
     build_target = raw_input("Please specify the build target:")
 else:
-    build_target =  sys.argv[2]
+    build_target =  os.path.basename(sys.argv[2])
 
 
 if build_target == None:
