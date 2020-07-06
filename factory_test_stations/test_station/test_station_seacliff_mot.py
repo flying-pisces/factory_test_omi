@@ -32,15 +32,21 @@ class seacliffmotStation(test_station.TestStation):
 
     _fixture: test_fixture_seacliff_mot.seacliffmotFixture
 
-    def write(self, s):
-        self._operator_interface.print_to_console(s)
-        pass
+    def write(self, msg):
+        """
+        @type msg: str
+        @return:
+        """
+        if msg.endswith('\n'):
+            msg += os.linesep
+        self._operator_interface.print_to_console(msg)
 
     def __init__(self, station_config, operator_interface):
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
             sys.stdout = self
             sys.stderr = self
+            sys.stdin = None
         self._fixture = None
         self._fixture = test_fixture_seacliff_mot.seacliffmotFixture(station_config, operator_interface)
         if hasattr(station_config, 'FIXTURE_SIM') and station_config.FIXTURE_SIM:
@@ -77,9 +83,15 @@ class seacliffmotStation(test_station.TestStation):
     def close(self):
         self._operator_interface.print_to_console("Close...\n")
         self._operator_interface.print_to_console("\there, I'm shutting the station down..\n")
-        self._close_fixture()
-        self._equipment.close()
-        self._equipment.kill()
+        try:
+            self._close_fixture()
+        except Exception as e:
+            pass
+        try:
+            self._equipment.close()
+            self._equipment.kill()
+        except Exception as e:
+            pass
 
     def get_test_item_pattern(self, name):
         for c in self._station_config.TEST_ITEM_PATTERNS:
@@ -320,7 +332,12 @@ class seacliffmotStation(test_station.TestStation):
                     ready = True
                     continue
 
-                ready_status = self._fixture.is_ready()
+                if (hasattr(self._station_config, 'DUT_LOAD_WITHOUT_OPERATOR')
+                        and self._station_config.DUT_LOAD_WITHOUT_OPERATOR is True):
+                    self._fixture.load()
+                    ready_status = 0
+                else:
+                    ready_status = self._fixture.is_ready()
                 if ready_status is not None:
                     if ready_status == 0x00:  # load DUT automatically and then screen on
                         ready = True  # Start to test.
@@ -382,11 +399,11 @@ class seacliffmotStation(test_station.TestStation):
                         self._operator_interface.print_to_console(
                             'Cancel start signal from dual %s.\n' % timeout_for_dual)
                     self._the_unit.close()
-            except:
-                pass
+            except Exception as e:
+                self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
             self._operator_interface.prompt('', 'SystemButtonFace')
 
-    def data_export(self, serial_number, capture_path,  test_log):
+    def data_export(self, serial_number, capture_path, test_log):
         """
         @param serial_number: str
         @param capture_path: str
@@ -410,4 +427,5 @@ class seacliffmotStation(test_station.TestStation):
                 if len(file_x) == 1 and len(file_y) == 1 and len(file_z) == 1:
                     group_data = [self.get_export_data(fn) for fn in (file_x[0], file_y[0], file_z[0])]
                     data_items[pre_file_name] = np.dstack(group_data)
+        del data_items
         pass

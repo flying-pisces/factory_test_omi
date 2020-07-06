@@ -240,8 +240,11 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             if line_in != b'':
                 msg = msg + line_in.decode()
         response = msg.strip().splitlines()
-        if self._verbose and len(response) > 1:
-            pprint.pprint(response)
+        if self._verbose:
+            if len(response) > 1:
+                pprint.pprint(response)
+            else:
+                print('Fail to read any data in {0} seconds. '.format(timeout))
         return response
 
     def read_response(self, timeout=5):
@@ -287,10 +290,12 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                     and self._station_config.FIXTURE_PARTICLE_COUNTER:
                 self._particle_counter_client.close()
                 self._particle_counter_client = None
+        except Exception as e:
+            print('Exception while closing. {0}'.format(str(e)))
+            pass
+        finally:
             if self._station_config.IS_PROXY_COMMUNICATION:
                 StationCommunicationProxy.close_application()
-        except:
-            pass
         if self._verbose:
             pprint.pprint("====== Fixture Close =========")
         return True

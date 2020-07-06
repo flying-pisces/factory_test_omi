@@ -6,7 +6,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment'
+CONOSCOPE_DLL_PATH = r'C:\oculus\run\test_equipment'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 
@@ -19,8 +19,8 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 ##################################
 # Fixture parameters
 # Fixture commands
-PROXY_COMMUNICATION_PATH = r"D:\Version\Release\vision.exe"
-IS_PROXY_COMMUNICATION = False
+PROXY_COMMUNICATION_PATH = r"C:\Version\Release\vision.exe"
+IS_PROXY_COMMUNICATION = True
 PROXY_ENDPOINT = 8000
 FIXTURE_COMPORT = "COM4" #
 FIXTURE_PARTICLE_COMPORT = "COM8" #
@@ -88,12 +88,13 @@ COMMAND_PTB_POWER_ON = "CMD_PTB_POWER_ON"
 COMMAND_PTB_POWER_OFF = "CMD_PTB_POWER_OFF"
 COMMAND_STATUS = "CMD_STATUS"
 
+DUT_LOAD_WITHOUT_OPERATOR = True
 DUT_LITUP_OUTSIDE = True
 FIXTURE_UNLOAD_DLY = 20
 FIXTURE_ALIGNMENT_DLY = 10
 FIXTURE_MECH_STABLE_DLY = 0.05
 
-FIXTURE_PARTICLE_COUNTER = False
+FIXTURE_PARTICLE_COUNTER = True
 
 # FIXTRUE_PARTICLE_ADDR_READ = 40006
 # FIXTRUE_PARTICLE_ADDR_START = 40003
@@ -124,7 +125,7 @@ DISTANCE_BETWEEN_CAMERA_AND_DATUM = 26041
 
 ##################################
 # Test Equipment related parameters
-IS_PRINT_TO_LOG = True
+IS_PRINT_TO_LOG = False
 IS_VERBOSE = True # some path bug, temp set False and work on True later
 CFG_PATH = r'Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
@@ -147,8 +148,9 @@ CAM_INIT_CONFIG = {
     "exportFormat": 0,
     "AEMinExpoTimeUs": 10,
     "AEMaxExpoTimeUs": 980000,
-    "AEExpoTimeGranularityUs": 100,
+    "AEExpoTimeGranularityUs": 11111,
     "AELevelPercent": 80.0,
+
     "AEMeasAreaHeight": 200,
     "AEMeasAreaWidth": 288,
     "AEMeasAreaX": 3808,
@@ -164,7 +166,7 @@ CAM_INIT_CONFIG = {
 # parameters for test sequence.
 TEST_SEQ_WAIT_FOR_TEMPERATURE = False
 TEST_SEQ_USE_EXPO_FILE = False
-TEST_SEQ_SAVE_CAPTURE = False
+TEST_SEQ_SAVE_CAPTURE = True
 
 # 'setup': (filter, nd, iris) is used for capture image,
 # 'exposure': if not set , use seq-file.
@@ -223,6 +225,6 @@ USE_WORKORDER_ENTRY = False
 
 VERSION = 'SunnyP2-PreBuild-Alpha'
 EQUIPMENT_SIM_CAPTURE_FROM_DIR = True
-DUT_SIM = True
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False
