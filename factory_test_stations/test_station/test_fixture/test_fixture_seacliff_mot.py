@@ -590,9 +590,9 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if int(self._parse_response(r'UNLOAD:(\d+)', response).group(1)) != 0:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
-    def alignment(self):
+    def alignment(self, serial_number):
         self._alignment_pos = None
-        self._write_serial(self._station_config.COMMAND_ALIGNMENT)
+        self._write_serial('{0}:{1}'.format(self._station_config.COMMAND_ALIGNMENT, serial_number))
         response = self.read_response(timeout=self._station_config.FIXTURE_ALIGNMENT_DLY)
         if self._parse_response(r'ALIGNMENT:(\w+)', response).group(1).upper().find(r'ERROR') >= 0:
             return

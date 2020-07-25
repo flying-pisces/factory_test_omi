@@ -54,7 +54,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.2.0'
+        self._sw_version = '0.3.0'
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -146,6 +146,7 @@ class seacliffmotStation(test_station.TestStation):
         self._operator_interface.print_to_console(msg0)
         self._overall_result = False
         self._overall_errorcode = ''
+        pattern_value = None
         try:
             self._operator_interface.print_to_console(
                 "\n*********** Fixture at %s to load DUT %s ***************\n"
@@ -190,8 +191,8 @@ class seacliffmotStation(test_station.TestStation):
                                 .upper().startswith(serial_number.upper())]
                 if len(uut_dirs) > 0:
                     capture_path = uut_dirs[-1]
-            test_station.utils.os_utils.mkdir_p(capture_path)
             if not os.path.exists(capture_path):
+                test_station.utils.os_utils.mkdir_p(capture_path)
                 os.chmod(capture_path, 777)
             config = dict(self._station_config.CAM_INIT_CONFIG)
 
@@ -220,28 +221,33 @@ class seacliffmotStation(test_station.TestStation):
                             'Unable to find information for pattern: %s \n' % pattern_name)
                         continue
                     self._operator_interface.print_to_console('test pattern name = {0}\n'.format(pattern_name))
-                    pattern_value = pattern_info['pattern']
-                    msg = 'try to render image  {0} -> {1} to {2} module.\n'\
-                        .format(pattern_name, pattern_value, self._module_left_or_right)
-                    self._operator_interface.print_to_console(msg)
-                    pattern_value_valid = True
-                    if isinstance(pattern_value, (int, str)):
-                        self._the_unit.display_image(pattern_value, False)
-                    elif isinstance(pattern_value, tuple):
-                        if len(pattern_value) == 0x03:
-                            self._the_unit.display_color(pattern_value)
-                        elif len(pattern_value) == 0x02 and self._module_left_or_right == 'L':
-                            self._the_unit.display_image(pattern_value[0])
-                        elif len(pattern_value) == 0x02 and self._module_left_or_right == 'R':
-                            self._the_unit.display_image(pattern_value[1])
+
+                    # <editor-fold desc="Render images while not the same pattern.">
+                    if pattern_value != pattern_info['pattern']:
+                        pattern_value = pattern_info['pattern']
+                        msg = 'try to render image  {0} -> {1} to {2} module.\n'\
+                            .format(pattern_name, pattern_value, self._module_left_or_right)
+                        self._operator_interface.print_to_console(msg)
+                        pattern_value_valid = True
+                        if isinstance(pattern_value, (int, str)):
+                            self._the_unit.display_image(pattern_value, False)
+                        elif isinstance(pattern_value, tuple):
+                            if len(pattern_value) == 0x03:
+                                self._the_unit.display_color(pattern_value)
+                            elif len(pattern_value) == 0x02 and self._module_left_or_right == 'L':
+                                self._the_unit.display_image(pattern_value[0])
+                            elif len(pattern_value) == 0x02 and self._module_left_or_right == 'R':
+                                self._the_unit.display_image(pattern_value[1])
+                            else:
+                                pattern_value_valid = False
                         else:
                             pattern_value_valid = False
-                    else:
-                        pattern_value_valid = False
-                    if not pattern_value_valid:
-                        self._operator_interface.print_to_console('Unable to change pattern: {0} = {1} \n'
-                                                                  .format(pattern_name, pattern_value))
-                        continue
+                        if not pattern_value_valid:
+                            self._operator_interface.print_to_console('Unable to change pattern: {0} = {1} \n'
+                                                                      .format(pattern_name, pattern_value))
+                            continue
+                    # </editor-fold>
+
                     pre_file_name = '{0}_{1}_'.format(pos_name, pattern_name)
                     config = {'fileNamePrepend': pre_file_name}
                     self._operator_interface.print_to_console("set current config = {0}\n".format(config))
@@ -306,11 +312,12 @@ class seacliffmotStation(test_station.TestStation):
         # TODO:  Initialized the DUT Simply
         ready = False
         power_on_trigger = False
+        self._retries_screen_on = 0
         self._is_screen_on_by_op = False
         self._is_cancel_test_by_op = False
-        self._probe_con_status = False
-        self._retries_screen_on = 0
+        self._is_alignment_success = False
         self._module_left_or_right = None
+        self._probe_con_status = False
         try:
             self._fixture.power_on_button_status(True)
             timeout_for_btn_idle = 10
@@ -346,7 +353,7 @@ class seacliffmotStation(test_station.TestStation):
                             self._the_unit.screen_on()
                         self._the_unit.display_color((255, 0, 0))
                         self._fixture.power_on_button_status(False)
-                        alignment_result = self._fixture.alignment()
+                        alignment_result = self._fixture.alignment(self._latest_serial_number)
                         if isinstance(alignment_result, tuple):
                             self._module_left_or_right = str(alignment_result[4]).upper()
                             self._is_alignment_success = True
