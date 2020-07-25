@@ -222,6 +222,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                                      "eNd": setup_cfg[1],  # Conoscope.Nd.Nd_1.value,
                                      "eIris": setup_cfg[2],  # Conoscope.Iris.aperture_4mm.value,
                                      "nbAcquisition": 1,
+                                     "exposureTimeUs": int(exposure_cfg),
                                      "bAutoExposure": self._station_config.TEST_AUTO_EXPOSURE,
                                      "bUseExpoFile": self._station_config.TEST_SEQ_USE_EXPO_FILE,
                                      'bSaveCapture': self._station_config.TEST_SEQ_SAVE_CAPTURE}
