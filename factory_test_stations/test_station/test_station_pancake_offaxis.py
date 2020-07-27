@@ -203,7 +203,8 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._is_screen_on_by_op = False
         self._is_cancel_test_by_op = False
         self._retries_screen_on = 0
-        timeout_for_btn_idle = 20
+        timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
+                                else self._station_config.TIMEOUT_FOR_BTN_IDLE)
         timeout_for_dual = timeout_for_btn_idle
         try:
             self._fixture.button_enable()
@@ -212,9 +213,9 @@ class pancakeoffaxisStation(test_station.TestStation):
             while timeout_for_dual > 0:
                 if ready or self._is_cancel_test_by_op:
                     break
-                msg_prompt = 'Load DUT, and then Press L-Btn(Cancel)/R-Btn(Litup) in %s S...'
+                msg_prompt = 'Load DUT, and then Press L-Btn(Cancel)/R-Btn(Litup) in %s counts...'
                 if power_on_trigger:
-                    msg_prompt = 'Press Dual-Btn(Load)/L-Btn(Cancel)/R-Btn(Re Litup)  in %s S...'
+                    msg_prompt = 'Press Dual-Btn(Load)/L-Btn(Cancel)/R-Btn(Re Litup)  in %s counts...'
                 self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow')
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
@@ -273,9 +274,10 @@ class pancakeoffaxisStation(test_station.TestStation):
         ready = False
         try:
             self._fixture.button_enable()
-            timeout_for_dual = 20
+            timeout_for_dual = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
+                                else self._station_config.TIMEOUT_FOR_BTN_IDLE)
             for idx in range(timeout_for_dual, 0, -1):
-                self._operator_interface.prompt('Press the Dual-Start Btn in %s S...'%idx, 'yellow');
+                self._operator_interface.prompt('Press the Dual-Start Btn in %s counts...'%idx, 'yellow');
                 if self._fixture.is_ready() or self._station_config.FIXTURE_SIM:
                     ready = True
                     break
