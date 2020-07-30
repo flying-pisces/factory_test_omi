@@ -183,8 +183,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
 
         if isinstance(exposure_cfg, str):
             if self._station_config.TEST_SEQ_USE_EXPO_FILE:
-                capture_seq_exposure = os.path.join(self._station_config.CONOSCOPE_DLL_PATH,
-                                                    'algorithm', exposure_cfg + '.json')
+                capture_seq_exposure = os.path.join(self._station_config.SEQUENCE_RELATIVEPATH, pattern_name + '.json')
                 target_seq_name = os.path.join(self._station_config.CONOSCOPE_DLL_PATH, 'CaptureSequenceExposureTime.json')
                 if not os.path.exists(capture_seq_exposure):
                     raise seacliffmotEquipmentError('Fail to Find config for {0}.'.format(capture_seq_exposure))
