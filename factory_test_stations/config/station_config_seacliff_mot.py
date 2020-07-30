@@ -6,6 +6,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
+SEQUENCE_RELATIVEPATH = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm'
 CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
@@ -141,7 +142,6 @@ FILE_COUNT_INC = 13
 
 # set sensor_temperature
 TEST_SENSOR_TEMPERATURE = 25.0
-TEST_AUTO_EXPOSURE = True
 
 # config
 CAM_INIT_CONFIG = {
@@ -165,6 +165,7 @@ CAM_INIT_CONFIG = {
 
 # parameters for test sequence.
 TEST_SEQ_WAIT_FOR_TEMPERATURE = False
+TEST_AUTO_EXPOSURE = True
 TEST_SEQ_USE_EXPO_FILE = False
 TEST_SEQ_SAVE_CAPTURE = True
 
