@@ -11,6 +11,7 @@ import pprint
 import glob
 import numpy as np
 import sys
+import cv2
 
 
 def chk_and_set_measured_value_by_name(test_log, item, value):
@@ -104,6 +105,7 @@ class seacliffmotStation(test_station.TestStation):
             for file_name in files:
                 if re.search(pattern, file_name, re.I):
                     file_names.append(os.path.join(home, file_name))
+        file_names.sort(reverse=True)
         return file_names
 
     def get_export_data(self, filename):
@@ -111,20 +113,21 @@ class seacliffmotStation(test_station.TestStation):
         @type: filename: str
         """
         split_text = os.path.splitext(os.path.basename(filename))[0].split('_')
-        data_bin = None
+        file_size_def = {
+            'raw': (6004, 7920, np.uint16),
+            'proc': (6001, 6001, np.int16),
+            'float': (6001, 6001, np.float32),
+        }
         if 'raw' in split_text:
-            row = 6004
-            col = 7920
-            dtype = np.uint16
+            row, col, dtype = file_size_def['raw']
         elif 'proc' in split_text:
-            row = 6001
-            col = 6001
-            dtype = np.int16
+            row, col, dtype = file_size_def['proc']
         elif 'float' in split_text:
-            row = 6001
-            col = 6001
-            dtype = np.float32
-        else:
+            row, col, dtype = file_size_def['float']
+        if self._station_config.CAM_INIT_CONFIG['bUseRoi']:
+            row = self._station_config.CAM_INIT_CONFIG['RoiYBottom'] - self._station_config.CAM_INIT_CONFIG['RoiYTop']
+            col = self._station_config.CAM_INIT_CONFIG['RoiXRight'] - self._station_config.CAM_INIT_CONFIG['RoiXLeft']
+        if not dtype:
             raise seacliffmotStationError('unsupported bin file. {0}'.format(filename))
         with open(filename, 'rb') as f:
             frame3 = np.frombuffer(f.read(), dtype=dtype)
@@ -417,7 +420,7 @@ class seacliffmotStation(test_station.TestStation):
         @param test_log: test_station.test_log.test_log
         @return:
         """
-        data_items = {}
+        data_items_XYZ = {}
         for pos_item in self._station_config.TEST_ITEM_POS:
             pos_name = pos_item['name']
             item_patterns = pos_item.get('pattern')
@@ -431,8 +434,25 @@ class seacliffmotStation(test_station.TestStation):
                 file_x = self.get_filenames_in_folder(capture_path, r'{0}_.*_X_float\.bin'.format(pre_file_name))
                 file_y = self.get_filenames_in_folder(capture_path, r'{0}_.*_Y_float\.bin'.format(pre_file_name))
                 file_z = self.get_filenames_in_folder(capture_path, r'{0}_.*_Z_float\.bin'.format(pre_file_name))
-                if len(file_x) == 1 and len(file_y) == 1 and len(file_z) == 1:
+                if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
                     group_data = [self.get_export_data(fn) for fn in (file_x[0], file_y[0], file_z[0])]
-                    data_items[pre_file_name] = np.dstack(group_data)
-        del data_items
+                    XYZ = np.dstack(group_data)
+                    data_items_XYZ[pre_file_name] = XYZ
+
+                    if self._station_config.AUTO_CVT_BGR_IMAGE_FROM_XYZ:
+                        img_base_name = os.path.basename(file_x[0]).split('_X_float.bin')[0]
+                        img_file_name = os.path.join(os.path.dirname(file_x[0]), img_base_name + '.bmp')
+                        xyz = cv2.merge(group_data)
+                        bgr = cv2.cvtColor(xyz, cv2.COLOR_XYZ2BGR)
+                        cv2.imwrite(img_file_name, bgr)
+                    if self._station_config.AUTO_SAVE_2_TXT:
+                        txt_x_file_name = os.path.join(os.path.dirname(file_x[0]), img_base_name + '_X.txt')
+                        txt_y_file_name = os.path.join(os.path.dirname(file_x[0]), img_base_name + '_Y.txt')
+                        txt_z_file_name = os.path.join(os.path.dirname(file_x[0]), img_base_name + '_Z.txt')
+                        np.savetxt(txt_x_file_name, group_data[0])
+                        np.savetxt(txt_y_file_name, group_data[1])
+                        np.savetxt(txt_z_file_name, group_data[2])
+                pass
+
+        del data_items_XYZ
         pass

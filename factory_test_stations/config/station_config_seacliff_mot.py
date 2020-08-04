@@ -6,7 +6,7 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-SEQUENCE_RELATIVEPATH = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm'
+SEQUENCE_RELATIVEPATH = r'C:\oculus\run\seacliff_mot_run\test_station\test_equipment\algorithm'
 CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
@@ -126,7 +126,7 @@ DISTANCE_BETWEEN_CAMERA_AND_DATUM = 26041
 
 ##################################
 # Test Equipment related parameters
-IS_PRINT_TO_LOG = True
+IS_PRINT_TO_LOG = False
 IS_VERBOSE = True # some path bug, temp set False and work on True later
 CFG_PATH = r'Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
@@ -156,11 +156,11 @@ CAM_INIT_CONFIG = {
     "AEMeasAreaX": 0,
     "AEMeasAreaY": 0,
 
-    "bUseRoi": False,
+    "bUseRoi": True,
     "RoiXLeft": 0,
-    "RoiXRight": 6001,
+    "RoiXRight": 501,
     "RoiYTop": 0,
-    "RoiYBottom": 6001
+    "RoiYBottom": 501
 }
 
 # parameters for test sequence.
@@ -193,6 +193,7 @@ TEST_ITEM_PATTERNS = [
 ]
 
 TEST_ITEM_POS = [
+    #{'name': 'normal', 'pos': (0, 0, 15000),
     {'name': 'normal', 'pos': (0, 0, 15000),
      'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
                  'GreenSharpness', 'GreenDistortion']
@@ -225,6 +226,8 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 VERSION = 'SunnyP2-PreBuild-Alpha'
+AUTO_CVT_BGR_IMAGE_FROM_XYZ = True
+AUTO_SAVE_2_TXT = False
 EQUIPMENT_SIM_CAPTURE_FROM_DIR = True
 DUT_SIM = True
 EQUIPMENT_SIM = True
