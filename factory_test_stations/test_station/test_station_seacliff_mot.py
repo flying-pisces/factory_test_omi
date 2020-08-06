@@ -435,24 +435,41 @@ class seacliffmotStation(test_station.TestStation):
                 file_y = self.get_filenames_in_folder(capture_path, r'{0}_.*_Y_float\.bin'.format(pre_file_name))
                 file_z = self.get_filenames_in_folder(capture_path, r'{0}_.*_Z_float\.bin'.format(pre_file_name))
                 if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
+                    self._operator_interface.print_to_console('Read X/Y/Z float from {0} bins.\n'.format(pre_file_name))
                     group_data = [self.get_export_data(fn) for fn in (file_x[0], file_y[0], file_z[0])]
-                    XYZ = np.dstack(group_data)
-                    data_items_XYZ[pre_file_name] = XYZ
 
+                    # group_data[0] = np.linspace(-10, 10, 5)
+                    # group_data[1] = np.linspace(-20, 20, 5)
+                    # group_data[2] = np.linspace(0, 0, 5)
+
+                    X, Y, Z = group_data
+                    data_items_XYZ[pre_file_name] = np.dstack(group_data)
+
+                    self._operator_interface.print_to_console('convert XYZ --> xyY\n')
+                    os_err = np.seterr(divide='ignore', invalid='ignore')
+                    x = X/(X + Y + Z)
+                    y = Y/(X + Y + Z)
+                    np.seterr(**os_err)
+                    mask = (X + Y + Z) == 0
+                    xyY_mask = np.dstack([mask, mask, mask])
+                    xyY = np.where(xyY_mask, np.zeros_like(xyY_mask), np.dstack([x, y, Y]))
+
+                    self._operator_interface.print_to_console('start to export data for %s\n' % pre_file_name )
                     if self._station_config.AUTO_CVT_BGR_IMAGE_FROM_XYZ:
                         img_base_name = os.path.basename(file_x[0]).split('_X_float.bin')[0]
+                        self._operator_interface.print_to_console('save {0} bgr image.\n'.format(pre_file_name))
                         img_file_name = os.path.join(os.path.dirname(file_x[0]), img_base_name + '.bmp')
                         xyz = cv2.merge(group_data)
                         bgr = cv2.cvtColor(xyz, cv2.COLOR_XYZ2BGR)
                         cv2.imwrite(img_file_name, bgr)
                     if self._station_config.AUTO_SAVE_2_TXT:
+                        self._operator_interface.print_to_console('save {0} txt.\n'.format(pre_file_name))
                         txt_x_file_name = os.path.join(os.path.dirname(file_x[0]), img_base_name + '_X.txt')
                         txt_y_file_name = os.path.join(os.path.dirname(file_x[0]), img_base_name + '_Y.txt')
                         txt_z_file_name = os.path.join(os.path.dirname(file_x[0]), img_base_name + '_Z.txt')
                         np.savetxt(txt_x_file_name, group_data[0])
                         np.savetxt(txt_y_file_name, group_data[1])
                         np.savetxt(txt_z_file_name, group_data[2])
-                pass
-
+                self._operator_interface.print_to_console('parse data {0} finished.\n'.format(pre_file_name))
         del data_items_XYZ
         pass
