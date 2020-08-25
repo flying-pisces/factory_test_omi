@@ -7,7 +7,7 @@ from enum import Enum
 import json
 import os
 
-VERSION_REVISION = 40
+VERSION_REVISION = 41
 
 class Conoscope:
     DLL_PATH = '.'
@@ -123,7 +123,8 @@ class Conoscope:
         _fields_ = [
             ("debugMode", ctypes.c_bool),
             ("emulatedCamera", ctypes.c_bool),
-            ("dummyRawImagePath", ctypes.c_char_p)]
+            ("dummyRawImagePath", ctypes.c_char_p),
+            ("emulatedWheel", ctypes.c_bool),]
 
     class SetupConfig(ctypes.Structure):
         _fields_ = [
@@ -174,7 +175,12 @@ class Conoscope:
             ("nbAcquisition", ctypes.c_int),
             ("bAutoExposure", ctypes.c_bool),
             ("bUseExpoFile", ctypes.c_bool),
-            ("bSaveCapture", ctypes.c_bool)]
+            ("bSaveCapture", ctypes.c_bool),
+            ("bUseRoi", ctypes.c_bool),
+            ("RoiXLeft", ctypes.c_int),
+            ("RoiXRight", ctypes.c_int),
+            ("RoiYTop", ctypes.c_int),
+            ("RoiYBottom", ctypes.c_int)]
      
     class CaptureSequenceStatus(ctypes.Structure):
         _fields_ = [
@@ -189,7 +195,7 @@ class Conoscope:
             ("nbAcquisition", ctypes.c_int),
             ("state", ctypes.c_int)]
 
-    def __init__(self, emulate_camera=False):
+    def __init__(self, emulate_camera=False, emulate_wheel=False):
         print("create an instance of the conoscope")
 
         self.conoscopeConfig = Conoscope.ConoscopeConfig()
@@ -415,7 +421,8 @@ class Conoscope:
 
         # configure conoscope in normal mode
         ret = self.CmdSetDebugConfig({"debugMode": False,
-                                      "emulatedCamera": emulate_camera})
+                                      "emulatedCamera": emulate_camera,
+                                      "emulatedWheel": emulate_wheel})
         print("instance done")
 
     def __del__(self):

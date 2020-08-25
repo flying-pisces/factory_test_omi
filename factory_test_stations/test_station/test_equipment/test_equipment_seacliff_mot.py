@@ -29,7 +29,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         self._verbose = station_config.IS_VERBOSE
         self._station_config = station_config
         Conoscope.DLL_PATH = self._station_config.CONOSCOPE_DLL_PATH
-        self._device = Conoscope(self._station_config.EQUIPMENT_SIM)
+        self._device = Conoscope(self._station_config.EQUIPMENT_SIM, self._station_config.EQUIPMENT_WHEEL_SIM)
         self._error_message = self.name + "is out of work"
         self._version = None
         self._config = None

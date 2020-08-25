@@ -158,9 +158,9 @@ CAM_INIT_CONFIG = {
 
     "bUseRoi": True,
     "RoiXLeft": 0,
-    "RoiXRight": 501,
+    "RoiXRight": 6001,
     "RoiYTop": 0,
-    "RoiYBottom": 501
+    "RoiYBottom": 6001
 }
 
 # parameters for test sequence.
@@ -193,7 +193,6 @@ TEST_ITEM_PATTERNS = [
 ]
 
 TEST_ITEM_POS = [
-    #{'name': 'normal', 'pos': (0, 0, 15000),
     {'name': 'normal', 'pos': (0, 0, 15000),
      'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
                  'GreenSharpness', 'GreenDistortion']
@@ -231,4 +230,5 @@ AUTO_SAVE_2_TXT = False
 EQUIPMENT_SIM_CAPTURE_FROM_DIR = True
 DUT_SIM = True
 EQUIPMENT_SIM = True
+EQUIPMENT_WHEEL_SIM = True
 FIXTURE_SIM = True
