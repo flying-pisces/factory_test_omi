@@ -10,8 +10,8 @@ RAW_DIR = r'C:\oculus\factory_test_omi\raw_logs'
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config
+SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
+SERIAL_NUMBER_MODEL_NUMBER = '\dPRJ[\d|\w]{10}$'  # Fake model number requirement, need config
 
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
 

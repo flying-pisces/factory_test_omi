@@ -439,10 +439,9 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         """
         if self._alignment_pos is None:
             raise seacliffmotFixtureError('alignment command should be executed firstly.')
-        a = -1 * math.radians(self._alignment_pos[2])
-        xx = self._alignment_pos[0] + (x * math.cos(a) + y * math.sin(a))
-        yy = self._alignment_pos[1] + (y * math.cos(a) - x * math.sin(a))
-        self.mov_abs_xya(xx, yy, a)
+        xx = self._alignment_pos[0] + x
+        yy = self._alignment_pos[1] + y
+        self.mov_abs_xya(xx, yy, self._alignment_pos[2])
 
     def mov_abs_xya(self, x, y, a):
         """
@@ -454,7 +453,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         @return:
         """
         if math.fabs(y) < self._y_limit_pos and not math.isclose(a, 0):
-            raise seacliffmotFixtureError('fail to move abs_xya.  y = {0} < {1} and a = 0'.format(y, self._y_limit_pos))
+            msg = 'fail to move abs_xya.  y = {0} < {1} and a = {2}'.format(y, self._y_limit_pos, a)
+            raise seacliffmotFixtureError(msg)
         if a > math.fabs(self._a_limit_pos):
             raise seacliffmotFixtureError('fail to move abs_xya.  | a | = {} < {} '.format(a, self._a_limit_pos))
         theta = int(math.sin(math.radians(a)) * self._rotate_scale)
