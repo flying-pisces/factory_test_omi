@@ -7,7 +7,7 @@ from enum import Enum
 import json
 import os
 
-VERSION_REVISION = 43
+VERSION_REVISION = 46
 
 class Conoscope:
     DLL_PATH = '.'
