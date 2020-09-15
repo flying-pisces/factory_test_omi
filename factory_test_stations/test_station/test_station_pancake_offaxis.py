@@ -177,7 +177,7 @@ class pancakeoffaxisStation(test_station.TestStation):
 
             self.offaxis_test_do(serial_number, test_log, the_unit)
 
-        except Exception, e:
+        except Exception as e:
             self._operator_interface.print_to_console("Test exception {}.\n".format(e.message))
         finally:
             self._operator_interface.print_to_console('release current test resource.\n')

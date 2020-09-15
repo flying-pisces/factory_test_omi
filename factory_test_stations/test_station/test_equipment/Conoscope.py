@@ -7,10 +7,10 @@ from enum import Enum
 import json
 import os
 
-VERSION_REVISION = 46
 
 class Conoscope:
     DLL_PATH = '.'
+    VERSION_REVISION = 46
     class Filter(Enum):
         BK7 = 0
         Mirror = 1
@@ -402,9 +402,9 @@ class Conoscope:
                 versionMinorLib = int(versionNumber[1])
                 versionRevisionLib = int(versionNumber[2])
 
-                if VERSION_REVISION != versionRevisionLib:
+                if Conoscope.VERSION_REVISION != versionRevisionLib:
                     errorMessage = "Error: invalid revision {0}.{1}.{2} != {3}".format(
-                        versionMajorLib, versionMinorLib, versionRevisionLib, VERSION_REVISION)
+                        versionMajorLib, versionMinorLib, versionRevisionLib, Conoscope.VERSION_REVISION)
                     print(errorMessage)
                     raise Exception(errorMessage)
             else:

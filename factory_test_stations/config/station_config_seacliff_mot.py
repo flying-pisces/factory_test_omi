@@ -138,7 +138,8 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 0.1
 
-FILE_COUNT_INC = 13
+VERSION_REVISION_EQUIPMENT = 46
+FILE_COUNT_INC = 14
 
 # set sensor_temperature
 TEST_SENSOR_TEMPERATURE = 25.0
@@ -156,11 +157,11 @@ CAM_INIT_CONFIG = {
     "AEMeasAreaX": 0,
     "AEMeasAreaY": 0,
 
-    "bUseRoi": True,
-    "RoiXLeft": 0,
-    "RoiXRight": 6001,
-    "RoiYTop": 0,
-    "RoiYBottom": 6001
+    "bUseRoi": False,
+    "RoiXLeft": 600,
+    "RoiXRight": 5600,
+    "RoiYTop": 940,
+    "RoiYBottom": 5400
 }
 
 # parameters for test sequence.
