@@ -12,15 +12,18 @@ CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-tes
 # serial number codes
 #
 SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
+SERIAL_NUMBER_MODEL_NUMBER = r'^\dPRP[\w|\d]{10}$'  # Peak panel SN
 
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM4" #
+FIXTURE_COMPORT = "COM2" #
 FIXTURE_PARTICLE_COMPORT = "COM3" #
 FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = "COM5" #
+
+DUT_LITUP_OUTSIDE = False
+TIMEOUT_FOR_BTN_IDLE = 40
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu','hw','fpga']
@@ -92,6 +95,11 @@ COMMAND_POGO_DOWN = "CMD_POGO_DOWN\r\n"
 COMMAND_ABS_X_Y = "CMD_ABS_X_Y"
 COMMAND_RES_X_Y = "CMD_REG_X_Y"
 COMMAND_MOTOR_HOME = "CMD_MOTOR_HOME\r\n"
+COMMAND_PRESS_DOWN = 'CMD_PRESS_DOWN\r\n'
+COMMAND_PRESS_UP = 'CMD_PRESS_UP\r\n'
+COMMAND_TRI_LED_R = 'CMD_LED_R\r\n'
+COMMAND_TRI_LED_Y = 'CMD_LED_Y\r\n'
+COMMAND_TRI_LED_G = 'CMD_LED_G\r\n'
 
 # Fixture Status Enum Values
 PTB_POSITION_STATUS = ["Testing Position", "Reset Position", "Outside Position", "Other Position"]
@@ -102,12 +110,19 @@ FIXTURE_PTB_OFF_TIME = 1
 FIXTURE_PTB_ON_TIME = 1
 FIXTURE_USB_OFF_TIME = 1
 FIXTURE_USB_ON_TIME = 1
-FIXTURE_PTB_UNLOAD_DLY = 6
+FIXTURE_PTB_UNLOAD_DLY = 10
 FIXTURE_PARTICLE_COUNTER = False
-FIXTRUE_PARTICLE_ADDR_READ = 40005
+
+FIXTRUE_PARTICLE_ADDR_READ = 40006
 FIXTRUE_PARTICLE_ADDR_START = 40003
 FIXTRUE_PARTICLE_ADDR_STATUS = 40003
-FIXTRUE_PARTICLE_START_DLY = 0
+PARTICLE_COUNTER_CLJ = False
+
+# FIXTRUE_PARTICLE_ADDR_READ = 8
+# FIXTRUE_PARTICLE_ADDR_START = 30
+# FIXTRUE_PARTICLE_ADDR_STATUS = 30
+# PARTICLE_COUNTER_APC = True  # use apc-r210
+# FIXTRUE_PARTICLE_START_DLY = 0
 ########
 
 ######## DUT Related Parameters which will be defined
@@ -126,7 +141,7 @@ DUT_DISPLAYSLEEPTIME = 1
 # Test Equipment related parameters
 IS_VERBOSE = True
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
-SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\I16+Conoscope - POI2.seqx'
+SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqxc'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
@@ -141,8 +156,8 @@ TOP = 928
 WIDTH = 1337
 HEIGHT = 1400
 IS_SAVEDB = True
-IS_EXPORT_CSV = True
-IS_EXPORT_PNG = True
+IS_EXPORT_CSV = False
+IS_EXPORT_PNG = False
 Resolution_Bin_X = 360
 Resolution_Bin_Y = 360
 
@@ -150,10 +165,10 @@ CAMERA_SN = "159496752"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
-             ('P2', (0, -18), ['W255']),
-             ('P4', (18, 0), ['W255']),
-             ('P6', (0, 18), ['W255']),
-             ('P8', (-18, 0), ['W255'])]
+             ('P2', (0, -18), ['W255', "W000", "R255", "G255", "B255"]),
+             ('P4', (18, 0), ['W255', "W000", "R255", "G255", "B255"]),
+             ('P6', (0, 18), ['W255', "W000", "R255", "G255", "B255"]),
+             ('P8', (-18, 0), ['W255', "W000", "R255", "G255", "B255"])]
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
@@ -166,14 +181,15 @@ MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255"]
 CR_TEST_PATTERNS = ['W255', 'W000']
 CENTER_AT_POLE_AZI = 'P_0_0'
 
-BRIGHTNESS_AT_POLE_AZI = [(0, 0), (30, 0), (30, 45), (30, 90), (30, 135), (30, 180),
-                         (10, 0), (10, 45), (10, 90), (10, 135),
-                         (20, 0), (20, 45), (20, 90), (20, 135)]
-BRIGHTNESS_AT_POLE_AZI_PER = [(30, 0), (30, 45), (30, 90), (30, 135), (30, 180), (30, 270)]
-BRIGHTNESS_AT_POLE_ASSEM = [ ((30,0), (30, 180)), ]
-COLORSHIFT_AT_POLE_AZI = [(10, 0), (10, 45), (10, 90), (10, 135),
-                         (20, 0), (20, 45), (20, 90), (20, 135),
-                         (30, 0), (30, 45), (30, 90), (30, 135),(30, 180), (30, 270)]
+BRIGHTNESS_AT_POLE_AZI = [(0, 0),
+                         (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338),
+                         (10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10, 180), (10, 225), (10, 270), (10, 315), (10, 68), (10, 112), (10, 158), (10, 202), (10, 248), (10, 292), (10, 338),
+                         (20, 0), (20, 22), (20, 45), (20, 90), (20, 135), (20, 180), (20, 225), (20, 270), (20, 315), (20, 68), (20, 112), (20, 158), (20, 202), (20, 248), (20, 292), (20, 338)]
+BRIGHTNESS_AT_POLE_AZI_PER = [(30, 0), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315)]
+BRIGHTNESS_AT_POLE_ASSEM = [ ((30, 0), (30, 180)), ]
+COLORSHIFT_AT_POLE_AZI = [(10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10, 180), (10, 225), (10, 270), (10, 315), (10, 68), (10, 112), (10, 158), (10, 202), (10, 248), (10, 292), (10, 338),
+                         (20, 0), (20, 22), (20, 45), (20, 90), (20, 135), (20, 180), (20, 225), (20, 270), (20, 315), (20, 68), (20, 112), (20, 158), (20, 202), (20, 248), (20, 292), (20, 338),
+                         (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338)]
 
 CR_AT_POLE_AZI = [(0, 0), (30, 0), (30, 90), (30, 180), (30, 270)]
 
@@ -184,8 +200,10 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'E:\2019.12.17 data\offaxis_data 2019.12.17\offaxis_log 2019.12.17'
-CAMERA_SN = "Demo"
+EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis_2'
+
 DUT_SIM = True
+CAMERA_SN = "Demo"
 EQUIPMENT_SIM = True
 FIXTURE_SIM = True
+

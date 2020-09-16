@@ -11,8 +11,6 @@ import re
 import filecmp
 import numpy as np
 from itertools import islice
-from verifiction.particle_counter import ParticleCounter
-from verifiction.dut_checker import DutChecker
 from test_fixture.test_fixture_project_station import projectstationFixture
 import pprint
 import types
@@ -37,22 +35,24 @@ class pancakepixelStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '1.0.2'
+        self._sw_version = '1.0.3'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = test_fixture_pancake_pixel.pancakepixelFixture(station_config, operator_interface)
         if station_config.FIXTURE_SIM:
             self._fixture = projectstationFixture(station_config, operator_interface)
         self._equipment = test_equipment_pancake_pixel.pancakepixelEquipment(station_config)
-        self._particle_counter = ParticleCounter(station_config)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
-            self._particle_counter.initialize()
-            if self._particle_counter.particle_counter_state() == 0:
-                self._particle_counter.particle_counter_on()
+            if self._fixture.particle_counter_state() == 0:
+                self._fixture.particle_counter_on()
                 self._particle_counter_start_time = datetime.datetime.now()
-        self._dut_checker = DutChecker(station_config)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
+        self._lastest_serial_number = None
+        self._the_unit = None
+        self._is_screen_on_by_op = False
+        self._retries_screen_on = 0
+        self._is_cancel_test_by_op = False
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
@@ -65,31 +65,12 @@ class pancakepixelStation(test_station.TestStation):
                 self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
         self._equipment.initialize()
 
-    def _close_fixture(self):
-        if self._fixture is not None:
-            try:
-                self._operator_interface.print_to_console("Close...\n")
-                self._fixture.status()
-                self._fixture.elminator_off()
-            finally:
-                self._fixture.close()
-                self._fixture = None
-
-    def _close_particle_counter(self):
-        if self._particle_counter is not None:
-            try:
-                pass
-                # turn off the particle_counter manually.
-                # self._particle_counter.particle_counter_off()
-            finally:
-                self._particle_counter.close()
-                self._particle_counter = None
-
     def close(self):
-        self._close_fixture()
-        self._close_particle_counter()
+        if self._fixture is not None:
+            self._fixture.close()
+            self._fixture = None
         self._equipment.close()
-
+        self._equipment = None
 
     def _do_test(self, serial_number, test_log):
         # type: (str, test_station.test_log) -> tuple
@@ -98,72 +79,73 @@ class pancakepixelStation(test_station.TestStation):
         self._overall_errorcode = ''
         self._operator_interface.print_to_console('CWD is {}\n'.format(os.getcwd()))
         #        self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
-        self._fixture.elminator_on()
-        self._fixture.load()
 
         try:
             self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
-            the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
-            if self._station_config.DUT_SIM:
-                the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
-            test_log.set_measured_value_by_name_ex("MPK_API_Version", self._equipment.version())
+            test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
+            test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
 
-            the_unit.initialize()
-            self._operator_interface.print_to_console("Initialize DUT... \n")
-            retries = 0
-            is_screen_on = False
-            try:
-                if self._station_config.DISP_CHECKER_ENABLE:
-                    self._dut_checker.initialize()
-                    time.sleep(self._station_config.DISP_CHECKER_DLY)
-                while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
-                    is_reboot_need = False
-                    retries += 1
-                    try:
-                        is_screen_on = the_unit.screen_on() or self._station_config.DUT_SIM
-                    except dut.DUTError:
-                        is_screen_on = False
-                    else:
-                        if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
-                            the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
-                            score = self._dut_checker.do_checker()
-                            self._operator_interface.print_to_console(
-                                "dut checker using blob detection. {} \n".format(score))
-                            is_screen_on = False
-                            if score is not None:
-                                arr = np.array(score)
-                                score_num = np.where((arr >= self._station_config.DISP_CHECKER_L_SCORE)
-                                                     & (arr <= self._station_config.DISP_CHECKER_H_SCORE))
-                                if np.max(arr) < self._station_config.DISP_CHECKER_EXL_SCORE:
-                                    is_screen_on = len(score_num[0]) == self._station_config.DISP_CHECKER_COUNT
-                                else:
-                                    is_reboot_need = True
-
-                    if not is_screen_on:
-                        msg = 'Retry power_on {}/{} times.\n'.format(retries, self._station_config.DUT_ON_MAXRETRY)
-                        self._operator_interface.print_to_console(msg)
-                        the_unit.screen_off()
-                        if is_reboot_need:
-                            self._operator_interface.print_to_console("try to reboot the driver board... \n")
-                            the_unit.reboot()
-
-                    if self._station_config.DISP_CHECKER_IMG_SAVED:
-                        fn0 = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
-                        fn = '{0}_{1}_{2}.jpg'.format(serial_number, retries, fn0)
-                        self._dut_checker.save_log_img(fn)
-            finally:
-                self._dut_checker.close()
-                test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", retries)
-                test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", is_screen_on)
-
-            if not is_screen_on:
+            if not self._is_screen_on_by_op:
                 raise pancakepixelError("DUT Is unable to Power on.")
 
+            test_log.set_measured_value_by_name_ex("MPK_API_Version", self._equipment.version())
+            self._operator_interface.print_to_console("Initialize DUT... \n")
+            # retries = 0
+            # is_screen_on = False
+            # try:
+            #     if self._station_config.DISP_CHECKER_ENABLE:
+            #         self._dut_checker.initialize()
+            #         time.sleep(self._station_config.DISP_CHECKER_DLY)
+            #     while retries < self._station_config.DUT_ON_MAXRETRY and not is_screen_on:
+            #         is_reboot_need = False
+            #         retries += 1
+            #         try:
+            #             is_screen_on = self._the_unit.screen_on() or self._station_config.DUT_SIM
+            #         except dut.DUTError:
+            #             is_screen_on = False
+            #         else:
+            #             if self._station_config.DISP_CHECKER_ENABLE and is_screen_on:
+            #                 self._the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
+            #                 score = self._dut_checker.do_checker()
+            #                 self._operator_interface.print_to_console(
+            #                     "dut checker using blob detection. {} \n".format(score))
+            #                 is_screen_on = False
+            #                 if score is not None:
+            #                     arr = np.array(score)
+            #                     score_num = np.where((arr >= self._station_config.DISP_CHECKER_L_SCORE)
+            #                                          & (arr <= self._station_config.DISP_CHECKER_H_SCORE))
+            #                     if np.max(arr) < self._station_config.DISP_CHECKER_EXL_SCORE:
+            #                         is_screen_on = len(score_num[0]) == self._station_config.DISP_CHECKER_COUNT
+            #                     else:
+            #                         is_reboot_need = True
+            #
+            #         if not is_screen_on:
+            #             msg = 'Retry power_on {}/{} times.\n'.format(retries, self._station_config.DUT_ON_MAXRETRY)
+            #             self._operator_interface.print_to_console(msg)
+            #             self._the_unit.screen_off()
+            #             if is_reboot_need:
+            #                 self._operator_interface.print_to_console("try to reboot the driver board... \n")
+            #                 self._the_unit.reboot()
+            #
+            #         if self._station_config.DISP_CHECKER_IMG_SAVED:
+            #             fn0 = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+            #             fn = '{0}_{1}_{2}.jpg'.format(serial_number, retries, fn0)
+            #             self._dut_checker.save_log_img(fn)
+            # finally:
+            #     self._dut_checker.close()
+            #     test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", retries)
+            #     test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", is_screen_on)
+            #
+            # if not is_screen_on:
+            #     raise pancakepixelError("DUT Is unable to Power on.")
+
+            self._fixture.elminator_on()
+            self._fixture.load()
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
-                particle_count = self._particle_counter.particle_counter_read_val()
+                particle_count = self._fixture.particle_counter_read_val()
             test_log.set_measured_value_by_name_ex("ENV_ParticleCounter", particle_count)
 
             self._operator_interface.print_to_console("Set Camera Database. %s\n" % self._station_config.CAMERA_SN)
@@ -193,19 +175,24 @@ class pancakepixelStation(test_station.TestStation):
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
             self._fixture.elminator_off()
 
-            self.bright_subpixel_do(the_unit, serial_number, test_log)
-            self.dark_subpixel_do(the_unit, serial_number, test_log)
+            self.bright_subpixel_do(self._the_unit, serial_number, test_log)
+            self.dark_subpixel_do(self._the_unit, serial_number, test_log)
             self.data_export(serial_number, test_log)
 
-        except Exception, e:
+        except Exception as e:
             self._operator_interface.print_to_console("Test exception . {}\n".format(e))
         finally:
             self._operator_interface.print_to_console('release current test resource.\n')
-            if the_unit is not None:
-                the_unit.close()
-            if self._fixture is not None:
-                self._fixture.unload()
-                self._fixture.elminator_off()
+            # noinspection PyBroadException
+            try:
+                if self._the_unit is not None:
+                    self._the_unit.close()
+                    self._the_unit = None
+                if self._fixture is not None:
+                    self._fixture.unload()
+                    self._fixture.elminator_off()
+            except:
+                pass
 
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
             overall_result, first_failed_test_result = self.close_test(test_log)
@@ -221,8 +208,85 @@ class pancakepixelStation(test_station.TestStation):
 
         return self._overall_result, self._first_failed_test_result
 
+    def validate_sn(self, serial_num):
+        self._lastest_serial_number = serial_num
+        return test_station.TestStation.validate_sn(self, serial_num)
+
     def is_ready(self):
-        self._fixture.is_ready()
+        ready = False
+        self._is_cancel_test_by_op = False
+        power_on_trigger = False
+        self._is_screen_on_by_op = False
+        self._retries_screen_on = 0
+
+        serial_number = self._lastest_serial_number
+        self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
+        self._the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
+        if self._station_config.DUT_SIM:
+            self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
+
+        timeout_for_btn_idle = 20
+        timeout_for_dual = timeout_for_btn_idle
+        try:
+            self._the_unit.initialize()
+            self._fixture.button_enable()
+            while timeout_for_dual > 0:
+                if ready or self._is_cancel_test_by_op:
+                    break
+                msg_prompt = 'Load DUT, and then Press L-Btn(Cancel)/R-Btn(Litup) in %s S...'
+                if power_on_trigger:
+                    msg_prompt = 'Press Dual-Btn(Load)/L-Btn(Cancel)/R-Btn(Re Litup)  in %s S...'
+                self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow');
+                if self._station_config.FIXTURE_SIM:
+                    self._is_screen_on_by_op = True
+                    ready = True
+                ready_status = self._fixture.is_ready()
+                if ready_status is not None:
+                    if ready_status == 0x00:
+                        if not power_on_trigger:
+                            self._operator_interface.print_to_console('Press L-Btn(Cancel)/R-Btn(Litup) to lit up firstly.\n')
+                        else:
+                            ready = True  # Start to test.
+                            self._is_screen_on_by_op = True
+                    elif ready_status == 0x01:
+                        self._operator_interface.print_to_console('Try to litup DUT.\n')
+                        self._retries_screen_on += 1
+                        if not power_on_trigger:
+                            self._the_unit.screen_on()
+                            # self._the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
+                            power_on_trigger = True
+                            timeout_for_dual = timeout_for_btn_idle
+                        else:
+                            self._the_unit.screen_off()
+                            self._the_unit.reboot()  # Reboot
+                            self._the_unit.screen_on()
+                            # self._the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
+                            power_on_trigger = True
+                            timeout_for_dual = timeout_for_btn_idle
+                    elif ready_status == 0x02:
+                        self._is_cancel_test_by_op = True # Cancel test.
+                time.sleep(0.1)
+                timeout_for_dual -= 1
+
+
+        except Exception as e:
+            self._operator_interface.print_to_console('Fixture is not ready for reason: %s.\n' % e)
+        finally:
+            # noinspection PyBroadException
+            try:
+                self._fixture.button_disable()
+                if not ready:
+                    if not self._is_cancel_test_by_op:
+                        self._operator_interface.print_to_console(
+                            'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
+                    else:
+                        self._operator_interface.print_to_console(
+                            'Cancel start signal from dual %s.\n' % timeout_for_dual)
+                    self._the_unit.close()
+                    self._the_unit = None
+            except:
+                pass
+            self._operator_interface.prompt('', 'SystemButtonFace')
 
     def calc_blemish_index(self, pattern, zdata, test_log):
         self._operator_interface.print_to_console("calc blemish_index {}.\n".format(pattern))

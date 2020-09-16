@@ -18,7 +18,6 @@ sys.path.append("../")
 sys.path.append("../../")
 sys.path.append("../../../")
 from datetime import datetime
-import StringIO
 import logging
 
 class pancakeoffaxisEquipmentError(Exception):
@@ -98,7 +97,7 @@ class pancakeoffaxisEquipment(hardware_station_common.test_station.test_equipmen
             versionjson = json.loads(str(response))
             if self._verbose:
                 pprint.pprint(versionjson)
-            if versionjson.has_key('MpkApiVersionInfo'):
+            if 'MpkApiVersionInfo' in versionjson:
                 self._version = versionjson['MpkApiVersionInfo']
         return self._version
     
@@ -118,7 +117,7 @@ class pancakeoffaxisEquipment(hardware_station_common.test_station.test_equipmen
         response = json.loads(self._device.EquipmentReady())
         msg = "Ready - ErrorCode: {0}".format(response['ErrorCode'])
         if self._verbose:
-            print msg
+            print(msg)
         ready_result = response['ErrorCode'] == 'Success'
         return ready_result
 
@@ -194,9 +193,9 @@ if __name__ == "__main__":
 
     station_config.load_station('pancake_offaxis')
     the_instrument = pancakeoffaxisEquipment(station_config)
-    print  "ready before init :{}" .format(the_instrument.ready())
+    print  ("ready before init :{}" .format(the_instrument.ready()))
     isinit = the_instrument.initialize()
-    print  "ready after init :{}" .format(the_instrument.ready())
+    print  ("ready after init :{}" .format(the_instrument.ready()))
     # print  "PrepareForRun after init:{}" .format(the_instrument.prepare_for_run())
 
     # the_instrument.create_database(databasePath)

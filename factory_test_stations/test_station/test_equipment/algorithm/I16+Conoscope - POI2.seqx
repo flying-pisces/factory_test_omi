@@ -1032,7 +1032,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>591f9ba5-b4f5-4ee6-93f4-91750db76914</GUID>
+      <GUID>123cacee-0a05-40cb-bad7-1c46e4e50902</GUID>
       <Name>W255</Name>
       <Notes />
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -1062,13 +1062,13 @@
       <ExposureLimitMethod>Standard</ExposureLimitMethod>
       <ExposureShowOverLimitMessage>false</ExposureShowOverLimitMessage>
       <DontTakeTTEngineMeas>false</DontTakeTTEngineMeas>
-      <DistanceUnit>Meters</DistanceUnit>
+      <DistanceUnit>Degrees</DistanceUnit>
       <PhotometricUnit>Luminance_CandelaPerMeter</PhotometricUnit>
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
+          <SerialNumber>159496752</SerialNumber>
+          <ColorCalID>18</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>0</FlatFieldID>
           <FFType>0</FFType>
@@ -1093,7 +1093,7 @@
         </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
-      <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
+      <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
       <LEDColorPurity>0.8</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
@@ -1289,31 +1289,6 @@
             <Height>0</Height>
           </SubFrameRegion>
         </CameraSettings>
-        <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
-          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
-          <FlatFieldID>0</FlatFieldID>
-          <FFType>0</FFType>
-          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
-          <LensDistortionID>0</LensDistortionID>
-          <MultiPointID>0</MultiPointID>
-          <StrayLightID>0</StrayLightID>
-          <SubFrameRegion>
-            <Location>
-              <X>0</X>
-              <Y>0</Y>
-            </Location>
-            <Size>
-              <Width>0</Width>
-              <Height>0</Height>
-            </Size>
-            <X>0</X>
-            <Y>0</Y>
-            <Width>0</Width>
-            <Height>0</Height>
-          </SubFrameRegion>
-        </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
       <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
@@ -1415,7 +1390,6 @@
           <Timeout>20000</Timeout>
         </NetworkComputerInfo>
       </ComputerInfoList>
-      <AssociatedCamera />
     </PatternSetup>
     <PatternSetup>
       <CaptureFilter>
@@ -1513,31 +1487,6 @@
             <Height>0</Height>
           </SubFrameRegion>
         </CameraSettings>
-        <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
-          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
-          <FlatFieldID>0</FlatFieldID>
-          <FFType>0</FFType>
-          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
-          <LensDistortionID>0</LensDistortionID>
-          <MultiPointID>0</MultiPointID>
-          <StrayLightID>0</StrayLightID>
-          <SubFrameRegion>
-            <Location>
-              <X>0</X>
-              <Y>0</Y>
-            </Location>
-            <Size>
-              <Width>0</Width>
-              <Height>0</Height>
-            </Size>
-            <X>0</X>
-            <Y>0</Y>
-            <Width>0</Width>
-            <Height>0</Height>
-          </SubFrameRegion>
-        </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
       <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
@@ -1639,7 +1588,6 @@
           <Timeout>20000</Timeout>
         </NetworkComputerInfo>
       </ComputerInfoList>
-      <AssociatedCamera />
     </PatternSetup>
     <PatternSetup>
       <CaptureFilter>
@@ -1737,31 +1685,6 @@
             <Height>0</Height>
           </SubFrameRegion>
         </CameraSettings>
-        <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
-          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
-          <FlatFieldID>0</FlatFieldID>
-          <FFType>0</FFType>
-          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
-          <LensDistortionID>0</LensDistortionID>
-          <MultiPointID>0</MultiPointID>
-          <StrayLightID>0</StrayLightID>
-          <SubFrameRegion>
-            <Location>
-              <X>0</X>
-              <Y>0</Y>
-            </Location>
-            <Size>
-              <Width>0</Width>
-              <Height>0</Height>
-            </Size>
-            <X>0</X>
-            <Y>0</Y>
-            <Width>0</Width>
-            <Height>0</Height>
-          </SubFrameRegion>
-        </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
       <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
@@ -1863,7 +1786,6 @@
           <Timeout>20000</Timeout>
         </NetworkComputerInfo>
       </ComputerInfoList>
-      <AssociatedCamera />
     </PatternSetup>
     <PatternSetup>
       <CaptureFilter>
@@ -1961,31 +1883,6 @@
             <Height>0</Height>
           </SubFrameRegion>
         </CameraSettings>
-        <CameraSettings>
-          <SerialNumber>81601</SerialNumber>
-          <ColorCalID>0</ColorCalID>
-          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
-          <FlatFieldID>0</FlatFieldID>
-          <FFType>0</FFType>
-          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
-          <LensDistortionID>0</LensDistortionID>
-          <MultiPointID>0</MultiPointID>
-          <StrayLightID>0</StrayLightID>
-          <SubFrameRegion>
-            <Location>
-              <X>0</X>
-              <Y>0</Y>
-            </Location>
-            <Size>
-              <Width>0</Width>
-              <Height>0</Height>
-            </Size>
-            <X>0</X>
-            <Y>0</Y>
-            <Width>0</Width>
-            <Height>0</Height>
-          </SubFrameRegion>
-        </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
       <ConoscopeCalibrationID>1</ConoscopeCalibrationID>
@@ -2087,7 +1984,6 @@
           <Timeout>20000</Timeout>
         </NetworkComputerInfo>
       </ComputerInfoList>
-      <AssociatedCamera />
     </PatternSetup>
   </PatternSetupList>
   <PreExecuteActionGUIDs />
