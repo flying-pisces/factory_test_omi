@@ -11,7 +11,7 @@ CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-tes
 # serial number codes
 #
 SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Fake model number requirement, need config
+SERIAL_NUMBER_MODEL_NUMBER = r'\dPR0[\d|\w]{10}'  # Fake model number requirement, need config
 
 ##################################
 # Fixture parameters
@@ -193,4 +193,4 @@ EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\pixel'
 CAMERA_SN = "Demo"
 DUT_SIM = True
 EQUIPMENT_SIM = True
-FIXTURE_SIM = False
+FIXTURE_SIM = True

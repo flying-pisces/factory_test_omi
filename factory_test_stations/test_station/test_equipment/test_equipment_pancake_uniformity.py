@@ -18,7 +18,6 @@ sys.path.append("../")
 sys.path.append("../../")
 sys.path.append("../../../")
 from datetime import datetime
-import StringIO
 import logging
 
 class pancakeuniformityEquipmentError(Exception):
@@ -98,7 +97,7 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
             versionjson = json.loads(str(response))
             if self._verbose:
                 pprint.pprint(versionjson)
-            if versionjson.has_key('MpkApiVersionInfo'):
+            if 'MpkApiVersionInfo' in versionjson:
                 self._version = versionjson['MpkApiVersionInfo']
         return self._version
     

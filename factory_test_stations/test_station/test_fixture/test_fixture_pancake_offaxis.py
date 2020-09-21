@@ -38,13 +38,13 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
             resp = self._read_response(2)
             if resp:
                 if not hasattr(self._station_config, 'DUT_LITUP_OUTSIDE') or not self._station_config.DUT_LITUP_OUTSIDE:
-                    items = filter(lambda r: re.match(r'LOAD:\d+', r, re.I), resp)
+                    items = list(filter(lambda r: re.match(r'LOAD:\d+', r, re.I), resp))
                     if items:
                         return int((items[0].split(self._start_delimiter))[1].split(self._end_delimiter)[0]) == 0x00
                 else:
-                    btn_dic = {2 : r'BUTTON_LEFT:\d', 1 : r'BUTTON_RIGHT:\d', 0 : r'BUTTON:\d'}
+                    btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d', 0: r'BUTTON:\d'}
                     for key, item in btn_dic.items():
-                        items = filter(lambda r: re.match(item, r, re.I), resp)
+                        items = list(filter(lambda r: re.match(item, r, re.I), resp))
                         if items:
                             return key
 
@@ -86,24 +86,28 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
         if self._verbose:
             print("flushed")
             print('writing: ' + input_bytes)
-        bytes_written = self._serial_port.write(input_bytes)
+        cmd = '{0}\r\n'.format(input_bytes)
+        bytes_written = self._serial_port.write(cmd.encode())
         return bytes_written
 
     def flush_data(self):
         if self._serial_port is not None:
             self._serial_port.flush()
 
-    def _read_response(self, timeout=5):
-        response = []
-        line_in = ""
+    def _read_response(self, timeout=10):
+        msg = ''
         tim = time.time()
-        while (not re.search(self._end_delimiter, line_in, re.IGNORECASE)
+        while (not re.search(self._end_delimiter, msg, re.IGNORECASE)
                and (time.time() - tim < timeout)):
             line_in = self._serial_port.readline()
-            if line_in != "":
-                response.append(line_in)
-        if self._verbose and len(response) > 1:
-            pprint.pprint(response)
+            if line_in != b'':
+                msg = msg + line_in.decode()
+        response = msg.strip().splitlines()
+        if self._verbose:
+            if len(response) > 1:
+                pprint.pprint(response)
+            else:
+                print('Fail to read any data in {0} seconds. '.format(timeout))
         return response
 
     def read_response(self, timeout=5):
@@ -122,7 +126,7 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
     def reset(self):
         self._write_serial(self._station_config.COMMAND_RESET)
         response = self.read_response()
-        val = self._prase_response('LOAD:\d+', response)
+        val = int(self._prase_response(r'LOAD:(\d+)', response).group(1))
         if val == 0x00:
             time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
         return val
@@ -132,8 +136,7 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
         response = self.read_response()
         if self._verbose:
             print(response[1])
-        value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        return value
+        return self._prase_response(r'ID:(.+)', response).group(1)
 
     def close(self):
         self._operator_interface.print_to_console("Closing auo offaxis Fixture\n")
@@ -159,20 +162,20 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
     def button_enable(self):
         self._write_serial(self._station_config.COMMAND_BUTTON_ENABLE)
         response = self.read_response()
-        return self._prase_response(r'BTN_ENABLE:\d+', response)
+        return int(self._prase_response(r'BTN_ENABLE:(\d+)', response).group(1))
 
     def button_disable(self):
         self._write_serial(self._station_config.COMMAND_BUTTON_DISABLE)
         response = self.read_response()
-        return self._prase_response(r'BTN_DISABLE:\d+', response)
+        return int(self._prase_response(r'BTN_DISABLE:(\d+)', response).group(1))
 
     def mov_abs_xy(self, x, y):
-        CMD_MOVE_STRING = self._station_config.COMMAND_ABS_X_Y + ' ' + str(x) + " " + str(y) + "\r\n"
+        CMD_MOVE_STRING = self._station_config.COMMAND_ABS_X_Y + ':' + str(x) + ',' + str(y)
         self._write_serial(CMD_MOVE_STRING)
         response = self.read_response()
         if self._verbose:
             print(response)
-        return self._prase_response(r'ABS_X_Y:\d+', response)
+        return int(self._prase_response(r'ABS_X_Y:(\d+)', response).group(1))
 
     # def pogo_state_up(self, up):
     #     cmd = self._station_config.COMMAND_POGO_DOWN # OFF
@@ -192,21 +195,21 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
 
     def _load(self):
         self._write_serial(self._station_config.COMMAND_LOAD)
-        response = self.read_response()
-        return self._prase_response(r'LOAD:\d+', response)
+        response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
+        return int(self._prase_response(r'LOAD:(\d+)', response).group(1))
 
     def _unload(self):
         self._write_serial(self._station_config.COMMAND_UNLOAD)
-        response = self.read_response(timeout=self._station_config.FIXTURE_PTB_UNLOAD_DLY)
-        return self._prase_response(r'UNLOAD:\d+', response)
+        response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
+        return int(self._prase_response(r'UNLOAD:(\d+)', response).group(1))
 
     def _prase_response(self, regex, resp):
         if not resp:
             raise pancakeoffaxisFixtureError('unable to get data from fixture.')
-        items = filter(lambda r : re.search(regex, r, re.I), resp)
+        items = list(filter(lambda r: re.search(regex, r, re.I), resp))
         if not items:
             raise pancakeoffaxisFixtureError('unable to parse msg. {}'.format(items))
-        return (items[0].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
+        return re.search(regex, items[0], re.I | re.S)
 
     # def press_ctrl_up(self, up=True):
     #     cmd = self._station_config.COMMAND_PRESS_DOWN # ON
@@ -231,8 +234,24 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
         if cmd:
             self._write_serial(cmd)
             response = self.read_response()
-            r = r'LED_[R|Y|G]:\d+'
-            return self._prase_response(r, response)
+            r = r'LED_[R|Y|G]:(\d+)'
+            return int(self._prase_response(r, response).group(1))
+
+    def power_on_button_status(self, on):
+        """
+        @type on : bool
+        enable the power on button
+        @return:
+        """
+        status_dic = {
+            True: (self._station_config.COMMAND_BUTTON_LITUP_ENABLE, r'PowerOnButton_ENABLE:(\d+)'),
+            False: (self._station_config.COMMAND_BUTTON_LITUP_DISABLE, r'PowerOnButton_DISABLE:(\d+)'),
+        }
+        cmd = status_dic[on]
+        self._write_serial(cmd[0])
+        response = self.read_response()
+        if int(self._prase_response(cmd[1], response).group(1)) != 0:
+            raise pancakeoffaxisFixtureError('fail to send command. %s' % response)
 
     ######################
     # Particle Counter Control
@@ -294,7 +313,7 @@ if __name__ == "__main__":
 
         print('Self check for pancake_offaxis')
         station_config.load_station('pancake_offaxis')
-        station_config.FIXTURE_COMPORT = 'COM15'
+        station_config.FIXTURE_COMPORT = 'COM3'
         station_config.print_to_console = types.MethodType(print_to_console, station_config)
         the_fixture = pancakeoffaxisFixture(station_config, station_config)
         the_fixture._verbose = True
@@ -303,21 +322,24 @@ if __name__ == "__main__":
             the_fixture.initialize()
 
             # the_fixture.mov_abs_xy(5, 1)
-            print('Id = %s'%the_fixture.id())
+            for idx in range(0, 20):
+                print('Id = %s' % the_fixture.id())
 
-            the_fixture.press_ctrl_up(False)
-            the_fixture.pogo_state_up(True)
-            the_fixture.load()
+                the_fixture.set_tri_color('r')
+                the_fixture.load()
 
-            the_fixture.button_enable()
-            pprint.pprint(the_fixture.help())
-            the_fixture.mov_abs_xy(0, 18)
-            the_fixture.mov_abs_xy(0, -18)
-            the_fixture.mov_abs_xy(18, 0)
-            the_fixture.mov_abs_xy(-18, 0)
-            the_fixture.mov_abs_xy(0, 0)
+                the_fixture.button_enable()
+                pprint.pprint(the_fixture.help())
 
-            the_fixture.unload()
+                the_fixture.mov_abs_xy(0, 180)
+                # the_fixture.mov_abs_xy(0, -18)
+                # the_fixture.mov_abs_xy(18, 0)
+                # the_fixture.mov_abs_xy(-18, 0)
+                the_fixture.mov_abs_xy(0, 0)
+                the_fixture.button_disable()
+
+                the_fixture.set_tri_color('g')
+                the_fixture.unload()
 
         except pancakeoffaxisFixtureError as e:
             print('exception {}'.format(e.message))

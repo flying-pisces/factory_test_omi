@@ -11,7 +11,7 @@ import re
 import filecmp
 import numpy as np
 from itertools import islice
-from test_fixture.test_fixture_project_station import projectstationFixture
+from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 import pprint
 import types
 import glob
@@ -331,11 +331,11 @@ class pancakepixelStation(test_station.TestStation):
             defect_index = abs_contrast * np.array(location_index) * np.array(size_index)
             blemish_index = np.sum(defect_index)
             if self._station_config.IS_VERBOSE:
-                print 'constrast_{}:{}'.format(pattern, constrast_lst)
-                print 'locationX_{}:{}'.format(pattern, locax_list)
-                print 'locationY_{}:{}'.format(pattern, locay_list)
-                print 'size     _{}:{}'.format(pattern, size_list)
-                print 'pixel    _{}:{}'.format(pattern, pixel_list)
+                pprint.pprint('constrast_{}:{}'.format(pattern, constrast_lst))
+                pprint.pprint('locationX_{}:{}'.format(pattern, locax_list))
+                pprint.pprint('locationY_{}:{}'.format(pattern, locay_list))
+                pprint.pprint('size     _{}:{}'.format(pattern, size_list))
+                pprint.pprint('pixel    _{}:{}'.format(pattern, pixel_list))
         test_log.set_measured_value_by_name_ex(test_item, blemish_index)
 
     def data_export(self, serial_number, test_log):
@@ -435,7 +435,7 @@ class pancakepixelStation(test_station.TestStation):
                 pixel_list = []
                 constrast_lst = []
                 for c, result in analysis_result.items():
-                    if not isinstance(result, dict) or not result.has_key('NumDefects'):
+                    if not isinstance(result, dict) or 'NumDefects' not in result:
                         continue
                     num = int(result['NumDefects'])
                     self._operator_interface.print_to_console("prase numDefect {}, Num={}.\n"
@@ -618,7 +618,7 @@ class pancakepixelStation(test_station.TestStation):
             pixel_list = []
             constrast_lst = []
             for c, result in analysis_result.items():
-                if not isinstance(result, dict) or not result.has_key('NumDefects'):
+                if not isinstance(result, dict) or 'NumDefects' not in result:
                     continue
                 num = int(result['NumDefects'])
                 self._operator_interface.print_to_console("prase numDefect {}, Num={}.\n"

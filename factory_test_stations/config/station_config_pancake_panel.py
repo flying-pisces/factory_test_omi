@@ -120,7 +120,7 @@ DUT_ON_MAXRETRY = 5
 
 ##################################
 # Test Equipment related parameters
-IS_PRINT_TO_LOG = True
+IS_PRINT_TO_LOG = False
 IS_VERBOSE = True
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\y29 particle Defect.seqxc'

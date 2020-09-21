@@ -11,7 +11,7 @@ import test_station.dut as dut
 from test_station.test_fixture.test_fixture_pancake_offaxis import pancakeoffaxisFixture
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 from test_station.test_equipment.test_equipment_pancake_offaxis import pancakeoffaxisEquipment
-import pprint
+from test_station.dut.dut import projectDut, DUTError
 import types
 import glob
 
@@ -39,9 +39,10 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._sw_version = '1.0.2'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
-        self._fixture = pancakeoffaxisFixture(station_config, operator_interface)  # type: pancakeoffaxisFixture
-        if station_config.FIXTURE_SIM:
-            self._fixture = projectstationFixture(station_config, operator_interface)
+        self._fixture = projectstationFixture(station_config, operator_interface)
+        if not station_config.FIXTURE_SIM:
+            self._fixture = pancakeoffaxisFixture(station_config, operator_interface)  # type: pancakeoffaxisFixture
+
         self._equipment = pancakeoffaxisEquipment(station_config)  # type: pancakeoffaxisEquipment
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
             if self._fixture.particle_counter_state() == 0:
@@ -122,7 +123,8 @@ class pancakeoffaxisStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op or is_screen_on)
 
             if not is_screen_on and not self._is_screen_on_by_op:  # dut can't be lit up
-                raise pancakeoffaxisError("DUT Is unable to Power on.")
+                raise pancakeoffaxisError("DUT Is unable to Power on : CancelByOp = {0}, ScreenOn = {1}."
+                                          .format(self._is_cancel_test_by_op, is_screen_on))
 
             test_log.set_measured_value_by_name_ex("MPK_API_Version", self._equipment.version())
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
@@ -206,15 +208,16 @@ class pancakeoffaxisStation(test_station.TestStation):
                                 else self._station_config.TIMEOUT_FOR_BTN_IDLE)
         timeout_for_dual = timeout_for_btn_idle
         try:
-            self._fixture.button_enable()
+            self._fixture.button_disable()
+            self._fixture.power_on_button_status(True)
             self._the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
             while timeout_for_dual > 0:
                 if ready or self._is_cancel_test_by_op:
                     break
-                msg_prompt = 'Load DUT, and then Press L-Btn(Cancel)/R-Btn(Litup) in %s counts...'
+                msg_prompt = 'Load DUT, and then Press PowerOn-Btn(Litup) in %s counts...'
                 if power_on_trigger:
-                    msg_prompt = 'Press Dual-Btn(Load)/L-Btn(Cancel)/R-Btn(Re Litup)  in %s counts...'
+                    msg_prompt = 'Press Dual-Btn(Load)/L-Btn(Cancel)/PowerOn-Btn(Re Litup)  in %s counts...'
                 self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow')
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
@@ -227,21 +230,19 @@ class pancakeoffaxisStation(test_station.TestStation):
                         self._is_screen_on_by_op = True
                         if self._retries_screen_on == 0:
                             self._the_unit.screen_on()
-                    elif ready_status == 0x01:
+
+                    elif ready_status == 0x03:
                         self._operator_interface.print_to_console('Try to litup DUT.\n')
                         self._retries_screen_on += 1
                         if not power_on_trigger:
                             self._the_unit.screen_on()
-                            # self._fixture.press_ctrl_up(False)
-                            # self._fixture.pogo_state_up(True)
-                            # self._the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
                             power_on_trigger = True
+                            self._fixture.button_enable()
                             timeout_for_dual = timeout_for_btn_idle
                         else:
                             self._the_unit.screen_off()
                             self._the_unit.reboot()  # Reboot
                             self._the_unit.screen_on()
-                            # self._the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
                             power_on_trigger = True
                             timeout_for_dual = timeout_for_btn_idle
                     elif ready_status == 0x02:
@@ -254,6 +255,7 @@ class pancakeoffaxisStation(test_station.TestStation):
             # noinspection PyBroadException
             try:
                 self._fixture.button_disable()
+                self._fixture.power_on_button_status(False)
                 if not ready:
                     if not self._is_cancel_test_by_op:
                         self._operator_interface.print_to_console(
@@ -261,8 +263,6 @@ class pancakeoffaxisStation(test_station.TestStation):
                     else:
                         self._operator_interface.print_to_console(
                             'Cancel start signal from dual %s.\n' % timeout_for_dual)
-                    # self._fixture.pogo_state_up(False)
-                    # self._fixture.press_ctrl_up(True)
                     self._the_unit.close()
                     self._the_unit = None
             except:
