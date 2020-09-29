@@ -392,7 +392,7 @@ if __name__ == "__main__":
     sys.path.append(r'..\..')
     import station_config
 
-    station_config.load_station('seacliff_mot')
+    station_config.load_station('pancake_offaxis')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
     the_unit = pancakeDut("1PR01231231234", station_config, station_config)
     for idx in range(0, 2):

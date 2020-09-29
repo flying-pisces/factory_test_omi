@@ -42,7 +42,8 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
                     if items:
                         return int((items[0].split(self._start_delimiter))[1].split(self._end_delimiter)[0]) == 0x00
                 else:
-                    btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d', 0: r'BUTTON:\d'}
+                    btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d',
+                               0: r'BUTTON:0', 4: r'BUTTON:1'}
                     for key, item in btn_dic.items():
                         items = list(filter(lambda r: re.match(item, r, re.I), resp))
                         if items:
@@ -331,11 +332,16 @@ if __name__ == "__main__":
                 the_fixture.button_enable()
                 pprint.pprint(the_fixture.help())
 
-                the_fixture.mov_abs_xy(0, 180)
-                # the_fixture.mov_abs_xy(0, -18)
-                # the_fixture.mov_abs_xy(18, 0)
-                # the_fixture.mov_abs_xy(-18, 0)
                 the_fixture.mov_abs_xy(0, 0)
+                time.sleep(0.5)
+                the_fixture.mov_abs_xy(0, 1800)
+                time.sleep(0.5)
+                the_fixture.mov_abs_xy(0, -1800)
+                time.sleep(0.5)
+                the_fixture.mov_abs_xy(1800, 0)
+                time.sleep(0.5)
+                the_fixture.mov_abs_xy(-1800, 0)
+                time.sleep(0.5)
                 the_fixture.button_disable()
 
                 the_fixture.set_tri_color('g')

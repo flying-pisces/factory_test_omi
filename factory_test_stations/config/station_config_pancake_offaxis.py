@@ -20,10 +20,10 @@ SERIAL_NUMBER_MODEL_NUMBER = r'^\dPRP[\w|\d]{10}$'  # Peak panel SN
 FIXTURE_COMPORT = "COM3" #
 FIXTURE_PARTICLE_COMPORT = "COM1" #
 FIXTURE_PARTICLE_ADDR = 1
-DUT_COMPORT = "COM5" #
+DUT_COMPORT = "COM14" #
 
 DUT_LITUP_OUTSIDE = True
-TIMEOUT_FOR_BTN_IDLE = 40
+TIMEOUT_FOR_BTN_IDLE = 10
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu','hw','fpga']
@@ -170,10 +170,10 @@ CAMERA_SN = "159496752"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
-             ('P2', (0, 18), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P4', (18, 0), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P6', (0, 18), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P8', (18, 0), ['W255', "W000", "R255", "G255", "B255"])]
+             ('P2', (0, 1800), ['W255', "W000", "R255", "G255", "B255"]),
+             ('P4', (1800, 0), ['W255', "W000", "R255", "G255", "B255"]),
+             ('P6', (0, 1800), ['W255', "W000", "R255", "G255", "B255"]),
+             ('P8', (1800, 0), ['W255', "W000", "R255", "G255", "B255"])]
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
@@ -207,7 +207,7 @@ USE_WORKORDER_ENTRY = False
 
 EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis_2'
 
-DUT_SIM = True
+DUT_SIM = False
 CAMERA_SN = "Demo"
 EQUIPMENT_SIM = True
 FIXTURE_SIM = False

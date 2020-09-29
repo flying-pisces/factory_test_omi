@@ -247,6 +247,9 @@ class pancakeoffaxisStation(test_station.TestStation):
                             timeout_for_dual = timeout_for_btn_idle
                     elif ready_status == 0x02:
                         self._is_cancel_test_by_op = True  # Cancel test.
+                    elif ready_status == 0x04:
+                        self._operator_interface.print_to_console('please load the dut correctly.\n')
+                        pass
                 time.sleep(0.1)
                 timeout_for_dual -= 1
         except Exception as e:
