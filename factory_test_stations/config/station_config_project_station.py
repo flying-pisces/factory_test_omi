@@ -6,6 +6,7 @@
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory-test_logs'
+RAW_DIR = r'C:\oculus\factory_test_omi\raw_logs'
 ##################################
 # serial number codes
 #
@@ -37,3 +38,5 @@ FACEBOOK_IT_ENABLED = False
 
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
+
+VERSION = 'SunnyP2-PreBuild-Alpha'
