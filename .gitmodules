@@ -1,0 +1,3 @@
+[submodule "factory_test_stations/hardware_station_common"]
+	path = factory_test_stations/hardware_station_common
+	url = https://github.com/chuckyin/hardware_station_common.git
