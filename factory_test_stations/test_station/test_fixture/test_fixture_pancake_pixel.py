@@ -302,13 +302,22 @@ class pancakepixelFixture(hardware_station_common.test_station.test_fixture.Test
 
     def particle_counter_state(self):
         if self._particle_counter_client is not None:
-            rs = self._particle_counter_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
-                                                                      2,
-                                                                      unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
-            if rs is None or rs.isError():
-                raise pancakepixelFixtureError('Fail to read data from particle counter. ')
-            else:
-                return rs.registers[0]
+            retries = 1
+            val = None
+            while retries <= 10 and val is None:
+                rs = self._particle_counter_client.read_holding_registers(
+                    self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
+                    2,
+                    unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
+
+                if rs is None or rs.isError():
+                    if self._station_config.IS_VERBOSE:
+                        pprint.pprint("Retries to read data from particle counter {0}/10. ".format(retries))
+                    continue
+                val = rs.registers[0]
+            if val is None:
+                raise pancakepixelFixtureError('Failed to read data from particle counter.')
+            return val
 
 def print_to_console(self, msg):
     pass
