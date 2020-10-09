@@ -239,7 +239,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                and (time.time() - tim < timeout)):
             line_in = self._serial_port.readline()
             if line_in != b'':
-                response.append(line_in.decode())
+                response = response + line_in.decode()
         if self._verbose and len(response) > 1:
             pprint.pprint(response)
         return response

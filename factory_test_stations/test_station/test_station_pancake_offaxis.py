@@ -36,7 +36,7 @@ class pancakeoffaxisStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '1.0.2'
+        self._sw_version = '2.0.2'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = projectstationFixture(station_config, operator_interface)
