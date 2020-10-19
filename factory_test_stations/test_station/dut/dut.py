@@ -35,8 +35,9 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         self._logger = logging.getLogger(__name__)
         self._logger.setLevel(logging.DEBUG)
         self._start_delimiter = "$"
-        self._end_delimiter = b'\r\n'
+        self._end_delimiter = '\r\n'
         self._spliter = ','
+        self._nvm_data_len = 28
         self._renderImgTool = os.path.join(os.getcwd(), r'CambrialTools\exe\CambriaTools-cmd.exe')
 
     def initialize(self):
@@ -192,6 +193,38 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                 print('Reboot system successfully . Elapse time {0:4f} s.'.format((dt - sw).total_seconds()))
             break
 
+    def nvm_write_status(self):
+        self._write_serial_cmd(self._station_config.COMMAND_NVM_WRITE_CNT)
+        resp = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_NVM_WRITE_CNT, resp)
+
+    def nvm_write_data(self, data_array):
+        """
+
+        @type data_array: bytes
+        @return: [errcode, data_len]
+        """
+        if isinstance(data_array, bytes):
+            tmp_data = data_array.decode()
+            cmd = '{0},{1},{2}'.format(self._station_config.COMMAND_NVM_WRITE, len(tmp_data),  ','.join(tmp_data))
+        elif isinstance(data_array, str):
+            cmd = '{0}, {1}, {2}'.format(self._station_config.COMMAND_NVM_WRITE, len(data_array),  ','.join(data_array))
+
+        self._write_serial_cmd(cmd.encode('utf-8'))
+        resp = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_NVM_WRITE, resp)
+
+    def nvm_read_data(self, data_len):
+        """
+
+        @type data_len: int
+        @return: [errcode, len, data...]
+        """
+        cmd = '{0},{1}'.format(self._station_config.COMMAND_NVM_READ, data_len)
+        self._write_serial_cmd(cmd.encode('utf-8'))
+        resp = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_NVM_READ, resp)
+
     def _timeout_execute(self, cmd, timeout=0):
         if timeout == 0:
             timeout = win32event.INFINITE
@@ -232,14 +265,14 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         self._serial_port.write(cmd.encode('utf-8'))
 
     def _read_response(self, timeout=5):
-        response = []
-        line_in = b''
         tim = time.time()
-        while (not re.search(self._end_delimiter, line_in, re.IGNORECASE)
+        msg = ''
+        while (not re.search(self._end_delimiter, msg, re.IGNORECASE)
                and (time.time() - tim < timeout)):
             line_in = self._serial_port.readline()
             if line_in != b'':
-                response.append(line_in.decode())
+                msg = msg + line_in.decode()
+        response = msg.splitlines(keepends=False)
         if self._verbose and len(response) > 1:
             pprint.pprint(response)
         return response
@@ -276,8 +309,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             return None
         cmd1 = command.split(self._spliter)[0]
         respstr = ''.join(response).upper()
-        cmd = cmd1.upper()
-        if cmd not in respstr:
+        if cmd1.upper() not in respstr:
             return None
         values = respstr.split(self._spliter)
         if len(values) == 1:
@@ -392,9 +424,12 @@ if __name__ == "__main__":
     sys.path.append(r'..\..')
     import station_config
 
-    station_config.load_station('seacliff_mot')
+    station_config.load_station('pancake_eeprom')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
     the_unit = pancakeDut("1PR01231231234", station_config, station_config)
+
+    the_unit.nvm_write_data(b'bb')
+
     for idx in range(0, 2):
 
         print('Loop ---> {}'.format(idx))
