@@ -1,6 +1,5 @@
 import hardware_station_common.test_station.test_fixture
 
-
 class seacliffeepromFixture(hardware_station_common.test_station.test_fixture.TestFixture):
     """
         class for seacliff eeprom Fixture

@@ -69,6 +69,26 @@ DISP_CHECKER_COUNT = 2
 SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config
 
+NVM_WRITE_COUNT_MAX = 6
+# calibration required data.
+
+CALIB_REQ_DATA = {
+    'display_boresight_x': 0.20,
+    'display_boresight_y': -0.25,
+    'rotation': 0,
+    'lv_W255': 0,
+    'x_W255': 0,
+    'y_W255': 0,
+    'lv_R255': 0,
+    'lv_G255': 0,
+    'lv_B255': 0,
+    'x_R255': 0,
+    'y_R255': 0,
+    'x_G255': 0,
+    'y_G255': 0,
+    'x_B255': 0,
+    'y_B255': 0,
+}
 
 ##################################
 # shopfloor
@@ -93,3 +113,6 @@ FACEBOOK_IT_ENABLED = False
 
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
+DUT_SIM = True
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True
