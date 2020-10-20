@@ -3,6 +3,52 @@ CURRENT_FW_VERSION = 1001
 STATION_LIMITS_ARRAYS = [
     ["TEST ITEM", 1, 5, 10],
     ["Verify Firmware Load", CURRENT_FW_VERSION, CURRENT_FW_VERSION, 11],
+
+    ["JUDGED_BY_CAM", True, True, 800],
+
+    ["CURRENT_WRITE_COUNTS", 0, 7, 1000],
+
+    # all the setting should be changed in this fixture.
+    ["CURRENT_BAK_BORESIGHT_X", None, None, 1001],
+    ["CURRENT_BAK_BORESIGHT_Y", None, None, 1002],
+    ["CURRENT_BAK_ROTATION", None, None, 1003],
+    ["CURRENT_BAK_LV_W255", None, None, 1004],
+    ["CURRENT_BAK_X_W255", None, None, 1005],
+    ["CURRENT_BAK_Y_W255", None, None, 1006],
+    ["CURRENT_BAK_LV_R255", None, None, 1007],
+    ["CURRENT_BAK_X_R255", None, None, 1008],
+    ["CURRENT_BAK_Y_R255", None, None, 1009],
+
+    ["CURRENT_BAK_LV_G255", None, None, 1010],
+    ["CURRENT_BAK_X_G255", None, None, 1011],
+    ["CURRENT_BAK_Y_G255", None, None, 1012],
+
+    ["CURRENT_BAK_LV_B255", None, None, 1013],
+    ["CURRENT_BAK_X_B255", None, None, 1014],
+    ["CURRENT_BAK_Y_B255", None, None, 1015],
+
+    # current setting for EEPROM
+    ["CFG_BORESIGHT_X", None, None, 2001],
+    ["CFG_BORESIGHT_Y", None, None, 2002],
+    ["CFG_ROTATION", None, None, 2003],
+    ["CFG_LV_W255", None, None, 2004],
+    ["CFG_X_W255", None, None, 2005],
+    ["CFG_Y_W255", None, None, 2006],
+
+    ["CFG_LV_R255", None, None, 2007],
+    ["CFG_X_R255", None, None, 2008],
+    ["CFG_Y_R255", None, None, 2009],
+
+    ["CFG_LV_G255", None, None, 2010],
+    ["CFG_X_G255", None, None, 2011],
+    ["CFG_Y_G255", None, None, 2012],
+
+    ["CFG_LV_B255", None, None, 2013],
+    ["CFG_X_B255", None, None, 2014],
+    ["CFG_Y_B255", None, None, 2015],
+
+    ["DATA_CHECK_STATUS", True, True, 5000],
+    ["CHECK_POST_WRITE_COUNTS", 0, 7, 5001],
 ]
 
 global STATION_LIMITS
