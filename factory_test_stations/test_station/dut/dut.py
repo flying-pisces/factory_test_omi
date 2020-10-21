@@ -14,6 +14,7 @@ import win32event
 import pywintypes
 import cv as cv2
 import pprint
+import math
 import hardware_station_common.test_station.dut
 
 
@@ -41,7 +42,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         self._start_delimiter = "$"
         self._end_delimiter = '\r\n'
         self._spliter = ','
-        self._nvm_data_len = 28
+        self._nvm_data_len = 45
         self._renderImgTool = os.path.join(os.getcwd(), r'CambriaTools\exe\CambriaTools.exe')
 
     def initialize(self):
@@ -188,7 +189,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                 print('Reboot system successfully . Elapse time {0:4f} s.'.format((dt - sw).total_seconds()))
             break
 
-    def nvm_write_status(self):
+    def nvm_read_statistics(self):
         self._write_serial_cmd(self._station_config.COMMAND_NVM_WRITE_CNT)
         resp = self._read_response()
         recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_WRITE_CNT, resp)
@@ -202,20 +203,15 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         @type data_array: bytes
         @return: [errcode, data_len]
         """
-        if isinstance(data_array, bytes):
-            tmp_data = data_array.decode()
-            cmd = '{0},{1},{2}'.format(self._station_config.COMMAND_NVM_WRITE, len(tmp_data), ','.join(tmp_data))
-        elif isinstance(data_array, str):
-            cmd = '{0}, {1}, {2}'.format(self._station_config.COMMAND_NVM_WRITE, len(data_array), ','.join(data_array))
-
+        cmd = '{0}, {1}, {2}'.format(self._station_config.COMMAND_NVM_WRITE, len(data_array), ','.join(data_array))
         self._write_serial_cmd(cmd)
-        resp = self._read_response()
+        resp = self._read_response(timeout=self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
         recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_WRITE, resp)
         if int(recv_obj[0]) != 0x00:
             raise DUTError('Fail to read write count. = {0}'.format(recv_obj))
         return recv_obj
 
-    def nvm_read_data(self, data_len=28):
+    def nvm_read_data(self, data_len=45):
         """
 
         @type data_len: int
@@ -390,7 +386,6 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         self._write_serial_cmd(cmd)
         response = self._read_response()
         return self._prase_respose(cmd, response)
-
     # </editor-fold>
 
 def print_to_console(self, msg):
@@ -421,7 +416,7 @@ class projectDut(hardware_station_common.test_station.dut.DUT):
     def __getattr__(self, item):
         def not_find(*args, **kwargs):
             pass
-        if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image', 'nvm_write_status',
+        if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image', 'nvm_read_statistics',
                     'nvm_write_data', '_get_color_ext', 'render_image']:
             return not_find
 
@@ -460,6 +455,7 @@ if __name__ == "__main__" :
 
     import sys
     import types
+
     sys.path.append(r'..\..')
 
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
@@ -479,16 +475,18 @@ if __name__ == "__main__" :
                     pics.append(r'img\{}'.format(c))
 
         print('pic - count {0}'.format(len(pics)))
-
         # the_unit.render_image(pics)
 
         the_unit.initialize()
+        arr = the_unit.nvm_read_data()
+
         try:
             # the_unit.reboot()
             time.sleep(0.5)
             the_unit.screen_on()
-            pprint.pprint(the_unit.nvm_write_status())
-            pprint.pprint(the_unit.nvm_read_data())
+            pprint.pprint(the_unit.nvm_read_statistics())
+            raw_data = the_unit.nvm_read_data()
+            r = raw_data[0]
 
             for c in [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255)]:
                 the_unit.display_color(c)

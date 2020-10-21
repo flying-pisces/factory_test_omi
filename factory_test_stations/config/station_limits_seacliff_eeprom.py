@@ -1,12 +1,9 @@
 CURRENT_FW_VERSION = 1001
 
 STATION_LIMITS_ARRAYS = [
-    ["TEST ITEM", 1, 5, 10],
-    ["Verify Firmware Load", CURRENT_FW_VERSION, CURRENT_FW_VERSION, 11],
-
     ["JUDGED_BY_CAM", True, True, 800],
 
-    ["CURRENT_WRITE_COUNTS", 0, 7, 1000],
+    ["PRE_WRITE_COUNTS", 0, 7, 1000],
 
     # all the setting should be changed in this fixture.
     ["CURRENT_BAK_BORESIGHT_X", None, None, 1001],
@@ -47,8 +44,8 @@ STATION_LIMITS_ARRAYS = [
     ["CFG_X_B255", None, None, 2014],
     ["CFG_Y_B255", None, None, 2015],
 
-    ["DATA_CHECK_STATUS", True, True, 5000],
-    ["CHECK_POST_WRITE_COUNTS", 0, 7, 5001],
+    ["POST_WRITE_COUNTS", 0, 7, 5001],
+    ["WRITE_COUNTS_CHECK", True, True, 5002],
 ]
 
 global STATION_LIMITS
