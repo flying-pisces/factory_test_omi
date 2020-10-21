@@ -191,7 +191,10 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
     def nvm_write_status(self):
         self._write_serial_cmd(self._station_config.COMMAND_NVM_WRITE_CNT)
         resp = self._read_response()
-        return self._prase_respose(self._station_config.COMMAND_NVM_WRITE_CNT, resp)
+        recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_WRITE_CNT, resp)
+        if int(recv_obj[0]) != 0x00:
+            raise DUTError('Fail to read write count. = {0}'.format(recv_obj))
+        return recv_obj
 
     def nvm_write_data(self, data_array):
         """
@@ -201,24 +204,30 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         """
         if isinstance(data_array, bytes):
             tmp_data = data_array.decode()
-            cmd = '{0},{1},{2}'.format(self._station_config.COMMAND_NVM_WRITE, len(tmp_data),  ','.join(tmp_data))
+            cmd = '{0},{1},{2}'.format(self._station_config.COMMAND_NVM_WRITE, len(tmp_data), ','.join(tmp_data))
         elif isinstance(data_array, str):
-            cmd = '{0}, {1}, {2}'.format(self._station_config.COMMAND_NVM_WRITE, len(data_array),  ','.join(data_array))
+            cmd = '{0}, {1}, {2}'.format(self._station_config.COMMAND_NVM_WRITE, len(data_array), ','.join(data_array))
 
-        self._write_serial_cmd(cmd.encode('utf-8'))
+        self._write_serial_cmd(cmd)
         resp = self._read_response()
-        return self._prase_respose(self._station_config.COMMAND_NVM_WRITE, resp)
+        recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_WRITE, resp)
+        if int(recv_obj[0]) != 0x00:
+            raise DUTError('Fail to read write count. = {0}'.format(recv_obj))
+        return recv_obj
 
-    def nvm_read_data(self, data_len):
+    def nvm_read_data(self, data_len=28):
         """
 
         @type data_len: int
         @return: [errcode, len, data...]
         """
         cmd = '{0},{1}'.format(self._station_config.COMMAND_NVM_READ, data_len)
-        self._write_serial_cmd(cmd.encode('utf-8'))
+        self._write_serial_cmd(cmd)
         resp = self._read_response()
-        return self._prase_respose(self._station_config.COMMAND_NVM_READ, resp)
+        recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_READ, resp)
+        if int(recv_obj[0]) != 0x00:
+            raise DUTError('Fail to read write count. = {0}'.format(recv_obj))
+        return recv_obj
 
     def _timeout_execute(self, cmd, timeout=0):
         if timeout == 0:
@@ -422,7 +431,7 @@ if __name__ == "__main__" :
         pass
 
     station_config = cfgstub()
-    station_config.DUT_COMPORT = "COM5"
+    station_config.DUT_COMPORT = "COM14"
     station_config.DUT_DISPLAYSLEEPTIME = 0.1
     station_config.DUT_RENDER_ONE_IMAGE_TIMEOUT = 0
     station_config.COMMAND_DISP_HELP = "$c.help"
@@ -471,13 +480,16 @@ if __name__ == "__main__" :
 
         print('pic - count {0}'.format(len(pics)))
 
-        the_unit.render_image(pics)
+        # the_unit.render_image(pics)
 
         the_unit.initialize()
         try:
             # the_unit.reboot()
             time.sleep(0.5)
             the_unit.screen_on()
+            pprint.pprint(the_unit.nvm_write_status())
+            pprint.pprint(the_unit.nvm_read_data())
+
             for c in [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255)]:
                 the_unit.display_color(c)
                 time.sleep(0.1)
