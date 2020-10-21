@@ -23,7 +23,7 @@ PROXY_ENDPOINT = 8000
 FIXTURE_COMPORT = "COM4" #
 FIXTURE_PARTICLE_COMPORT = "COM8" #
 FIXTURE_PARTICLE_ADDR = 1
-DUT_COMPORT = "COM5" #
+DUT_COMPORT = "COM14"  #
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu', 'hw', 'fpga']
@@ -51,6 +51,10 @@ COMMAND_DISP_RESET_DLY = 1
 COMMAND_DISP_SHOWIMG_DLY = 0.5
 COMMAND_DISP_POWEROFF_DLY = 0.2
 
+DUT_DISPLAYSLEEPTIME = 0.5
+DUT_NVRAM_WRITE_TIMEOUT = 60000
+NVM_WRITE_PROTECT = True
+
 DISP_CHECKER_ENABLE = False
 
 # blue
@@ -73,21 +77,25 @@ NVM_WRITE_COUNT_MAX = 6
 # calibration required data.
 
 CALIB_REQ_DATA = {
-    'display_boresight_x': 0.20,
-    'display_boresight_y': -0.25,
-    'rotation': 0,
-    'lv_W255': 0,
-    'x_W255': 0,
-    'y_W255': 0,
-    'lv_R255': 0,
-    'lv_G255': 0,
-    'lv_B255': 0,
-    'x_R255': 0,
-    'y_R255': 0,
-    'x_G255': 0,
-    'y_G255': 0,
-    'x_B255': 0,
-    'y_B255': 0,
+    'display_boresight_x': 100.20,
+    'display_boresight_y': -120.25,
+    'rotation': -0.8,
+
+    'lv_W255': 80,
+    'x_W255': 0.3001,
+    'y_W255': 0.3002,
+
+    'lv_R255': 100,
+    'x_R255': 0.654,
+    'y_R255': 0.321,
+
+    'lv_G255': 30,
+    'x_G255': 0.3001,
+    'y_G255': 0.6002,
+
+    'lv_B255': 50,
+    'x_B255': 0.1402,
+    'y_B255': 0.0405,
 }
 
 ##################################
@@ -106,6 +114,7 @@ USE_WORKORDER_ENTRY = True
 # (e.g. "DMM" vs "USB0::2391::1543::MY47007422::0::INSTR")
 ######## To be config per station type 
 IS_VERBOSE = False
+IS_PRINT_TO_LOG = True
 
 #####
 ### Facebook_IT Enable boolean
@@ -113,6 +122,6 @@ FACEBOOK_IT_ENABLED = False
 
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
-DUT_SIM = True
+DUT_SIM = False
 EQUIPMENT_SIM = True
 FIXTURE_SIM = True
