@@ -1,10 +1,9 @@
 import hardware_station_common.test_station.test_equipment
 
-
-class pancakeeepromEquipment(hardware_station_common.test_station.test_equipment.TestEquipment):
+class seacliffeepromEquipment(hardware_station_common.test_station.test_equipment.TestEquipment):
     """
-        class for pancake eeprom Equipment
-            this is for doing all the specific things necessary to interface with equipment
+        class for seacliff eeprom equipment
+            this is for doing all the specific things necessary to interface with instruments
     """
     def __init__(self, station_config, operator_interface):
         hardware_station_common.test_station.test_equipment.TestEquipment.__init__(self, station_config, operator_interface)
@@ -13,7 +12,9 @@ class pancakeeepromEquipment(hardware_station_common.test_station.test_equipment
         pass
 
     def initialize(self):
-        self._operator_interface.print_to_console("Initializing pancake eeprom Equipment\n")
+        self._operator_interface.print_to_console("Initializing seacliff eeprom equipment\n")
 
     def close(self):
-        self._operator_interface.print_to_console("Closing pancake eeprom Equipment\n")
+        self._operator_interface.print_to_console("Closing seacliff eeprom equipment\n")
+
+
