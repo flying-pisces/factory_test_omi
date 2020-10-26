@@ -14,6 +14,7 @@ from test_station.test_equipment.test_equipment_pancake_offaxis import pancakeof
 from test_station.dut.dut import projectDut, DUTError
 import types
 import glob
+import sys
 
 
 class pancakeoffaxisError(Exception):
@@ -34,11 +35,23 @@ class pancakeoffaxisStation(test_station.TestStation):
     """
         pancakeoffaxis Station
     """
+    def write(self, msg):
+        """
+        @type msg: str
+        @return:
+        """
+        if msg.endswith('\n'):
+            msg += os.linesep
+        self._operator_interface.print_to_console(msg)
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '2.0.2'
+        self._sw_version = '2.0.3b'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
+        if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
+            sys.stdout = self
+            sys.stderr = self
+            sys.stdin = None
         self._fixture = projectstationFixture(station_config, operator_interface)
         if not station_config.FIXTURE_SIM:
             self._fixture = pancakeoffaxisFixture(station_config, operator_interface)  # type: pancakeoffaxisFixture
@@ -404,6 +417,9 @@ class pancakeoffaxisStation(test_station.TestStation):
                 duv_dic = {}
                 u_values = None
                 u_values = None
+
+                if self._station_config.DATA_COLLECT_ONLY:
+                    continue
 
                 # region extract raw data
 

@@ -17,10 +17,10 @@ SERIAL_NUMBER_MODEL_NUMBER = r'^\dPRP[\w|\d]{10}$'  # Peak panel SN
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM3" #
-FIXTURE_PARTICLE_COMPORT = "COM1" #
+FIXTURE_COMPORT = "COM2" #
+FIXTURE_PARTICLE_COMPORT = "COM2" #
 FIXTURE_PARTICLE_ADDR = 1
-DUT_COMPORT = "COM14" #
+DUT_COMPORT = "COM1" #
 
 DUT_LITUP_OUTSIDE = True
 TIMEOUT_FOR_BTN_IDLE = 10
@@ -145,6 +145,7 @@ DUT_DISPLAYSLEEPTIME = 1
 ##################################
 # Test Equipment related parameters
 IS_VERBOSE = True
+IS_PRINT_TO_LOG = False
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqxc'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
@@ -205,10 +206,11 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
+DATA_COLLECT_ONLY = True
 EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis_2'
 
 DUT_SIM = True
 CAMERA_SN = "Demo"
 EQUIPMENT_SIM = True
-FIXTURE_SIM = False
+FIXTURE_SIM = True
 
