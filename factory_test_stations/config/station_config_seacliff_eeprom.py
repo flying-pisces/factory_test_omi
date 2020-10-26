@@ -52,10 +52,25 @@ COMMAND_DISP_SHOWIMG_DLY = 0.5
 COMMAND_DISP_POWEROFF_DLY = 0.2
 
 DUT_DISPLAYSLEEPTIME = 0.5
-DUT_NVRAM_WRITE_TIMEOUT = 60000
+DUT_NVRAM_WRITE_TIMEOUT = 10
 NVM_WRITE_PROTECT = True
 
 DISP_CHECKER_ENABLE = False
+
+CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\config\MER-132-43U3C(FQ0200080140).txt'
+CAMERA_VERIFY_ENABLE = True
+CAMERA_EXPOSURE = 80000
+CAMERA_GAIN = 1
+
+CAMERA_CHECK_ROI = (100, 100, 500, 500)  # resolution: 1292 * 964
+CAMERA_CHECK_CFG = [
+    {
+        'pattern': (255, 0, 0),
+        'chk_lsl': [0, 43, 46],
+        'chk_usl': [10, 255, 255],
+        'determine':[50, 100],
+    }
+]
 
 # blue
 # https://blog.csdn.net/a2009374138/article/details/52174856

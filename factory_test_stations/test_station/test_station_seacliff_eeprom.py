@@ -1,5 +1,6 @@
 import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_seacliff_eeprom as test_fixture
+import test_station.test_equipment.test_equipment_seacliff_eeprom as test_equipment
 import test_station.dut.dut as dut
 import pprint
 import types
@@ -46,6 +47,7 @@ class seacliffeepromStation(test_station.TestStation):
             sys.stderr = self
             sys.stdin = None
         self._fixture = test_fixture.seacliffeepromFixture(station_config, operator_interface)
+        self._equip = test_equipment.seacliffeepromEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
 
@@ -54,6 +56,7 @@ class seacliffeepromStation(test_station.TestStation):
         try:
             self._operator_interface.print_to_console("Initializing pancake EEPROM station...\n")
             self._fixture.initialize()
+            self._equip.initialize()
         except:
             raise
 
@@ -173,7 +176,25 @@ class seacliffeepromStation(test_station.TestStation):
             if 0 <= write_count < self._station_config.NVM_WRITE_COUNT_MAX:
                 # TODO: capture the image to determine the status of DUT.
                 self._operator_interface.print_to_console('image capture and verification ...\n')
-                test_log.set_measured_value_by_name_ex('JUDGED_BY_CAM', True)
+                judge_by_camera = False
+                for check_cfg, idx in enumerate(self._station_config.CAMERA_CHECK_CFG):
+                    pattern = check_cfg.get('pattern')
+                    chk_lsl = check_cfg.get('chk_lsl')
+                    chk_usl = check_cfg.get('chk_usl')
+                    determine = check_cfg.get('determine')
+                    self._operator_interface.print_to_console('check image with {0} ...\n'.format(pattern))
+                    the_unit.display_color(pattern)
+                    percent = self._fixture.CheckImage(chk_lsl, chk_usl)
+                    self._operator_interface.print_to_console(
+                        'check result with pattern: {0}:{1} ...{2}\n'.format(pattern, determine, percent))
+                    if determine[0] <= percent <= determine[1]:
+                        judge_by_camera = True
+                    else:
+                        judge_by_camera = False
+                    if not judge_by_camera:
+                        break
+
+                test_log.set_measured_value_by_name_ex('JUDGED_BY_CAM', judge_by_camera)
 
                 self._operator_interface.print_to_console('read all data from eeprom ...\n')
 
@@ -281,7 +302,7 @@ class seacliffeepromStation(test_station.TestStation):
 
                 test_log.set_measured_value_by_name_ex(
                     'WRITE_COUNTS_CHECK',
-                    self._station_config.NVM_WRITE_PROTECT | post_write_count == (write_count + 1))
+                    self._station_config.NVM_WRITE_PROTECT | (post_write_count == (write_count + 1)))
 
             the_unit.close()
         except seacliffeepromError:
