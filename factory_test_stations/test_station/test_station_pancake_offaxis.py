@@ -412,8 +412,6 @@ class pancakeoffaxisStation(test_station.TestStation):
                 cx_dic = {}
                 cy_dic = {}
                 center_dic = {}
-                u_dic = {}
-                v_dic = {}
                 duv_dic = {}
                 u_values = None
                 u_values = None
@@ -429,10 +427,10 @@ class pancakeoffaxisStation(test_station.TestStation):
                     for ra in result:
                         r = re.sub(' ', '', ra)
                         raw_test_item = (pattern + "_" + r)
-                        test_item = re.sub(r'\((Lv|Luminance)\)', '_Lv', raw_test_item)
+                        test_item = re.sub(r'\((Lv|Luminance|LuminousIntensity)\)', '_Lv', raw_test_item)
                         test_item = re.sub(r'\s|%', '', test_item)
 
-                        lv_match = re.search(r'(P_[0-9.]+\d*_[0-9.]+\d*)\((lv|Luminance)\)', r, re.I | re.S)
+                        lv_match = re.search(r'(P_[0-9.]+\d*_[0-9.]+\d*)\((lv|Luminance|LuminousIntensity)\)', r, re.I | re.S)
                         if lv_match:
                             lv_dic[lv_match.groups()[0]] = float(result[ra])
                         cx_match = re.search(r'(P_[0-9.]+\d*_[0-9.]+\d*)\(cx\)', r, re.I|re.S)
@@ -458,21 +456,20 @@ class pancakeoffaxisStation(test_station.TestStation):
                     keys = lv_dic.keys()
                     us = []
                     vs = []
-                    us_dic = {}
-                    vs_dic = {}
-                    for key in keys:
-                        cx = cx_dic[key]
-                        cy = cy_dic[key]
-                        u = 4 * cx / (-2 * cx + 12 * cy + 3)
-                        v = 9 * cy / (-2 * cx + 12 * cy + 3)
-                        us.append(u)
-                        vs.append(v)
-                    us_dic = dict(zip(keys, us))
-                    vs_dic = dict(zip(keys, vs))
-                    us0 = us_dic[center_item]
-                    vs0 = vs_dic[center_item]
-                    duvs = np.sqrt((np.array(us) - us0)**2 + (np.array(vs) - vs0)**2)
-                    duv_dic = dict(zip(keys, duvs))
+                    if len(keys) == len(cx_dic) == len(cy_dic):
+                        for key in keys:
+                            cx = cx_dic[key]
+                            cy = cy_dic[key]
+                            u = 4 * cx / (-2 * cx + 12 * cy + 3)
+                            v = 9 * cy / (-2 * cx + 12 * cy + 3)
+                            us.append(u)
+                            vs.append(v)
+                        us_dic = dict(zip(keys, us))
+                        vs_dic = dict(zip(keys, vs))
+                        us0 = us_dic[center_item]
+                        vs0 = vs_dic[center_item]
+                        duvs = np.sqrt((np.array(us) - us0)**2 + (np.array(vs) - vs0)**2)
+                        duv_dic = dict(zip(keys, duvs))
 
                 # endregion
 
@@ -481,14 +478,18 @@ class pancakeoffaxisStation(test_station.TestStation):
                 # Brightness at 30deg polar angle (nits)
                 brightness_items = []
                 for item in self._station_config.BRIGHTNESS_AT_POLE_AZI:
-                    tlv = lv_dic['P_%s_%s' % item]
+                    tlv = lv_dic.get('P_%s_%s' % item)
+                    if tlv is None:
+                        continue
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, tlv)
 
                 for p0, p180 in self._station_config.BRIGHTNESS_AT_POLE_ASSEM:
-                    lv_x_0 = lv_dic['P_%s_%s' % p0]
-                    lv_x_180 = lv_dic['P_%s_%s' % p180]
+                    lv_x_0 = lv_dic.get('P_%s_%s' % p0)
+                    lv_x_180 = lv_dic.get('P_%s_%s' % p180)
+                    if lv_x_0 is None or lv_x_180 is None:
+                        continue
                     lv_0_0 = lv_dic[center_item]
                     assem = (lv_x_0 - lv_x_180)/lv_0_0
                     test_item = '{}_{}_ASYM_{}_{}_{}_{}'.format(posIdx, pattern, *(p0+p180))
@@ -497,13 +498,18 @@ class pancakeoffaxisStation(test_station.TestStation):
                 # Brightness % @30deg wrt on axis brightness
                 brightness_items = []
                 for item in self._station_config.BRIGHTNESS_AT_POLE_AZI_PER:
-                    tlv = lv_dic['P_%s_%s' % item] / lv_dic[center_item]
+                    tlv = lv_dic.get('P_%s_%s' % item)
+                    if tlv is None:
+                        continue
+                    tlv = tlv / lv_dic[center_item]
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_Proportion_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, tlv)
 
                 for item in self._station_config.COLORSHIFT_AT_POLE_AZI:
-                    duv = duv_dic['P_%s_%s' % item]
+                    duv = duv_dic.get('P_%s_%s' % item)
+                    if duv is None:
+                        continue
                     test_item = '{}_{}_duv_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, duv)
 

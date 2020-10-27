@@ -206,7 +206,7 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-DATA_COLLECT_ONLY = True
+DATA_COLLECT_ONLY = False
 EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis_2'
 
 DUT_SIM = True
