@@ -35,8 +35,10 @@ class pancakemuniEquipmentError(Exception):
 class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.TestEquipment):
     _serial_port: serial.Serial
 
-    def __init__(self, station_config):
+    def __init__(self, station_config, operator_interface):
         self.name = "y29"
+        hardware_station_common.test_station.test_equipment.TestEquipment.__init__(self, station_config,
+                                                                                   operator_interface)
         self._verbose = station_config.IS_VERBOSE
         self._device = MPK_API()
         self._station_config = station_config
@@ -45,7 +47,6 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
         self._version = None
         self._serial_port = None
         self._busy_ca = False
-        self._port_ca = station_config.CA_PORT
         self._end_delimiter_ca = '\r\n'
 
     ########### NEW SETUP FUNCTIONS ###########
@@ -121,7 +122,7 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
         self._serial_port = None
         self._busy_ca = False
         try:
-            self._serial_port = serial.Serial(self._fixture_port,
+            self._serial_port = serial.Serial(self._station_config.CA_PORT,
                                               38400,
                                               parity='E',
                                               bytesize=7,
@@ -138,12 +139,15 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
         if self._verbose:
             print(init_result)
         if not self._serial_port:
-            print('Unable to connect to {0} for CA-310'.format(self._port_ca))
+            self._operator_interface.print_to_console('Unable to connect to {0} for CA-310\n'
+                                                      .format(self._station_config.CA_PORT))
             time.sleep(.2)
+            raise pancakemuniEquipmentError('Unable to open particle counter port: %s'
+                                                   % self._station_config.CA_PORT)
         return init_result
 
     def close(self):
-        self._busy_ca = True
+        self._busy_ca = False
         if self._serial_port:
             self._serial_port.close()
         self._device.CloseCommunication()
@@ -216,11 +220,12 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
 
     def _write_serial(self, input_bytes):
         bytes_written = None
-        while self._busy:
+        while self._busy_ca:
             time.sleep(.1)
-        print('writing to ca: {0}'.format(input_bytes))
+        if self._verbose:
+            print('writing to ca: {0}'.format(input_bytes))
         if self._serial_port:
-            self._busy = True
+            self._busy_ca = True
             try:
                 self._serial_port.flush()
                 bytes_written = self._serial_port.write(input_bytes.encode())
@@ -231,19 +236,22 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
     def _read_response(self, timeout=5):
         response = ""
         cmd = None
+        data = None
         try:
             if self._serial_port:
                 tim = time.time()
-                while (re.search(self._end_delimiter_ca, response, re.IGNORECASE)
-                       and time.time() - tim < timeout):
+                while (not re.search(self._end_delimiter_ca, response, re.IGNORECASE)
+                       and (time.time() - tim) < timeout):
                     line_in = self._serial_port.readline()
                     if line_in != b'':
                         response += line_in.decode()
                 # this used to throw assertion errors, now it logs them
             if response is "":
-                print("Instrument returned no data, check instrument is connected and in remote mode")
+                self._operator_interface.print_to_console(
+                    "Instrument returned no data, check instrument is connected and in remote mode\n")
             elif response[0:2] == "ER":
-                print("Instrument returned error, maybe instrument is not in remote mode: {}".format(response))
+                self._operator_interface.print_to_console(
+                    "Instrument returned error, maybe instrument is not in remote mode: {0}\n".format(response))
             else:
                 parsed = response.split()
                 data = None
@@ -251,15 +259,14 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
                 if len(parsed) > 1:
                     data = parsed[1].split(";")
                     cmd = parsed[0].split(",")
-            self._busy = False
+            self._busy_ca = False
         except:
-            self._busy = False
+            self._busy_ca = False
         return cmd, data
 
         ######################
         # info
         ######################
-
     def info(self):
         self._write_serial(COMMAND_IDO)
         response = self._read_response()
@@ -268,7 +275,6 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
         ######################
         # Configuration
         ######################
-
     def zero_cal(self):
         self._write_serial(COMMAND_ZRC)
         time.sleep(1)
@@ -278,23 +284,29 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
         ######################
         # Measurement
         ######################
-
     def measure_XYZ(self):
         self._write_serial(COMMAND_XYZ)
         cmd, data = self._read_response()
         return data
 
     def measure_xyLv(self):
-        X, Y, Z = self.measureXYZ()
-        xp = X / (X + Y + Z)
-        yp = Y / (X + Y + Z)
-        Lv = Y
-        return xp, yp, Lv
+        data = self.measure_XYZ()
+        if isinstance(data, list) and len(data) == 0x03:
+            X, Y, Z = [float(c) for c in data]
+            xp = X / (X + Y + Z)
+            yp = Y / (X + Y + Z)
+            Lv = Y
+            return xp, yp, Lv
     # </editor-fold>
+
+
+def print_to_console(self, msg):
+    pass
 
 
 if __name__ == "__main__":
     import sys
+    import types
 
     sys.path.append(r'..\..')
     import station_config
@@ -305,15 +317,25 @@ if __name__ == "__main__":
     databasePath = r'G:\oculus_sunny_t3\pixel\1PR000000Q9265_pancake_pixel-01_20191217-161952.ttxm'
     sequencePath = r"C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\Y29 particle Defect.seqxc"
 
-    station_config.load_station('pancake_pixel')
+    station_config.load_station('seacliff_paneltesting')
+    station_config.print_to_console = types.MethodType(print_to_console, station_config)
     station_config.CAMERA_SN = "Demo"
-    the_instrument = pancakemuniEquipment(station_config)
+    the_instrument = pancakemuniEquipment(station_config, station_config)
 
     ver = the_instrument.version()
     pprint.pprint(ver)
 
     pprint.pprint("ready before init :{}".format(the_instrument.ready()))
     isinit = the_instrument.initialize()
+    a = the_instrument.info()
+    the_instrument.zero_cal()
+
+    pprint.pprint(a)
+    for c in range(1, 100):
+        print('index {0}'.format(c))
+        b = the_instrument.measure_xyLv()
+        pprint.pprint(b)
+
     pprint.pprint("ready after init :{}".format(the_instrument.ready()))
     # print  "PrepareForRun after init:{}" .format(the_instrument.prepare_for_run())
 

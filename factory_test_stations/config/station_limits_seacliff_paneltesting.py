@@ -1,7 +1,8 @@
 CURRENT_FW_VERSION = 1001
 
 STATION_LIMITS_ARRAYS = [
-    ["SW_VERSION", None, None, 95],
+    ["SW_VERSION", None, None, 94],
+    ["FW_VERSION_FIXTURE", None, None, 95],
     ["MPK_API_Version", 'MPK_API_CS-1.0.13.0', 'MPK_API_CS-1.0.13.0', 96],
     ["DUT_ScreenOnRetries", 0, 5, 97],
     ["DUT_ScreenOnStatus", True, True, 98],
@@ -93,6 +94,78 @@ STATION_LIMITS_ARRAYS = [
     # ["B255_NumBrightBlobs", None, None, 144],
     # ["B255_NumDefects", None, None, 145],
     # ["B255_BlemishIndex", None, None, 146],
+
+    ['W255_P1_Lv', 400, 600, 41000],
+    ['W255_P2_Lv', None, None, 41001],
+    ['W255_P3_Lv', None, None, 41002],
+    ['W255_P4_Lv', None, None, 41003],
+    ['W255_P5_Lv', None, None, 41004],
+    ['W255_P6_Lv', None, None, 41005],
+    ['W255_P7_Lv', None, None, 41006],
+    ['W255_P8_Lv', None, None, 41007],
+    ['W255_P9_Lv', None, None, 41008],
+    ['W255_Lv_max_variation', 0, 0.20, 41009],
+
+    ['W255_P1_duv', -1E+12, 0.01, 41010],
+    ['W255_P2_duv', -1E+12, 0.01, 41011],
+    ['W255_P3_duv', -1E+12, 0.01, 41012],
+    ['W255_P4_duv', -1E+12, 0.01, 41013],
+    ['W255_P5_duv', -1E+12, 0.01, 41014],
+    ['W255_P6_duv', -1E+12, 0.01, 41015],
+    ['W255_P7_duv', -1E+12, 0.01, 41016],
+    ['W255_P8_duv', -1E+12, 0.01, 41017],
+    ['W255_P9_duv', -1E+12, 0.01, 41018],
+    ['W255_duv_max', 0, 0.01, 41019],
+
+    ['W255_P1_P2_duv', None, None, 41020],
+    ['W255_P1_P3_duv', None, None, 41021],
+    ['W255_P1_P4_duv', None, None, 41022],
+    ['W255_P1_P5_duv', None, None, 41023],
+    ['W255_P1_P6_duv', None, None, 41024],
+    ['W255_P1_P7_duv', None, None, 41025],
+    ['W255_P1_P8_duv', None, None, 41026],
+    ['W255_P1_P9_duv', None, None, 41027],
+    ['W255_P1_neighbor_duv_max', -1E+12, 0.05, 41028],
+
+    ['W255_P2_P3_duv', None, None, 41029],
+    ['W255_P2_P1_duv', None, None, 41030],
+    ['W255_P2_P9_duv', None, None, 41031],
+    ['W255_P2_neighbor_duv_max', -1E+12, 0.05, 41032],
+
+    ['W255_P3_P2_duv', None, None, 41033],
+    ['W255_P3_P1_duv', None, None, 41034],
+    ['W255_P3_P4_duv', None, None, 41035],
+    ['W255_P3_neighbor_duv_max', -1E+12, 0.05, 41036],
+
+    ['W255_P4_P3_duv', None, None, 41037],
+    ['W255_P4_P1_duv', None, None, 41038],
+    ['W255_P4_P5_duv', None, None, 41039],
+    ['W255_P4_neighbor_duv_max', -1E+12, 0.05, 41040],
+
+    ['W255_P5_P4_duv', None, None, 41041],
+    ['W255_P5_P1_duv', None, None, 41042],
+    ['W255_P5_P6_duv', None, None, 41043],
+    ['W255_P5_neighbor_duv_max', -1E+12, 0.05, 41044],
+
+    ['W255_P6_P5_duv', None, None, 41045],
+    ['W255_P6_P1_duv', None, None, 41046],
+    ['W255_P6_P7_duv', None, None, 41047],
+    ['W255_P6_neighbor_duv_max', -1E+12, 0.05, 41048],
+
+    ['W255_P7_P6_duv', None, None, 41049],
+    ['W255_P7_P1_duv', None, None, 41050],
+    ['W255_P7_P8_duv', None, None, 41051],
+    ['W255_P7_neighbor_duv_max', -1E+12, 0.05, 41052],
+
+    ['W255_P8_P7_duv', None, None, 41053],
+    ['W255_P8_P1_duv', None, None, 41054],
+    ['W255_P8_P9_duv', None, None, 41055],
+    ['W255_P8_neighbor_duv_max', -1E+12, 0.05, 41056],
+
+    ['W255_P9_P8_duv', None, None, 41057],
+    ['W255_P9_P1_duv', None, None, 41058],
+    ['W255_P9_P2_duv', None, None, 41059],
+    ['W255_P9_neighbor_duv_max', -1E+12, 0.05, 41060],
 ]
 
 global STATION_LIMITS

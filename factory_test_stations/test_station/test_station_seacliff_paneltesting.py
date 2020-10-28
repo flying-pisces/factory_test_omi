@@ -47,7 +47,8 @@ class pancakemuniStation(test_station.TestStation):
         self._fixture = test_fixture_paneltesting.seacliffpaneltestingFixture(station_config, operator_interface)
         if station_config.FIXTURE_SIM:
             self._fixture = projectstationFixture(station_config, operator_interface)
-        self._equipment = test_equipment.pancakemuniEquipment(station_config)
+            pass
+        self._equipment = test_equipment.pancakemuniEquipment(station_config, operator_interface)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
             if self._fixture.particle_counter_state() == 0:
                 self._fixture.particle_counter_on()
@@ -66,21 +67,101 @@ class pancakemuniStation(test_station.TestStation):
         @type msg: str
         @return:
         """
-        if msg.endswith('\n'):
-            msg += os.linesep
-        self._operator_interface.print_to_console(msg)
+        if msg is not None:
+            if msg.endswith('\n') or msg.endswith('\r\n') or msg.endswith('\r'):
+                pass
+            else:
+                msg += os.linesep
+            self._operator_interface.print_to_console(msg)
+
+    def auto_find_com_ports(self):
+        import serial.tools.list_ports
+        import serial
+        from pymodbus.client.sync import ModbusSerialClient
+        from pymodbus.register_read_message import ReadHoldingRegistersResponse
+
+        self._operator_interface.print_to_console("auto config com ports...\n")
+        self._station_config.DUT_COMPORT = None
+        self._station_config.CA_PORT = None
+        self._station_config.FIXTURE_COMPORT = None
+        self._station_config.FIXTURE_PARTICLE_COMPORT = None
+
+        com_ports = list(serial.tools.list_ports.comports())
+        ports = [c for c in com_ports if self._station_config.DUT_PORT_DESC in c.description]
+        if len(ports) == 1:
+            self._station_config.DUT_COMPORT = ports[0].device
+            com_ports.remove(ports[0])
+        ports = [c for c in com_ports if self._station_config.CA_PORT_DESC in c.description]
+        if len(ports) == 1:
+            self._station_config.CA_PORT = ports[0].device
+            com_ports.remove(ports[0])
+
+        for com in com_ports:
+            hit_success = False
+            if self._station_config.FIXTURE_PARTICLE_COUNTER:
+                try:
+                    modbus_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8,
+                                                       parity='N', stopbits=1,
+                                                       port=com.device, timeout=2000)
+                    if modbus_client is not None:
+                        retries = 1
+                        while retries < 10:
+                            rs = modbus_client.read_holding_registers(com.device, 2,
+                                                                      unit=self._station_config.FIXTURE_PARTICLE_ADDR)
+                            # type: ReadHoldingRegistersResponse
+                            if rs is None or rs.isError():
+                                retries = retries + 1
+                                time.sleep(0.5)
+                                continue
+                            val = rs.registers[0]
+                            self._station_config.FIXTURE_PARTICLE_COMPORT = com.device
+                            hit_success = True
+                except Exception as e:
+                    pass
+                finally:
+                    modbus_client.close()
+
+            if hit_success:
+                continue
+
+            try:
+                a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1,
+                                         timeout=1, xonxoff=0, rtscts=0)
+                if a_serial is not None:
+                    a_serial.flush()
+                    a_serial.write('CMD_ID\r\n'.encode())
+                    msg = a_serial.readline()
+                    if 'ID' in msg.decode(encoding='utf-8'):
+                        self._station_config.FIXTURE_COMPORT = com.device
+            except Exception as e:
+                pass
+            finally:
+                a_serial.close()
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
-        self._fixture.initialize()
+        try:
+            if self._station_config.AUTO_CFG_COMPORTS:
+                self.auto_find_com_ports()
 
-        if self._station_config.FIXTURE_PARTICLE_COUNTER and hasattr(self, '_particle_counter_start_time'):
-            while ((datetime.datetime.now() - self._particle_counter_start_time)
-                   < datetime.timedelta(self._station_config.FIXTRUE_PARTICLE_START_DLY)):
-                time.sleep(0.1)
-                self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
-        self._equipment.initialize()
-        pass
+            msg = "find ports FIXTURE = {0}, CA = {1}, DUT = {2}, PARTICLE COUNTER = {3}. \n"\
+                .format(self._station_config.FIXTURE_COMPORT, self._station_config.CA_PORT,
+                        self._station_config.DUT_COMPORT, self._station_config.FIXTURE_PARTICLE_COMPORT)
+            self._operator_interface.print_to_console(msg)
+
+            self._fixture.initialize()
+            if self._station_config.FIXTURE_PARTICLE_COUNTER and hasattr(self, '_particle_counter_start_time'):
+                while ((datetime.datetime.now() - self._particle_counter_start_time)
+                       < datetime.timedelta(self._station_config.FIXTRUE_PARTICLE_START_DLY)):
+                    time.sleep(0.1)
+                    self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
+            self._equipment.initialize()
+
+            self._operator_interface.print_to_console("Calibrate the CA410...\n")
+            self._equipment.zero_cal()
+        except (test_fixture_paneltesting.seacliffpaneltestingFixtureError,
+                test_equipment.pancakemuniEquipmentError) as e:
+            raise test_station.TestStationError('Unable to initialized.')
 
     def close(self):
         if self._fixture is not None:
@@ -108,9 +189,10 @@ class pancakemuniStation(test_station.TestStation):
                 raise seacliffpaneltestingError("DUT Is unable to Power on.")
 
             test_log.set_measured_value_by_name_ex("MPK_API_Version", self._equipment.version())
-            self._operator_interface.print_to_console("Initialize DUT... \n")
+            firmware_version = self._fixture.version()
+            test_log.set_measured_value_by_name_ex("FW_VERSION_FIXTURE", firmware_version)
 
-            self._fixture.elminator_on()
+            self._operator_interface.print_to_console("Initialize DUT... \n")
             self._fixture.load()
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
             particle_count = 0
@@ -142,19 +224,25 @@ class pancakemuniStation(test_station.TestStation):
             self._operator_interface.print_to_console('clear registration\n')
             self._equipment.clear_registration()
 
-            self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
-            self._fixture.elminator_off()
+            # self._operator_interface.print_to_console("Move CA to safe location... \n")
+            # self._fixture.mov_abs_xy_wrt_dut(*self._station_config.CA_SAFE_LOCATION)
 
-            # self.bright_subpixel_do(self._the_unit, serial_number, test_log)
-            # self.dark_subpixel_do(self._the_unit, serial_number, test_log)
+            self._operator_interface.print_to_console("Start testing subpixel for bright... \n")
+            self.bright_subpixel_do(self._the_unit, serial_number, test_log)
+            self._operator_interface.print_to_console("Start testing subpixel for dark... \n")
+            self.dark_subpixel_do(self._the_unit, serial_number, test_log)
+            # self._operator_interface.print_to_console("Start exporting ... \n")
             # self.data_export(serial_number, test_log)
+            self._operator_interface.print_to_console("start uniformity testing ... \n")
+
+            self._fixture.mov_abs_xy_wrt_dut(0, 0)
+            self._fixture.ca_postion_z(True)
             self.uniformity_test_do(self._the_unit, serial_number, test_log)
-
-
-
+            self._operator_interface.print_to_console('calc uniformity...\n')
+            self.uniformity_test_alg(serial_number, test_log)
 
         except Exception as e:
-            self._operator_interface.print_to_console("Test exception . {}\n".format(e))
+            self._operator_interface.print_to_console("Test exception . {0}\n".format(e))
         finally:
             self._operator_interface.print_to_console('release current test resource.\n')
             # noinspection PyBroadException
@@ -164,7 +252,6 @@ class pancakemuniStation(test_station.TestStation):
                     self._the_unit = None
                 if self._fixture is not None:
                     self._fixture.unload()
-                    self._fixture.elminator_off()
             except:
                 pass
 
@@ -203,7 +290,8 @@ class pancakemuniStation(test_station.TestStation):
         timeout_for_dual = timeout_for_btn_idle
         try:
             self._the_unit.initialize()
-            self._fixture.button_enable()
+            self._fixture.start_button_status(False)
+            self._fixture.power_on_button_status(True)
             while timeout_for_dual > 0:
                 if ready or self._is_cancel_test_by_op:
                     break
@@ -214,21 +302,31 @@ class pancakemuniStation(test_station.TestStation):
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
                     ready = True
-                ready_status = self._fixture.is_ready()
+                    continue
+
+                if (hasattr(self._station_config, 'DUT_LOAD_WITHOUT_OPERATOR')
+                        and self._station_config.DUT_LOAD_WITHOUT_OPERATOR is True):
+                    self._fixture.load()
+                    ready_status = 0x00
+                else:
+                    ready_status = self._fixture.is_ready()
+
                 if ready_status is not None:
-                    if ready_status == 0x00:
+                    if ready_status == 0x00:  # dual-start button indicate to test.
+                        ready = True  # Start to test.
+                        self._is_screen_on_by_op = True
                         if not power_on_trigger:
+                            self._the_unit.screen_on()
                             self._operator_interface.print_to_console('Press L-Btn(Cancel)/R-Btn(Litup) to lit up firstly.\n')
-                        else:
-                            ready = True  # Start to test.
-                            self._is_screen_on_by_op = True
-                    elif ready_status == 0x01:
+                    elif ready_status == 0x03 or ready_status == 0x02:  # left button / power on button.
                         self._operator_interface.print_to_console('Try to litup DUT.\n')
                         self._retries_screen_on += 1
                         if not power_on_trigger:
                             self._the_unit.screen_on()
                             # self._the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
                             power_on_trigger = True
+                            self._fixture.power_on_button_status(False)
+                            self._fixture.start_button_status(True)
                             timeout_for_dual = timeout_for_btn_idle
                         else:
                             self._the_unit.screen_off()
@@ -237,18 +335,18 @@ class pancakemuniStation(test_station.TestStation):
                             # self._the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
                             power_on_trigger = True
                             timeout_for_dual = timeout_for_btn_idle
-                    elif ready_status == 0x02:
-                        self._is_cancel_test_by_op = True # Cancel test.
+                    elif ready_status == 0x01:   # right button
+                        self._is_cancel_test_by_op = True  # Cancel test.
                 time.sleep(0.1)
                 timeout_for_dual -= 1
-
 
         except Exception as e:
             self._operator_interface.print_to_console('Fixture is not ready for reason: %s.\n' % e)
         finally:
             # noinspection PyBroadException
             try:
-                self._fixture.button_disable()
+                self._fixture.power_on_button_status(False)
+                self._fixture.start_button_status(False)
                 if not ready:
                     if not self._is_cancel_test_by_op:
                         self._operator_interface.print_to_console(
@@ -396,6 +494,7 @@ class pancakemuniStation(test_station.TestStation):
                     avg = np.array(lv).mean()
                     avg_lv_register_patterns.append(avg)
                     os.remove(fn)
+                    os.removedirs(output_dir)
             else:
                 size_list = []
                 locax_list = []
@@ -669,15 +768,17 @@ class pancakemuniStation(test_station.TestStation):
             else:
                 continue
 
-            for unif_name, unif_pos in enumerate(self._station_config.TEST_POINTS_POS):
-                self._operator_interface.print_to_console('Move DUT to POS {0}'.format(unif_name))
-                self._fixture.mov_abs_xy(*unif_pos)
-                self._operator_interface.print_to_console('Read data {0}_{1}'.format(br_pattern, unif_name))
-                x, y, lv = self._equipment.measure_xyLv()
-                if (unif_name, br_pattern) in self._station_config.GAMMA_CHECK_GLS:
-                    centerlv_gls.append(lv)
-                    gls.append(float(br_pattern[1:4]))
-            self._unif_raw_data['{0}_{1}'.format(br_pattern, unif_name)] = (x, y, lv)
+            for unif_name, unif_pos in self._station_config.TEST_POINTS_POS:
+                self._operator_interface.print_to_console('Move DUT to POS {0}\n'.format(unif_name))
+                self._fixture.mov_abs_xy_wrt_dut(*unif_pos)
+                self._operator_interface.print_to_console('Read data {0}_{1}\n'.format(br_pattern, unif_name))
+                xylv = self._equipment.measure_xyLv()
+                if (xylv is not None) and (isinstance(xylv, tuple)):
+                    x, y, lv = xylv
+                    if (unif_name, br_pattern) in self._station_config.GAMMA_CHECK_GLS:
+                        centerlv_gls.append(lv)
+                        gls.append(float(br_pattern[1:4]))
+                    self._unif_raw_data['{0}_{1}'.format(br_pattern, unif_name)] = (x, y, lv)
         # gamma ...
         gamma = None
         if len(gls) > 0 and len(centerlv_gls) > 0:
@@ -698,27 +799,34 @@ class pancakemuniStation(test_station.TestStation):
             cx = []
             cy = []
 
-            for unif_name, __ in enumerate(points):
-                vals = self._unif_raw_data['{0}_{1}'.format(br_pattern, unif_name)]
+            for unif_name, __ in points:
+                vals = self._unif_raw_data.get('{0}_{1}'.format(br_pattern, unif_name))
+                if not isinstance(vals, tuple):
+                    continue
                 cx.append(vals[0])
                 cy.append(vals[1])
                 lv.append(vals[2])
+            if not (len(cx) == len(cy) == len(lv) != 0):
+                continue
 
             lv = np.array(lv)
             cx = np.array(cx)
             cy = np.array(cy)
 
-            keys = [x[0] for x in points]
+            keys = [x for x, __ in points]
 
             u = 4 * cx / (-2 * cx + 12 * cy + 3)
             v = 9 * cy / (-2 * cx + 12 * cy + 3)
-            center_pos = dict(points)[self._station_config.CENTER_POINT_POS]
+            center_pos = [c for c, __ in points].index(self._station_config.CENTER_POINT_POS)
             center_u = u[center_pos]
             center_v = v[center_pos]
 
-            lv_data = [lv[x[1]] for x in points]
-            u_data = [u[x[1]] for x in points]
-            v_data = [v[x[1]] for x in points]
+            # lv_data = [lv[x[1]] for x in points]
+            # u_data = [u[x[1]] for x in points]
+            # v_data = [v[x[1]] for x in points]
+            lv_data = lv
+            u_data = u
+            v_data = v
 
             duv_data = np.sqrt((u_data - center_u)**2 + (v_data - center_v)**2)
             lv_dic = dict(zip(keys, lv_data))
