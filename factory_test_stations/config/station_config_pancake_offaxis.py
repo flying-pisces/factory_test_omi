@@ -207,7 +207,7 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 DATA_COLLECT_ONLY = False
-EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis_2'
+EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\offaxis_2'
 
 DUT_SIM = True
 CAMERA_SN = "Demo"
