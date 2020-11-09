@@ -297,6 +297,8 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
             yp = Y / (X + Y + Z)
             Lv = Y
             return xp, yp, Lv
+        else:
+            raise pancakemuniEquipmentError('unable to capture image from CA-410.')
     # </editor-fold>
 
 

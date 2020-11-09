@@ -91,10 +91,10 @@ class pancakemuniStation(test_station.TestStation):
         if len(ports) == 1:
             self._station_config.DUT_COMPORT = ports[0].device
             com_ports.remove(ports[0])
-        ports = [c for c in com_ports if self._station_config.CA_PORT_DESC in c.description]
-        if len(ports) == 1:
-            self._station_config.CA_PORT = ports[0].device
-            com_ports.remove(ports[0])
+        # ports = [c for c in com_ports if self._station_config.CA_PORT_DESC in c.description]
+        # if len(ports) == 1:
+        #     self._station_config.CA_PORT = ports[0].device
+        #     com_ports.remove(ports[0])
 
         for com in com_ports:
             hit_success = False
@@ -131,8 +131,25 @@ class pancakemuniStation(test_station.TestStation):
                     a_serial.flush()
                     a_serial.write('CMD_ID\r\n'.encode())
                     msg = a_serial.readline()
-                    if 'ID' in msg.decode(encoding='utf-8'):
+                    if 'ID' in msg.decode(encoding='utf-8').upper():
                         self._station_config.FIXTURE_COMPORT = com.device
+                        hit_success = True
+            except Exception as e:
+                pass
+            finally:
+                a_serial.close()
+
+            if hit_success:
+                continue
+            try:
+                a_serial = serial.Serial(com.device, 38400, parity='E', stopbits=2,
+                                         bytesize=7, timeout=6, xonxoff=0, rtscts=0)
+                if a_serial is not None:
+                    a_serial.flush()
+                    a_serial.write('IDO\r\n'.encode())
+                    msg = a_serial.readline()
+                    if 'CA-MP410' in msg.decode(encoding='utf-8').upper():
+                        self._station_config.CA_PORT = com.device
             except Exception as e:
                 pass
             finally:
@@ -329,9 +346,11 @@ class pancakemuniStation(test_station.TestStation):
                             self._fixture.start_button_status(True)
                             timeout_for_dual = timeout_for_btn_idle
                         else:
+                            self._fixture.start_button_status(False)
                             self._the_unit.screen_off()
                             self._the_unit.reboot()  # Reboot
                             self._the_unit.screen_on()
+                            self._fixture.start_button_status(True)
                             # self._the_unit.display_image(self._station_config.DISP_CHECKER_IMG_INDEX)
                             power_on_trigger = True
                             timeout_for_dual = timeout_for_btn_idle
