@@ -58,7 +58,7 @@ NVM_WRITE_PROTECT = True
 DISP_CHECKER_ENABLE = False
 
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\config\MER-132-43U3C(FQ0200080140).txt'
-CAMERA_VERIFY_ENABLE = True
+CAMERA_VERIFY_ENABLE = False
 CAMERA_EXPOSURE = 80000
 CAMERA_GAIN = 1
 
@@ -90,6 +90,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config
 
 NVM_WRITE_COUNT_MAX = 6
 # calibration required data.
+USER_INPUT_CALIB_DATA = True
 
 CALIB_REQ_DATA = {
     'display_boresight_x': 100.20,
@@ -129,7 +130,7 @@ USE_WORKORDER_ENTRY = True
 # (e.g. "DMM" vs "USB0::2391::1543::MY47007422::0::INSTR")
 ######## To be config per station type 
 IS_VERBOSE = False
-IS_PRINT_TO_LOG = True
+IS_PRINT_TO_LOG = False
 
 #####
 ### Facebook_IT Enable boolean
@@ -137,6 +138,6 @@ FACEBOOK_IT_ENABLED = False
 
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
-DUT_SIM = False
+DUT_SIM = True
 EQUIPMENT_SIM = True
 FIXTURE_SIM = True
