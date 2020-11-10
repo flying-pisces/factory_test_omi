@@ -1,6 +1,8 @@
 import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_seacliff_eeprom as test_fixture
 import test_station.test_equipment.test_equipment_seacliff_eeprom as test_equipment
+import hardware_station_common.utils.gui_utils as gui_utils
+import tkinter as tk
 import test_station.dut.dut as dut
 import pprint
 import types
@@ -9,6 +11,98 @@ import math
 import os
 import sys
 import time
+import Pmw
+
+
+class EEPROMUserInputDialog(gui_utils.Dialog):
+    def __init__(self, station_config, operator_interface, title=None):
+        """
+
+        @type operator_interface: operator_interface.
+        """
+        self._operator_interface = operator_interface
+        self._station_config = station_config  # type: station_config
+        self.is_looping = True
+        self._value_dic = None
+        super(EEPROMUserInputDialog, self).__init__(self._operator_interface._prompt.master, title)
+
+    def body(self, master):
+        self._boresight_x = Pmw.EntryField(master, labelpos=tk.W, label_text="boresight_x", value="0",
+                                           validate={"validator": "real", "min": -127, "max": 127})
+        self._boresight_y = Pmw.EntryField(master, labelpos=tk.W, label_text="boresight_y", value="0",
+                                           validate={"validator": "real", "min": -127, "max": 127})
+        self._boresight_r = Pmw.EntryField(master, labelpos=tk.W, label_text="rotation_x", value="0",
+                                           validate={"validator": "real", "min": -1, "max": 1})
+
+        self._w255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="W255_Lv", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 255})
+        self._w255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="W255_x", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 1})
+        self._w255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="W255_y", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 1})
+
+        self._r255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="R255_Lv", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 255})
+        self._r255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="R255_x", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 1})
+        self._r255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="R255_y", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 1})
+
+        self._g255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="G255_Lv", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 255})
+        self._g255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="G255_x", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 1})
+        self._g255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="G255_y", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 1})
+
+        self._b255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="B255_Lv", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 255})
+        self._b255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="B255_x", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 1})
+        self._b255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="B255_y", value="0",
+                                           validate={"validator": "real", "min": 0, "max": 1})
+
+        items = [self._boresight_x, self._boresight_y, self._boresight_r, self._w255_lv, self._w255_x, self._w255_y,
+                 self._r255_lv, self._r255_x, self._r255_y, self._g255_lv, self._g255_x, self._g255_y,
+                 self._b255_lv, self._b255_x, self._b255_y]
+        for idx, widget in enumerate(items):
+            row = idx // 3
+            col = idx % 3
+            widget.grid(row=row, column=col)
+        Pmw.alignlabels(items)
+        return self._boresight_x  # initial focus
+
+    def validate(self):
+        try:
+            self._value_dic = None
+            boresight_x = float(self._boresight_x.getvalue())
+            boresight_y = float(self._boresight_y.getvalue())
+            boresight_r = float(self._boresight_r.getvalue())
+            w255 = [float(c.getvalue()) for c in [self._w255_lv, self._w255_x, self._w255_y]]
+            r255 = [float(c.getvalue()) for c in [self._r255_lv, self._r255_x, self._r255_y]]
+            g255 = [float(c.getvalue()) for c in [self._g255_lv, self._g255_x, self._g255_y]]
+            b255 = [float(c.getvalue()) for c in [self._b255_lv, self._b255_x, self._b255_y]]
+            self._value_dic = {
+                'display_boresight_x': boresight_x, 'display_boresight_y': boresight_y,  'rotation': boresight_r,
+                'lv_W255': w255[0], 'x_W255': w255[1], 'y_W255': w255[2],
+                'lv_R255': r255[0], 'x_R255': r255[1], 'y_R255': r255[2],
+                'lv_G255': g255[0], 'x_G255': g255[1], 'y_G255': g255[2],
+                'lv_B255': b255[0], 'x_B255': b255[1], 'y_B255': b255[2],
+            }
+            return True
+        except Exception as e:
+            self._operator_interface.print_to_console('Fail to validate data. {0}'.format(e.args))
+            return False
+
+    def current_cfg(self):
+        return dict(self._value_dic)
+
+    def apply(self):
+        pass
+
+    def cancel(self):
+        self.is_looping = False
+        super(EEPROMUserInputDialog, self).cancel()
 
 
 def chk_and_set_measured_value_by_name(test_log, item, value):
@@ -154,6 +248,7 @@ class seacliffeepromStation(test_station.TestStation):
     def _do_test(self, serial_number, test_log):
         self._overall_result = False
         self._overall_errorcode = ''
+        self._operator_interface.print_to_console('waiting user to input the parameters...\n')
         test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
         the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
         if self._station_config.DUT_SIM:
@@ -161,6 +256,16 @@ class seacliffeepromStation(test_station.TestStation):
 
         self._operator_interface.print_to_console("Start write data to DUT. %s\n" % the_unit.serial_number)
         try:
+            calib_data = self._station_config.CALIB_REQ_DATA
+            if self._station_config.USER_INPUT_CALIB_DATA:
+                dlg = EEPROMUserInputDialog(self._station_config, self._operator_interface,
+                                            'EEPROM Parameter for SN:{0}'.format(serial_number))
+                while dlg.is_looping:
+                    self._operator_interface.wait(0.5, None, False)
+                calib_data = dlg.current_cfg()
+            if calib_data is None:
+                raise seacliffeepromError('unable to get enough parameters for {0}'.format(serial_number))
+
             the_unit.initialize()
             the_unit.screen_on()
             the_unit.display_image(0x01)
@@ -169,7 +274,7 @@ class seacliffeepromStation(test_station.TestStation):
             write_status = the_unit.nvm_read_statistics()
             write_count = -1
             post_write_count = -1
-            if write_status is not None:
+            if  write_status is not None:
                 write_count = int(write_status[1])
                 test_log.set_measured_value_by_name_ex('PRE_WRITE_COUNTS', write_count)
 
@@ -198,7 +303,7 @@ class seacliffeepromStation(test_station.TestStation):
 
                 self._operator_interface.print_to_console('read all data from eeprom ...\n')
 
-                var_data = dict(self._station_config.CALIB_REQ_DATA)  # type: dict
+                var_data = dict(calib_data)  # type: dict
                 raw_data = the_unit.nvm_read_data()[2:]
                 # mark: convert raw data before flush to dict.
                 var_data['display_boresight_x'] = self.cvt_hex2_to_float_S8_7(raw_data, 5)
@@ -240,7 +345,7 @@ class seacliffeepromStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_B255', var_data.get('y_B255'))
 
                 raw_data_cpy = raw_data.copy()
-                var_data = dict(self._station_config.CALIB_REQ_DATA)  # type: dict
+                var_data = dict(calib_data)  # type: dict
                 raw_data_cpy[5:7] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_x'])
                 raw_data_cpy[7:9] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_y'])
                 raw_data_cpy[9:10] = self.cvt_decimal_to_hex1_S0_7(var_data['rotation'])
