@@ -605,9 +605,10 @@ class pancakemuniStation(test_station.TestStation):
                     test_item = '{}_SuperQuality_Dimmer_MinSeparationDistance'.format(br_pattern)
                     test_log.set_measured_value_by_name_ex(test_item, min_super_dimmer_distance)
                     test_item = '{}_SuperQuality_Dimmer_Res'.format(br_pattern)
-                    test_log.set_measured_value_by_name_ex(test_item, super_dimmer_count == 0 or
-                                                           super_dimmer_count <= self._station_config.SUPER_AREA_DEFECTS_COUNT_H and
-                                                           min_super_dimmer_distance >= self._station_config.SEPARATION_DISTANCE)
+                    super_quality_dimmer_res = (super_dimmer_count == 0 or
+                        super_dimmer_count <= self._station_config.SUPER_AREA_DEFECTS_COUNT_H and
+                                (super_dimmer_count == 1 or min_super_dimmer_distance >= self._station_config.SEPARATION_DISTANCE))
+                    test_log.set_measured_value_by_name_ex(test_item, super_quality_dimmer_res)
                     test_item = '{}_Quality_Brighter_NumDefects'.format(br_pattern)
                     test_log.set_measured_value_by_name_ex(test_item, quality_brighter_count)
                     test_item = '{}_Quality_Brighter_MinSeparationDistance'.format(br_pattern)
@@ -620,17 +621,19 @@ class pancakemuniStation(test_station.TestStation):
                     test_item = '{}_Quality_DimmerU_MinSeparationDistance'.format(br_pattern)
                     test_log.set_measured_value_by_name_ex(test_item, min_qual_dimu_sepa_distance)
                     test_item = '{}_Quality_DimmerU_Res'.format(br_pattern)
-                    test_log.set_measured_value_by_name_ex(test_item, quality_dimmeru_count == 0 or
-                                                           quality_dimmeru_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DU
-                                                           and min_qual_dimu_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
+                    qual_dimmerU_res = (quality_dimmeru_count == 0 or
+                        quality_dimmeru_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DU and
+                                (quality_dimmeru_count == 1 or min_qual_dimu_sepa_distance >= self._station_config.SEPARATION_DISTANCE))
+                    test_log.set_measured_value_by_name_ex(test_item, qual_dimmerU_res)
                     test_item = '{}_Quality_DimmerL_NumDefects'.format(br_pattern)
                     test_log.set_measured_value_by_name_ex(test_item, quality_dimmerl_count)
                     test_item = '{}_Quality_DimmerL_MinSeparationDistance'.format(br_pattern)
                     test_log.set_measured_value_by_name_ex(test_item, min_qual_diml_sepa_distance)
                     test_item = '{}_Quality_DimmerL_Res'.format(br_pattern)
-                    test_log.set_measured_value_by_name_ex(test_item, quality_dimmerl_count == 0 or
-                                                           quality_dimmerl_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DL
-                                                           and min_qual_diml_sepa_distance >= self._station_config.SEPARATION_DISTANCE_L)
+                    qual_dimmerL_res = (quality_dimmerl_count == 0 or
+                        quality_dimmerl_count <= self._station_config.QUALITY_AREA_DEFECTS_COUNT_DL and
+                                (quality_dimmerl_count == 1 or min_qual_diml_sepa_distance >= self._station_config.SEPARATION_DISTANCE_L))
+                    test_log.set_measured_value_by_name_ex(test_item, qual_dimmerL_res)
 
                     self.calc_blemish_index(br_pattern,
                                             np.vstack([size_list, locax_list, locay_list, pixel_list, constrast_lst]), test_log)
@@ -732,7 +735,7 @@ class pancakemuniStation(test_station.TestStation):
                     location_r = np.sqrt(np.power(np.array(locax_list) - self._station_config.LOCATION_X0, 2)
                                          + np.power(np.array(locay_list) - self._station_config.LOCATION_Y0, 2))
 
-                    defects = [d < self._station_config.SUPER_QUALITY_AREA_R
+                    defects = [d <= self._station_config.SUPER_QUALITY_AREA_R
                                for c, d in zip(abs_contrast, location_r)]
                     super_quality_count = defects.count(True)
 
@@ -749,22 +752,26 @@ class pancakemuniStation(test_station.TestStation):
                 test_item = '{}_SuperQuality_MinSeparationDistance'.format(br_pattern)
                 test_log.set_measured_value_by_name_ex(test_item, min_super_sepa_distance)
                 test_item = '{}_SuperQuality_Res'.format(br_pattern)
-                test_log.set_measured_value_by_name_ex(test_item,
-                                                       super_quality_count == 0 or
-                                                       self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_L <= super_quality_count
-                                                       <= self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_H and
-                                                       min_super_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
+                super_qual_res = (
+                        super_quality_count == 0 or
+                        (self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_L <= super_quality_count
+                            <= self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_H and
+                                (super_quality_count == 1
+                                    or min_super_sepa_distance >= self._station_config.SEPARATION_DISTANCE)))
+                test_log.set_measured_value_by_name_ex(test_item, super_qual_res)
 
                 test_item = '{}_Quality_NumDefects'.format(br_pattern)
                 test_log.set_measured_value_by_name_ex(test_item, quality_count)
                 test_item = '{}_Quality_MinSeparationDistance'.format(br_pattern)
                 test_log.set_measured_value_by_name_ex(test_item, min_qaul_sepa_distance)
                 test_item = '{}_Quality_Res'.format(br_pattern)
-                test_log.set_measured_value_by_name_ex(test_item,
-                                                       quality_count == 0 or
-                                                       self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_L <= quality_count
-                                                       <= self._station_config.DARK_SUPER_AREA_DEFECTS_COUNT_H and
-                                                       min_qaul_sepa_distance >= self._station_config.SEPARATION_DISTANCE)
+                qual_res = (
+                        quality_count == 0 or
+                            (self._station_config.DARK_QUALITY_AREA_DEFECTS_COUNT_L <= quality_count
+                                <= self._station_config.DARK_QUALITY_AREA_DEFECTS_COUNT_H and
+                                    (quality_count == 1
+                                        or min_qaul_sepa_distance >= self._station_config.SEPARATION_DISTANCE)))
+                test_log.set_measured_value_by_name_ex(test_item, qual_res)
                 self.calc_blemish_index(br_pattern,
                      np.vstack([size_list, locax_list, locay_list, pixel_list, constrast_lst]), test_log)
 
