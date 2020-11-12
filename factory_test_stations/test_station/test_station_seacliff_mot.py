@@ -366,7 +366,7 @@ class seacliffmotStation(test_station.TestStation):
                         self._retries_screen_on += 1
                         self._probe_con_status = True
                         # TODO: set the probe statue true.
-                        # self._fixture.query_probe_status() == 0
+                        self._probe_con_status = self._fixture.query_probe_status() == 0
                         if not self._station_config.FIXTURE_SIM and not self._probe_con_status:
                             self._operator_interface.print_to_console('Please check the carrier connection.\n')
                             continue
