@@ -1,5 +1,6 @@
 import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_project_station as test_fixture_project_station
+import hardware_station_common.utils.gui_utils as gui_utils
 import test_station.dut as dut
 import time
 import os
@@ -22,6 +23,7 @@ class projectstationStation(test_station.TestStation):
 
     def initialize(self):
         try:
+            gui_utils.messagebox.showwarning('Please make sure the Carrier is not be blocked.')
             self._operator_interface.print_to_console("Initializing project station station...\n")
             self._fixture.initialize()
         except:

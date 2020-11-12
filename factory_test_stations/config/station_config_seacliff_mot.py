@@ -9,7 +9,7 @@ ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 SEQUENCE_RELATIVEPATH = r'C:\oculus\run\seacliff_mot_run\test_station\test_equipment\algorithm'
 CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_summary'
-RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
+RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw_ttxm'
 
 ##################################
 # serial number codes

@@ -16,6 +16,7 @@ import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_seacliff_paneltesting as test_fixture_paneltesting
 import test_station.test_equipment.test_equipment_seacliff_paneltesting as test_equipment
 import test_station.dut as dut
+import hardware_station_common.utils.gui_utils as gui_utils
 
 
 class seacliffpaneltestingError(Exception):
@@ -61,6 +62,9 @@ class pancakemuniStation(test_station.TestStation):
         self._retries_screen_on = 0
         self._is_cancel_test_by_op = False
         self._unif_raw_data = {}
+        self._raw_image_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.RAW_IMAGE_LOG_DIR)
+        if self._station_config.EQUIPMENT_SIM:
+            self._raw_image_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
 
     def write(self, msg):
         """
@@ -87,18 +91,10 @@ class pancakemuniStation(test_station.TestStation):
         self._station_config.FIXTURE_PARTICLE_COMPORT = None
 
         com_ports = list(serial.tools.list_ports.comports())
-        ports = [c for c in com_ports if self._station_config.DUT_PORT_DESC in c.description]
-        if len(ports) == 1:
-            self._station_config.DUT_COMPORT = ports[0].device
-            com_ports.remove(ports[0])
-        # ports = [c for c in com_ports if self._station_config.CA_PORT_DESC in c.description]
-        # if len(ports) == 1:
-        #     self._station_config.CA_PORT = ports[0].device
-        #     com_ports.remove(ports[0])
 
         for com in com_ports:
             hit_success = False
-            if self._station_config.FIXTURE_PARTICLE_COUNTER:
+            if self._station_config.FIXTURE_PARTICLE_COUNTER and self._station_config.FIXTURE_PARTICLE_COMPORT is None:
                 try:
                     modbus_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8,
                                                        parity='N', stopbits=1,
@@ -123,37 +119,59 @@ class pancakemuniStation(test_station.TestStation):
 
             if hit_success:
                 continue
+            if self._station_config.FIXTURE_COMPORT is None:
+                try:
+                    a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1,
+                                             timeout=1, xonxoff=0, rtscts=0)
+                    if a_serial is not None:
+                        a_serial.flush()
+                        a_serial.write('CMD_ID\r\n'.encode())
+                        msg = a_serial.readline()
+                        if 'ID' in msg.decode(encoding='utf-8').upper():
+                            self._station_config.FIXTURE_COMPORT = com.device
+                            hit_success = True
+                except Exception as e:
+                    pass
+                finally:
+                    a_serial.close()
 
-            try:
-                a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1,
-                                         timeout=1, xonxoff=0, rtscts=0)
-                if a_serial is not None:
-                    a_serial.flush()
-                    a_serial.write('CMD_ID\r\n'.encode())
-                    msg = a_serial.readline()
-                    if 'ID' in msg.decode(encoding='utf-8').upper():
-                        self._station_config.FIXTURE_COMPORT = com.device
-                        hit_success = True
-            except Exception as e:
-                pass
-            finally:
-                a_serial.close()
+            if self._station_config.DUT_COMPORT is None:
+                try:
+                    a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1, bytesize=8,
+                                             timeout=1, xonxoff=0, rtscts=0)
+                    if a_serial is not None:
+                        a_serial.flush()
+                        a_serial.write('$c.VERSION,mcu\r\n'.encode())
+                        ver_mcu = a_serial.readline()
+                        if '$P.VERSION' in ver_mcu.decode(encoding='utf-8').upper():
+                            a_serial.flush()
+                            a_serial.write('$c.DUT.POWEROFF\r\n'.encode())
+                            pw_msg = a_serial.readline()
+                            if pw_msg != b'':
+                                print('Ver_MCU: {0}, POWER_OFF: {1}'.format(ver_mcu, pw_msg.decode()))
+                            self._station_config.DUT_COMPORT = com.device
+                            hit_success = True
+                except Exception as e:
+                    pass
+                finally:
+                    a_serial.close()
 
             if hit_success:
                 continue
-            try:
-                a_serial = serial.Serial(com.device, 38400, parity='E', stopbits=2,
-                                         bytesize=7, timeout=6, xonxoff=0, rtscts=0)
-                if a_serial is not None:
-                    a_serial.flush()
-                    a_serial.write('IDO\r\n'.encode())
-                    msg = a_serial.readline()
-                    if 'CA-MP410' in msg.decode(encoding='utf-8').upper():
-                        self._station_config.CA_PORT = com.device
-            except Exception as e:
-                pass
-            finally:
-                a_serial.close()
+            if self._station_config.CA_PORT is None:
+                try:
+                    a_serial = serial.Serial(com.device, 38400, parity='E', stopbits=2,
+                                             bytesize=7, timeout=6, xonxoff=0, rtscts=0)
+                    if a_serial is not None:
+                        a_serial.flush()
+                        a_serial.write('IDO\r\n'.encode())
+                        msg = a_serial.readline()
+                        if 'CA-MP410' in msg.decode(encoding='utf-8').upper():
+                            self._station_config.CA_PORT = com.device
+                except Exception as e:
+                    pass
+                finally:
+                    a_serial.close()
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
@@ -174,6 +192,9 @@ class pancakemuniStation(test_station.TestStation):
                     self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
             self._equipment.initialize()
             self._operator_interface.print_to_console('close the drawer automatically...\n')
+            res = gui_utils.messagebox.askyesno('Hint', 'Please make sure the Carrier is unblocked.')
+            if not res:
+                raise test_station.TestStationError('Unable to initialize successful.')
             self._fixture.load()
             self._operator_interface.print_to_console("Calibrate the CA410...\n")
             self._equipment.zero_cal()
@@ -185,7 +206,6 @@ class pancakemuniStation(test_station.TestStation):
 
     def close(self):
         if self._fixture is not None:
-            self._fixture.load()
             self._fixture.close()
             self._fixture = None
         self._equipment.close()
@@ -201,6 +221,8 @@ class pancakemuniStation(test_station.TestStation):
         self._operator_interface.print_to_console('CWD is {}\n'.format(os.getcwd()))
 
         try:
+            if not os.path.exists(self._raw_image_dir):
+                test_station.utils.mkdir_p(self._raw_image_dir)
             self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
@@ -224,15 +246,14 @@ class pancakemuniStation(test_station.TestStation):
             self._operator_interface.print_to_console("Set Camera Database. %s\n" % self._station_config.CAMERA_SN)
 
             uni_file_name = re.sub('_x.log', '.ttxm', test_log.get_filename())
-            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
 
             sequencePath = os.path.join(self._station_config.ROOT_DIR,
                                         self._station_config.SEQUENCE_RELATIVEPATH)
             if not self._station_config.EQUIPMENT_SIM:
-                databaseFileName = os.path.join(bak_dir, uni_file_name)
+                databaseFileName = os.path.join(self._raw_image_dir, uni_file_name)
                 self._equipment.create_database(databaseFileName)
             else:
-                db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
+                db_dir = self._raw_image_dir
                 fns = glob.glob1(db_dir, '%s_*.ttxm' % (serial_number))
                 if len(fns) > 0:
                     databaseFileName = os.path.join(db_dir, fns[0])
@@ -497,8 +518,7 @@ class pancakemuniStation(test_station.TestStation):
                 for meas in meas_list:
                     if meas['Measurement Setup'] != br_pattern:
                         continue
-                    output_dir = os.path.join(self._station_config.ROOT_DIR,
-                                              self._station_config.ANALYSIS_RELATIVEPATH,
+                    output_dir = os.path.join(self._raw_image_dir,
                                               serial_number + '_' + test_log._start_time.strftime("%Y%m%d-%H%M%S"))
                     if not os.path.exists(output_dir):
                         os.mkdir(output_dir, 777)

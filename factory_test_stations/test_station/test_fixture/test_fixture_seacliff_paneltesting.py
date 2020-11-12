@@ -66,7 +66,7 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
                                               115200,
                                               parity='N',
                                               stopbits=1,
-                                              timeout=1,
+                                              timeout=0.3,
                                               xonxoff=0,
                                               rtscts=0)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
@@ -174,12 +174,6 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
             pprint.pprint("====== Fixture Close =========")
         return True
 
-    def status(self):
-        self._write_serial(self._station_config.COMMAND_STATUS)
-        response = self._read_response()
-        deters = self._parse_response(r':(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)', response)
-        return response
-
     ######################
     # Fixture control
     ######################
@@ -253,7 +247,7 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
         @return:
         """
         self._write_serial(self._station_config.COMMAND_RESET)
-        response = self.read_response(timeout=10)
+        response = self.read_response(timeout=self._station_config.FIXTURE_RESET_DLY)
         if int(self._parse_response(r'RESET:(\d+)', response).group(1)) != 0:
             raise seacliffpaneltestingFixtureError('fail to send command. %s' % response)
 
@@ -283,16 +277,6 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
         delimiter = r'MODULE_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?)'
         deters = self._parse_response(delimiter, response)
         return int(deters[2]), -1*int(deters[1])
-
-    def status(self):
-        """
-        query the button status
-        @return:
-        """
-        cmd_status = '{0}'.format(self._station_config.COMMAND_STATUS)
-        self._write_serial(cmd_status)
-        response = self.read_response()
-        return self._parse_response(r'START_BUTTON:(\d+)', response).group(1)
 
     def set_tri_color(self, status):
         """
@@ -458,12 +442,15 @@ if __name__ == "__main__":
     try:
         the_unit = seacliffpaneltestingFixture(station_config, station_config)
         the_unit.initialize()
+
+        the_unit.ca_postion_z(False)
         the_unit.load()
+        the_unit.mov_abs_xy_wrt_dut(0, 0)
         for idx in range(0, 100):
             print('Loop ---> {}'.format(idx))
             try:
                 the_unit.help()
-                the_unit.id()
+                # the_unit.id()
                 the_unit.version()
                 aa = the_unit.module_pos_wrt_dut()
 

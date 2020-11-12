@@ -47,7 +47,7 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
         self._version = None
         self._serial_port = None
         self._busy_ca = False
-        self._end_delimiter_ca = '\r\n'
+        self._end_delimiter_ca = '\r'
 
     ########### NEW SETUP FUNCTIONS ###########
     def set_database(self, databasePath):
@@ -127,7 +127,7 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
                                               parity='E',
                                               bytesize=7,
                                               stopbits=2,
-                                              timeout=6,
+                                              timeout=0.3,
                                               xonxoff=False,
                                               rtscts=False)
         except:

@@ -24,8 +24,6 @@ FIXTURE_COMPORT = 'COM3'
 FIXTURE_PARTICLE_COMPORT = 'COM4'
 
 AUTO_CFG_COMPORTS = False
-CA_PORT_DESC = 'Measuring Instruments'
-DUT_PORT_DESC = 'Silicon Labs CP210x'
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP = ['mcu', 'hw', 'fpga']
@@ -79,10 +77,10 @@ COMMAND_BUTTON_LITUP_DISABLE = 'CMD_POWERON_BUTTON_DISABLE'
 COMMAND_LITUP_STATUS = 'CMD_POWERON_BUTTON'
 COMMAND_QUERY_TEMP = 'CMD_GET_TEMPERATURE'
 COMMAND_PROBE_BUTTON = 'CMD_PROBE_BUTTON'
-COMMAND_STATUS = "CMD_STATUS"
 COMMAND_CA_UP = 'CMD_CARRIER_UP'
 COMMAND_CA_DOWN = 'CMD_CARRIER_DW'
 
+FIXTURE_RESET_DLY = 50
 FIXTURE_UNLOAD_DLY = 15
 DUT_LOAD_WITHOUT_OPERATOR = False
 
@@ -124,6 +122,7 @@ MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\y29 particle Defect.seqxc'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
+RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 
 # LEFT = 462
 # TOP = 1253

@@ -49,7 +49,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                                           rtscts=False,
                                           xonxoff=False,
                                           dsrdtr=False,
-                                          timeout=1,
+                                          timeout=0.3,
                                           writeTimeout=None,
                                           interCharTimeout=None)
         if not self._serial_port:
