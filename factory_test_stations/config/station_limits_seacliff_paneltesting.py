@@ -36,29 +36,29 @@ STATION_LIMITS_ARRAYS = [
     ["W255_Quality_MinSeparationDistance", None, None, 30029],
     ["W255_Quality_Res", True, True, 30030],
 
-    # ["R255_SuperQuality_NumDefects", 0, 0, 31],
-    # ["R255_SuperQuality_MinSeparationDistance", None, None, 32],
-    # ["R255_SuperQuality_Res", True, True, 33],
-    #
-    # ["R255_Quality_NumDefects", 0, 1, 34],
-    # ["R255_Quality_MinSeparationDistance", None, None, 35],
-    # ["R255_Quality_Res", True, True, 36],
-    #
-    # ["G255_SuperQuality_NumDefects", 0, 0, 37],
-    # ["G255_SuperQuality_MinSeparationDistance", None, None, 38],
-    # ["G255_SuperQuality_Res", True, True, 39],
-    #
-    # ["G255_Quality_NumDefects", 0, 1, 40],
-    # ["G255_Quality_MinSeparationDistance", None, None, 41],
-    # ["G255_Quality_Res", True, True, 42],
-    #
-    # ["B255_SuperQuality_NumDefects", 0, 0, 43],
-    # ["B255_SuperQuality_MinSeparationDistance", None, None, 44],
-    # ["B255_SuperQuality_Res", True, True, 45],
-    #
-    # ["B255_Quality_NumDefects", 0, 1, 46],
-    # ["B255_Quality_MinSeparationDistance", None, None, 47],
-    # ["B255_Quality_Res", True, True, 48],
+    ["R255_SuperQuality_NumDefects", 0, 0, 30031],
+    ["R255_SuperQuality_MinSeparationDistance", None, None, 30032],
+    ["R255_SuperQuality_Res", True, True, 30033],
+
+    ["R255_Quality_NumDefects", 0, 1, 30034],
+    ["R255_Quality_MinSeparationDistance", None, None, 30035],
+    ["R255_Quality_Res", True, True, 30036],
+
+    ["G255_SuperQuality_NumDefects", 0, 0, 30037],
+    ["G255_SuperQuality_MinSeparationDistance", None, None, 30038],
+    ["G255_SuperQuality_Res", True, True, 30039],
+
+    ["G255_Quality_NumDefects", 0, 1, 30040],
+    ["G255_Quality_MinSeparationDistance", None, None, 30041],
+    ["G255_Quality_Res", True, True, 30042],
+
+    ["B255_SuperQuality_NumDefects", 0, 0, 30043],
+    ["B255_SuperQuality_MinSeparationDistance", None, None, 30044],
+    ["B255_SuperQuality_Res", True, True, 30045],
+
+    ["B255_Quality_NumDefects", 0, 1, 30046],
+    ["B255_Quality_MinSeparationDistance", None, None, 30047],
+    ["B255_Quality_Res", True, True, 30048],
 
     # ["W255_NumDarkParticles", None, None, 101],
     # ["W255_NumDarkBlobs", None, None, 102],

@@ -173,15 +173,19 @@ class pancakemuniStation(test_station.TestStation):
                     time.sleep(0.1)
                     self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
             self._equipment.initialize()
-
+            self._operator_interface.print_to_console('close the drawer automatically...\n')
+            self._fixture.load()
             self._operator_interface.print_to_console("Calibrate the CA410...\n")
             self._equipment.zero_cal()
+            self._operator_interface.print_to_console('open the drawer automatically...\n')
+            self._fixture.unload()
         except (test_fixture_paneltesting.seacliffpaneltestingFixtureError,
                 test_equipment.pancakemuniEquipmentError) as e:
             raise test_station.TestStationError('Unable to initialized.')
 
     def close(self):
         if self._fixture is not None:
+            self._fixture.load()
             self._fixture.close()
             self._fixture = None
         self._equipment.close()

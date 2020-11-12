@@ -84,10 +84,9 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
             raise seacliffpaneltestingFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
         else:  # disable the buttons automatically
             self.start_button_status(True)
-            self.power_on_button_status(True)
-            self.unload()
+            time.sleep(0.2)
+            # self.unload()
             self.start_button_status(False)
-            self.power_on_button_status(False)
 
             self._operator_interface.print_to_console(
                 "Fixture %s Initialized.\n" % self._station_config.FIXTURE_COMPORT)
