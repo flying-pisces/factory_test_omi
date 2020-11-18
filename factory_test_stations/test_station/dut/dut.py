@@ -258,8 +258,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def _write_serial_cmd(self, command):
         cmd = '$c.{}\r\n'.format(command)
-        if self._verbose:
-            print('send command ----------> {0}'.format(cmd))
+        print('write command ----------> {0}'.format(cmd))
 
         self._serial_port.flush()
         self._serial_port.write(cmd.encode('utf-8'))
