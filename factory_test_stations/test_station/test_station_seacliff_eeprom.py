@@ -274,7 +274,9 @@ class seacliffeepromStation(test_station.TestStation):
             write_status = the_unit.nvm_read_statistics()
             write_count = -1
             post_write_count = -1
-            if  write_status is not None:
+            if self._station_config.DUT_SIM:
+                write_status = [0, 1]
+            if write_status is not None:
                 write_count = int(write_status[1])
                 test_log.set_measured_value_by_name_ex('PRE_WRITE_COUNTS', write_count)
 
@@ -304,7 +306,10 @@ class seacliffeepromStation(test_station.TestStation):
                 self._operator_interface.print_to_console('read all data from eeprom ...\n')
 
                 var_data = dict(calib_data)  # type: dict
-                raw_data = the_unit.nvm_read_data()[2:]
+
+                raw_data = ['0x00'] * 45
+                if not self._station_config.DUT_SIM:
+                    raw_data = the_unit.nvm_read_data()[2:]
                 # mark: convert raw data before flush to dict.
                 var_data['display_boresight_x'] = self.cvt_hex2_to_float_S8_7(raw_data, 5)
                 var_data['display_boresight_y'] = self.cvt_hex2_to_float_S8_7(raw_data, 7)
@@ -344,7 +349,7 @@ class seacliffeepromStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_B255', var_data.get('x_B255'))
                 test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_B255', var_data.get('y_B255'))
 
-                raw_data_cpy = raw_data.copy()
+                raw_data_cpy = raw_data.copy()  # place holder for all the bytes.
                 var_data = dict(calib_data)  # type: dict
                 raw_data_cpy[5:7] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_x'])
                 raw_data_cpy[7:9] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_y'])
