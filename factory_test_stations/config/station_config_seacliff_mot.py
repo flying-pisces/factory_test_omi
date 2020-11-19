@@ -158,10 +158,10 @@ CAM_INIT_CONFIG = {
     "AEMeasAreaY": 0,
 
     "bUseRoi": False,
-    "RoiXLeft": 600,
-    "RoiXRight": 5600,
-    "RoiYTop": 940,
-    "RoiYBottom": 5400
+    "RoiXLeft": 0,
+    "RoiXRight": 6001,
+    "RoiYTop": 0,
+    "RoiYBottom": 6001
 }
 
 # parameters for test sequence.
@@ -169,6 +169,9 @@ TEST_SEQ_WAIT_FOR_TEMPERATURE = False
 TEST_AUTO_EXPOSURE = True
 TEST_SEQ_USE_EXPO_FILE = False
 TEST_SEQ_SAVE_CAPTURE = True
+
+ANALYSIS_GRP_DISTORTION = ['GreenDistortion']
+ANALYSIS_GRP_COLOR_PATTERN = ['W255', 'R255', 'G255', 'B255']
 
 # 'setup': (filter, nd, iris) is used for capture image,
 # 'exposure': if not set , use seq-file.
@@ -195,29 +198,37 @@ TEST_ITEM_PATTERNS = [
 
 TEST_ITEM_POS = [
     {'name': 'normal', 'pos': (0, 0, 15000),
-     'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
-                 'GreenSharpness', 'GreenDistortion']
+     'pattern': ['W255', 'R255', 'G255', 'B255', 'GreenDistortion']
      },
-    {'name': 'extendedz', 'pos': (0, 0, 27000),
-     'pattern': ['W255', 'GreenDistortion']
-     },
-    {'name': 'blemish', 'pos': (0, 0, 5000),
-     'pattern': ['W255']
-     },
-    {'name': 'extendedxpos', 'pos': (5071, 0, 16124),
-     'pattern': ['W255']
-     },
-    {'name': 'extendedxneg', 'pos': (-5071, 0, 16124),
-     'pattern': ['W255']
-     },
-    {'name': 'extendedypos', 'pos': (0, 5071, 16124),
-     'pattern': ['W255']
-     },
-    {'name': 'extendedyneg', 'pos': (0, -5071, 16124),
-     'pattern': ['W255']
-     },
+    # {'name': 'normal', 'pos': (0, 0, 15000),
+    #  'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
+    #              'GreenSharpness', 'GreenDistortion']
+    #  },
+    # {'name': 'extendedz', 'pos': (0, 0, 27000),
+    #  'pattern': ['W255', 'GreenDistortion']
+    #  },
+    # {'name': 'blemish', 'pos': (0, 0, 5000),
+    #  'pattern': ['W255']
+    #  },
+    # {'name': 'extendedxpos', 'pos': (5071, 0, 16124),
+    #  'pattern': ['W255']
+    #  },
+    # {'name': 'extendedxneg', 'pos': (-5071, 0, 16124),
+    #  'pattern': ['W255']
+    #  },
+    # {'name': 'extendedypos', 'pos': (0, 5071, 16124),
+    #  'pattern': ['W255']
+    #  },
+    # {'name': 'extendedyneg', 'pos': (0, -5071, 16124),
+    #  'pattern': ['W255']
+    #  },
 ]
 
+DATA_AT_POLE_AZI = [(-10.0, 0.0), (-20.0, 0.0), (-30.0, 0.0),
+                     (0.0, -10.0), (0.0, -20.0), (0.0, -30.0),
+                     (0.0, 0.0), (0.0, 10.0), (0.0, 20.0), (0.0, 30.0),
+                     (10.0, 0.0), (20.0, 0.0), (30.0, 0.0)]
+DATA_STATUS_DEGS = [10, 20, 30]
 ##################################
 # IT and work order
 #
@@ -226,9 +237,9 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 VERSION = 'SunnyP2-PreBuild-Alpha'
-AUTO_CVT_BGR_IMAGE_FROM_XYZ = True
+AUTO_CVT_BGR_IMAGE_FROM_XYZ = False
 AUTO_SAVE_2_TXT = False
-EQUIPMENT_SIM_CAPTURE_FROM_DIR = True
+EQUIPMENT_SIM_CAPTURE_FROM_DIR = False
 DUT_SIM = True
 EQUIPMENT_SIM = True
 EQUIPMENT_WHEEL_SIM = True

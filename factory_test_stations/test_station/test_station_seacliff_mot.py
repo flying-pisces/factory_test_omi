@@ -108,32 +108,6 @@ class seacliffmotStation(test_station.TestStation):
         file_names.sort(reverse=True)
         return file_names
 
-    def get_export_data(self, filename):
-        """
-        @type: filename: str
-        """
-        split_text = os.path.splitext(os.path.basename(filename))[0].split('_')
-        file_size_def = {
-            'raw': (6004, 7920, np.uint16),
-            'proc': (6001, 6001, np.int16),
-            'float': (6001, 6001, np.float32),
-        }
-        if 'raw' in split_text:
-            row, col, dtype = file_size_def['raw']
-        elif 'proc' in split_text:
-            row, col, dtype = file_size_def['proc']
-        elif 'float' in split_text:
-            row, col, dtype = file_size_def['float']
-        if self._station_config.CAM_INIT_CONFIG['bUseRoi']:
-            row = self._station_config.CAM_INIT_CONFIG['RoiYBottom'] - self._station_config.CAM_INIT_CONFIG['RoiYTop']
-            col = self._station_config.CAM_INIT_CONFIG['RoiXRight'] - self._station_config.CAM_INIT_CONFIG['RoiXLeft']
-        if not dtype:
-            raise seacliffmotStationError('unsupported bin file. {0}'.format(filename))
-        with open(filename, 'rb') as f:
-            frame3 = np.frombuffer(f.read(), dtype=dtype)
-            data_bin = frame3.reshape(row, col)
-        return data_bin
-
     def _do_test(self, serial_number, test_log):
         """
 
@@ -282,6 +256,8 @@ class seacliffmotStation(test_station.TestStation):
 
             self._operator_interface.print_to_console("all images captured, now start to analyze data. \n")
             self.data_export(serial_number, capture_path, test_log)
+            self.distortion_centroid_parametric_export(capture_path, test_log)
+            self.color_pattern_parametric_export(capture_path, test_log)
 
         except seacliffmotStationError as e:
             self._operator_interface.print_to_console(str(e))
@@ -420,6 +396,8 @@ class seacliffmotStation(test_station.TestStation):
         @param test_log: test_station.test_log.test_log
         @return:
         """
+        if not (self._station_config.AUTO_CVT_BGR_IMAGE_FROM_XYZ or self._station_config.AUTO_SAVE_2_TXT):
+            return
         data_items_XYZ = {}
         for pos_item in self._station_config.TEST_ITEM_POS:
             pos_name = pos_item['name']
@@ -436,7 +414,9 @@ class seacliffmotStation(test_station.TestStation):
                 file_z = self.get_filenames_in_folder(capture_path, r'{0}_.*_Z_float\.bin'.format(pre_file_name))
                 if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
                     self._operator_interface.print_to_console('Read X/Y/Z float from {0} bins.\n'.format(pre_file_name))
-                    group_data = [self.get_export_data(fn) for fn in (file_x[0], file_y[0], file_z[0])]
+                    group_data = [test_equipment_seacliff_mot.MotAlgorithmHelper.get_export_data(fn,
+                                     station_config=self._station_config)
+                                  for fn in (file_x[0], file_y[0], file_z[0])]
 
                     # group_data[0] = np.linspace(-10, 10, 5)
                     # group_data[1] = np.linspace(-20, 20, 5)
@@ -473,3 +453,97 @@ class seacliffmotStation(test_station.TestStation):
                 self._operator_interface.print_to_console('parse data {0} finished.\n'.format(pre_file_name))
         del data_items_XYZ
         pass
+
+    def distortion_centroid_parametric_export(self, capture_path, test_log):
+        export_items = ['DispCen_x_cono', 'DispCen_y_cono', 'DispCen_x_display',
+                        'DispCen_y_display', 'Disp_Rotate_x', 'Disp_Rotate_y']
+        for pos_item in self._station_config.TEST_ITEM_POS:
+            pos_name = pos_item['name']
+            item_patterns = pos_item.get('pattern')
+            if item_patterns is None:
+                continue
+            analysis_patterns = [c for c in item_patterns if c in self._station_config.ANALYSIS_GRP_DISTORTION]
+            for pattern_name in analysis_patterns:
+                pattern_info = self.get_test_item_pattern(pattern_name)
+                if not pattern_info:
+                    continue
+
+                pre_file_name = '{0}_{1}'.format(pos_name, pattern_name)
+                file_x = self.get_filenames_in_folder(capture_path, r'{0}_.*_X_float\.bin'.format(pre_file_name))
+                file_y = self.get_filenames_in_folder(capture_path, r'{0}_.*_Y_float\.bin'.format(pre_file_name))
+                file_z = self.get_filenames_in_folder(capture_path, r'{0}_.*_Z_float\.bin'.format(pre_file_name))
+                if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
+                    primary = ['X', 'Y', 'Z']
+                    pri_items = dict(zip(primary, [file_x[0], file_y[0], file_z[0]]))
+                    for pri_k, pri_v in pri_items.items():
+                        try:
+                            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
+                            self._operator_interface.print_to_console(
+                                'start to export {0}, {1}-{2}\n'.format(pos_name, pattern_name, pri_k))
+                            distortion_exports = mot_alg.distortion_centroid_parametric_export(pri_v)
+                            for export_item in export_items:
+                                export_value = distortion_exports.get(export_item)
+                                if export_value is None:
+                                    continue
+                                measure_item_name = '{0}_{1}_{2}_{3}'.format(pos_name, pattern_name, pri_k, export_item)
+                                test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
+                        except Exception as e:
+                            self._operator_interface.print_to_console(
+                                'Fail to export data for pattern: {0}_{1}\n'.format(pos_name, pattern_name))
+
+    def color_pattern_parametric_export(self, capture_path, test_log):
+        export_items_type_a = ['Lum_Ratio>0.8MaxLum', 'Lum_Ratio>0.8OnAxisLum', 'Lum_SSR', 'Lum_delta', 'Lum_mean',
+                               'u_mean', 'uv_delta<0.01_Ratio', 'uv_delta_to_OnAxis',
+                               'v_mean']
+        export_items_pattern_normal = ['Max Lum', "Max Lum u'", "Max Lum v'", "Max Lum x(deg)", 'Max Lum y(deg)']
+        for pos_item in self._station_config.TEST_ITEM_POS:
+            pos_name = pos_item['name']
+            item_patterns = pos_item.get('pattern')
+            if item_patterns is None:
+                continue
+            analysis_patterns = [c for c in item_patterns if c in self._station_config.ANALYSIS_GRP_COLOR_PATTERN]
+            for pattern_name in analysis_patterns:
+                pattern_info = self.get_test_item_pattern(pattern_name)
+                if not pattern_info:
+                    continue
+
+                pre_file_name = '{0}_{1}'.format(pos_name, pattern_name)
+                file_x = self.get_filenames_in_folder(capture_path, r'{0}_.*_X_float\.bin'.format(pre_file_name))
+                file_y = self.get_filenames_in_folder(capture_path, r'{0}_.*_Y_float\.bin'.format(pre_file_name))
+                file_z = self.get_filenames_in_folder(capture_path, r'{0}_.*_Z_float\.bin'.format(pre_file_name))
+                if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
+                    try:
+                        mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
+                        self._operator_interface.print_to_console(
+                            'start to export {0}, {1}\n'.format(pos_name, pattern_name))
+                        color_exports = mot_alg.color_pattern_parametric_export(file_x[0])
+                        lum_u_v_keys = ['Lum', 'u\'', 'v\'']
+                        for pole, azi in self._station_config.DATA_AT_POLE_AZI:
+                            keys = ['{0}(x={1}deg,y={2}deg)'.format(c, pole, azi) for c in lum_u_v_keys]
+                            measure_items = ['{0}_{1}deg_{2}deg'.format(c, pole, azi) for c in lum_u_v_keys]
+                            test_values = [color_exports.get(c) for c in keys]
+                            for measure_item, test_value in zip(measure_items, test_values):
+                                measure_item_name = '{0}_{1}_{2}'.format(pos_name, pattern_name, measure_item)
+                                test_log.set_measured_value_by_name_ex(measure_item_name, test_value)
+
+                        for deg in self._station_config.DATA_STATUS_DEGS:
+                            measure_items = ['{0}_{1}deg'.format(c, deg) for c in export_items_type_a]
+                            test_values = [color_exports.get(c) for c in measure_items]
+                            for measure_item, test_value in zip(measure_items, test_values):
+                                measure_item_name = '{0}_{1}_{2}'.format(pos_name, pattern_name, measure_item)
+                                test_log.set_measured_value_by_name_ex(measure_item_name, test_value)
+
+                        test_values = [color_exports.get(c) for c in measure_items]
+                        measure_item_names = ['{0}_{1}_{2}'.format(pos_name, pattern_name, c.replace(' ', ''))
+                                              for c in measure_items]
+                        [test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
+                         for measure_item_name, export_value in zip(measure_item_names, test_values)]
+
+                        for export_item, export_value in color_exports.items():
+                            export_item_without_blank = export_item.replace(' ', '_')
+                            measure_item_name = '{0}_{1}_{2}'.format(pos_name, pattern_name, export_item_without_blank)
+                            test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
+
+                    except Exception as e:
+                        self._operator_interface.print_to_console(
+                            'Fail to export data for pattern: {0}_{1}\n'.format(pos_name, pattern_name))
