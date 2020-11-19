@@ -259,7 +259,7 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
         @return:
         """
         cmd_mov = '{0}:{1}, {2}'.format(self._station_config.COMMAND_MODULE_MOVE,
-                                             int(-1*y), int(x))
+                                        int(-1*x), int(-1*y))
         self._write_serial(cmd_mov)
         response = self.read_response(timeout=20)
         if int(self._parse_response(r'MODULE_MOVE:(\d+)', response).group(1)) != 0:
@@ -276,7 +276,7 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
         response = [self._re_space_sub.sub('', c) for c in response]
         delimiter = r'MODULE_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?)'
         deters = self._parse_response(delimiter, response)
-        return int(deters[2]), -1*int(deters[1])
+        return -1*int(deters[1]), -1*int(deters[2])
 
     def set_tri_color(self, status):
         """

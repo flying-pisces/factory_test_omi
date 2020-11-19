@@ -94,20 +94,22 @@ class pancakemuniStation(test_station.TestStation):
 
         for com in com_ports:
             hit_success = False
-            if self._station_config.FIXTURE_PARTICLE_COUNTER and self._station_config.FIXTURE_PARTICLE_COMPORT is None:
+            if self._station_config.FIXTURE_PARTICLE_COUNTER \
+                    and self._station_config.FIXTURE_PARTICLE_COMPORT is None\
+                    and (self._station_config.FIXTURE_PARTICLE_COMPORT_FILTER in com.hwid):
                 try:
                     modbus_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8,
                                                        parity='N', stopbits=1,
-                                                       port=com.device, timeout=2000)
+                                                       port=com.device, timeout=0.5)
                     if modbus_client is not None:
                         retries = 1
-                        while retries < 10:
-                            rs = modbus_client.read_holding_registers(com.device, 2,
-                                                                      unit=self._station_config.FIXTURE_PARTICLE_ADDR)
+                        while retries < 5:
+                            rs = modbus_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
+                                                                      2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
                             # type: ReadHoldingRegistersResponse
                             if rs is None or rs.isError():
                                 retries = retries + 1
-                                time.sleep(0.5)
+                                time.sleep(0.3)
                                 continue
                             val = rs.registers[0]
                             self._station_config.FIXTURE_PARTICLE_COMPORT = com.device
@@ -121,7 +123,7 @@ class pancakemuniStation(test_station.TestStation):
                 continue
             if self._station_config.FIXTURE_COMPORT is None:
                 try:
-                    a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1,
+                    a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1, bytesize=8,
                                              timeout=1, xonxoff=0, rtscts=0)
                     if a_serial is not None:
                         a_serial.flush()
