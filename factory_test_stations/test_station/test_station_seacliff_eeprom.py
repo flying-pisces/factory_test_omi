@@ -311,26 +311,26 @@ class seacliffeepromStation(test_station.TestStation):
                 if not self._station_config.DUT_SIM:
                     raw_data = the_unit.nvm_read_data()[2:]
                 # mark: convert raw data before flush to dict.
-                var_data['display_boresight_x'] = self.cvt_hex2_to_float_S8_7(raw_data, 5)
-                var_data['display_boresight_y'] = self.cvt_hex2_to_float_S8_7(raw_data, 7)
-                var_data['rotation'] = self.cvt_hex1_to_decimal_S0_7(raw_data, 9)
+                var_data['display_boresight_x'] = self.cvt_hex2_to_float_S8_7(raw_data, 0)
+                var_data['display_boresight_y'] = self.cvt_hex2_to_float_S8_7(raw_data, 2)
+                var_data['rotation'] = self.cvt_hex1_to_decimal_S0_7(raw_data, 4)
 
-                var_data['lv_W255'] = self.cvt_hex1_to_int_S7_0(raw_data, 10)
-                var_data['x_W255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 11)
-                var_data['y_W255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 13)
+                var_data['lv_W255'] = self.cvt_hex1_to_int_S7_0(raw_data, 5)
+                var_data['x_W255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 6)
+                var_data['y_W255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 8)
 
-                var_data['lv_R255'] = self.cvt_hex1_to_int_S7_0(raw_data, 15)
-                var_data['lv_G255'] = self.cvt_hex1_to_int_S7_0(raw_data, 16)
-                var_data['lv_B255'] = self.cvt_hex1_to_int_S7_0(raw_data, 17)
+                var_data['lv_R255'] = self.cvt_hex1_to_int_S7_0(raw_data, 10)
+                var_data['lv_G255'] = self.cvt_hex1_to_int_S7_0(raw_data, 11)
+                var_data['lv_B255'] = self.cvt_hex1_to_int_S7_0(raw_data, 12)
 
-                var_data['x_R255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 18)
-                var_data['y_R255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 20)
+                var_data['x_R255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 13)
+                var_data['y_R255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 15)
 
-                var_data['x_G255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 22)
-                var_data['y_G255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 24)
+                var_data['x_G255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 17)
+                var_data['y_G255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 19)
 
-                var_data['x_B255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 26)
-                var_data['y_B255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 28)
+                var_data['x_B255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 21)
+                var_data['y_B255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 23)
 
                 # mark: save them to database.
                 test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_X', var_data.get('display_boresight_x'))
@@ -351,25 +351,25 @@ class seacliffeepromStation(test_station.TestStation):
 
                 raw_data_cpy = raw_data.copy()  # place holder for all the bytes.
                 var_data = dict(calib_data)  # type: dict
-                raw_data_cpy[5:7] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_x'])
-                raw_data_cpy[7:9] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_y'])
-                raw_data_cpy[9:10] = self.cvt_decimal_to_hex1_S0_7(var_data['rotation'])
-                raw_data_cpy[10:11] = self.cvt_int_to_hex1_S7_0(var_data['lv_W255'])
-                raw_data_cpy[11:13] = self.cvt_decimal_to_hex2_U0_13(var_data['x_W255'])
-                raw_data_cpy[13:15] = self.cvt_decimal_to_hex2_U0_13(var_data['y_W255'])
+                raw_data_cpy[0:2] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_x'])
+                raw_data_cpy[2:4] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_y'])
+                raw_data_cpy[4:5] = self.cvt_decimal_to_hex1_S0_7(var_data['rotation'])
+                raw_data_cpy[5:6] = self.cvt_int_to_hex1_S7_0(var_data['lv_W255'])
+                raw_data_cpy[6:8] = self.cvt_decimal_to_hex2_U0_13(var_data['x_W255'])
+                raw_data_cpy[8:10] = self.cvt_decimal_to_hex2_U0_13(var_data['y_W255'])
 
-                raw_data_cpy[15:16] = self.cvt_int_to_hex1_S7_0(var_data['lv_R255'])
-                raw_data_cpy[16:17] = self.cvt_int_to_hex1_S7_0(var_data['lv_G255'])
-                raw_data_cpy[17:18] = self.cvt_int_to_hex1_S7_0(var_data['lv_B255'])
+                raw_data_cpy[10:11] = self.cvt_int_to_hex1_S7_0(var_data['lv_R255'])
+                raw_data_cpy[11:12] = self.cvt_int_to_hex1_S7_0(var_data['lv_G255'])
+                raw_data_cpy[12:13] = self.cvt_int_to_hex1_S7_0(var_data['lv_B255'])
 
-                raw_data_cpy[18:20] = self.cvt_decimal_to_hex2_U0_13(var_data['x_R255'])
-                raw_data_cpy[20:22] = self.cvt_decimal_to_hex2_U0_13(var_data['y_R255'])
+                raw_data_cpy[13:15] = self.cvt_decimal_to_hex2_U0_13(var_data['x_R255'])
+                raw_data_cpy[15:17] = self.cvt_decimal_to_hex2_U0_13(var_data['y_R255'])
 
-                raw_data_cpy[22:24] = self.cvt_decimal_to_hex2_U0_13(var_data['x_G255'])
-                raw_data_cpy[24:26] = self.cvt_decimal_to_hex2_U0_13(var_data['y_G255'])
+                raw_data_cpy[17:19] = self.cvt_decimal_to_hex2_U0_13(var_data['x_G255'])
+                raw_data_cpy[19:21] = self.cvt_decimal_to_hex2_U0_13(var_data['y_G255'])
 
-                raw_data_cpy[26:28] = self.cvt_decimal_to_hex2_U0_13(var_data['x_B255'])
-                raw_data_cpy[28:30] = self.cvt_decimal_to_hex2_U0_13(var_data['y_B255'])
+                raw_data_cpy[21:23] = self.cvt_decimal_to_hex2_U0_13(var_data['x_B255'])
+                raw_data_cpy[23:25] = self.cvt_decimal_to_hex2_U0_13(var_data['y_B255'])
 
                 # TODO: config all the data to array.
                 self._operator_interface.print_to_console('write configuration to eeprom ...\n')
