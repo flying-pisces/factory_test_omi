@@ -56,7 +56,7 @@ class projectstationStation(test_station.TestStation):
 
             if os.path.exists(os.path.join(self._station_config.RAW_DIR, "testimage.png")):
                 b_result = True
-                self._operator_interface.display_image(os.path.join(self._station_config.RAW_DIR, "testimage.png"))
+                # self._operator_interface.display_image(os.path.join(self._station_config.RAW_DIR, "testimage.png"))
             else:
                 b_result = False
             self._operator_interface.wait(a_result, "\n***********Testing Item 2 ***************\n")
