@@ -645,7 +645,9 @@ class MotAlgorithmHelper(object):
         del CXYZ
         return dict(zip(list(stats_summary[0]), list(stats_summary[1])))
 
-    def color_pattern_parametric_export(self, xfilename=r'W255_X_float.bin'):
+    def color_pattern_parametric_export(self, xfilename=r'W255_X_float.bin',
+                                        brightness_statistics=True,
+                                        color_uniformity=True):
         dirr = os.path.dirname(xfilename)
         fnamebase = os.path.basename(xfilename).lower().split('_x_float.bin')[0]
         filename = ['{0}_{1}_float.bin'.format(fnamebase, c) for c in ['X', 'Y', 'Z']]
@@ -758,79 +760,79 @@ class MotAlgorithmHelper(object):
                 y_angle_arr[0, row_ind]) + 'deg)'
             stats_summary[1, k] = v_prime_smoothed_masked[row_ind, col_ind]
             k = k + 1
-
-        # Max brightness
-        stats_summary[0, k] = 'Max Lum'
-        stats_summary[1, k] = max_Y_val
-        k = k + 1
-        stats_summary[0, k] = 'Max Lum u\''
-        stats_summary[1, k] = u_prime_smoothed_masked[max_Y_yloc_pix, max_Y_xloc_pix]
-        k = k + 1
-        stats_summary[0, k] = 'Max Lum v\''
-        stats_summary[1, k] = v_prime_smoothed_masked[max_Y_yloc_pix, max_Y_xloc_pix]
-        k = k + 1
-        stats_summary[0, k] = 'Max Lum x(deg)'
-        stats_summary[1, k] = max_Y_xloc_deg
-        k = k + 1
-        stats_summary[0, k] = 'Max Lum y(deg)'
-        stats_summary[1, k] = max_Y_yloc_deg
-        k = k + 1
-
-        # Brightness uniformity
-        Y = XYZ[1]
-        for i in range(0, 3):
-            tmp_chromaticity_mask = chromaticity_mask[:, :, i]
-            tmp = Y[tmp_chromaticity_mask == 1]
-            meanLum = np.mean(tmp)
-            deltaLum = np.max(tmp) - np.min(tmp)
-            stdLum = np.std(tmp)
-            percentLum_onaxis = np.sum(tmp > self._lum_thresh * Y[row_ind_onaxis, col_ind_onaxis]) / len(tmp)
-            percentLum_max = np.sum(tmp > self._lum_thresh * max_Y_val) / len(tmp)
-            # save data to cell
-            stats_summary[0, k] = 'Lum_mean_' + str(self._chromaticity_fov[i]) + 'deg'
-            stats_summary[1, k] = meanLum
+        if brightness_statistics:
+            # Max brightness
+            stats_summary[0, k] = 'Max Lum'
+            stats_summary[1, k] = max_Y_val
             k = k + 1
-            stats_summary[0, k] = 'Lum_delta_' + str(self._chromaticity_fov[i]) + 'deg'
-            stats_summary[1, k] = deltaLum
+            stats_summary[0, k] = 'Max Lum u\''
+            stats_summary[1, k] = u_prime_smoothed_masked[max_Y_yloc_pix, max_Y_xloc_pix]
             k = k + 1
-            stats_summary[0, k] = 'Lum_SSR_' + str(self._chromaticity_fov[i]) + 'deg'
-            stats_summary[1, k] = stdLum
+            stats_summary[0, k] = 'Max Lum v\''
+            stats_summary[1, k] = v_prime_smoothed_masked[max_Y_yloc_pix, max_Y_xloc_pix]
             k = k + 1
-            stats_summary[0, k] = 'Lum_Ratio>' + str(self._lum_thresh) + 'OnAxisLum_' + str(
-                self._chromaticity_fov[i]) + 'deg'
-            stats_summary[1, k] = percentLum_onaxis
+            stats_summary[0, k] = 'Max Lum x(deg)'
+            stats_summary[1, k] = max_Y_xloc_deg
             k = k + 1
-            stats_summary[0, k] = 'Lum_Ratio>' + str(self._lum_thresh) + 'MaxLum_' + str(
-                self._chromaticity_fov[i]) + 'deg'
-            stats_summary[1, k] = percentLum_max
+            stats_summary[0, k] = 'Max Lum y(deg)'
+            stats_summary[1, k] = max_Y_yloc_deg
             k = k + 1
 
-        # color uniformity
-        for i in range(0, 3):
-            tmp_chromaticity_mask = chromaticity_mask[:, :, i]
-            tmpu_prime = u_prime_smoothed_masked[tmp_chromaticity_mask == 1]
-            tmpv_prime = v_prime_smoothed_masked[tmp_chromaticity_mask == 1]
-            tmpdeltau_prime = tmpu_prime - u_prime_smoothed_masked[row_ind_onaxis, col_ind_onaxis]
-            tmpdeltav_prime = tmpv_prime - v_prime_smoothed_masked[row_ind_onaxis, col_ind_onaxis]
-            tmpdeltauv_prime = np.sqrt(tmpdeltau_prime ** 2 + tmpdeltav_prime ** 2)
-            meanu_prime = np.mean(tmpu_prime)
-            meanv_prime = np.mean(tmpv_prime)
-            percentuv = np.sum(tmpdeltauv_prime < self._color_thresh) / len(tmpdeltauv_prime)
-            deltauv = np.max(tmpdeltauv_prime)
-            # save data to cell
-            stats_summary[0, k] = 'u\'_mean_' + str(self._chromaticity_fov[i]) + 'deg'
-            stats_summary[1, k] = meanu_prime
-            k = k + 1
-            stats_summary[0, k] = 'v\'_mean_' + str(self._chromaticity_fov[i]) + 'deg'
-            stats_summary[1, k] = meanv_prime
-            k = k + 1
-            stats_summary[0, k] = 'u\'v\'_delta_to_OnAxis_' + str(self._chromaticity_fov[i]) + 'deg'
-            stats_summary[1, k] = deltauv
-            k = k + 1
-            stats_summary[0, k] = 'u\'v\'_delta<' + str(self._color_thresh) + '_Ratio_' + str(
-                self._chromaticity_fov[i]) + 'deg'
-            stats_summary[1, k] = percentuv
-            k = k + 1
+            # Brightness uniformity
+            Y = XYZ[1]
+            for i in range(0, 3):
+                tmp_chromaticity_mask = chromaticity_mask[:, :, i]
+                tmp = Y[tmp_chromaticity_mask == 1]
+                meanLum = np.mean(tmp)
+                deltaLum = np.max(tmp) - np.min(tmp)
+                stdLum = np.std(tmp)
+                percentLum_onaxis = np.sum(tmp > self._lum_thresh * Y[row_ind_onaxis, col_ind_onaxis]) / len(tmp)
+                percentLum_max = np.sum(tmp > self._lum_thresh * max_Y_val) / len(tmp)
+                # save data to cell
+                stats_summary[0, k] = 'Lum_mean_' + str(self._chromaticity_fov[i]) + 'deg'
+                stats_summary[1, k] = meanLum
+                k = k + 1
+                stats_summary[0, k] = 'Lum_delta_' + str(self._chromaticity_fov[i]) + 'deg'
+                stats_summary[1, k] = deltaLum
+                k = k + 1
+                stats_summary[0, k] = 'Lum_SSR_' + str(self._chromaticity_fov[i]) + 'deg'
+                stats_summary[1, k] = stdLum
+                k = k + 1
+                stats_summary[0, k] = 'Lum_Ratio>' + str(self._lum_thresh) + 'OnAxisLum_' + str(
+                    self._chromaticity_fov[i]) + 'deg'
+                stats_summary[1, k] = percentLum_onaxis
+                k = k + 1
+                stats_summary[0, k] = 'Lum_Ratio>' + str(self._lum_thresh) + 'MaxLum_' + str(
+                    self._chromaticity_fov[i]) + 'deg'
+                stats_summary[1, k] = percentLum_max
+                k = k + 1
+        if color_uniformity:
+            # color uniformity
+            for i in range(0, 3):
+                tmp_chromaticity_mask = chromaticity_mask[:, :, i]
+                tmpu_prime = u_prime_smoothed_masked[tmp_chromaticity_mask == 1]
+                tmpv_prime = v_prime_smoothed_masked[tmp_chromaticity_mask == 1]
+                tmpdeltau_prime = tmpu_prime - u_prime_smoothed_masked[row_ind_onaxis, col_ind_onaxis]
+                tmpdeltav_prime = tmpv_prime - v_prime_smoothed_masked[row_ind_onaxis, col_ind_onaxis]
+                tmpdeltauv_prime = np.sqrt(tmpdeltau_prime ** 2 + tmpdeltav_prime ** 2)
+                meanu_prime = np.mean(tmpu_prime)
+                meanv_prime = np.mean(tmpv_prime)
+                percentuv = np.sum(tmpdeltauv_prime < self._color_thresh) / len(tmpdeltauv_prime)
+                deltauv = np.max(tmpdeltauv_prime)
+                # save data to cell
+                stats_summary[0, k] = 'u\'_mean_' + str(self._chromaticity_fov[i]) + 'deg'
+                stats_summary[1, k] = meanu_prime
+                k = k + 1
+                stats_summary[0, k] = 'v\'_mean_' + str(self._chromaticity_fov[i]) + 'deg'
+                stats_summary[1, k] = meanv_prime
+                k = k + 1
+                stats_summary[0, k] = 'u\'v\'_delta_to_OnAxis_' + str(self._chromaticity_fov[i]) + 'deg'
+                stats_summary[1, k] = deltauv
+                k = k + 1
+                stats_summary[0, k] = 'u\'v\'_delta<' + str(self._color_thresh) + '_Ratio_' + str(
+                    self._chromaticity_fov[i]) + 'deg'
+                stats_summary[1, k] = percentuv
+                k = k + 1
 
         return dict(zip(stats_summary[0, :], stats_summary[1, :]))
 

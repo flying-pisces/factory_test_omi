@@ -171,6 +171,7 @@ TEST_SEQ_USE_EXPO_FILE = False
 TEST_SEQ_SAVE_CAPTURE = True
 
 ANALYSIS_GRP_DISTORTION = ['GreenDistortion']
+ANALYSIS_GRP_MONO_PATTERN = ['W255']
 ANALYSIS_GRP_COLOR_PATTERN = ['W255', 'R255', 'G255', 'B255']
 
 # 'setup': (filter, nd, iris) is used for capture image,

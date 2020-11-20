@@ -256,8 +256,8 @@ class seacliffmotStation(test_station.TestStation):
 
             self._operator_interface.print_to_console("all images captured, now start to analyze data. \n")
             self.data_export(serial_number, capture_path, test_log)
-            self.distortion_centroid_parametric_export(capture_path, test_log)
-            self.color_pattern_parametric_export(capture_path, test_log)
+            self.distortion_centroid_parametric_export_ex(capture_path, test_log)
+            self.color_pattern_parametric_export_ex(capture_path, test_log)
 
         except seacliffmotStationError as e:
             self._operator_interface.print_to_console(str(e))
@@ -454,7 +454,7 @@ class seacliffmotStation(test_station.TestStation):
         del data_items_XYZ
         pass
 
-    def distortion_centroid_parametric_export(self, capture_path, test_log):
+    def distortion_centroid_parametric_export_ex(self, capture_path, test_log):
         export_items = ['DispCen_x_cono', 'DispCen_y_cono', 'DispCen_x_display',
                         'DispCen_y_display', 'Disp_Rotate_x', 'Disp_Rotate_y']
         for pos_item in self._station_config.TEST_ITEM_POS:
@@ -491,7 +491,7 @@ class seacliffmotStation(test_station.TestStation):
                             self._operator_interface.print_to_console(
                                 'Fail to export data for pattern: {0}_{1}\n'.format(pos_name, pattern_name))
 
-    def color_pattern_parametric_export(self, capture_path, test_log):
+    def color_pattern_parametric_export_ex(self, capture_path, test_log):
         export_items_type_a = ['Lum_Ratio>0.8MaxLum', 'Lum_Ratio>0.8OnAxisLum', 'Lum_SSR', 'Lum_delta', 'Lum_mean',
                                'u_mean', 'uv_delta<0.01_Ratio', 'uv_delta_to_OnAxis',
                                'v_mean']
@@ -501,7 +501,8 @@ class seacliffmotStation(test_station.TestStation):
             item_patterns = pos_item.get('pattern')
             if item_patterns is None:
                 continue
-            analysis_patterns = [c for c in item_patterns if c in self._station_config.ANALYSIS_GRP_COLOR_PATTERN]
+            grp = set(self._station_config.ANALYSIS_GRP_COLOR_PATTERN + self._station_config.ANALYSIS_GRP_MONO_PATTERN)
+            analysis_patterns = [c for c in item_patterns if c in grp]
             for pattern_name in analysis_patterns:
                 pattern_info = self.get_test_item_pattern(pattern_name)
                 if not pattern_info:
@@ -516,7 +517,9 @@ class seacliffmotStation(test_station.TestStation):
                         mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
                         self._operator_interface.print_to_console(
                             'start to export {0}, {1}\n'.format(pos_name, pattern_name))
-                        color_exports = mot_alg.color_pattern_parametric_export(file_x[0])
+                        color_exports = mot_alg.color_pattern_parametric_export(file_x[0],
+                             brightness_statistics=(pattern_name in self._station_config.ANALYSIS_GRP_MONO_PATTERN),
+                             color_uniformity=(pattern_name in self._station_config.ANALYSIS_GRP_COLOR_PATTERN))
                         lum_u_v_keys = ['Lum', 'u\'', 'v\'']
                         for pole, azi in self._station_config.DATA_AT_POLE_AZI:
                             keys = ['{0}(x={1}deg,y={2}deg)'.format(c, pole, azi) for c in lum_u_v_keys]
@@ -546,4 +549,4 @@ class seacliffmotStation(test_station.TestStation):
 
                     except Exception as e:
                         self._operator_interface.print_to_console(
-                            'Fail to export data for pattern: {0}_{1}\n'.format(pos_name, pattern_name))
+                            'Fail to export data for pattern: {0}_{1}, {2}\n'.format(pos_name, pattern_name, e.args))
