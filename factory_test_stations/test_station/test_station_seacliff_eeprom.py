@@ -402,7 +402,11 @@ class seacliffeepromStation(test_station.TestStation):
                 self._operator_interface.print_to_console('screen on ...\n')
                 the_unit.screen_on()
                 self._operator_interface.print_to_console('read configuration from eeprom ...\n')
-                data_from_nvram = the_unit.nvm_read_data()
+                data_from_nvram = [0]*5 + raw_data_cpy.copy()
+                if not self._station_config.DUT_SIM:
+                    data_from_nvram = the_unit.nvm_read_data()
+
+                test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', data_from_nvram[5:] == raw_data_cpy)
 
                 self._operator_interface.print_to_console('read write count for nvram ...\n')
                 write_status = the_unit.nvm_read_statistics()

@@ -416,7 +416,7 @@ class projectDut(hardware_station_common.test_station.dut.DUT):
         def not_find(*args, **kwargs):
             pass
         if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image', 'nvm_read_statistics',
-                    'nvm_write_data', '_get_color_ext', 'render_image']:
+                    'nvm_write_data', '_get_color_ext', 'render_image', 'nvm_read_data']:
             return not_find
 
 if __name__ == "__main__" :
