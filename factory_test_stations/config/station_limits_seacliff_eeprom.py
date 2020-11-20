@@ -43,6 +43,7 @@ STATION_LIMITS_ARRAYS = [
     ["CFG_LV_B255", None, None, 2013],
     ["CFG_X_B255", None, None, 2014],
     ["CFG_Y_B255", None, None, 2015],
+    ['POST_DATA_CHECK', True, True, 2016],
 
     ["POST_WRITE_COUNTS", 0, 7, 5001],
     ["WRITE_COUNTS_CHECK", True, True, 5002],
