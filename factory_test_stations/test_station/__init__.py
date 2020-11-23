@@ -8,3 +8,6 @@
 #from test_station_pancake_pr788 import *
 # from test_station_pancake_eeprom import *
 # from test_station_pancake_muni import *
+
+from test_station.test_station_project_station import projectstationStation
+from test_station.test_station_seacliff_eeprom import seacliffeepromStation
