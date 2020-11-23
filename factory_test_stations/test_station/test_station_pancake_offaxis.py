@@ -195,6 +195,14 @@ class pancakeoffaxisStation(test_station.TestStation):
         return test_station.TestStation.validate_sn(self, serial_num)
 
     def is_ready(self):
+        free_space = self.get_free_space_mb(self._station_config.ROOT_DIR)
+        limit_free_space = 300
+        if free_space < limit_free_space:
+            msg = "Unable to start test (total size of free space {0:.1f} less than {1}M.\n"\
+                .format(free_space, limit_free_space)
+            self._operator_interface.operator_input('WARN', msg=msg, msg_type='warning')
+            return False
+
         serial_number = self._latest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
         self._the_unit = dut.pancakeDutOffAxis(serial_number, self._station_config, self._operator_interface)
@@ -204,6 +212,12 @@ class pancakeoffaxisStation(test_station.TestStation):
             return self.is_ready_litup_inside()
         else:
             return self.is_ready_litup_outside()
+
+    def get_free_space_mb(self, folder):
+        import ctypes
+        free_bytes = ctypes.c_ulonglong(0)
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
+        return free_bytes.value / 1024 / 1024
 
     def is_ready_litup_outside(self):
         ready = False
