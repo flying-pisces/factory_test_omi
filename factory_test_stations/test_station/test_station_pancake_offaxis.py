@@ -512,20 +512,20 @@ class pancakeoffaxisStation(test_station.TestStation):
                         continue
                     test_item = '{}_{}_duv_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, duv)
+                if len(lv_dic) > 0:
+                    # Max brightness location
+                    max_loc = max(lv_dic, key=lv_dic.get)
+                    test_item = '{}_{}_Lv_max_pos'.format(posIdx, pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, max_loc)
+                    inclination, azimuth = tuple(re.split('_', max_loc)[1:])
+                    test_item = '{}_{}_Lv_max_pos_theta'.format(posIdx, pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, int(inclination))
+                    test_item = '{}_{}_Lv_max_pos_phi'.format(posIdx, pattern)
+                    test_log.set_measured_value_by_name_ex(test_item, int(azimuth))
+                    # endregion
 
-                # Max brightness location
-                max_loc = max(lv_dic, key=lv_dic.get)
-                test_item = '{}_{}_Lv_max_pos'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, max_loc)
-                inclination, azimuth = tuple(re.split('_', max_loc)[1:])
-                test_item = '{}_{}_Lv_max_pos_theta'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, int(inclination))
-                test_item = '{}_{}_Lv_max_pos_phi'.format(posIdx, pattern)
-                test_log.set_measured_value_by_name_ex(test_item, int(azimuth))
-                # endregion
-
-                if pattern in self._station_config.CR_TEST_PATTERNS:
-                    lv_cr_items[pattern] = lv_dic
+                    if pattern in self._station_config.CR_TEST_PATTERNS:
+                        lv_cr_items[pattern] = lv_dic
 
             # region Constract Test Item
 
@@ -536,6 +536,8 @@ class pancakeoffaxisStation(test_station.TestStation):
 
                 for item in self._station_config.CR_AT_POLE_AZI:
                     item_key = 'P_%s_%s' % item
+                    if not lv_cr_items[w].get(item_key) or not lv_cr_items[d].get(item_key):
+                        continue
                     cr = lv_cr_items[w][item_key] / lv_cr_items[d][item_key]
                     test_item = '{}_CR_{}_{}'.format(posIdx, *item)
                     test_log.set_measured_value_by_name_ex(test_item, cr)
