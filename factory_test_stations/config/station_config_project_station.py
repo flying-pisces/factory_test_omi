@@ -34,7 +34,7 @@ COLORS = [1,2,3,4,5]
 
 #####
 ### Facebook_IT Enable boolean
-FACEBOOK_IT_ENABLED = False
+FACEBOOK_IT_ENABLED = True
 
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
