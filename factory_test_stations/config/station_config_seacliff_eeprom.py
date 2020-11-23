@@ -16,13 +16,7 @@ SERIAL_NUMBER_MODEL_NUMBER = '\dPR0[\w|\d]{10}'  # Peak panel SN
 
 ##################################
 # Fixture parameters
-# Fixture commands
-PROXY_COMMUNICATION_PATH = r"C:\Version\Release\vision.exe"
-IS_PROXY_COMMUNICATION = True
-PROXY_ENDPOINT = 8000
-FIXTURE_COMPORT = "COM4" #
-FIXTURE_PARTICLE_COMPORT = "COM8" #
-FIXTURE_PARTICLE_ADDR = 1
+AUTO_CFG_COMPORTS = True
 DUT_COMPORT = "COM14"  #
 
 COMMAND_DISP_HELP = "$c.help"
