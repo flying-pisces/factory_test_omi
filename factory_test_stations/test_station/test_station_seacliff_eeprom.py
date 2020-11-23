@@ -133,6 +133,40 @@ class seacliffeepromStation(test_station.TestStation):
             msg += os.linesep
         self._operator_interface.print_to_console(msg)
 
+    def auto_find_com_ports(self):
+        import serial.tools.list_ports
+        import serial
+        self._operator_interface.print_to_console("auto config com ports...\n")
+        self._station_config.DUT_COMPORT = None
+        com_ports = list(serial.tools.list_ports.comports())
+
+        for com in com_ports:
+            hit_success = False
+            if self._station_config.DUT_COMPORT is None:
+                try:
+                    a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1, bytesize=8,
+                                             timeout=1, xonxoff=0, rtscts=0)
+                    if a_serial is not None:
+                        a_serial.flush()
+                        a_serial.write('$c.VERSION,mcu\r\n'.encode())
+                        ver_mcu = a_serial.readline()
+                        if '$P.VERSION' in ver_mcu.decode(encoding='utf-8').upper():
+                            a_serial.flush()
+                            a_serial.write('$c.DUT.POWEROFF\r\n'.encode())
+                            pw_msg = a_serial.readline()
+                            if pw_msg != b'':
+                                print('Ver_MCU: {0}, POWER_OFF: {1}'.format(ver_mcu, pw_msg.decode()))
+                            self._station_config.DUT_COMPORT = com.device
+                            hit_success = True
+                except Exception as e:
+                    pass
+                finally:
+                    a_serial.close()
+
+            if hit_success:
+                continue
+
+
     def __init__(self, station_config, operator_interface):
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if (hasattr(self._station_config, 'IS_PRINT_TO_LOG')
@@ -149,6 +183,13 @@ class seacliffeepromStation(test_station.TestStation):
     def initialize(self):
         try:
             self._operator_interface.print_to_console("Initializing pancake EEPROM station...\n")
+            if self._station_config.AUTO_CFG_COMPORTS:
+                self.auto_find_com_ports()
+
+            msg = "find ports DUT = {0}. \n" \
+                .format(self._station_config.DUT_COMPORT)
+            self._operator_interface.print_to_console(msg)
+
             self._fixture.initialize()
             self._equip.initialize()
         except:
