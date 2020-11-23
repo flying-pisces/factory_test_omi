@@ -15,6 +15,7 @@ from test_station.dut.dut import projectDut, DUTError
 import types
 import glob
 import sys
+import shutil
 
 
 class pancakeoffaxisError(Exception):
@@ -68,6 +69,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._is_screen_on_by_op = False
         self._retries_screen_on = 0
         self._is_cancel_test_by_op = False
+        self._ttxm_filelist = []
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
@@ -150,25 +152,17 @@ class pancakeoffaxisStation(test_station.TestStation):
 
             sequencePath = os.path.join(self._station_config.ROOT_DIR, self._station_config.SEQUENCE_RELATIVEPATH)
             self._equipment.set_sequence(sequencePath)
-            if not self._station_config.USE_MULTI_DB:
-                if not self._station_config.EQUIPMENT_SIM:
-                    uni_file_name = re.sub('_x.log', '.ttxm', test_log.get_filename())
-                    bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
-                    databaseFileName = os.path.join(bak_dir, uni_file_name)
-                    self._equipment.create_database(databaseFileName)
-                else:
-                    db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
-                    fns = glob.glob1(db_dir, '%s_*.ttxm' % (serial_number))
-                    if len(fns) > 0:
-                        databaseFileName = os.path.join(db_dir, fns[0])
-                        self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
-                        self._equipment.set_database(databaseFileName)
-                    else:
-                        raise pancakeoffaxisError('unable to find ttxm for SN: %s' % (serial_number))
 
             self._operator_interface.print_to_console("Close the eliminator in the fixture... \n")
 
             self.offaxis_test_do(serial_number, test_log, self._the_unit)
+
+            if not self._station_config.IS_SAVEDB:
+                self._operator_interface.print_to_console("!!!Remove ttxms to save disk-space.!!!\n")
+                #  it is sometimes fail to remove ttxm cause the file is occupied by TrueTest
+                file_list_to_removed = [c for c in self._ttxm_filelist if os.path.exists(c)]
+                [shutil.rmtree(c, ignore_errors=True) for c in file_list_to_removed]
+                self._ttxm_filelist = file_list_to_removed.copy()
 
         except Exception as e:
             self._operator_interface.print_to_console("Test exception {0}.\n".format(e))
@@ -336,8 +330,6 @@ class pancakeoffaxisStation(test_station.TestStation):
                     meas_list = self._equipment.get_measurement_list()
                     exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
                     measurement = self._station_config.MEASUREMENTS[i]
-                    if not self._station_config.USE_MULTI_DB :
-                        measurement = '{}_{}'.format(measurement, posIdx)
                     for meas in meas_list:
                         if meas['Measurement Setup'] != measurement:
                             continue
@@ -361,19 +353,19 @@ class pancakeoffaxisStation(test_station.TestStation):
         for posIdx, pos, pos_patterns in pos_items:
             self._operator_interface.print_to_console('clear registration\n')
             self._equipment.clear_registration()
-            if self._station_config.USE_MULTI_DB:
-                if not self._station_config.EQUIPMENT_SIM:
-                    uni_file_name = re.sub('_x.log', '_{}.ttxm'.format(posIdx), test_log.get_filename())
-                    bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
-                    databaseFileName = os.path.join(bak_dir, uni_file_name)
-                    self._equipment.create_database(databaseFileName)
-                else:
-                    db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
-                    fns = glob.glob1(db_dir, '%s_*_%s.ttxm'%(serial_number, posIdx))
-                    if len(fns) > 0:
-                        databaseFileName = os.path.join(db_dir, fns[0])
-                        self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
-                        self._equipment.set_database(databaseFileName)
+            if not self._station_config.EQUIPMENT_SIM:
+                uni_file_name = re.sub('_x.log', '_{}.ttxm'.format(posIdx), test_log.get_filename())
+                bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
+                databaseFileName = os.path.join(bak_dir, uni_file_name)
+                self._equipment.create_database(databaseFileName)
+                self._ttxm_filelist.append(databaseFileName)
+            else:
+                db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
+                fns = glob.glob1(db_dir, '%s_*_%s.ttxm'%(serial_number, posIdx))
+                if len(fns) > 0:
+                    databaseFileName = os.path.join(db_dir, fns[0])
+                    self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
+                    self._equipment.set_database(databaseFileName)
 
             self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
             self._fixture.mov_abs_xy(pos[0], pos[1])
@@ -390,8 +382,6 @@ class pancakeoffaxisStation(test_station.TestStation):
 
                 pattern = self._station_config.PATTERNS[i]
                 analysis = self._station_config.ANALYSIS[i]
-                if not self._station_config.USE_MULTI_DB:
-                    analysis = '{}_{}'.format(analysis, posIdx)
                 self._operator_interface.print_to_console(
                     "Panel Measurement Pattern: %s , Position Id %s.\n" % (pattern, posIdx))
                 # the_unit.display_color(self._station_config.COLORS[i])
@@ -405,7 +395,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                 use_camera = not self._station_config.EQUIPMENT_SIM
                 if not use_camera:
                     self._equipment.clear_registration()
-                analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, self._station_config.IS_SAVEDB)
+                analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, True)
                 self._operator_interface.print_to_console("Sequence run step  {}.\n".format(analysis))
 
                 lv_dic = {}

@@ -88,6 +88,7 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
             print("flushed")
             print('writing: ' + input_bytes)
         cmd = '{0}\r\n'.format(input_bytes)
+        self._serial_port.reset_input_buffer()
         bytes_written = self._serial_port.write(cmd.encode())
         return bytes_written
 
