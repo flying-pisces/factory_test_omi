@@ -10,7 +10,7 @@ import os
 
 class Conoscope:
     DLL_PATH = '.'
-    VERSION_REVISION = 46
+    VERSION_REVISION = 52
     class Filter(Enum):
         BK7 = 0
         Mirror = 1
@@ -171,7 +171,11 @@ class Conoscope:
             ("bWaitForSensorTemperature", ctypes.c_bool),
             ("eNd", ctypes.c_int),
             ("eIris", ctypes.c_int),
-            ("exposureTimeUs", ctypes.c_int),
+            ("exposureTimeUs_FilterX", ctypes.c_int),
+            ("exposureTimeUs_FilterXz", ctypes.c_int),
+            ("exposureTimeUs_FilterYa", ctypes.c_int),
+            ("exposureTimeUs_FilterYb", ctypes.c_int),
+            ("exposureTimeUs_FilterZ", ctypes.c_int),
             ("nbAcquisition", ctypes.c_int),
             ("bAutoExposure", ctypes.c_bool),
             ("bUseExpoFile", ctypes.c_bool),
