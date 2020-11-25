@@ -834,7 +834,7 @@ class MotAlgorithmHelper(object):
                 stats_summary[1, k] = percentuv
                 k = k + 1
 
-        return dict(zip(stats_summary[0, :], stats_summary[1, :]))
+        return dict(zip(stats_summary[0, 0:k], stats_summary[1, 0:k]))
 
 
 

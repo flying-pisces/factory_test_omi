@@ -55,7 +55,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.6.0'
+        self._sw_version = '0.7.0'
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -543,6 +543,8 @@ class seacliffmotStation(test_station.TestStation):
                          for measure_item_name, export_value in zip(measure_item_names, test_values)]
 
                         for export_item, export_value in color_exports.items():
+                            if export_item is None:
+                                continue
                             export_item_without_blank = export_item.replace(' ', '_')
                             measure_item_name = '{0}_{1}_{2}'.format(pos_name, pattern_name, export_item_without_blank)
                             test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
