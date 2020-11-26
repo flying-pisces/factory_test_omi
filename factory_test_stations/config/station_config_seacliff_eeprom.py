@@ -49,21 +49,33 @@ DUT_DISPLAYSLEEPTIME = 0.5
 DUT_NVRAM_WRITE_TIMEOUT = 10
 NVM_WRITE_PROTECT = True
 
-DISP_CHECKER_ENABLE = False
-
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\config\MER-132-43U3C(FQ0200080140).txt'
-CAMERA_VERIFY_ENABLE = False
+CAMERA_VERIFY_ENABLE = True
 CAMERA_EXPOSURE = 80000
-CAMERA_GAIN = 1
+CAMERA_GAIN = 1.0
 
-CAMERA_CHECK_ROI = (100, 100, 500, 500)  # resolution: 1292 * 964
+CAMERA_CHECK_ROI = (400, 260, 820, 650)  # resolution: 1292 * 964
 CAMERA_CHECK_CFG = [
     {
         'pattern': (255, 0, 0),
         'chk_lsl': [0, 43, 46],
-        'chk_usl': [10, 255, 255],
+        'chk_usl': [30, 255, 255],
         'determine':[50, 100],
-    }
+    },
+
+    # {
+    #     'pattern': (0, 255, 0),
+    #     'chk_lsl': [80, 90, 46],
+    #     'chk_usl': [120, 240, 255],
+    #     'determine': None,
+    # },
+    #
+    # {
+    #     'pattern': (0, 0, 255),
+    #     'chk_lsl': [150, 190, 46],
+    #     'chk_usl': [160, 255, 255],
+    #     'determine': None,
+    # }
 ]
 
 # blue
@@ -84,7 +96,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config
 
 NVM_WRITE_COUNT_MAX = 6
 # calibration required data.
-USER_INPUT_CALIB_DATA = True
+USER_INPUT_CALIB_DATA = False
 
 CALIB_REQ_DATA = {
     'display_boresight_x': 100.20,
