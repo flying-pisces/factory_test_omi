@@ -31,7 +31,7 @@ class EEPROMUserInputDialog(gui_utils.Dialog):
                                            validate={"validator": "real", "min": -127, "max": 127})
         self._boresight_y = Pmw.EntryField(master, labelpos=tk.W, label_text="boresight_y", value="0",
                                            validate={"validator": "real", "min": -127, "max": 127})
-        self._boresight_r = Pmw.EntryField(master, labelpos=tk.W, label_text="rotation_x", value="0",
+        self._boresight_r = Pmw.EntryField(master, labelpos=tk.W, label_text="rotation_r", value="0",
                                            validate={"validator": "real", "min": -1, "max": 1})
 
         self._w255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="W255_Lv", value="0",
@@ -325,139 +325,140 @@ class seacliffeepromStation(test_station.TestStation):
                 # TODO: capture the image to determine the status of DUT.
                 self._operator_interface.print_to_console('image capture and verification ...\n')
                 judge_by_camera = False
-                for check_cfg, idx in enumerate(self._station_config.CAMERA_CHECK_CFG):
+                for idx, check_cfg in enumerate(self._station_config.CAMERA_CHECK_CFG):
                     pattern = check_cfg.get('pattern')
                     chk_lsl = check_cfg.get('chk_lsl')
                     chk_usl = check_cfg.get('chk_usl')
                     determine = check_cfg.get('determine')
                     self._operator_interface.print_to_console('check image with {0} ...\n'.format(pattern))
                     the_unit.display_color(pattern)
-                    percent = self._fixture.CheckImage(chk_lsl, chk_usl)
+                    percent = int(self._fixture.CheckImage(pattern, chk_lsl, chk_usl) * 100)
                     self._operator_interface.print_to_console(
                         'check result with pattern: {0}:{1} ...{2}\n'.format(pattern, determine, percent))
-                    if determine[0] <= percent <= determine[1]:
+                    if (determine is None) or (determine[0] <= percent <= determine[1]):
                         judge_by_camera = True
                     else:
                         judge_by_camera = False
                     if not judge_by_camera:
                         break
-
+                if self._station_config.FIXTURE_SIM:
+                    judge_by_camera = True
                 test_log.set_measured_value_by_name_ex('JUDGED_BY_CAM', judge_by_camera)
+                if judge_by_camera:
+                    self._operator_interface.print_to_console('read all data from eeprom ...\n')
 
-                self._operator_interface.print_to_console('read all data from eeprom ...\n')
+                    var_data = dict(calib_data)  # type: dict
 
-                var_data = dict(calib_data)  # type: dict
+                    raw_data = ['0x00'] * 45
+                    if not self._station_config.DUT_SIM:
+                        raw_data = the_unit.nvm_read_data()[2:]
+                    # mark: convert raw data before flush to dict.
+                    var_data['display_boresight_x'] = self.cvt_hex2_to_float_S8_7(raw_data, 0)
+                    var_data['display_boresight_y'] = self.cvt_hex2_to_float_S8_7(raw_data, 2)
+                    var_data['rotation'] = self.cvt_hex1_to_decimal_S0_7(raw_data, 4)
 
-                raw_data = ['0x00'] * 45
-                if not self._station_config.DUT_SIM:
-                    raw_data = the_unit.nvm_read_data()[2:]
-                # mark: convert raw data before flush to dict.
-                var_data['display_boresight_x'] = self.cvt_hex2_to_float_S8_7(raw_data, 0)
-                var_data['display_boresight_y'] = self.cvt_hex2_to_float_S8_7(raw_data, 2)
-                var_data['rotation'] = self.cvt_hex1_to_decimal_S0_7(raw_data, 4)
+                    var_data['lv_W255'] = self.cvt_hex1_to_int_S7_0(raw_data, 5)
+                    var_data['x_W255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 6)
+                    var_data['y_W255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 8)
 
-                var_data['lv_W255'] = self.cvt_hex1_to_int_S7_0(raw_data, 5)
-                var_data['x_W255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 6)
-                var_data['y_W255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 8)
+                    var_data['lv_R255'] = self.cvt_hex1_to_int_S7_0(raw_data, 10)
+                    var_data['lv_G255'] = self.cvt_hex1_to_int_S7_0(raw_data, 11)
+                    var_data['lv_B255'] = self.cvt_hex1_to_int_S7_0(raw_data, 12)
 
-                var_data['lv_R255'] = self.cvt_hex1_to_int_S7_0(raw_data, 10)
-                var_data['lv_G255'] = self.cvt_hex1_to_int_S7_0(raw_data, 11)
-                var_data['lv_B255'] = self.cvt_hex1_to_int_S7_0(raw_data, 12)
+                    var_data['x_R255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 13)
+                    var_data['y_R255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 15)
 
-                var_data['x_R255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 13)
-                var_data['y_R255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 15)
+                    var_data['x_G255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 17)
+                    var_data['y_G255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 19)
 
-                var_data['x_G255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 17)
-                var_data['y_G255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 19)
+                    var_data['x_B255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 21)
+                    var_data['y_B255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 23)
 
-                var_data['x_B255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 21)
-                var_data['y_B255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 23)
+                    # mark: save them to database.
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_X', var_data.get('display_boresight_x'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_Y', var_data.get('display_boresight_y'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_ROTATION', var_data.get('rotation'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_W255', var_data.get('lv_W255'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_W255', var_data.get('x_W255'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_W255', var_data.get('y_W255'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_R255', var_data.get('lv_R255'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_R255', var_data.get('x_R255'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_R255', var_data.get('y_R255'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_G255', var_data.get('lv_G255'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_G255', var_data.get('x_G255'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_G255', var_data.get('y_G255'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_B255', var_data.get('lv_B255'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_B255', var_data.get('x_B255'))
+                    test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_B255', var_data.get('y_B255'))
 
-                # mark: save them to database.
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_X', var_data.get('display_boresight_x'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_Y', var_data.get('display_boresight_y'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_ROTATION', var_data.get('rotation'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_W255', var_data.get('lv_W255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_W255', var_data.get('x_W255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_W255', var_data.get('y_W255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_R255', var_data.get('lv_R255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_R255', var_data.get('x_R255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_R255', var_data.get('y_R255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_G255', var_data.get('lv_G255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_G255', var_data.get('x_G255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_G255', var_data.get('y_G255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_B255', var_data.get('lv_B255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_B255', var_data.get('x_B255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_B255', var_data.get('y_B255'))
+                    raw_data_cpy = raw_data.copy()  # place holder for all the bytes.
+                    var_data = dict(calib_data)  # type: dict
+                    raw_data_cpy[0:2] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_x'])
+                    raw_data_cpy[2:4] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_y'])
+                    raw_data_cpy[4:5] = self.cvt_decimal_to_hex1_S0_7(var_data['rotation'])
+                    raw_data_cpy[5:6] = self.cvt_int_to_hex1_S7_0(var_data['lv_W255'])
+                    raw_data_cpy[6:8] = self.cvt_decimal_to_hex2_U0_13(var_data['x_W255'])
+                    raw_data_cpy[8:10] = self.cvt_decimal_to_hex2_U0_13(var_data['y_W255'])
 
-                raw_data_cpy = raw_data.copy()  # place holder for all the bytes.
-                var_data = dict(calib_data)  # type: dict
-                raw_data_cpy[0:2] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_x'])
-                raw_data_cpy[2:4] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_y'])
-                raw_data_cpy[4:5] = self.cvt_decimal_to_hex1_S0_7(var_data['rotation'])
-                raw_data_cpy[5:6] = self.cvt_int_to_hex1_S7_0(var_data['lv_W255'])
-                raw_data_cpy[6:8] = self.cvt_decimal_to_hex2_U0_13(var_data['x_W255'])
-                raw_data_cpy[8:10] = self.cvt_decimal_to_hex2_U0_13(var_data['y_W255'])
+                    raw_data_cpy[10:11] = self.cvt_int_to_hex1_S7_0(var_data['lv_R255'])
+                    raw_data_cpy[11:12] = self.cvt_int_to_hex1_S7_0(var_data['lv_G255'])
+                    raw_data_cpy[12:13] = self.cvt_int_to_hex1_S7_0(var_data['lv_B255'])
 
-                raw_data_cpy[10:11] = self.cvt_int_to_hex1_S7_0(var_data['lv_R255'])
-                raw_data_cpy[11:12] = self.cvt_int_to_hex1_S7_0(var_data['lv_G255'])
-                raw_data_cpy[12:13] = self.cvt_int_to_hex1_S7_0(var_data['lv_B255'])
+                    raw_data_cpy[13:15] = self.cvt_decimal_to_hex2_U0_13(var_data['x_R255'])
+                    raw_data_cpy[15:17] = self.cvt_decimal_to_hex2_U0_13(var_data['y_R255'])
 
-                raw_data_cpy[13:15] = self.cvt_decimal_to_hex2_U0_13(var_data['x_R255'])
-                raw_data_cpy[15:17] = self.cvt_decimal_to_hex2_U0_13(var_data['y_R255'])
+                    raw_data_cpy[17:19] = self.cvt_decimal_to_hex2_U0_13(var_data['x_G255'])
+                    raw_data_cpy[19:21] = self.cvt_decimal_to_hex2_U0_13(var_data['y_G255'])
 
-                raw_data_cpy[17:19] = self.cvt_decimal_to_hex2_U0_13(var_data['x_G255'])
-                raw_data_cpy[19:21] = self.cvt_decimal_to_hex2_U0_13(var_data['y_G255'])
+                    raw_data_cpy[21:23] = self.cvt_decimal_to_hex2_U0_13(var_data['x_B255'])
+                    raw_data_cpy[23:25] = self.cvt_decimal_to_hex2_U0_13(var_data['y_B255'])
 
-                raw_data_cpy[21:23] = self.cvt_decimal_to_hex2_U0_13(var_data['x_B255'])
-                raw_data_cpy[23:25] = self.cvt_decimal_to_hex2_U0_13(var_data['y_B255'])
+                    # TODO: config all the data to array.
+                    self._operator_interface.print_to_console('write configuration to eeprom ...\n')
+                    if not self._station_config.NVM_WRITE_PROTECT:
+                        the_unit.nvm_write_data(raw_data_cpy)
+                    else:
+                        self._operator_interface.print_to_console('write configuration protected ...\n')
+                        time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
 
-                # TODO: config all the data to array.
-                self._operator_interface.print_to_console('write configuration to eeprom ...\n')
-                if not self._station_config.NVM_WRITE_PROTECT:
-                    the_unit.nvm_write_data(raw_data_cpy)
-                else:
-                    self._operator_interface.print_to_console('write configuration protected ...\n')
-                    time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
+                    test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_X', var_data.get('display_boresight_x'))
+                    test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_Y', var_data.get('display_boresight_y'))
+                    test_log.set_measured_value_by_name_ex('CFG_ROTATION', var_data.get('rotation'))
+                    test_log.set_measured_value_by_name_ex('CFG_LV_W255', var_data.get('lv_W255'))
+                    test_log.set_measured_value_by_name_ex('CFG_X_W255', var_data.get('x_W255'))
+                    test_log.set_measured_value_by_name_ex('CFG_Y_W255', var_data.get('y_W255'))
+                    test_log.set_measured_value_by_name_ex('CFG_LV_R255', var_data.get('lv_R255'))
+                    test_log.set_measured_value_by_name_ex('CFG_X_R255', var_data.get('x_R255'))
+                    test_log.set_measured_value_by_name_ex('CFG_Y_R255', var_data.get('y_R255'))
+                    test_log.set_measured_value_by_name_ex('CFG_LV_G255', var_data.get('lv_G255'))
+                    test_log.set_measured_value_by_name_ex('CFG_X_G255', var_data.get('x_G255'))
+                    test_log.set_measured_value_by_name_ex('CFG_Y_G255', var_data.get('y_G255'))
+                    test_log.set_measured_value_by_name_ex('CFG_LV_B255', var_data.get('lv_B255'))
+                    test_log.set_measured_value_by_name_ex('CFG_X_B255', var_data.get('x_B255'))
+                    test_log.set_measured_value_by_name_ex('CFG_Y_B255', var_data.get('y_B255'))
 
-                test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_X', var_data.get('display_boresight_x'))
-                test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_Y', var_data.get('display_boresight_y'))
-                test_log.set_measured_value_by_name_ex('CFG_ROTATION', var_data.get('rotation'))
-                test_log.set_measured_value_by_name_ex('CFG_LV_W255', var_data.get('lv_W255'))
-                test_log.set_measured_value_by_name_ex('CFG_X_W255', var_data.get('x_W255'))
-                test_log.set_measured_value_by_name_ex('CFG_Y_W255', var_data.get('y_W255'))
-                test_log.set_measured_value_by_name_ex('CFG_LV_R255', var_data.get('lv_R255'))
-                test_log.set_measured_value_by_name_ex('CFG_X_R255', var_data.get('x_R255'))
-                test_log.set_measured_value_by_name_ex('CFG_Y_R255', var_data.get('y_R255'))
-                test_log.set_measured_value_by_name_ex('CFG_LV_G255', var_data.get('lv_G255'))
-                test_log.set_measured_value_by_name_ex('CFG_X_G255', var_data.get('x_G255'))
-                test_log.set_measured_value_by_name_ex('CFG_Y_G255', var_data.get('y_G255'))
-                test_log.set_measured_value_by_name_ex('CFG_LV_B255', var_data.get('lv_B255'))
-                test_log.set_measured_value_by_name_ex('CFG_X_B255', var_data.get('x_B255'))
-                test_log.set_measured_value_by_name_ex('CFG_Y_B255', var_data.get('y_B255'))
+                    self._operator_interface.print_to_console('screen off ...\n')
+                    the_unit.screen_off()
 
-                self._operator_interface.print_to_console('screen off ...\n')
-                the_unit.screen_off()
+                    # TODO: it is able to do verification after flushing the NVRAM.
+                    self._operator_interface.print_to_console('screen on ...\n')
+                    the_unit.screen_on()
+                    self._operator_interface.print_to_console('read configuration from eeprom ...\n')
+                    data_from_nvram = [0]*5 + raw_data_cpy.copy()
+                    if not self._station_config.DUT_SIM and not self._station_config.NVM_WRITE_PROTECT:
+                        data_from_nvram = the_unit.nvm_read_data()
 
-                # TODO: it is able to do verification after flushing the NVRAM.
-                self._operator_interface.print_to_console('screen on ...\n')
-                the_unit.screen_on()
-                self._operator_interface.print_to_console('read configuration from eeprom ...\n')
-                data_from_nvram = [0]*5 + raw_data_cpy.copy()
-                if not self._station_config.DUT_SIM:
-                    data_from_nvram = the_unit.nvm_read_data()
+                    test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', data_from_nvram[5:] == raw_data_cpy)
 
-                test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', data_from_nvram[5:] == raw_data_cpy)
+                    self._operator_interface.print_to_console('read write count for nvram ...\n')
+                    write_status = the_unit.nvm_read_statistics()
+                    if write_status is not None:
+                        post_write_count = int(write_status[1])
+                    test_log.set_measured_value_by_name_ex('POST_WRITE_COUNTS', post_write_count)
 
-                self._operator_interface.print_to_console('read write count for nvram ...\n')
-                write_status = the_unit.nvm_read_statistics()
-                if write_status is not None:
-                    post_write_count = int(write_status[1])
-                test_log.set_measured_value_by_name_ex('POST_WRITE_COUNTS', post_write_count)
-
-                test_log.set_measured_value_by_name_ex(
-                    'WRITE_COUNTS_CHECK',
-                    self._station_config.NVM_WRITE_PROTECT | (post_write_count == (write_count + 1)))
+                    test_log.set_measured_value_by_name_ex(
+                        'WRITE_COUNTS_CHECK',
+                        self._station_config.NVM_WRITE_PROTECT | (post_write_count == (write_count + 1)))
 
             the_unit.close()
         except seacliffeepromError:
