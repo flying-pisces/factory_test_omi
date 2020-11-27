@@ -18,7 +18,7 @@ class seacliffeepromFixture(hardware_station_common.test_station.test_fixture.Te
     """
     def __init__(self, station_config, operator_interface):
         hardware_station_common.test_station.test_fixture.TestFixture.__init__(self, station_config, operator_interface)
-        self._device_manager = gx.DeviceManager()
+        self._device_manager = None
         self._camera_sn = None
         self._camera = None  # type: gx.Device
 
@@ -28,6 +28,7 @@ class seacliffeepromFixture(hardware_station_common.test_station.test_fixture.Te
     def initialize(self):
         self._operator_interface.print_to_console("Initializing pancake eeprom Equipment\n")
         if self._station_config.CAMERA_VERIFY_ENABLE:
+            self._device_manager = gx.DeviceManager()
             dev_num, dev_info_list = self._device_manager.update_device_list()
             dev_list = [c for c in dev_info_list if c.get('model_name') == 'MER-132-43U3C']
             if len(dev_list) != 0x01:
@@ -67,7 +68,7 @@ class seacliffeepromFixture(hardware_station_common.test_station.test_fixture.Te
         mask = cv2.inRange(hsv, lowerb=np.array(lower), upperb=np.array(upper))
         nonzero_count = np.count_nonzero(mask)
         roi_w, roi_h, __ = np.shape(hsv)
-        self._operator_interface.print_to_console('color statistics: {0} /{1}'.format(nonzero_count, roi_h * roi_w))
+        self._operator_interface.print_to_console('color statistics: {0} /{1}\n'.format(nonzero_count, roi_h * roi_w))
         return nonzero_count/(roi_h * roi_w)
 
     def _captureImg(self):
