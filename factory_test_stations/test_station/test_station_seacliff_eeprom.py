@@ -178,6 +178,7 @@ class seacliffeepromStation(test_station.TestStation):
         self._equip = test_equipment.seacliffeepromEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
+        self._sw_version = '0.2.0'
 
 
     def initialize(self):
@@ -235,6 +236,9 @@ class seacliffeepromStation(test_station.TestStation):
             sign = -1
         return sign * (s0 & 0x7F)
 
+    def hex_ext(self, val):
+        return '0x%02X'%val
+
     def cvt_float_to_hex2_S8_7(self, value):  # -10.5 --> 0x8A, 0x80
         """
         [-127.000 ~ 127.000]
@@ -244,8 +248,8 @@ class seacliffeepromStation(test_station.TestStation):
         if value < 0:
             decimal = abs(decimal)
             integral = int(abs(integral)) | (1 << 7)
-        s0 = hex(int(integral))
-        s1 = hex(int(decimal * (1 << 8)))
+        s0 = self.hex_ext(int(integral))
+        s1 = self.hex_ext(int(decimal * (1 << 8)))
         return [s0, s1]
 
     def cvt_decimal_to_hex1_S0_7(self, value):
@@ -258,7 +262,7 @@ class seacliffeepromStation(test_station.TestStation):
         if value < 0:
             decimal = abs(decimal)
             sign_hex = (1 << 7)
-        s1 = hex(int(decimal * (1 << 7)) | sign_hex)
+        s1 = self.hex_ext(int(decimal * (1 << 7)) | sign_hex)
         return [s1, ]
 
     def cvt_decimal_to_hex2_U0_13(self, value):
@@ -267,8 +271,8 @@ class seacliffeepromStation(test_station.TestStation):
         @type value: unsign int
         """
         v = int(value * (1 << 13))
-        s1 = hex(v & 0xff)
-        s0 = hex(v >> 8 & 0x1f)
+        s1 = self.hex_ext(v & 0xff)
+        s0 = self.hex_ext(v >> 8 & 0x1f)
         return [s0, s1]
 
     def cvt_int_to_hex1_S7_0(self, value):
@@ -282,11 +286,18 @@ class seacliffeepromStation(test_station.TestStation):
         if value < 0:
             integral = int(abs(value))
             sign_hex = (1 << 7)
-        s1 = hex(int(integral) | sign_hex)
+        s1 = self.hex_ext(int(integral) | sign_hex)
         return [s1, ]
     # </editor-fold>
 
     def _do_test(self, serial_number, test_log):
+        msg0 = 'info --> write protect: {0}, emulator_dut: {1}, emulator_equip: {2}, emulator_fixture: {3},' \
+               ' camera verify: {4}, ver:{5}\n' \
+            .format(
+            self._station_config.NVM_WRITE_PROTECT, self._station_config.DUT_SIM,
+            self._station_config.EQUIPMENT_SIM, self._station_config.FIXTURE_SIM,
+            self._station_config.CAMERA_VERIFY_ENABLE, self._sw_version)
+        self._operator_interface.print_to_console(msg0)
         self._overall_result = False
         self._overall_errorcode = ''
         self._operator_interface.print_to_console('waiting user to input the parameters...\n')
@@ -296,6 +307,7 @@ class seacliffeepromStation(test_station.TestStation):
             the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
 
         self._operator_interface.print_to_console("Start write data to DUT. %s\n" % the_unit.serial_number)
+        test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
         try:
             calib_data = self._station_config.CALIB_REQ_DATA
             if self._station_config.USER_INPUT_CALIB_DATA:
@@ -313,8 +325,8 @@ class seacliffeepromStation(test_station.TestStation):
 
             self._operator_interface.print_to_console('read write count for nvram ...\n')
             write_status = the_unit.nvm_read_statistics()
-            write_count = -1
-            post_write_count = -1
+            write_count = 0
+            post_write_count = 0
             if self._station_config.DUT_SIM:
                 write_status = [0, 1]
             if write_status is not None:
@@ -332,6 +344,8 @@ class seacliffeepromStation(test_station.TestStation):
                     determine = check_cfg.get('determine')
                     self._operator_interface.print_to_console('check image with {0} ...\n'.format(pattern))
                     the_unit.display_color(pattern)
+                    if not self._station_config.CAMERA_VERIFY_ENABLE:
+                        continue
                     percent = int(self._fixture.CheckImage(pattern, chk_lsl, chk_usl) * 100)
                     self._operator_interface.print_to_console(
                         'check result with pattern: {0}:{1} ...{2}\n'.format(pattern, determine, percent))
@@ -414,11 +428,14 @@ class seacliffeepromStation(test_station.TestStation):
                     raw_data_cpy[23:25] = self.cvt_decimal_to_hex2_U0_13(var_data['y_B255'])
 
                     # TODO: config all the data to array.
+
+                    print('Write configuration...........\n')
                     self._operator_interface.print_to_console('write configuration to eeprom ...\n')
                     if not self._station_config.NVM_WRITE_PROTECT:
                         the_unit.nvm_write_data(raw_data_cpy)
                     else:
                         self._operator_interface.print_to_console('write configuration protected ...\n')
+                        print('WR_DATA:  \n' + ','.join(raw_data_cpy))
                         time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
 
                     test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_X', var_data.get('display_boresight_x'))
@@ -444,11 +461,12 @@ class seacliffeepromStation(test_station.TestStation):
                     self._operator_interface.print_to_console('screen on ...\n')
                     the_unit.screen_on()
                     self._operator_interface.print_to_console('read configuration from eeprom ...\n')
-                    data_from_nvram = [0]*5 + raw_data_cpy.copy()
-                    if not self._station_config.DUT_SIM and not self._station_config.NVM_WRITE_PROTECT:
+                    data_from_nvram = raw_data_cpy.copy()
+                    if not self._station_config.DUT_SIM:
                         data_from_nvram = the_unit.nvm_read_data()
-
-                    test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', data_from_nvram[5:] == raw_data_cpy)
+                    data_from_nvram_cap = [c.upper() for c in data_from_nvram]
+                    raw_data_cpy_cap = [c.upper() for c in raw_data_cpy]
+                    test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', data_from_nvram_cap == raw_data_cpy_cap)
 
                     self._operator_interface.print_to_console('read write count for nvram ...\n')
                     write_status = the_unit.nvm_read_statistics()
@@ -457,8 +475,7 @@ class seacliffeepromStation(test_station.TestStation):
                     test_log.set_measured_value_by_name_ex('POST_WRITE_COUNTS', post_write_count)
 
                     test_log.set_measured_value_by_name_ex(
-                        'WRITE_COUNTS_CHECK',
-                        self._station_config.NVM_WRITE_PROTECT | (post_write_count == (write_count + 1)))
+                        'WRITE_COUNTS_CHECK', (post_write_count == (write_count + 1)))
 
             the_unit.close()
         except seacliffeepromError:

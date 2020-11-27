@@ -1,7 +1,8 @@
 CURRENT_FW_VERSION = 1001
 
 STATION_LIMITS_ARRAYS = [
-    ["JUDGED_BY_CAM", True, True, 800],
+    ["SW_VERSION", None, None, 79],
+    ["JUDGED_BY_CAM", True, True, 80],
 
     ["PRE_WRITE_COUNTS", 0, 7, 1000],
 
