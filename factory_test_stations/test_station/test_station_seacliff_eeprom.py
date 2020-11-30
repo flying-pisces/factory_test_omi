@@ -437,7 +437,7 @@ class seacliffeepromStation(test_station.TestStation):
                     the_unit.nvm_write_data(raw_data_cpy)
                 else:
                     self._operator_interface.print_to_console('write configuration protected ...\n')
-                    print('WR_DATA:  \n' + ','.join(raw_data_cpy))
+                    print('WR_DATA_SIM:  \n' + ','.join(raw_data_cpy))
                     time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
 
                 test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_X', var_data.get('display_boresight_x'))
