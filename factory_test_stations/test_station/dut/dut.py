@@ -432,7 +432,7 @@ if __name__ == "__main__" :
     station_config.COMMAND_DISP_VERSION_GRP = ['mcu', 'hw', 'fpga']
     station_config.COMMAND_DISP_VERSION = "Version"
     station_config.COMMAND_DISP_GETBOARDID = "getBoardID"
-    station_config.COMMAND_DISP_POWERON = "DUT.powerOn,FPGA_compressMode"
+    station_config.COMMAND_DISP_POWERON = "DUT.powerOn,DSCMODE"
     # COMMAND_DISP_POWERON = "DUT.powerOn,SSD2832_BistMode"
     station_config.COMMAND_DISP_POWEROFF = "DUT.powerOff"
     station_config.COMMAND_DISP_RESET = "Reset"
@@ -447,7 +447,7 @@ if __name__ == "__main__" :
     station_config.COMMAND_NVM_READ = 'NVMRead'
     station_config.COMMAND_NVM_WRITE = 'NVMWrite'
 
-    station_config.COMMAND_DISP_POWERON_DLY = 1.5
+    station_config.COMMAND_DISP_POWERON_DLY = 2
     station_config.COMMAND_DISP_RESET_DLY = 1
     station_config.COMMAND_DISP_SHOWIMG_DLY = 0.5
     station_config.COMMAND_DISP_POWEROFF_DLY = 0.2
