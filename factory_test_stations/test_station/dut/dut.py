@@ -307,8 +307,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         if response is None:
             return None
         cmd1 = command.split(self._spliter)[0]
-        respstr = ''.join(response).upper()
-        if cmd1.upper() not in respstr:
+        respstr = ''.join(response)
+        if cmd1.upper() not in respstr.upper():
             return None
         values = respstr.split(self._spliter)
         if len(values) == 1:
