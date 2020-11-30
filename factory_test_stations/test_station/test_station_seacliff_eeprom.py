@@ -95,7 +95,7 @@ class EEPROMUserInputDialog(gui_utils.Dialog):
             return False
 
     def current_cfg(self):
-        return dict(self._value_dic)
+        return dict(self._value_dic) if self._value_dic is not None else None
 
     def apply(self):
         pass
@@ -317,6 +317,7 @@ class seacliffeepromStation(test_station.TestStation):
                     self._operator_interface.wait(0.5, None, False)
                 calib_data = dlg.current_cfg()
             if calib_data is None:
+                self._operator_interface.print_to_console(f'unable to get enough information for {serial_number}.\n')
                 raise seacliffeepromError('unable to get enough parameters for {0}'.format(serial_number))
 
             the_unit.initialize()
