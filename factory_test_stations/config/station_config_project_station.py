@@ -18,7 +18,7 @@ ANALYSIS_RELATIVEPATH = r'factory-test_logs'
 ##################################
 # shopfloor
 #
-SHOPFLOOR_SYSTEM = 'Sunny'
+SHOPFLOOR_SYSTEM = 'Genius'
 # Will we be enforcing shopfloor routing?
 ENFORCE_SHOPFLOOR_ROUTING = False
 # does the shopfloor use work orders?
