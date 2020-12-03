@@ -38,7 +38,7 @@ class pancakemuniStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '0.0.1'
+        self._sw_version = '0.1.0'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
@@ -176,7 +176,7 @@ class pancakemuniStation(test_station.TestStation):
                     a_serial.close()
 
     def initialize(self):
-        self._operator_interface.print_to_console("Initializing station...\n")
+        self._operator_interface.print_to_console(f"Initializing station... SW_VER:{self._sw_version}\n")
         try:
             if self._station_config.AUTO_CFG_COMPORTS:
                 self.auto_find_com_ports()
@@ -287,6 +287,7 @@ class pancakemuniStation(test_station.TestStation):
 
         except Exception as e:
             self._operator_interface.print_to_console("Test exception . {0}\n".format(e))
+            self._operator_interface.operator_input('Exception', f'{str(e)}', msg_type='error')
         finally:
             self._operator_interface.print_to_console('release current test resource.\n')
             # noinspection PyBroadException
