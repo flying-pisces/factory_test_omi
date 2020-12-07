@@ -275,8 +275,8 @@ class pancakemuniStation(test_station.TestStation):
             self.bright_subpixel_do(self._the_unit, serial_number, test_log)
             self._operator_interface.print_to_console("Start testing subpixel for dark... \n")
             self.dark_subpixel_do(self._the_unit, serial_number, test_log)
-            # self._operator_interface.print_to_console("Start exporting ... \n")
-            # self.data_export(serial_number, test_log)
+            self._operator_interface.print_to_console("Start exporting ... \n")
+            self.data_export(serial_number, test_log)
             self._operator_interface.print_to_console("start uniformity testing ... \n")
 
             self._fixture.mov_abs_xy_wrt_dut(0, 0)
@@ -465,14 +465,14 @@ class pancakemuniStation(test_station.TestStation):
         :type test_log: test_station.TestRecord
         :type serial_number: str
         """
-        for pattern, __ in enumerate(self._station_config.PATTERN_COLORS):
+        for pattern, __ in self._station_config.PATTERN_COLORS.items():
             self._operator_interface.print_to_console("Panel export for Pattern: %s\n" % pattern)
             if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
                 output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
                                           serial_number + '_' + test_log._start_time.strftime(
                                               "%Y%m%d-%H%M%S"))
                 if not os.path.exists(output_dir):
-                    os.mkdir(output_dir, 777)
+                    os.mkdir(output_dir, 0o777)
                 meas_list = self._equipment.get_measurement_list()
                 exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
                 for meas in meas_list:
