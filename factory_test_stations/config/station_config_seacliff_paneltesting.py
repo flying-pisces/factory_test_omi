@@ -11,7 +11,7 @@ CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-tes
 # serial number codes
 #
 SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = '\dPR[\w|\d]{11}'  # Fake model number requirement, need config
+SERIAL_NUMBER_MODEL_NUMBER = '\d30[\w|\d]{11}'  # Fake model number requirement, need config
 
 ##################################
 # Fixture parameters
@@ -142,9 +142,6 @@ Resolution_REGISTER_SKIPTEXT = 6
 Resolution_Bin_X = 10
 Resolution_Bin_Y = 10
 
-# CAMERA_SN = "91738177"
-CAMERA_SN = '94142510'
-
 PATTERNS_BRIGHT = ['W028', 'W048', 'W000']  # the first two are used to register data for bright test.
 PATTERNS_DARK = ['W255', "R255", "G255", "B255"]
 SAVE_IMAGES = [True, True, True, True, True, True, True]
@@ -191,6 +188,8 @@ SIZE_L = 0.03
 SIZE_U = 0.1
 
 # uniformity args
+FIXTURE_CA_STABLE_DLY = 0.3
+CA_ALG_COUNT = 10
 
 # UNIF_PATTERNS = ['W255', 'W000']
 UNIF_PATTERNS = ['W255']
@@ -221,6 +220,8 @@ USE_WORKORDER_ENTRY = False
 
 EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\offaxis_2'
 CAMERA_SN = "Demo"
+# CAMERA_SN = "91738177"
+# CAMERA_SN = '94142510'
 DUT_SIM = True
 EQUIPMENT_SIM = True
 FIXTURE_SIM = True

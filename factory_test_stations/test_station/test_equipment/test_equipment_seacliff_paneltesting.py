@@ -132,7 +132,7 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
                                               rtscts=False)
         except:
             self._serial_port = None
-        if self._serial_port and not self._serial_port.isOpen():
+        if self._serial_port and not self._serial_port.isOpen() and self._station_config.CA_PORT:
             self._serial_port.open()
 
         init_result = "Init Camera Result - ErrorCode: {0}".format(pres['ErrorCode'])  # 0 means return successful
@@ -290,15 +290,26 @@ class pancakemuniEquipment(hardware_station_common.test_station.test_equipment.T
         return data
 
     def measure_xyLv(self):
-        data = self.measure_XYZ()
-        if isinstance(data, list) and len(data) == 0x03:
-            X, Y, Z = [float(c) for c in data]
+        alg_count = self._station_config.CA_ALG_COUNT if hasattr(self._station_config, 'CA_ALG_COUNT') else 1
+        count = 0
+        XYZ_List = []
+        while count < alg_count:
+            data = self.measure_XYZ()
+            if isinstance(data, list) and len(data) == 0x03:
+                X, Y, Z = [float(c) for c in data]
+                XYZ_List.append((X, Y, Z))
+            else:
+                raise pancakemuniEquipmentError(f'unable to capture data from CA-410. -> {data}, time = {count+1}')
+            count += 1
+        if len(XYZ_List) >= 1:
+            if self._verbose:
+                print(f'raw CA data Len: {len(XYZ_List)}, Data: {XYZ_List} \n')
+            XYZ_List.sort(key=lambda c: c[1])
+            X, Y, Z = XYZ_List[-1]
             xp = X / (X + Y + Z)
             yp = Y / (X + Y + Z)
             Lv = Y
             return xp, yp, Lv
-        else:
-            raise pancakemuniEquipmentError(f'unable to capture data from CA-410. -> {data}')
     # </editor-fold>
 
 

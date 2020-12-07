@@ -38,7 +38,7 @@ class pancakemuniStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '0.1.0'
+        self._sw_version = '0.1.1'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
@@ -466,8 +466,8 @@ class pancakemuniStation(test_station.TestStation):
         :type serial_number: str
         """
         for pattern, __ in self._station_config.PATTERN_COLORS.items():
-            self._operator_interface.print_to_console("Panel export for Pattern: %s\n" % pattern)
             if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
+                self._operator_interface.print_to_console("Panel export for Pattern: %s\n" % pattern)
                 output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
                                           serial_number + '_' + test_log._start_time.strftime(
                                               "%Y%m%d-%H%M%S"))
@@ -820,10 +820,12 @@ class pancakemuniStation(test_station.TestStation):
                 the_unit.display_image(pattern_color)
             else:
                 continue
-
+            dly = (self._station_config.FIXTURE_CA_STABLE_DLY
+                   if hasattr(self._station_config, 'FIXTURE_CA_STABLE_DLY') else 0.05)
             for unif_name, unif_pos in self._station_config.TEST_POINTS_POS:
                 self._operator_interface.print_to_console('Move DUT to POS {0}\n'.format(unif_name))
                 self._fixture.mov_abs_xy_wrt_dut(*unif_pos)
+                time.sleep(dly)
                 self._operator_interface.print_to_console('Read data {0}_{1}\n'.format(br_pattern, unif_name))
                 xylv = self._equipment.measure_xyLv()
                 if (xylv is not None) and (isinstance(xylv, tuple)):
