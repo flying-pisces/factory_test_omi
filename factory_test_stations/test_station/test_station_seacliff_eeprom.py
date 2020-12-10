@@ -292,6 +292,23 @@ class seacliffeepromStation(test_station.TestStation):
             sign_hex = (1 << 7)
         s1 = self.hex_ext(int(integral) | sign_hex)
         return [s1, ]
+
+    def uchar_checksum(self, data_array):
+        """
+        char_checksum The checksum is calculated in bytes. Each byte is translated as an unsigned integer
+        @param data: data_array
+        @param byteorder: big / little endian
+        :param byteorder:
+        :return:
+        """
+        length = len(data_array)
+        checksum = 0
+        for i in range(0, length):
+            checksum += int(data_array[i], 16)
+            checksum &= 0xFF  # truncate to 1 byte
+
+        return [self.hex_ext(checksum), ]
+
     # </editor-fold>
 
     def _do_test(self, serial_number, test_log):
@@ -437,7 +454,7 @@ class seacliffeepromStation(test_station.TestStation):
 
                 raw_data_cpy[21:23] = self.cvt_decimal_to_hex2_U0_13(var_data['x_B255'])
                 raw_data_cpy[23:25] = self.cvt_decimal_to_hex2_U0_13(var_data['y_B255'])
-
+                raw_data_cpy[25:26] = self.uchar_checksum(raw_data_cpy[0:25])
                 # TODO: config all the data to array.
 
                 print('Write configuration...........\n')
