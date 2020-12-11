@@ -73,10 +73,12 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
             parity = 'N'
             Defaults.Retries = 5
             Defaults.RetryOnEmpty = True
+            timeout_modbus = 5 if not hasattr(self._station_config, 'PARTICLE_COUNTER_TIMEOUT') \
+                else self._station_config.PARTICLE_COUNTER_TIMEOUT
             self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
                                                                stopbits=1,
                                                                port=self._station_config.FIXTURE_PARTICLE_COMPORT,
-                                                               timeout=2000)
+                                                               timeout=timeout_modbus)
             if (not self._particle_counter_client) or (not self._particle_counter_client.connect()):
                 raise seacliffpaneltestingFixtureError('Unable to open particle counter port: %s'
                                                  % self._station_config.FIXTURE_PARTICLE_COMPORT)

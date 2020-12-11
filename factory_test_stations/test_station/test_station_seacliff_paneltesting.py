@@ -99,9 +99,11 @@ class pancakemuniStation(test_station.TestStation):
                     and self._station_config.FIXTURE_PARTICLE_COMPORT is None\
                     and (self._station_config.FIXTURE_PARTICLE_COMPORT_FILTER in com.hwid):
                 try:
+                    timeout_modbus = 5 if not hasattr(self._station_config, 'PARTICLE_COUNTER_TIMEOUT') \
+                        else self._station_config.PARTICLE_COUNTER_TIMEOUT
                     modbus_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8,
                                                        parity='N', stopbits=1,
-                                                       port=com.device, timeout=0.5)
+                                                       port=com.device, timeout=timeout_modbus)
                     if modbus_client is not None:
                         retries = 1
                         while retries < 5:
