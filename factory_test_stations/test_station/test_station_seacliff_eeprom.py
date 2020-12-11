@@ -14,6 +14,7 @@ import time
 import json
 import Pmw
 import shutil
+import collections
 
 
 class EEPROMUserInputDialog(gui_utils.Dialog):
@@ -30,35 +31,35 @@ class EEPROMUserInputDialog(gui_utils.Dialog):
 
     def body(self, master):
         self._boresight_x = Pmw.EntryField(master, labelpos=tk.W, label_text="boresight_x", value="0",
-                                           validate={"validator": "real", "min": -127, "max": 127})
+                                           validate={"validator": "real", "min": -128, "max": 128})
         self._boresight_y = Pmw.EntryField(master, labelpos=tk.W, label_text="boresight_y", value="0",
-                                           validate={"validator": "real", "min": -127, "max": 127})
+                                           validate={"validator": "real", "min": -128, "max": 128})
         self._boresight_r = Pmw.EntryField(master, labelpos=tk.W, label_text="rotation_r", value="0",
-                                           validate={"validator": "real", "min": -1, "max": 1})
+                                           validate={"validator": "real", "min": -2, "max": 2})
 
         self._w255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="W255_Lv", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 255})
+                                           validate={"validator": "real", "min": 0, "max": 256})
         self._w255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="W255_x", value="0",
                                            validate={"validator": "real", "min": 0, "max": 1})
         self._w255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="W255_y", value="0",
                                            validate={"validator": "real", "min": 0, "max": 1})
 
         self._r255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="R255_Lv", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 255})
+                                           validate={"validator": "real", "min": 0, "max": 256})
         self._r255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="R255_x", value="0",
                                            validate={"validator": "real", "min": 0, "max": 1})
         self._r255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="R255_y", value="0",
                                            validate={"validator": "real", "min": 0, "max": 1})
 
         self._g255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="G255_Lv", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 255})
+                                           validate={"validator": "real", "min": 0, "max": 256})
         self._g255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="G255_x", value="0",
                                            validate={"validator": "real", "min": 0, "max": 1})
         self._g255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="G255_y", value="0",
                                            validate={"validator": "real", "min": 0, "max": 1})
 
         self._b255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="B255_Lv", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 255})
+                                           validate={"validator": "real", "min": 0, "max": 256})
         self._b255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="B255_x", value="0",
                                            validate={"validator": "real", "min": 0, "max": 1})
         self._b255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="B255_y", value="0",
@@ -183,7 +184,35 @@ class seacliffeepromStation(test_station.TestStation):
         self._overall_errorcode = ''
         self._first_failed_test_result = None
         self._sw_version = '0.2.0'
+        self._cvt_flag = {
+            'S7.8': (2, True, 7, 8),
+            'S1.6': (1, True, 1, 6),
+            'U8.0': (1, False, 8, 0),
+            'U0.16': (2, False, 0, 16),
+            'U8.8': (2, False, 8, 8),
+        }
+        self._eeprom_map_group = collections.OrderedDict({
+            'display_boresight_x': (6, 'S7.8', lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else None)),
+            'display_boresight_y': (8, 'S7.8', lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else None)),
+            'rotation': (10, 'S1.6', lambda tmp: -2 if tmp <= -2 else (2 if tmp >= 2 else None)),
 
+            'lv_W255': (11, 'U8.8', lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else None)),
+            'x_W255': (13, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+            'y_W255': (15, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+
+            'lv_R255': (17, 'U8.8', lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else None)),
+            'lv_G255': (19, 'U8.8', lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else None)),
+            'lv_B255': (21, 'U8.8', lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else None)),
+
+            'x_R255': (23, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+            'y_R255': (25, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+
+            'x_G255': (27, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+            'y_G255': (29, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+
+            'x_B255': (31, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+            'y_B255': (33, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+        })
 
     def initialize(self):
         try:
@@ -206,99 +235,50 @@ class seacliffeepromStation(test_station.TestStation):
         self._fixture.close()
 
     # <editor-fold desc="Data Convert">
-
-    def cvt_hex2_to_float_S8_7(self, array, pos_idx):
-        arr = array[pos_idx:(pos_idx + 2)].copy()
-        s = [int(c, 16) for c in arr]
-        s0 = s[0]
-        s1 = s[1]
-        sign = 1
-        if s0 & (1 << 7):
-            sign = -1
-        return sign * ((s0 & 0x7F) + s1 * 1 / (0x01 << 8))
-
-    def cvt_hex1_to_decimal_S0_7(self, array, pos_idx):
-        s = array[pos_idx:(pos_idx + 1)].copy()
-        s0 = int(s[0], 16)
-        sign = 1
-        if s0 & (1 << 7):
-            sign = -1
-        return sign * ((s0 & 0x7F) * 1 / (0x01 << 7))
-
-    def cvt_hex2_to_decimal_U0_13(self, array, pos_idx):
-        arr = array[pos_idx:(pos_idx + 2)].copy()
-        s = [int(c, 16) for c in arr]
-        s0 = s[0]
-        s1 = s[1]
-        return ((s0 & 0x1F) * (0x01 << 8) + s1) / (1 << 13)
-
-    def cvt_hex1_to_int_S7_0(self, array, pos_idx):
-        s = array[pos_idx:(pos_idx + 1)].copy()
-        s0 = int(s[0], 16)
-        sign = 1
-        if s0 & (1 << 7):
-            sign = -1
-        return sign * (s0 & 0x7F)
-
-    def hex_ext(self, val):
-        return '0x%02X'%val
-
-    def cvt_float_to_hex2_S8_7(self, value):  # -10.5 --> 0x8A, 0x80
+    def cvt_to_hex(self, value, flag):
         """
-        [-127.000 ~ 127.000]
         @type value: float
+        @type flag: str
         """
+        data_len, sign_or_not, integ, deci = self._cvt_flag[flag]
         decimal, integral = math.modf(value)
-        if value < 0:
-            decimal = abs(decimal)
-            integral = int(abs(integral)) | (1 << 7)
-        s0 = self.hex_ext(int(integral))
-        s1 = self.hex_ext(int(decimal * (1 << 8)))
-        return [s0, s1]
+        fraction = int(abs(decimal) * (1 << deci))
+        integral = int(abs(integral))
+        sign_bit = 1 if sign_or_not and (value < 0) else 0
+        data = (sign_bit << (integ + deci)) | (integral << deci) | fraction
+        return [f'0x{c:02X}' for c in data.to_bytes(data_len, 'big')]
 
-    def cvt_decimal_to_hex1_S0_7(self, value):
+    def cvt_from_hex(self, data_array, first_ind, flag):
         """
-       [-1 ~ 1]
-       @type value: float
-       """
-        decimal, integral = math.modf(value)
-        sign_hex = 0x00
-        if value < 0:
-            decimal = abs(decimal)
-            sign_hex = (1 << 7)
-        s1 = self.hex_ext(int(decimal * (1 << 7)) | sign_hex)
-        return [s1, ]
+        @type data_array: []
+        @type first_ind: int
+        @type flag: str
+        """
+        data_len, sign_or_not, integ, deci = self._cvt_flag[flag]
+        darray = [int(c, 16) for c in data_array[first_ind:(first_ind + data_len)]]
+        a_value = int.from_bytes(darray, 'big', signed=False)
 
-    def cvt_decimal_to_hex2_U0_13(self, value):
-        """
-        [0 ~ 1]
-        @type value: unsign int
-        """
-        v = int(value * (1 << 13))
-        s1 = self.hex_ext(v & 0xff)
-        s0 = self.hex_ext(v >> 8 & 0x1f)
-        return [s0, s1]
+        def bit_mask(bit_len):
+            mask = 0x01 if bit_len != 0 else 0
+            for c in range(0, bit_len - 1):
+                mask |= (mask << 1)
+            return mask
 
-    def cvt_int_to_hex1_S7_0(self, value):
-        """
-        [-127 ~ 127]
-        @type value: int
-        @return:
-        """
-        sign_hex = 0x00
-        integral = value
-        if value < 0:
-            integral = int(abs(value))
-            sign_hex = (1 << 7)
-        s1 = self.hex_ext(int(integral) | sign_hex)
-        return [s1, ]
+        sign_bit_mask = bit_mask(integ + deci + 1)
+        fraction_mask = bit_mask(deci)
+        integral_mask = bit_mask(integ)
+
+        fraction = a_value & fraction_mask
+        integral = (a_value >> deci) & integral_mask
+        sign = (a_value >> (deci + integ) & sign_bit_mask) if sign_or_not else 0
+
+        value_without_sign = (integral + fraction / (1 << deci))
+        return -1.0 * value_without_sign if sign else value_without_sign
 
     def uchar_checksum(self, data_array):
         """
         char_checksum The checksum is calculated in bytes. Each byte is translated as an unsigned integer
-        @param data: data_array
-        @param byteorder: big / little endian
-        :param byteorder:
+        @param data_array: data_array
         :return:
         """
         length = len(data_array)
@@ -307,7 +287,7 @@ class seacliffeepromStation(test_station.TestStation):
             checksum += int(data_array[i], 16)
             checksum &= 0xFF  # truncate to 1 byte
 
-        return [self.hex_ext(checksum), ]
+        return [f'0x{checksum:02X}', ]
 
     # </editor-fold>
 
@@ -395,26 +375,13 @@ class seacliffeepromStation(test_station.TestStation):
                 if not self._station_config.DUT_SIM:
                     raw_data = the_unit.nvm_read_data()[2:]
                 # mark: convert raw data before flush to dict.
-                var_data['display_boresight_x'] = self.cvt_hex2_to_float_S8_7(raw_data, 0)
-                var_data['display_boresight_y'] = self.cvt_hex2_to_float_S8_7(raw_data, 2)
-                var_data['rotation'] = self.cvt_hex1_to_decimal_S0_7(raw_data, 4)
+                for key, mapping in self._eeprom_map_group.items():
+                    memory_idx = mapping[0] - 6
+                    flag = mapping[1]
+                    var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag)
 
-                var_data['lv_W255'] = self.cvt_hex1_to_int_S7_0(raw_data, 5)
-                var_data['x_W255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 6)
-                var_data['y_W255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 8)
-
-                var_data['lv_R255'] = self.cvt_hex1_to_int_S7_0(raw_data, 10)
-                var_data['lv_G255'] = self.cvt_hex1_to_int_S7_0(raw_data, 11)
-                var_data['lv_B255'] = self.cvt_hex1_to_int_S7_0(raw_data, 12)
-
-                var_data['x_R255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 13)
-                var_data['y_R255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 15)
-
-                var_data['x_G255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 17)
-                var_data['y_G255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 19)
-
-                var_data['x_B255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 21)
-                var_data['y_B255'] = self.cvt_hex2_to_decimal_U0_13(raw_data, 23)
+                var_data['CS'] = raw_data[29]
+                var_data['VALIDATION'] = raw_data[30:32]
 
                 # mark: save them to database.
                 test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_X', var_data.get('display_boresight_x'))
@@ -433,28 +400,31 @@ class seacliffeepromStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_B255', var_data.get('x_B255'))
                 test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_B255', var_data.get('y_B255'))
 
+                test_log.set_measured_value_by_name_ex('CURRENT_CS', var_data.get('CS'))
+                test_log.set_measured_value_by_name_ex('CURRENT_VALIDATION_FIELD', var_data.get('VALIDATION'))
+
                 raw_data_cpy = raw_data.copy()  # place holder for all the bytes.
                 var_data = dict(calib_data)  # type: dict
-                raw_data_cpy[0:2] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_x'])
-                raw_data_cpy[2:4] = self.cvt_float_to_hex2_S8_7(var_data['display_boresight_y'])
-                raw_data_cpy[4:5] = self.cvt_decimal_to_hex1_S0_7(var_data['rotation'])
-                raw_data_cpy[5:6] = self.cvt_int_to_hex1_S7_0(var_data['lv_W255'])
-                raw_data_cpy[6:8] = self.cvt_decimal_to_hex2_U0_13(var_data['x_W255'])
-                raw_data_cpy[8:10] = self.cvt_decimal_to_hex2_U0_13(var_data['y_W255'])
 
-                raw_data_cpy[10:11] = self.cvt_int_to_hex1_S7_0(var_data['lv_R255'])
-                raw_data_cpy[11:12] = self.cvt_int_to_hex1_S7_0(var_data['lv_G255'])
-                raw_data_cpy[12:13] = self.cvt_int_to_hex1_S7_0(var_data['lv_B255'])
+                items_chk_result = []
+                for key, mapping in self._eeprom_map_group.items():
+                    memory_idx = mapping[0] - 6
+                    flag = mapping[1]
+                    memory_len = self._cvt_flag[flag][0]
+                    tar_val = var_data[key]
+                    val = mapping[2](tar_val)
+                    if val is not None:  # indicate the value is out of range
+                        tar_val = val
+                    items_chk_result.append(val is None)
+                    # encode the tar_val
+                    raw_data_cpy[memory_idx: (memory_idx+memory_len)] = self.cvt_to_hex(tar_val, flag)
 
-                raw_data_cpy[13:15] = self.cvt_decimal_to_hex2_U0_13(var_data['x_R255'])
-                raw_data_cpy[15:17] = self.cvt_decimal_to_hex2_U0_13(var_data['y_R255'])
-
-                raw_data_cpy[17:19] = self.cvt_decimal_to_hex2_U0_13(var_data['x_G255'])
-                raw_data_cpy[19:21] = self.cvt_decimal_to_hex2_U0_13(var_data['y_G255'])
-
-                raw_data_cpy[21:23] = self.cvt_decimal_to_hex2_U0_13(var_data['x_B255'])
-                raw_data_cpy[23:25] = self.cvt_decimal_to_hex2_U0_13(var_data['y_B255'])
-                raw_data_cpy[25:26] = self.uchar_checksum(raw_data_cpy[0:25])
+                raw_data_cpy[29:30] = self.uchar_checksum(raw_data_cpy[0:25])
+                validate_field_result = 0
+                for ind, val in enumerate(items_chk_result):
+                    validate_field_result |= 0 if val else (0x01 << (15-ind))
+                raw_data_cpy[30:32] = [f'0x{c:02X}' for c in
+                                       validate_field_result.to_bytes(2, byteorder='big', signed=False)]
                 # TODO: config all the data to array.
 
                 print('Write configuration...........\n')
@@ -481,6 +451,9 @@ class seacliffeepromStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex('CFG_LV_B255', var_data.get('lv_B255'))
                 test_log.set_measured_value_by_name_ex('CFG_X_B255', var_data.get('x_B255'))
                 test_log.set_measured_value_by_name_ex('CFG_Y_B255', var_data.get('y_B255'))
+
+                test_log.set_measured_value_by_name_ex('CFG_CS', raw_data_cpy[29])
+                test_log.set_measured_value_by_name_ex('CFG_VALIDATION_FIELD', raw_data_cpy[30:32])
 
                 self._operator_interface.print_to_console('screen off ...\n')
                 the_unit.screen_off()
@@ -525,3 +498,4 @@ class seacliffeepromStation(test_station.TestStation):
         if os.path.exists(self._station_config.CALIB_REQ_DATA_JSON_FILENAME):
             shutil.rmtree(self._station_config.CALIB_REQ_DATA_JSON_FILENAME)
         self._fixture.is_ready()
+

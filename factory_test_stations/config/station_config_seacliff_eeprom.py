@@ -94,7 +94,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config
 
 NVM_WRITE_COUNT_MAX = 6
 # calibration required data.
-USER_INPUT_CALIB_DATA = False
+USER_INPUT_CALIB_DATA = True
 
 CALIB_REQ_DATA = {
     'display_boresight_x': 100.20,

@@ -25,6 +25,9 @@ STATION_LIMITS_ARRAYS = [
     ["CURRENT_BAK_X_B255", None, None, 1014],
     ["CURRENT_BAK_Y_B255", None, None, 1015],
 
+    ["CURRENT_CS", None, None, 1016],
+    ["CURRENT_VALIDATION_FIELD", None, None, 1017],
+
     # current setting for EEPROM
     ["CFG_BORESIGHT_X", None, None, 2001],
     ["CFG_BORESIGHT_Y", None, None, 2002],
@@ -44,7 +47,11 @@ STATION_LIMITS_ARRAYS = [
     ["CFG_LV_B255", None, None, 2013],
     ["CFG_X_B255", None, None, 2014],
     ["CFG_Y_B255", None, None, 2015],
-    ['POST_DATA_CHECK', True, True, 2016],
+
+    ["CFG_CS", None, None, 2016],
+    ["CFG_VALIDATION_FIELD", None, None, 2017],
+
+    ['POST_DATA_CHECK', True, True, 3001],
 
     ["POST_WRITE_COUNTS", 0, 7, 5001],
     ["WRITE_COUNTS_CHECK", True, True, 5002],
