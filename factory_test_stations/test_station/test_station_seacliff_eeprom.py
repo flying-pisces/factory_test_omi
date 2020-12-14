@@ -15,6 +15,7 @@ import json
 import Pmw
 import shutil
 import collections
+import numpy as np
 
 
 class EEPROMUserInputDialog(gui_utils.Dialog):
@@ -319,14 +320,18 @@ class seacliffeepromStation(test_station.TestStation):
                 calib_data = dlg.current_cfg()
             elif self._station_config.USER_INPUT_CALIB_DATA == 0x02:
                 calib_data = None
-                calib_data_json_fn = self._station_config.CALIB_REQ_DATA_JSON_FILENAME
+                calib_data_json_fn = self._station_config.CALIB_REQ_DATA_FILENAME
                 if os.path.exists(calib_data_json_fn):
-                    with open(calib_data_json_fn, 'r') as json_file:
-                        calib_data = json.load(json_file)
+                    calib_data = np.load(calib_data_json_fn)
 
             if calib_data is None:
                 self._operator_interface.print_to_console(f'unable to get enough information for {serial_number}.\n')
                 raise seacliffeepromError('unable to get enough parameters for {0}'.format(serial_number))
+            eep_keys = set(self._eeprom_map_group.keys())
+            if not eep_keys.issubset(calib_data.keys()):
+                self._operator_interface.print_to_console(f'unable to parse all the items from input items.\n')
+                self._operator_interface.print_to_console(f'{eep_keys}\n')
+                raise seacliffeepromError('unable to get key_items for {0}'.format(serial_number))
 
             the_unit.initialize()
             the_unit.screen_on()
@@ -495,7 +500,7 @@ class seacliffeepromStation(test_station.TestStation):
         return self._overall_result, self._first_failed_test_result
 
     def is_ready(self):
-        if os.path.exists(self._station_config.CALIB_REQ_DATA_JSON_FILENAME):
-            shutil.rmtree(self._station_config.CALIB_REQ_DATA_JSON_FILENAME)
+        if os.path.exists(self._station_config.CALIB_REQ_DATA_FILENAME):
+            shutil.rmtree(self._station_config.CALIB_REQ_DATA_FILENAME)
         self._fixture.is_ready()
 
