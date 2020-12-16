@@ -88,7 +88,7 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
                                                                stopbits=1,
                                                                port=self._station_config.FIXTURE_PARTICLE_COMPORT,
                                                                timeout=timeout_modbus)
-            if (not self._particle_counter_client) or (not self._particle_counter_client.connect()):
+            if not self._particle_counter_client:
                 raise seacliffpaneltestingFixtureError('Unable to open particle counter port: %s'
                                                  % self._station_config.FIXTURE_PARTICLE_COMPORT)
         if (not self._serial_port) or (not self._serial_port.isOpen()):
@@ -172,7 +172,6 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
             if hasattr(self, '_particle_counter_client') and \
                     self._particle_counter_client is not None \
                     and self._station_config.FIXTURE_PARTICLE_COUNTER:
-                self._particle_counter_client.close()
                 self._particle_counter_client = None
         except Exception as e:
             print('Exception while closing. {0}'.format(str(e)))
@@ -368,38 +367,47 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
     ######################
     def particle_counter_on(self):
         if self._particle_counter_client is not None:
-            wrs = self._particle_counter_client. \
-                write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
-                               1, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
-            if wrs is None or wrs.isError():
-                raise seacliffpaneltestingFixtureError('Failed to start particle counter .')
+            try:
+                self._particle_counter_client.connect()
+                wrs = self._particle_counter_client. \
+                    write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                                   1, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
+                if wrs is None or wrs.isError():
+                    raise seacliffpaneltestingFixtureError('Failed to start particle counter .')
+            finally:
+                self._particle_counter_client.close()
 
     def particle_counter_off(self):
         if self._particle_counter_client is not None:
-            self._particle_counter_client.write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
-                                                         0,
-                                                         unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: WriteSingleRegisterResponse
+            try:
+                self._particle_counter_client.write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                                                             0,
+                                                            unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: WriteSingleRegisterResponse
+            finally:
+                self._particle_counter_client.close()
 
     def particle_counter_read_val(self):
         if self._particle_counter_client is not None:
             val = None
             retries = 1
-            while retries <= 10:
-                rs = self._particle_counter_client.read_holding_registers(
-                    self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
-                    2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
-                if rs is None or rs.isError():
-                    if self._station_config.IS_VERBOSE:
-                        print("Retries to read data from particle counter {}/10. ".format(retries))
-                    retries += 1
-                    time.sleep(0.5)
-                else:
-                    # val = rs.registers[0] * 65535 + rs.registers[1]
-                    # modified by elton.  for apc-r210/310
-                    val = ctypes.c_int32(rs.registers[0] + (rs.registers[1] << 16)).value
-                    if hasattr(self._station_config, 'PARTICLE_COUNTER_APC') and self._station_config.PARTICLE_COUNTER_APC:
-                        val = (ctypes.c_int32((rs.registers[0] << 16) + rs.registers[1])).value
-                    break
+            while (retries <= 10) and (val is None):
+                try:
+                    rs = self._particle_counter_client.read_holding_registers(
+                        self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
+                        2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
+                    if rs is None or rs.isError():
+                        if self._station_config.IS_VERBOSE:
+                            print("Retries to read data from particle counter {}/10. ".format(retries))
+                        retries += 1
+                        time.sleep(0.5)
+                    else:
+                        # val = rs.registers[0] * 65535 + rs.registers[1]
+                        # modified by elton.  for apc-r210/310
+                        val = ctypes.c_int32(rs.registers[0] + (rs.registers[1] << 16)).value
+                        if hasattr(self._station_config, 'PARTICLE_COUNTER_APC') and self._station_config.PARTICLE_COUNTER_APC:
+                            val = (ctypes.c_int32((rs.registers[0] << 16) + rs.registers[1])).value
+                finally:
+                    self._particle_counter_client.close()
             if val is None:
                 raise seacliffpaneltestingFixtureError('Failed to read data from particle counter.')
             return val
