@@ -15,6 +15,15 @@ import time
 import ctypes
 import hardware_station_common.test_station.test_fixture
 import hardware_station_common.test_station.dut
+# dependencies for mes.
+import tkinter.simpledialog
+import suds.client
+import smtplib
+import email.mime.text
+import email.header
+import tkinter.simpledialog
+import tkinter as tk
+import datetime
 
 
 class seacliffpaneltestingFixtureError(Exception):
