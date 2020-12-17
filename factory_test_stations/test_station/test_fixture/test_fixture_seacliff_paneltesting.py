@@ -367,24 +367,41 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
     ######################
     def particle_counter_on(self):
         if self._particle_counter_client is not None:
-            try:
-                self._particle_counter_client.connect()
-                wrs = self._particle_counter_client. \
-                    write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
-                                   1, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
-                if wrs is None or wrs.isError():
-                    raise seacliffpaneltestingFixtureError('Failed to start particle counter .')
-            finally:
-                self._particle_counter_client.close()
+            val = None
+            retries = 1
+            while (retries <= 10) and (val is None):
+                try:
+                    self._particle_counter_client.connect()
+                    wrs = self._particle_counter_client. \
+                        write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                                       1, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
+                    if wrs is None or wrs.isError():
+                        time.sleep(0.05)
+                    else:
+                        val = 1
+                finally:
+                    self._particle_counter_client.close()
+                    retries += 1
+            if val is None:
+                raise seacliffpaneltestingFixtureError('Failed to start particle counter .')
 
     def particle_counter_off(self):
         if self._particle_counter_client is not None:
-            try:
-                self._particle_counter_client.write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
-                                                             0,
-                                                            unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: WriteSingleRegisterResponse
-            finally:
-                self._particle_counter_client.close()
+            val = None
+            retries = 1
+            while (retries <= 10) and (val is None):
+                try:
+                    self._particle_counter_client.connect()
+                    wrs = self._particle_counter_client.write_register(
+                        self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                        0, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: WriteSingleRegisterResponse
+                    if wrs is None or wrs.isError():
+                        time.sleep(0.05)
+                    else:
+                        val = 1
+                finally:
+                    retries += 1
+                    self._particle_counter_client.close()
 
     def particle_counter_read_val(self):
         if self._particle_counter_client is not None:
@@ -392,14 +409,14 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
             retries = 1
             while (retries <= 10) and (val is None):
                 try:
+                    self._particle_counter_client.connect()
                     rs = self._particle_counter_client.read_holding_registers(
                         self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
                         2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
                     if rs is None or rs.isError():
                         if self._station_config.IS_VERBOSE:
                             print("Retries to read data from particle counter {}/10. ".format(retries))
-                        retries += 1
-                        time.sleep(0.5)
+                        time.sleep(0.05)
                     else:
                         # val = rs.registers[0] * 65535 + rs.registers[1]
                         # modified by elton.  for apc-r210/310
@@ -408,6 +425,7 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
                             val = (ctypes.c_int32((rs.registers[0] << 16) + rs.registers[1])).value
                 finally:
                     self._particle_counter_client.close()
+                    retries += 1
             if val is None:
                 raise seacliffpaneltestingFixtureError('Failed to read data from particle counter.')
             return val
@@ -416,19 +434,22 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
         if self._particle_counter_client is not None:
             retries = 1
             val = None
-            while retries <= 10:
-                rs = self._particle_counter_client.read_holding_registers(
-                    self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
-                    2,
-                    unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
-                if rs is None or rs.isError():
-                    print('Fail to read data from particle counter. ')
+            while (retries <= 10) and (val is None):
+                try:
+                    self._particle_counter_client.connect()
+                    rs = self._particle_counter_client.read_holding_registers(
+                        self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
+                        2,
+                        unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
+                    if rs is None or rs.isError():
+                        print('Fail to read data from particle counter. ')
+                        time.sleep(0.05)
+                    else:
+                        val = rs.registers[0]
+                finally:
+                    self._particle_counter_client.close()
                     retries = retries + 1
-                    time.sleep(0.5)
-                    continue
-                else:
-                    val = rs.registers[0]
-                    break
+
             if val is None:
                 raise seacliffpaneltestingFixtureError('Failed to read status from particle counter.')
             return val

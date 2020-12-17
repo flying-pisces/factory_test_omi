@@ -38,7 +38,7 @@ class pancakemuniStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '0.1.2'
+        self._sw_version = '0.1.3'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
@@ -106,21 +106,22 @@ class pancakemuniStation(test_station.TestStation):
                                                        port=com.device, timeout=timeout_modbus)
                     if modbus_client is not None:
                         retries = 1
-                        while retries < 5:
-                            rs = modbus_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
+                        while (retries < 5) and (not hit_success):
+                            print(f'try to search modbus for particle counter. {retries}\n')
+                            if modbus_client.connect():
+                                rs = modbus_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
                                                                       2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
-                            # type: ReadHoldingRegistersResponse
-                            if rs is None or rs.isError():
-                                retries = retries + 1
-                                time.sleep(0.3)
-                                continue
-                            val = rs.registers[0]
-                            self._station_config.FIXTURE_PARTICLE_COMPORT = com.device
-                            hit_success = True
+                                modbus_client.close()
+                                # type: ReadHoldingRegistersResponse
+                                if rs is None or rs.isError():
+                                    retries = retries + 1
+                                    time.sleep(0.05)
+                                else:
+                                    self._station_config.FIXTURE_PARTICLE_COMPORT = com.device
+                                    hit_success = True
+                            retries += 1
                 except Exception as e:
-                    pass
-                finally:
-                    modbus_client.close()
+                    print(f'Fail to confirm [{com.device}] for particle counter. {str(e)}\n')
 
             if hit_success:
                 continue
@@ -218,7 +219,11 @@ class pancakemuniStation(test_station.TestStation):
 
     def _do_test(self, serial_number, test_log):
         # type: (str, test_station.test_log) -> tuple
-        del self._unif_raw_data
+
+        self._query_dual_start()
+        if self._the_unit is None:
+            raise test_station.TestStationProcessControlError(f'Fail to query dual_start for DUT {serial_number}.')
+
         test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
         self._overall_result = False
         self._overall_errorcode = ''
@@ -292,6 +297,7 @@ class pancakemuniStation(test_station.TestStation):
             self._operator_interface.print_to_console("Test exception . {0}\n".format(e))
             self._operator_interface.operator_input('Exception', f'{str(e)}', msg_type='error')
         finally:
+            del self._unif_raw_data
             self._operator_interface.print_to_console('release current test resource.\n')
             # noinspection PyBroadException
             try:
@@ -336,6 +342,7 @@ class pancakemuniStation(test_station.TestStation):
             self._operator_interface.operator_input('WARN', msg=msg, msg_type='warning')
             return False
 
+    def _query_dual_start(self):
         ready = False
         self._is_cancel_test_by_op = False
         power_on_trigger = False
@@ -409,8 +416,6 @@ class pancakemuniStation(test_station.TestStation):
         finally:
             # noinspection PyBroadException
             try:
-                self._fixture.power_on_button_status(False)
-                self._fixture.start_button_status(False)
                 if not ready:
                     if not self._is_cancel_test_by_op:
                         self._operator_interface.print_to_console(
@@ -420,6 +425,8 @@ class pancakemuniStation(test_station.TestStation):
                             'Cancel start signal from dual %s.\n' % timeout_for_dual)
                     self._the_unit.close()
                     self._the_unit = None
+                self._fixture.power_on_button_status(False)
+                self._fixture.start_button_status(False)
             except:
                 pass
             self._operator_interface.prompt('', 'SystemButtonFace')

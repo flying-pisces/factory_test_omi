@@ -49,7 +49,7 @@
         <ShowDarkMarkProcessing>false</ShowDarkMarkProcessing>
         <RemoveDarkMarks>None</RemoveDarkMarks>
         <ChannelBoundsThreshold>0</ChannelBoundsThreshold>
-        <MinPanelLuminance>0</MinPanelLuminance>
+        <MinPanelLuminance>200</MinPanelLuminance>
         <MaxPanelLuminance>0</MaxPanelLuminance>
         <MinPanelLuminanceVDmm>
           <Width>0</Width>
@@ -64,7 +64,7 @@
         <Register>Register</Register>
         <CurrentRegistration></CurrentRegistration>
         <CropMode>RegisterInside</CropMode>
-        <CropThreshold>40</CropThreshold>
+        <CropThreshold>30</CropThreshold>
         <RadaCircleDiameterMM>0</RadaCircleDiameterMM>
         <RemoveSmallBlobs>0</RemoveSmallBlobs>
         <DisplayPixels>
@@ -112,14 +112,14 @@
           <Height>0</Height>
         </ImageSize>
         <RotateAngleDeg>0</RotateAngleDeg>
-        <AdditionalCropping>2, 2, 2, 2</AdditionalCropping>
+        <AdditionalCropping>20, 20, 20, 20</AdditionalCropping>
         <AdjustCorners></AdjustCorners>
         <AddBuffer>110,110,120,120</AddBuffer>
         <AdditionalCroppingUnits>Pixels</AdditionalCroppingUnits>
         <CropDelay>0</CropDelay>
         <SaveRegisteredMeasurementToDatabase>false</SaveRegisteredMeasurementToDatabase>
         <AutoSearch>false</AutoSearch>
-        <SaveCurrentRADA>true</SaveCurrentRADA>
+        <SaveCurrentRADA>false</SaveCurrentRADA>
         <ThresholdDarkAreas>true</ThresholdDarkAreas>
         <MinDarkAreaSize>400</MinDarkAreaSize>
         <ThresholdDarkPercentage>40</ThresholdDarkPercentage>
@@ -188,7 +188,7 @@
         <GlobalThresholdPct>1500</GlobalThresholdPct>
         <LocalThresholdPct>75</LocalThresholdPct>
         <MinFrequencyPct>2</MinFrequencyPct>
-        <MoireRegionFilterName></MoireRegionFilterName>
+        <MoireRegionFilterName>*</MoireRegionFilterName>
         <SavedFilterDescription></SavedFilterDescription>
         <FilterGUID></FilterGUID>
         <EnableGpuLC>false</EnableGpuLC>
@@ -239,25 +239,25 @@
           <Height>0</Height>
         </MedianFilterSize>
         <SmoothFilterSize>
-          <Width>12</Width>
-          <Height>12</Height>
+          <Width>10</Width>
+          <Height>10</Height>
         </SmoothFilterSize>
         <SmoothParameters></SmoothParameters>
-        <PostSmoothParameters></PostSmoothParameters>
+        <PostSmoothParameters>5, 5</PostSmoothParameters>
         <PostMedianFilterSize>
           <Width>0</Width>
           <Height>0</Height>
         </PostMedianFilterSize>
         <PostSmoothFilterSize>
-          <Width>5</Width>
-          <Height>5</Height>
+          <Width>0</Width>
+          <Height>0</Height>
         </PostSmoothFilterSize>
         <AdaptiveFilterDetectorSize>
           <Width>20</Width>
           <Height>20</Height>
         </AdaptiveFilterDetectorSize>
         <NumAdaptivePixels>0</NumAdaptivePixels>
-        <AdaptiveMedianFilterThreshold>30</AdaptiveMedianFilterThreshold>
+        <AdaptiveMedianFilterThreshold>0</AdaptiveMedianFilterThreshold>
         <DisplayImage>LocalContrast</DisplayImage>
         <CosineCorrectionLC>0</CosineCorrectionLC>
         <GradientCorrectionLC>
@@ -273,15 +273,15 @@
         <NoiseThreshold>1.2</NoiseThreshold>
         <SaveIntermediateMeasurements>false</SaveIntermediateMeasurements>
         <DarkThreshold>2</DarkThreshold>
-        <DarkEdgeThreshold>2</DarkEdgeThreshold>
+        <DarkEdgeThreshold>2.5</DarkEdgeThreshold>
         <MinDarkAvgContrast>0</MinDarkAvgContrast>
         <MinDarkAvgContrastEdge>-1</MinDarkAvgContrastEdge>
-        <DarkMaxValueThreshold>2.5</DarkMaxValueThreshold>
+        <DarkMaxValueThreshold>2.2</DarkMaxValueThreshold>
         <DarkMaxValueThreshold2>0</DarkMaxValueThreshold2>
-        <DarkParticleEdgeMaxThreshold>2.5</DarkParticleEdgeMaxThreshold>
-        <MinimumDarkCCDPixels>50</MinimumDarkCCDPixels>
+        <DarkParticleEdgeMaxThreshold>2.8</DarkParticleEdgeMaxThreshold>
+        <MinimumDarkCCDPixels>45</MinimumDarkCCDPixels>
         <MinimumDarkCCDPixelsEdge>-1</MinimumDarkCCDPixelsEdge>
-        <MaximumDarkCCDPixels>500</MaximumDarkCCDPixels>
+        <MaximumDarkCCDPixels>1000</MaximumDarkCCDPixels>
         <MaximumDarkCCDPixelsEdge>-1</MaximumDarkCCDPixelsEdge>
         <DarkPixelColor>NamedColor:BlueViolet</DarkPixelColor>
         <DarkParticlesMaxLocalContrast>0</DarkParticlesMaxLocalContrast>
@@ -301,15 +301,15 @@
         <DarkBlobMinSEMU>0</DarkBlobMinSEMU>
         <MinDarkInnerEdgeSEMU>2</MinDarkInnerEdgeSEMU>
         <MinDarkOuterEdgeSEMU>2</MinDarkOuterEdgeSEMU>
-        <DarkBlobThreshold>0</DarkBlobThreshold>
+        <DarkBlobThreshold>1.5</DarkBlobThreshold>
         <DarkBlobEdgeThreshold>2</DarkBlobEdgeThreshold>
         <DarkBlobInnerEdgeThreshold>2</DarkBlobInnerEdgeThreshold>
         <DarkBlobOuterEdgeThreshold>2</DarkBlobOuterEdgeThreshold>
-        <DarkBlobMaxThreshold>0</DarkBlobMaxThreshold>
-        <DarkBlobEdgeMaxThreshold>2</DarkBlobEdgeMaxThreshold>
+        <DarkBlobMaxThreshold>2</DarkBlobMaxThreshold>
+        <DarkBlobEdgeMaxThreshold>3</DarkBlobEdgeMaxThreshold>
         <DarkBlobInnerEdgeMaxThreshold>2</DarkBlobInnerEdgeMaxThreshold>
         <DarkBlobOuterEdgeMaxThreshold>2</DarkBlobOuterEdgeMaxThreshold>
-        <MinimumDarkBlobPixels>50</MinimumDarkBlobPixels>
+        <MinimumDarkBlobPixels>100</MinimumDarkBlobPixels>
         <MaximumDarkBlobCCDPixels>0</MaximumDarkBlobCCDPixels>
         <MinimumInnerEdgeDarkBlobPixels>50</MinimumInnerEdgeDarkBlobPixels>
         <MinimumOuterEdgeDarkBlobPixels>50</MinimumOuterEdgeDarkBlobPixels>
@@ -333,7 +333,7 @@
         <BrightBlobInnerEdgeMaxThreshold>2</BrightBlobInnerEdgeMaxThreshold>
         <BrightBlobOuterEdgeMaxThreshold>2</BrightBlobOuterEdgeMaxThreshold>
         <MinimumBrightBlobPixels>50</MinimumBrightBlobPixels>
-        <MaximumBrightBlobCCDPixels>0</MaximumBrightBlobCCDPixels>
+        <MaximumBrightBlobCCDPixels>4</MaximumBrightBlobCCDPixels>
         <MinimumInnerEdgeBrightBlobPixels>50</MinimumInnerEdgeBrightBlobPixels>
         <MinimumOuterEdgeBrightPixels>50</MinimumOuterEdgeBrightPixels>
         <MaximumInnerEdgeBrightBlobPixels>-1</MaximumInnerEdgeBrightBlobPixels>
@@ -344,7 +344,7 @@
         <BrightMaxEccentricity>-1</BrightMaxEccentricity>
         <BrightMinEccentricity>-1</BrightMinEccentricity>
         <BrightBlobsMaxLocalContrast>0</BrightBlobsMaxLocalContrast>
-        <BlobEdgeDistance>10,10,10,10</BlobEdgeDistance>
+        <BlobEdgeDistance>20,20,20,20</BlobEdgeDistance>
         <BlobInnerEdgeDistance>0, 0, 0, 0</BlobInnerEdgeDistance>
         <DoNotAdjustForDetectorSize>false</DoNotAdjustForDetectorSize>
         <EnableBlobInnerOuterEdges>false</EnableBlobInnerOuterEdges>
@@ -369,7 +369,7 @@
         </CornerDetectorSize>
         <GroupSize>-1</GroupSize>
         <Mode>Both</Mode>
-        <EdgeDistance>0, 0, 0, 0</EdgeDistance>
+        <EdgeDistance>30, 30, 30, 30</EdgeDistance>
         <EdgeDistanceForLocalContrast>50, 50, 50, 50</EdgeDistanceForLocalContrast>
         <CornerMarginSize>
           <Width>0</Width>
@@ -383,7 +383,7 @@
         <SerialNumberPath></SerialNumberPath>
         <XMLFilepath>C:\Radiant Vision Systems Data\TrueTest\UserData\Particle Defects\</XMLFilepath>
         <Units>Pixels</Units>
-        <RegionOfInterest>0, 0, 0, 0</RegionOfInterest>
+        <RegionOfInterest>0,0, 00, 00</RegionOfInterest>
         <RemoveSaturationLevel>0</RemoveSaturationLevel>
         <EdgeRegions>0, 0, 50, 50</EdgeRegions>
         <RectMask>0, 0, 0, 0</RectMask>
@@ -599,7 +599,7 @@
         <ManualBoundsEnabled>false</ManualBoundsEnabled>
         <UseCurrentFromObjRepository>false</UseCurrentFromObjRepository>
         <Threshold>2</Threshold>
-        <_RemoveMoire>None</_RemoveMoire>
+        <_RemoveMoire>UseSavedFilter</_RemoveMoire>
         <AxisThresholdPct>75</AxisThresholdPct>
         <CenterLineWidth>1</CenterLineWidth>
         <DilateBlockPct>
@@ -609,7 +609,7 @@
         <GlobalThresholdPct>1500</GlobalThresholdPct>
         <LocalThresholdPct>75</LocalThresholdPct>
         <MinFrequencyPct>2</MinFrequencyPct>
-        <MoireRegionFilterName></MoireRegionFilterName>
+        <MoireRegionFilterName>*</MoireRegionFilterName>
         <SavedFilterDescription></SavedFilterDescription>
         <FilterGUID></FilterGUID>
         <EnableGpuLC>false</EnableGpuLC>
@@ -660,8 +660,8 @@
           <Height>0</Height>
         </MedianFilterSize>
         <SmoothFilterSize>
-          <Width>8</Width>
-          <Height>8</Height>
+          <Width>5</Width>
+          <Height>5</Height>
         </SmoothFilterSize>
         <SmoothParameters></SmoothParameters>
         <PostSmoothParameters></PostSmoothParameters>
@@ -674,11 +674,11 @@
           <Height>5</Height>
         </PostSmoothFilterSize>
         <AdaptiveFilterDetectorSize>
-          <Width>20</Width>
-          <Height>20</Height>
+          <Width>30</Width>
+          <Height>30</Height>
         </AdaptiveFilterDetectorSize>
         <NumAdaptivePixels>0</NumAdaptivePixels>
-        <AdaptiveMedianFilterThreshold>30</AdaptiveMedianFilterThreshold>
+        <AdaptiveMedianFilterThreshold>0</AdaptiveMedianFilterThreshold>
         <DisplayImage>LocalContrast</DisplayImage>
         <CosineCorrectionLC>0</CosineCorrectionLC>
         <GradientCorrectionLC>
@@ -694,10 +694,10 @@
         <NoiseThreshold>1.2</NoiseThreshold>
         <SaveIntermediateMeasurements>false</SaveIntermediateMeasurements>
         <DarkThreshold>0</DarkThreshold>
-        <DarkEdgeThreshold>2</DarkEdgeThreshold>
+        <DarkEdgeThreshold>0</DarkEdgeThreshold>
         <MinDarkAvgContrast>0</MinDarkAvgContrast>
         <MinDarkAvgContrastEdge>-1</MinDarkAvgContrastEdge>
-        <DarkMaxValueThreshold>0</DarkMaxValueThreshold>
+        <DarkMaxValueThreshold>2</DarkMaxValueThreshold>
         <DarkMaxValueThreshold2>0</DarkMaxValueThreshold2>
         <DarkParticleEdgeMaxThreshold>2</DarkParticleEdgeMaxThreshold>
         <MinimumDarkCCDPixels>8</MinimumDarkCCDPixels>
@@ -706,31 +706,31 @@
         <MaximumDarkCCDPixelsEdge>-1</MaximumDarkCCDPixelsEdge>
         <DarkPixelColor>NamedColor:BlueViolet</DarkPixelColor>
         <DarkParticlesMaxLocalContrast>0</DarkParticlesMaxLocalContrast>
-        <BrightThreshold>0</BrightThreshold>
-        <BrightEdgeThreshold>2</BrightEdgeThreshold>
+        <BrightThreshold>10</BrightThreshold>
+        <BrightEdgeThreshold>10</BrightEdgeThreshold>
         <MinBrightAvgContrast>0</MinBrightAvgContrast>
         <MinBrightAvgContrastEdge>-1</MinBrightAvgContrastEdge>
-        <BrightMaxValueThreshold>6.5</BrightMaxValueThreshold>
+        <BrightMaxValueThreshold>15</BrightMaxValueThreshold>
         <BrightMaxValueThreshold2>0</BrightMaxValueThreshold2>
-        <BrightParticleEdgeMaxThreshold>3</BrightParticleEdgeMaxThreshold>
-        <MinimumBrightCCDPixels>100</MinimumBrightCCDPixels>
-        <MinimumBrightCCDPixelsEdge>100</MinimumBrightCCDPixelsEdge>
-        <MaximumBrightCCDPixels>500</MaximumBrightCCDPixels>
+        <BrightParticleEdgeMaxThreshold>20</BrightParticleEdgeMaxThreshold>
+        <MinimumBrightCCDPixels>15</MinimumBrightCCDPixels>
+        <MinimumBrightCCDPixelsEdge>50</MinimumBrightCCDPixelsEdge>
+        <MaximumBrightCCDPixels>5000</MaximumBrightCCDPixels>
         <MaximumBrightCCDPixelsEdge>500</MaximumBrightCCDPixelsEdge>
         <BrightPixelColor>NamedColor:Firebrick</BrightPixelColor>
         <BrightParticlesMaxLocalContrast>0</BrightParticlesMaxLocalContrast>
         <DarkBlobMinSEMU>0</DarkBlobMinSEMU>
         <MinDarkInnerEdgeSEMU>2</MinDarkInnerEdgeSEMU>
         <MinDarkOuterEdgeSEMU>2</MinDarkOuterEdgeSEMU>
-        <DarkBlobThreshold>0</DarkBlobThreshold>
-        <DarkBlobEdgeThreshold>2</DarkBlobEdgeThreshold>
+        <DarkBlobThreshold>10</DarkBlobThreshold>
+        <DarkBlobEdgeThreshold>-1</DarkBlobEdgeThreshold>
         <DarkBlobInnerEdgeThreshold>2</DarkBlobInnerEdgeThreshold>
         <DarkBlobOuterEdgeThreshold>2</DarkBlobOuterEdgeThreshold>
-        <DarkBlobMaxThreshold>0</DarkBlobMaxThreshold>
-        <DarkBlobEdgeMaxThreshold>2</DarkBlobEdgeMaxThreshold>
+        <DarkBlobMaxThreshold>15</DarkBlobMaxThreshold>
+        <DarkBlobEdgeMaxThreshold>20</DarkBlobEdgeMaxThreshold>
         <DarkBlobInnerEdgeMaxThreshold>2</DarkBlobInnerEdgeMaxThreshold>
         <DarkBlobOuterEdgeMaxThreshold>2</DarkBlobOuterEdgeMaxThreshold>
-        <MinimumDarkBlobPixels>50</MinimumDarkBlobPixels>
+        <MinimumDarkBlobPixels>25</MinimumDarkBlobPixels>
         <MaximumDarkBlobCCDPixels>0</MaximumDarkBlobCCDPixels>
         <MinimumInnerEdgeDarkBlobPixels>50</MinimumInnerEdgeDarkBlobPixels>
         <MinimumOuterEdgeDarkBlobPixels>50</MinimumOuterEdgeDarkBlobPixels>
@@ -745,15 +745,15 @@
         <BrightBlobMinSEMU>0</BrightBlobMinSEMU>
         <MinBrightInnerEdgeSEMU>2</MinBrightInnerEdgeSEMU>
         <MinBrightOuterEdgeSEMU>2</MinBrightOuterEdgeSEMU>
-        <BrightBlobThreshold>2</BrightBlobThreshold>
+        <BrightBlobThreshold>5</BrightBlobThreshold>
         <BrightBlobEdgeThreshold>2</BrightBlobEdgeThreshold>
         <BrightInnerEdgeThreshold>0</BrightInnerEdgeThreshold>
         <BrightOuterEdgeThreshold>0</BrightOuterEdgeThreshold>
-        <BrightBlobMaxThreshold>6.5</BrightBlobMaxThreshold>
-        <BrightBlobEdgeMaxThreshold>4.5</BrightBlobEdgeMaxThreshold>
+        <BrightBlobMaxThreshold>8</BrightBlobMaxThreshold>
+        <BrightBlobEdgeMaxThreshold>10</BrightBlobEdgeMaxThreshold>
         <BrightBlobInnerEdgeMaxThreshold>2</BrightBlobInnerEdgeMaxThreshold>
         <BrightBlobOuterEdgeMaxThreshold>2</BrightBlobOuterEdgeMaxThreshold>
-        <MinimumBrightBlobPixels>100</MinimumBrightBlobPixels>
+        <MinimumBrightBlobPixels>50</MinimumBrightBlobPixels>
         <MaximumBrightBlobCCDPixels>500</MaximumBrightBlobCCDPixels>
         <MinimumInnerEdgeBrightBlobPixels>50</MinimumInnerEdgeBrightBlobPixels>
         <MinimumOuterEdgeBrightPixels>50</MinimumOuterEdgeBrightPixels>
@@ -765,7 +765,7 @@
         <BrightMaxEccentricity>-1</BrightMaxEccentricity>
         <BrightMinEccentricity>-1</BrightMinEccentricity>
         <BrightBlobsMaxLocalContrast>0</BrightBlobsMaxLocalContrast>
-        <BlobEdgeDistance>200,200,200,200</BlobEdgeDistance>
+        <BlobEdgeDistance>50,50,50,50</BlobEdgeDistance>
         <BlobInnerEdgeDistance>0, 0, 0, 0</BlobInnerEdgeDistance>
         <DoNotAdjustForDetectorSize>true</DoNotAdjustForDetectorSize>
         <EnableBlobInnerOuterEdges>false</EnableBlobInnerOuterEdges>
@@ -790,7 +790,7 @@
         </CornerDetectorSize>
         <GroupSize>-1</GroupSize>
         <Mode>Both</Mode>
-        <EdgeDistance>0, 0, 0, 0</EdgeDistance>
+        <EdgeDistance>50, 50, 50, 50</EdgeDistance>
         <EdgeDistanceForLocalContrast>50, 50, 50, 50</EdgeDistanceForLocalContrast>
         <CornerMarginSize>
           <Width>0</Width>
@@ -806,7 +806,7 @@
         <Units>Pixels</Units>
         <RegionOfInterest>0, 0, 0, 0</RegionOfInterest>
         <RemoveSaturationLevel>0</RemoveSaturationLevel>
-        <EdgeRegions>0, 0, 50, 50</EdgeRegions>
+        <EdgeRegions>50, 50, 50, 50</EdgeRegions>
         <RectMask>0, 0, 0, 0</RectMask>
         <CircularMask>0, 0, 0</CircularMask>
         <ApplyMaskToLocalContrast>true</ApplyMaskToLocalContrast>
@@ -1166,15 +1166,15 @@
         <BrightBlobMinSEMU>0</BrightBlobMinSEMU>
         <MinBrightInnerEdgeSEMU>2</MinBrightInnerEdgeSEMU>
         <MinBrightOuterEdgeSEMU>2</MinBrightOuterEdgeSEMU>
-        <BrightBlobThreshold>0</BrightBlobThreshold>
-        <BrightBlobEdgeThreshold>2</BrightBlobEdgeThreshold>
+        <BrightBlobThreshold>3</BrightBlobThreshold>
+        <BrightBlobEdgeThreshold>5</BrightBlobEdgeThreshold>
         <BrightInnerEdgeThreshold>0</BrightInnerEdgeThreshold>
         <BrightOuterEdgeThreshold>0</BrightOuterEdgeThreshold>
-        <BrightBlobMaxThreshold>0</BrightBlobMaxThreshold>
-        <BrightBlobEdgeMaxThreshold>2</BrightBlobEdgeMaxThreshold>
+        <BrightBlobMaxThreshold>5</BrightBlobMaxThreshold>
+        <BrightBlobEdgeMaxThreshold>8</BrightBlobEdgeMaxThreshold>
         <BrightBlobInnerEdgeMaxThreshold>2</BrightBlobInnerEdgeMaxThreshold>
         <BrightBlobOuterEdgeMaxThreshold>2</BrightBlobOuterEdgeMaxThreshold>
-        <MinimumBrightBlobPixels>50</MinimumBrightBlobPixels>
+        <MinimumBrightBlobPixels>60</MinimumBrightBlobPixels>
         <MaximumBrightBlobCCDPixels>0</MaximumBrightBlobCCDPixels>
         <MinimumInnerEdgeBrightBlobPixels>50</MinimumInnerEdgeBrightBlobPixels>
         <MinimumOuterEdgeBrightPixels>50</MinimumOuterEdgeBrightPixels>
@@ -1535,14 +1535,14 @@
         </NoiseDetectorSize>
         <NoiseThreshold>1.2</NoiseThreshold>
         <SaveIntermediateMeasurements>false</SaveIntermediateMeasurements>
-        <DarkThreshold>0</DarkThreshold>
+        <DarkThreshold>2</DarkThreshold>
         <DarkEdgeThreshold>2</DarkEdgeThreshold>
         <MinDarkAvgContrast>0</MinDarkAvgContrast>
         <MinDarkAvgContrastEdge>-1</MinDarkAvgContrastEdge>
-        <DarkMaxValueThreshold>0</DarkMaxValueThreshold>
+        <DarkMaxValueThreshold>2.5</DarkMaxValueThreshold>
         <DarkMaxValueThreshold2>0</DarkMaxValueThreshold2>
-        <DarkParticleEdgeMaxThreshold>2</DarkParticleEdgeMaxThreshold>
-        <MinimumDarkCCDPixels>8</MinimumDarkCCDPixels>
+        <DarkParticleEdgeMaxThreshold>3</DarkParticleEdgeMaxThreshold>
+        <MinimumDarkCCDPixels>50</MinimumDarkCCDPixels>
         <MinimumDarkCCDPixelsEdge>-1</MinimumDarkCCDPixelsEdge>
         <MaximumDarkCCDPixels>100</MaximumDarkCCDPixels>
         <MaximumDarkCCDPixelsEdge>-1</MaximumDarkCCDPixelsEdge>
@@ -1587,15 +1587,15 @@
         <BrightBlobMinSEMU>0</BrightBlobMinSEMU>
         <MinBrightInnerEdgeSEMU>2</MinBrightInnerEdgeSEMU>
         <MinBrightOuterEdgeSEMU>2</MinBrightOuterEdgeSEMU>
-        <BrightBlobThreshold>0</BrightBlobThreshold>
-        <BrightBlobEdgeThreshold>2</BrightBlobEdgeThreshold>
+        <BrightBlobThreshold>3.5</BrightBlobThreshold>
+        <BrightBlobEdgeThreshold>5</BrightBlobEdgeThreshold>
         <BrightInnerEdgeThreshold>0</BrightInnerEdgeThreshold>
         <BrightOuterEdgeThreshold>0</BrightOuterEdgeThreshold>
-        <BrightBlobMaxThreshold>0</BrightBlobMaxThreshold>
-        <BrightBlobEdgeMaxThreshold>2</BrightBlobEdgeMaxThreshold>
+        <BrightBlobMaxThreshold>5</BrightBlobMaxThreshold>
+        <BrightBlobEdgeMaxThreshold>7</BrightBlobEdgeMaxThreshold>
         <BrightBlobInnerEdgeMaxThreshold>2</BrightBlobInnerEdgeMaxThreshold>
         <BrightBlobOuterEdgeMaxThreshold>2</BrightBlobOuterEdgeMaxThreshold>
-        <MinimumBrightBlobPixels>50</MinimumBrightBlobPixels>
+        <MinimumBrightBlobPixels>60</MinimumBrightBlobPixels>
         <MaximumBrightBlobCCDPixels>0</MaximumBrightBlobCCDPixels>
         <MinimumInnerEdgeBrightBlobPixels>50</MinimumInnerEdgeBrightBlobPixels>
         <MinimumOuterEdgeBrightPixels>50</MinimumOuterEdgeBrightPixels>
@@ -1862,7 +1862,7 @@
         <ManualBoundsEnabled>false</ManualBoundsEnabled>
         <UseCurrentFromObjRepository>false</UseCurrentFromObjRepository>
         <Threshold>2</Threshold>
-        <_RemoveMoire>None</_RemoveMoire>
+        <_RemoveMoire>UseSavedFilter</_RemoveMoire>
         <AxisThresholdPct>75</AxisThresholdPct>
         <CenterLineWidth>1</CenterLineWidth>
         <DilateBlockPct>
@@ -1872,7 +1872,7 @@
         <GlobalThresholdPct>1500</GlobalThresholdPct>
         <LocalThresholdPct>75</LocalThresholdPct>
         <MinFrequencyPct>2</MinFrequencyPct>
-        <MoireRegionFilterName></MoireRegionFilterName>
+        <MoireRegionFilterName>*</MoireRegionFilterName>
         <SavedFilterDescription></SavedFilterDescription>
         <FilterGUID></FilterGUID>
         <EnableGpuLC>false</EnableGpuLC>
@@ -1923,8 +1923,8 @@
           <Height>0</Height>
         </MedianFilterSize>
         <SmoothFilterSize>
-          <Width>8</Width>
-          <Height>8</Height>
+          <Width>7</Width>
+          <Height>7</Height>
         </SmoothFilterSize>
         <SmoothParameters></SmoothParameters>
         <PostSmoothParameters></PostSmoothParameters>
@@ -1969,15 +1969,15 @@
         <MaximumDarkCCDPixelsEdge>-1</MaximumDarkCCDPixelsEdge>
         <DarkPixelColor>NamedColor:BlueViolet</DarkPixelColor>
         <DarkParticlesMaxLocalContrast>0</DarkParticlesMaxLocalContrast>
-        <BrightThreshold>6.5</BrightThreshold>
-        <BrightEdgeThreshold>2</BrightEdgeThreshold>
-        <MinBrightAvgContrast>0</MinBrightAvgContrast>
+        <BrightThreshold>2.5</BrightThreshold>
+        <BrightEdgeThreshold>3</BrightEdgeThreshold>
+        <MinBrightAvgContrast>5.1</MinBrightAvgContrast>
         <MinBrightAvgContrastEdge>-1</MinBrightAvgContrastEdge>
-        <BrightMaxValueThreshold>12</BrightMaxValueThreshold>
+        <BrightMaxValueThreshold>8</BrightMaxValueThreshold>
         <BrightMaxValueThreshold2>0</BrightMaxValueThreshold2>
-        <BrightParticleEdgeMaxThreshold>10</BrightParticleEdgeMaxThreshold>
-        <MinimumBrightCCDPixels>8</MinimumBrightCCDPixels>
-        <MinimumBrightCCDPixelsEdge>-1</MinimumBrightCCDPixelsEdge>
+        <BrightParticleEdgeMaxThreshold>9</BrightParticleEdgeMaxThreshold>
+        <MinimumBrightCCDPixels>62</MinimumBrightCCDPixels>
+        <MinimumBrightCCDPixelsEdge>70</MinimumBrightCCDPixelsEdge>
         <MaximumBrightCCDPixels>500</MaximumBrightCCDPixels>
         <MaximumBrightCCDPixelsEdge>-1</MaximumBrightCCDPixelsEdge>
         <BrightPixelColor>NamedColor:Firebrick</BrightPixelColor>
@@ -2044,8 +2044,8 @@
         <DisplayValue>Average</DisplayValue>
         <DrawBlobContours>true</DrawBlobContours>
         <DetectorSize>
-          <Width>15</Width>
-          <Height>15</Height>
+          <Width>16</Width>
+          <Height>16</Height>
         </DetectorSize>
         <CornerDetectorSize>
           <Width>5</Width>
@@ -2053,8 +2053,8 @@
         </CornerDetectorSize>
         <GroupSize>-1</GroupSize>
         <Mode>Both</Mode>
-        <EdgeDistance>0, 0, 0, 0</EdgeDistance>
-        <EdgeDistanceForLocalContrast>50, 50, 50, 50</EdgeDistanceForLocalContrast>
+        <EdgeDistance>40, 40, 40, 40</EdgeDistance>
+        <EdgeDistanceForLocalContrast>0, 0, 0, 0</EdgeDistanceForLocalContrast>
         <CornerMarginSize>
           <Width>0</Width>
           <Height>0</Height>
@@ -2429,15 +2429,15 @@
         <BrightBlobMinSEMU>0</BrightBlobMinSEMU>
         <MinBrightInnerEdgeSEMU>2</MinBrightInnerEdgeSEMU>
         <MinBrightOuterEdgeSEMU>2</MinBrightOuterEdgeSEMU>
-        <BrightBlobThreshold>0</BrightBlobThreshold>
-        <BrightBlobEdgeThreshold>2</BrightBlobEdgeThreshold>
+        <BrightBlobThreshold>3</BrightBlobThreshold>
+        <BrightBlobEdgeThreshold>5</BrightBlobEdgeThreshold>
         <BrightInnerEdgeThreshold>0</BrightInnerEdgeThreshold>
         <BrightOuterEdgeThreshold>0</BrightOuterEdgeThreshold>
-        <BrightBlobMaxThreshold>0</BrightBlobMaxThreshold>
-        <BrightBlobEdgeMaxThreshold>2</BrightBlobEdgeMaxThreshold>
+        <BrightBlobMaxThreshold>5</BrightBlobMaxThreshold>
+        <BrightBlobEdgeMaxThreshold>7</BrightBlobEdgeMaxThreshold>
         <BrightBlobInnerEdgeMaxThreshold>2</BrightBlobInnerEdgeMaxThreshold>
         <BrightBlobOuterEdgeMaxThreshold>2</BrightBlobOuterEdgeMaxThreshold>
-        <MinimumBrightBlobPixels>50</MinimumBrightBlobPixels>
+        <MinimumBrightBlobPixels>60</MinimumBrightBlobPixels>
         <MaximumBrightBlobCCDPixels>0</MaximumBrightBlobCCDPixels>
         <MinimumInnerEdgeBrightBlobPixels>50</MinimumInnerEdgeBrightBlobPixels>
         <MinimumOuterEdgeBrightPixels>50</MinimumOuterEdgeBrightPixels>
@@ -2850,15 +2850,15 @@
         <BrightBlobMinSEMU>0</BrightBlobMinSEMU>
         <MinBrightInnerEdgeSEMU>2</MinBrightInnerEdgeSEMU>
         <MinBrightOuterEdgeSEMU>2</MinBrightOuterEdgeSEMU>
-        <BrightBlobThreshold>0</BrightBlobThreshold>
-        <BrightBlobEdgeThreshold>2</BrightBlobEdgeThreshold>
+        <BrightBlobThreshold>3</BrightBlobThreshold>
+        <BrightBlobEdgeThreshold>5</BrightBlobEdgeThreshold>
         <BrightInnerEdgeThreshold>0</BrightInnerEdgeThreshold>
         <BrightOuterEdgeThreshold>0</BrightOuterEdgeThreshold>
-        <BrightBlobMaxThreshold>0</BrightBlobMaxThreshold>
-        <BrightBlobEdgeMaxThreshold>2</BrightBlobEdgeMaxThreshold>
+        <BrightBlobMaxThreshold>5</BrightBlobMaxThreshold>
+        <BrightBlobEdgeMaxThreshold>7</BrightBlobEdgeMaxThreshold>
         <BrightBlobInnerEdgeMaxThreshold>2</BrightBlobInnerEdgeMaxThreshold>
         <BrightBlobOuterEdgeMaxThreshold>2</BrightBlobOuterEdgeMaxThreshold>
-        <MinimumBrightBlobPixels>50</MinimumBrightBlobPixels>
+        <MinimumBrightBlobPixels>60</MinimumBrightBlobPixels>
         <MaximumBrightBlobCCDPixels>0</MaximumBrightBlobCCDPixels>
         <MinimumInnerEdgeBrightBlobPixels>50</MinimumInnerEdgeBrightBlobPixels>
         <MinimumOuterEdgeBrightPixels>50</MinimumOuterEdgeBrightPixels>
@@ -2957,8 +2957,8 @@
       <CaptureFilter>
         <boolean>false</boolean>
         <boolean>true</boolean>
-        <boolean>false</boolean>
-        <boolean>false</boolean>
+        <boolean>true</boolean>
+        <boolean>true</boolean>
         <boolean>false</boolean>
         <boolean>false</boolean>
         <boolean>false</boolean>
@@ -2990,7 +2990,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>281d4a21-ed3e-46b9-9168-17e2799517a5</GUID>
+      <GUID>dfde22c1-d7e2-411e-b73e-ec973d608196</GUID>
       <Name>White 255 - YXZ</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -3026,7 +3026,57 @@
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
+          <SerialNumber>81601</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>0</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
           <SerialNumber>94142510</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>-1</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
+          <SerialNumber>91738177</SerialNumber>
           <ColorCalID>0</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>-1</FlatFieldID>
@@ -3054,12 +3104,12 @@
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
       <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
-      <LEDColorPurity>0.8</LEDColorPurity>
+      <LEDColorPurity>0.800000011920929</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
       <ExternalFilterID>0</ExternalFilterID>
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
       <LensDistance>1</LensDistance>
-      <LensfStop>6</LensfStop>
+      <LensfStop>5</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>false</CameraMirror>
@@ -3166,8 +3216,8 @@
       <CaptureFilter>
         <boolean>false</boolean>
         <boolean>true</boolean>
-        <boolean>false</boolean>
-        <boolean>false</boolean>
+        <boolean>true</boolean>
+        <boolean>true</boolean>
         <boolean>false</boolean>
         <boolean>false</boolean>
         <boolean>false</boolean>
@@ -3199,7 +3249,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>b78fcfab-b001-419a-85b4-9a8ffe1743a1</GUID>
+      <GUID>933e8d00-70a1-4e09-9d95-675cc71b99eb</GUID>
       <Name>Gray 191 - YXZ</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -3235,7 +3285,57 @@
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
+          <SerialNumber>81601</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>0</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
           <SerialNumber>94142510</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>-1</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
+          <SerialNumber>91738177</SerialNumber>
           <ColorCalID>0</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>-1</FlatFieldID>
@@ -3263,12 +3363,12 @@
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
       <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
-      <LEDColorPurity>0.8</LEDColorPurity>
+      <LEDColorPurity>0.800000011920929</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
       <ExternalFilterID>0</ExternalFilterID>
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
       <LensDistance>1</LensDistance>
-      <LensfStop>6</LensfStop>
+      <LensfStop>5</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>false</CameraMirror>
@@ -3375,8 +3475,8 @@
       <CaptureFilter>
         <boolean>false</boolean>
         <boolean>true</boolean>
-        <boolean>false</boolean>
-        <boolean>false</boolean>
+        <boolean>true</boolean>
+        <boolean>true</boolean>
         <boolean>false</boolean>
         <boolean>false</boolean>
         <boolean>false</boolean>
@@ -3408,7 +3508,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>84ce381e-b9e6-49a6-9ae3-1d18ac26e2a2</GUID>
+      <GUID>43e74c47-1764-4324-a446-376ed65b5b96</GUID>
       <Name>Gray 180 - YXZ</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -3444,7 +3544,107 @@
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
+          <SerialNumber>158763491</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>-1</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
+          <SerialNumber>81601</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>0</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
+          <SerialNumber>159185561</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>-1</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
           <SerialNumber>94142510</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>-1</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
+          <SerialNumber>91738177</SerialNumber>
           <ColorCalID>0</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>-1</FlatFieldID>
@@ -3472,7 +3672,7 @@
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
       <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
-      <LEDColorPurity>0.8</LEDColorPurity>
+      <LEDColorPurity>0.800000011920929</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
       <ExternalFilterID>0</ExternalFilterID>
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
@@ -3592,9 +3792,9 @@
       </CaptureFilter>
       <ExposureTime>
         <float>100</float>
-        <float>33</float>
-        <float>100</float>
-        <float>100</float>
+        <float>248.12</float>
+        <float>1624.71</float>
+        <float>19.43</float>
         <float>100</float>
         <float>100</float>
         <float>100</float>
@@ -3617,7 +3817,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>5f83db52-b7de-4cc5-ac5c-d62565cb7f45</GUID>
+      <GUID>bb28848d-3157-4fdb-8438-cc7d077f0545</GUID>
       <Name>B255</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -3638,7 +3838,7 @@
       <ManualHDRValuesList />
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
-      <AutoAdjustExposure>false</AutoAdjustExposure>
+      <AutoAdjustExposure>true</AutoAdjustExposure>
       <BinningX>1</BinningX>
       <BinningY>1</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
@@ -3653,28 +3853,28 @@
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>94142510</SerialNumber>
-          <ColorCalID>6</ColorCalID>
+          <SerialNumber>91738177</SerialNumber>
+          <ColorCalID>3</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>-1</FlatFieldID>
           <FFType>0</FFType>
-          <ImageScalingCalibrationID>3</ImageScalingCalibrationID>
+          <ImageScalingCalibrationID>1</ImageScalingCalibrationID>
           <LensDistortionID>0</LensDistortionID>
           <MultiPointID>0</MultiPointID>
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1682</X>
-              <Y>645</Y>
+              <X>582</X>
+              <Y>1525</Y>
             </Location>
             <Size>
-              <Width>3212</Width>
-              <Height>3114</Height>
+              <Width>3310</Width>
+              <Height>3546</Height>
             </Size>
-            <X>1682</X>
-            <Y>645</Y>
-            <Width>3212</Width>
-            <Height>3114</Height>
+            <X>582</X>
+            <Y>1525</Y>
+            <Width>3310</Width>
+            <Height>3546</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -3687,11 +3887,11 @@
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
       <LensDistance>0.453</LensDistance>
       <LensfStop>6</LensfStop>
-      <CameraFlip>true</CameraFlip>
+      <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>true</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>Rotate180</CameraRotation>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -3699,7 +3899,7 @@
       <ECCCustomCal>0</ECCCustomCal>
       <ConoscopeZDistance>3</ConoscopeZDistance>
       <FFType>0</FFType>
-      <GoniometerType>TypeA</GoniometerType>
+      <GoniometerType>TypeC</GoniometerType>
       <DUTDistance>1</DUTDistance>
       <DownsampleFactor>1</DownsampleFactor>
       <InterpolationMethod>CubicSpline</InterpolationMethod>
@@ -3792,9 +3992,9 @@
       </CaptureFilter>
       <ExposureTime>
         <float>100</float>
-        <float>11</float>
-        <float>100</float>
-        <float>100</float>
+        <float>11.5</float>
+        <float>305.02</float>
+        <float>178.23</float>
         <float>100</float>
         <float>100</float>
         <float>100</float>
@@ -3817,7 +4017,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>753bcdfa-54ea-42a0-8cef-f388a9a7ff04</GUID>
+      <GUID>99b2346c-642b-4c1e-8b52-d8f5a88ef0fd</GUID>
       <Name>W255</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -3838,7 +4038,7 @@
       <ManualHDRValuesList />
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
-      <AutoAdjustExposure>false</AutoAdjustExposure>
+      <AutoAdjustExposure>true</AutoAdjustExposure>
       <BinningX>1</BinningX>
       <BinningY>1</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
@@ -3853,28 +4053,28 @@
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>94142510</SerialNumber>
-          <ColorCalID>6</ColorCalID>
+          <SerialNumber>91738177</SerialNumber>
+          <ColorCalID>3</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>-1</FlatFieldID>
           <FFType>0</FFType>
-          <ImageScalingCalibrationID>3</ImageScalingCalibrationID>
+          <ImageScalingCalibrationID>1</ImageScalingCalibrationID>
           <LensDistortionID>0</LensDistortionID>
           <MultiPointID>0</MultiPointID>
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1682</X>
-              <Y>645</Y>
+              <X>582</X>
+              <Y>1525</Y>
             </Location>
             <Size>
-              <Width>3212</Width>
-              <Height>3114</Height>
+              <Width>3310</Width>
+              <Height>3546</Height>
             </Size>
-            <X>1682</X>
-            <Y>645</Y>
-            <Width>3212</Width>
-            <Height>3114</Height>
+            <X>582</X>
+            <Y>1525</Y>
+            <Width>3310</Width>
+            <Height>3546</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -3887,11 +4087,11 @@
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
       <LensDistance>0.453</LensDistance>
       <LensfStop>6</LensfStop>
-      <CameraFlip>true</CameraFlip>
+      <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>true</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>Rotate180</CameraRotation>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -3899,7 +4099,7 @@
       <ECCCustomCal>0</ECCCustomCal>
       <ConoscopeZDistance>3</ConoscopeZDistance>
       <FFType>0</FFType>
-      <GoniometerType>TypeA</GoniometerType>
+      <GoniometerType>TypeC</GoniometerType>
       <DUTDistance>1</DUTDistance>
       <DownsampleFactor>1</DownsampleFactor>
       <InterpolationMethod>CubicSpline</InterpolationMethod>
@@ -4017,7 +4217,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>1175dc42-7711-45dc-b6a1-9598c75db041</GUID>
+      <GUID>102f7a00-a237-43cd-a7c9-cee937c00fda</GUID>
       <Name>Gray180</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -4077,11 +4277,61 @@
             <Height>3226</Height>
           </SubFrameRegion>
         </CameraSettings>
+        <CameraSettings>
+          <SerialNumber>81601</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>0</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
+          <SerialNumber>91738177</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>-1</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
       <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
-      <LEDColorPurity>0.8</LEDColorPurity>
+      <LEDColorPurity>0.800000011920929</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
       <ExternalFilterID>0</ExternalFilterID>
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
@@ -4331,7 +4581,7 @@
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
       <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
-      <LEDColorPurity>0.8</LEDColorPurity>
+      <LEDColorPurity>0.800000011920929</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
       <ExternalFilterID>0</ExternalFilterID>
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
@@ -4467,7 +4717,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>f899d7b4-693c-403a-8aa2-5b0e73e65471</GUID>
+      <GUID>150f71fc-39e1-4d4a-b90b-64ec83835c40</GUID>
       <Name>Gray90</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -4527,11 +4777,61 @@
             <Height>3226</Height>
           </SubFrameRegion>
         </CameraSettings>
+        <CameraSettings>
+          <SerialNumber>81601</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>0</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
+          <SerialNumber>91738177</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>-1</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
       </CameraSettingsList>
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
       <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
-      <LEDColorPurity>0.8</LEDColorPurity>
+      <LEDColorPurity>0.800000011920929</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
       <ExternalFilterID>0</ExternalFilterID>
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
@@ -4642,9 +4942,9 @@
       </CaptureFilter>
       <ExposureTime>
         <float>100</float>
-        <float>110</float>
-        <float>100</float>
-        <float>100</float>
+        <float>53.42</float>
+        <float>53.64</float>
+        <float>1511.48</float>
         <float>100</float>
         <float>100</float>
         <float>100</float>
@@ -4667,7 +4967,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>9a1e4693-7101-4e71-ba38-af8b7d52f538</GUID>
+      <GUID>160757a0-232d-4f6e-abb2-ace2c0e13bb5</GUID>
       <Name>R255</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -4688,7 +4988,7 @@
       <ManualHDRValuesList />
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
-      <AutoAdjustExposure>false</AutoAdjustExposure>
+      <AutoAdjustExposure>true</AutoAdjustExposure>
       <BinningX>1</BinningX>
       <BinningY>1</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
@@ -4703,28 +5003,28 @@
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>94142510</SerialNumber>
-          <ColorCalID>6</ColorCalID>
+          <SerialNumber>91738177</SerialNumber>
+          <ColorCalID>3</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>-1</FlatFieldID>
           <FFType>0</FFType>
-          <ImageScalingCalibrationID>3</ImageScalingCalibrationID>
+          <ImageScalingCalibrationID>1</ImageScalingCalibrationID>
           <LensDistortionID>0</LensDistortionID>
           <MultiPointID>0</MultiPointID>
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1682</X>
-              <Y>645</Y>
+              <X>582</X>
+              <Y>1525</Y>
             </Location>
             <Size>
-              <Width>3212</Width>
-              <Height>3114</Height>
+              <Width>3310</Width>
+              <Height>3546</Height>
             </Size>
-            <X>1682</X>
-            <Y>645</Y>
-            <Width>3212</Width>
-            <Height>3114</Height>
+            <X>582</X>
+            <Y>1525</Y>
+            <Width>3310</Width>
+            <Height>3546</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -4737,11 +5037,11 @@
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
       <LensDistance>0.453</LensDistance>
       <LensfStop>6</LensfStop>
-      <CameraFlip>true</CameraFlip>
+      <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>true</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>Rotate180</CameraRotation>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -4749,7 +5049,7 @@
       <ECCCustomCal>0</ECCCustomCal>
       <ConoscopeZDistance>3</ConoscopeZDistance>
       <FFType>0</FFType>
-      <GoniometerType>TypeA</GoniometerType>
+      <GoniometerType>TypeC</GoniometerType>
       <DUTDistance>1</DUTDistance>
       <DownsampleFactor>1</DownsampleFactor>
       <InterpolationMethod>CubicSpline</InterpolationMethod>
@@ -4842,9 +5142,9 @@
       </CaptureFilter>
       <ExposureTime>
         <float>100</float>
-        <float>22</float>
-        <float>100</float>
-        <float>100</float>
+        <float>15.39</float>
+        <float>54.88</float>
+        <float>200.49</float>
         <float>100</float>
         <float>100</float>
         <float>100</float>
@@ -4867,7 +5167,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>162111cb-00a8-4292-a8c8-233faa99fef7</GUID>
+      <GUID>b2c2f76b-21ff-43c3-96ba-209829d9bedb</GUID>
       <Name>G255</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -4888,7 +5188,7 @@
       <ManualHDRValuesList />
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
-      <AutoAdjustExposure>false</AutoAdjustExposure>
+      <AutoAdjustExposure>true</AutoAdjustExposure>
       <BinningX>1</BinningX>
       <BinningY>1</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
@@ -4903,28 +5203,28 @@
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>94142510</SerialNumber>
-          <ColorCalID>6</ColorCalID>
+          <SerialNumber>91738177</SerialNumber>
+          <ColorCalID>3</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>-1</FlatFieldID>
           <FFType>0</FFType>
-          <ImageScalingCalibrationID>3</ImageScalingCalibrationID>
+          <ImageScalingCalibrationID>1</ImageScalingCalibrationID>
           <LensDistortionID>0</LensDistortionID>
           <MultiPointID>0</MultiPointID>
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1682</X>
-              <Y>645</Y>
+              <X>582</X>
+              <Y>1525</Y>
             </Location>
             <Size>
-              <Width>3212</Width>
-              <Height>3114</Height>
+              <Width>3310</Width>
+              <Height>3546</Height>
             </Size>
-            <X>1682</X>
-            <Y>645</Y>
-            <Width>3212</Width>
-            <Height>3114</Height>
+            <X>582</X>
+            <Y>1525</Y>
+            <Width>3310</Width>
+            <Height>3546</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -4937,11 +5237,11 @@
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
       <LensDistance>0.453</LensDistance>
       <LensfStop>6</LensfStop>
-      <CameraFlip>true</CameraFlip>
+      <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>true</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>Rotate180</CameraRotation>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -4949,7 +5249,7 @@
       <ECCCustomCal>0</ECCCustomCal>
       <ConoscopeZDistance>3</ConoscopeZDistance>
       <FFType>0</FFType>
-      <GoniometerType>TypeA</GoniometerType>
+      <GoniometerType>TypeC</GoniometerType>
       <DUTDistance>1</DUTDistance>
       <DownsampleFactor>1</DownsampleFactor>
       <InterpolationMethod>CubicSpline</InterpolationMethod>
@@ -5042,9 +5342,9 @@
       </CaptureFilter>
       <ExposureTime>
         <float>100</float>
-        <float>330</float>
-        <float>100</float>
-        <float>100</float>
+        <float>9000</float>
+        <float>1292.69</float>
+        <float>1932.56</float>
         <float>100</float>
         <float>100</float>
         <float>100</float>
@@ -5067,7 +5367,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>b205cc56-72f3-4cf0-a47f-a17dfc2566b7</GUID>
+      <GUID>b45aac6c-27cd-40ff-9da5-d5bd89d92d5e</GUID>
       <Name>W000</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -5088,7 +5388,7 @@
       <ManualHDRValuesList />
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
-      <AutoAdjustExposure>false</AutoAdjustExposure>
+      <AutoAdjustExposure>true</AutoAdjustExposure>
       <BinningX>1</BinningX>
       <BinningY>1</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
@@ -5103,28 +5403,28 @@
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>94142510</SerialNumber>
-          <ColorCalID>6</ColorCalID>
+          <SerialNumber>91738177</SerialNumber>
+          <ColorCalID>3</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>-1</FlatFieldID>
           <FFType>0</FFType>
-          <ImageScalingCalibrationID>3</ImageScalingCalibrationID>
+          <ImageScalingCalibrationID>1</ImageScalingCalibrationID>
           <LensDistortionID>0</LensDistortionID>
           <MultiPointID>0</MultiPointID>
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1682</X>
-              <Y>645</Y>
+              <X>582</X>
+              <Y>1525</Y>
             </Location>
             <Size>
-              <Width>3212</Width>
-              <Height>3114</Height>
+              <Width>3310</Width>
+              <Height>3546</Height>
             </Size>
-            <X>1682</X>
-            <Y>645</Y>
-            <Width>3212</Width>
-            <Height>3114</Height>
+            <X>582</X>
+            <Y>1525</Y>
+            <Width>3310</Width>
+            <Height>3546</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -5137,11 +5437,11 @@
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
       <LensDistance>0.453</LensDistance>
       <LensfStop>6</LensfStop>
-      <CameraFlip>true</CameraFlip>
+      <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>true</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>Rotate180</CameraRotation>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -5149,7 +5449,7 @@
       <ECCCustomCal>0</ECCCustomCal>
       <ConoscopeZDistance>3</ConoscopeZDistance>
       <FFType>0</FFType>
-      <GoniometerType>TypeA</GoniometerType>
+      <GoniometerType>TypeC</GoniometerType>
       <DUTDistance>1</DUTDistance>
       <DownsampleFactor>1</DownsampleFactor>
       <InterpolationMethod>CubicSpline</InterpolationMethod>
@@ -5228,7 +5528,6 @@
           <Timeout>20000</Timeout>
         </NetworkComputerInfo>
       </ComputerInfoList>
-      <AssociatedCamera></AssociatedCamera>
     </PatternSetup>
     <PatternSetup>
       <CaptureFilter>
@@ -5267,7 +5566,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>8dce8e43-e918-4d4e-94a8-d911ce43ad47</GUID>
+      <GUID>7c51157d-e017-4ae5-8a46-98eb72b2ac8b</GUID>
       <Name>Gray255</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -5303,7 +5602,57 @@
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
+          <SerialNumber>81601</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>0</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
           <SerialNumber>94142510</SerialNumber>
+          <ColorCalID>0</ColorCalID>
+          <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
+          <FlatFieldID>-1</FlatFieldID>
+          <FFType>0</FFType>
+          <ImageScalingCalibrationID>0</ImageScalingCalibrationID>
+          <LensDistortionID>0</LensDistortionID>
+          <MultiPointID>0</MultiPointID>
+          <StrayLightID>0</StrayLightID>
+          <SubFrameRegion>
+            <Location>
+              <X>0</X>
+              <Y>0</Y>
+            </Location>
+            <Size>
+              <Width>0</Width>
+              <Height>0</Height>
+            </Size>
+            <X>0</X>
+            <Y>0</Y>
+            <Width>0</Width>
+            <Height>0</Height>
+          </SubFrameRegion>
+        </CameraSettings>
+        <CameraSettings>
+          <SerialNumber>91738177</SerialNumber>
           <ColorCalID>0</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>-1</FlatFieldID>
@@ -5331,12 +5680,12 @@
       <TransmissionCalibrationID>-1</TransmissionCalibrationID>
       <ConoscopeCalibrationID>0</ConoscopeCalibrationID>
       <LEDColorCalibration>true</LEDColorCalibration>
-      <LEDColorPurity>0.8</LEDColorPurity>
+      <LEDColorPurity>0.800000011920929</LEDColorPurity>
       <SpectrometerAssistedMeasurement>false</SpectrometerAssistedMeasurement>
       <ExternalFilterID>0</ExternalFilterID>
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
       <LensDistance>1</LensDistance>
-      <LensfStop>6</LensfStop>
+      <LensfStop>5</LensfStop>
       <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>false</CameraMirror>
@@ -5467,7 +5816,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>e686ba52-b7bb-47a0-b995-03b8751d031a</GUID>
+      <GUID>44dc4261-7c9d-4174-8855-40a2f3e7b28d</GUID>
       <Name>W028</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -5488,7 +5837,7 @@
       <ManualHDRValuesList />
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
-      <AutoAdjustExposure>false</AutoAdjustExposure>
+      <AutoAdjustExposure>true</AutoAdjustExposure>
       <BinningX>1</BinningX>
       <BinningY>1</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
@@ -5503,28 +5852,28 @@
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>94142510</SerialNumber>
-          <ColorCalID>6</ColorCalID>
+          <SerialNumber>91738177</SerialNumber>
+          <ColorCalID>3</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>-1</FlatFieldID>
           <FFType>0</FFType>
-          <ImageScalingCalibrationID>3</ImageScalingCalibrationID>
+          <ImageScalingCalibrationID>1</ImageScalingCalibrationID>
           <LensDistortionID>0</LensDistortionID>
           <MultiPointID>0</MultiPointID>
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1682</X>
-              <Y>645</Y>
+              <X>582</X>
+              <Y>1525</Y>
             </Location>
             <Size>
-              <Width>3212</Width>
-              <Height>3114</Height>
+              <Width>3310</Width>
+              <Height>3546</Height>
             </Size>
-            <X>1682</X>
-            <Y>645</Y>
-            <Width>3212</Width>
-            <Height>3114</Height>
+            <X>582</X>
+            <Y>1525</Y>
+            <Width>3310</Width>
+            <Height>3546</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -5537,11 +5886,11 @@
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
       <LensDistance>0.453</LensDistance>
       <LensfStop>6</LensfStop>
-      <CameraFlip>true</CameraFlip>
+      <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>true</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>Rotate180</CameraRotation>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
@@ -5667,7 +6016,7 @@
         <float>0</float>
         <float>0</float>
       </ThresholdFilter>
-      <GUID>e1cb3eda-1379-40cf-8492-a0bbe8cbabcd</GUID>
+      <GUID>5da142c6-192e-4261-9c75-c66daeacfac5</GUID>
       <Name>W048</Name>
       <Notes></Notes>
       <MeasurementSetupID>0</MeasurementSetupID>
@@ -5688,7 +6037,7 @@
       <ManualHDRValuesList />
       <ApplyMedianSmoothing>false</ApplyMedianSmoothing>
       <MedianBlockSize>3</MedianBlockSize>
-      <AutoAdjustExposure>false</AutoAdjustExposure>
+      <AutoAdjustExposure>true</AutoAdjustExposure>
       <BinningX>1</BinningX>
       <BinningY>1</BinningY>
       <NbrDarkFramesToAverage>1</NbrDarkFramesToAverage>
@@ -5703,28 +6052,28 @@
       <SpectralResponse>Photometric</SpectralResponse>
       <CameraSettingsList>
         <CameraSettings>
-          <SerialNumber>94142510</SerialNumber>
-          <ColorCalID>6</ColorCalID>
+          <SerialNumber>91738177</SerialNumber>
+          <ColorCalID>3</ColorCalID>
           <ColorShiftCorrectionID>0</ColorShiftCorrectionID>
           <FlatFieldID>-1</FlatFieldID>
           <FFType>0</FFType>
-          <ImageScalingCalibrationID>3</ImageScalingCalibrationID>
+          <ImageScalingCalibrationID>1</ImageScalingCalibrationID>
           <LensDistortionID>0</LensDistortionID>
           <MultiPointID>0</MultiPointID>
           <StrayLightID>0</StrayLightID>
           <SubFrameRegion>
             <Location>
-              <X>1682</X>
-              <Y>645</Y>
+              <X>582</X>
+              <Y>1525</Y>
             </Location>
             <Size>
-              <Width>3212</Width>
-              <Height>3114</Height>
+              <Width>3310</Width>
+              <Height>3546</Height>
             </Size>
-            <X>1682</X>
-            <Y>645</Y>
-            <Width>3212</Width>
-            <Height>3114</Height>
+            <X>582</X>
+            <Y>1525</Y>
+            <Width>3310</Width>
+            <Height>3546</Height>
           </SubFrameRegion>
         </CameraSettings>
       </CameraSettingsList>
@@ -5737,11 +6086,11 @@
       <MeasurementSpeedMode>Standard</MeasurementSpeedMode>
       <LensDistance>0.453</LensDistance>
       <LensfStop>6</LensfStop>
-      <CameraFlip>true</CameraFlip>
+      <CameraFlip>false</CameraFlip>
       <UICameraMirror>false</UICameraMirror>
       <CameraMirror>true</CameraMirror>
-      <CameraTranspose>false</CameraTranspose>
-      <CameraRotation>Rotate180</CameraRotation>
+      <CameraTranspose>true</CameraTranspose>
+      <CameraRotation>Counterclockwise90</CameraRotation>
       <MakeIntensity>false</MakeIntensity>
       <ConvertCoordinateSystem>false</ConvertCoordinateSystem>
       <CoordinateSystemGoniometerType>TypeC</CoordinateSystemGoniometerType>
