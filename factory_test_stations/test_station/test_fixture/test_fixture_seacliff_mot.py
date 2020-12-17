@@ -205,16 +205,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                 "Fixture %s Initialized.\n" % self._station_config.FIXTURE_COMPORT)
             return True
 
-            # if self._PTB_Power_Status != '0':
-            #     self.poweron_ptb()
-            #     self._operator_interface.print_to_console("Power on PTB {}\n".format(self._PTB_Power_Status))
-            # if self._USB_Power_Status != '0':
-            #     self.poweron_usb()
-            #     self._operator_interface.print_to_console("Power on USB {}\n".format(self._USB_Power_Status))
-            # isinit = bool(self._serial_port) and not bool(int(self._PTB_Power_Status)) and not bool(
-            #     int(self._USB_Power_Status))
-            # return isinit
-
     def _write_serial(self, input_bytes):
         """
         @param input_bytes: fixture command without \r\n
@@ -298,7 +288,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if self._verbose:
             pprint.pprint("====== Fixture Close =========")
         return True
-
+    '''
     def status(self):
         self._write_serial(self._station_config.COMMAND_STATUS)
         response = self._read_response()
@@ -350,7 +340,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         time.sleep(self._station_config.FIXTURE_PTB_ON_TIME)
         self._write_serial(self._station_config.COMMAND_USB_POWER_ON)
         time.sleep(self._station_config.FIXTURE_USB_ON_TIME + self._station_config.DUT_ON_TIME)
-
+    '''
     ######################
     # Fixture control
     ######################
