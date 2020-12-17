@@ -42,6 +42,93 @@ class seacliffmotStation(test_station.TestStation):
             msg += os.linesep
         self._operator_interface.print_to_console(msg)
 
+    def auto_find_com_ports(self):
+        import serial.tools.list_ports
+        import serial
+        from pymodbus.client.sync import ModbusSerialClient
+        from pymodbus.register_read_message import ReadHoldingRegistersResponse
+
+        self._operator_interface.print_to_console("auto config com ports...\n")
+        self._station_config.DUT_COMPORT = None
+        self._station_config.FIXTURE_COMPORT = None
+        self._station_config.FIXTURE_PARTICLE_COMPORT = None
+
+        com_ports = list(serial.tools.list_ports.comports())
+        pprint.pprint(f'Ports = {[(com.device, com.hwid, com.description) for com in com_ports]} \n')
+
+        for com in com_ports:
+            hit_success = False
+            if self._station_config.FIXTURE_PARTICLE_COUNTER \
+                    and self._station_config.FIXTURE_PARTICLE_COMPORT is None \
+                    and (self._station_config.FIXTURE_PARTICLE_COMPORT_FILTER in com.hwid):
+                try:
+                    timeout_modbus = 5 if not hasattr(self._station_config, 'PARTICLE_COUNTER_TIMEOUT') \
+                        else self._station_config.PARTICLE_COUNTER_TIMEOUT
+                    modbus_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8,
+                                                       parity='N', stopbits=1,
+                                                       port=com.device, timeout=timeout_modbus)
+                    if modbus_client is not None:
+                        retries = 1
+                        while (retries < 5) and (not hit_success):
+                            print(f'try to search modbus for particle counter. {retries}\n')
+                            if modbus_client.connect():
+                                rs = modbus_client.read_holding_registers(
+                                    self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
+                                    2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
+                                modbus_client.close()
+                                # type: ReadHoldingRegistersResponse
+                                if rs is None or rs.isError():
+                                    retries = retries + 1
+                                    time.sleep(0.05)
+                                else:
+                                    self._station_config.FIXTURE_PARTICLE_COMPORT = com.device
+                                    hit_success = True
+                            retries += 1
+                except Exception as e:
+                    print(f'Fail to confirm [{com.device}] for particle counter. {str(e)}\n')
+
+            if hit_success:
+                continue
+            if (self._station_config.FIXTURE_COMPORT is None) and (not self._station_config.IS_PROXY_COMMUNICATION):
+                try:
+                    a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1, bytesize=8,
+                                             timeout=1, xonxoff=0, rtscts=0)
+                    if a_serial is not None:
+                        a_serial.flush()
+                        a_serial.write('CMD_ID\r\n'.encode())
+                        msg = a_serial.readline()
+                        if 'ID' in msg.decode(encoding='utf-8').upper():
+                            self._station_config.FIXTURE_COMPORT = com.device
+                            hit_success = True
+                except Exception as e:
+                    pass
+                finally:
+                    a_serial.close()
+
+            if self._station_config.DUT_COMPORT is None:
+                try:
+                    a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1, bytesize=8,
+                                             timeout=1, xonxoff=0, rtscts=0)
+                    if a_serial is not None:
+                        a_serial.flush()
+                        a_serial.write('$c.VERSION,mcu\r\n'.encode())
+                        ver_mcu = a_serial.readline()
+                        if '$P.VERSION' in ver_mcu.decode(encoding='utf-8').upper():
+                            a_serial.flush()
+                            a_serial.write('$c.DUT.POWEROFF\r\n'.encode())
+                            pw_msg = a_serial.readline()
+                            if pw_msg != b'':
+                                print('Ver_MCU: {0}, POWER_OFF: {1}'.format(ver_mcu, pw_msg.decode()))
+                            self._station_config.DUT_COMPORT = com.device
+                            hit_success = True
+                except Exception as e:
+                    pass
+                finally:
+                    a_serial.close()
+
+            if hit_success:
+                continue
+
     def __init__(self, station_config, operator_interface):
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
@@ -69,6 +156,14 @@ class seacliffmotStation(test_station.TestStation):
         try:
             self._operator_interface.print_to_console("Initializing Seacliff MOT station...{0}\n"
                                                       .format(self._sw_version))
+            if self._station_config.AUTO_CFG_COMPORTS:
+                self.auto_find_com_ports()
+
+            msg = "find ports FIXTURE = {0}, DUT = {1}, PARTICLE COUNTER = {2}. \n" \
+                .format(self._station_config.FIXTURE_COMPORT,
+                        self._station_config.DUT_COMPORT, self._station_config.FIXTURE_PARTICLE_COMPORT)
+            self._operator_interface.print_to_console(msg)
+
             self._fixture.initialize()
             self._equipment.initialize()
             self._equipment.open()
