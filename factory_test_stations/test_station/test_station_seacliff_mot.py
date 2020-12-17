@@ -113,6 +113,11 @@ class seacliffmotStation(test_station.TestStation):
 
         @type test_log: test_station.test_log.test_log
         """
+
+        self._query_dual_start()
+        if self._the_unit is None:
+            raise test_station.TestStationProcessControlError(f'Fail to query dual_start for DUT {serial_number}.')
+
         msg0 = 'info --> lit up: {0}, emulator_dut: {1}, emulator_equip: {2}, emulator_fixture: {3},' \
                ' particle:{4}, dut_checker:{5} ver: {6}\n' \
             .format(
@@ -280,14 +285,21 @@ class seacliffmotStation(test_station.TestStation):
         return test_station.TestStation.validate_sn(self, serial_num)
 
     def is_ready(self):
+        free_space = self.get_free_space_mb(self._station_config.ROOT_DIR)
+        limit_free_space = 500
+        if free_space < limit_free_space:
+            msg = "Unable to start test (total size of free space {0:.1f} less than {1}M.\n"\
+                .format(free_space, limit_free_space)
+            self._operator_interface.operator_input('WARN', msg=msg, msg_type='warning')
+            return False
+
+    def _query_dual_start(self):
         serial_number = self._latest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
         self._the_unit = pancakeDut(serial_number, self._station_config, self._operator_interface)
         if hasattr(self._station_config, 'DUT_SIM') and self._station_config.DUT_SIM:
             self._the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
-        return self.is_ready_litup_outside()
 
-    def is_ready_litup_outside(self):
         # TODO:  Initialized the DUT Simply
         ready = False
         power_on_trigger = False
@@ -375,8 +387,6 @@ class seacliffmotStation(test_station.TestStation):
         finally:
             # noinspection PyBroadException
             try:
-                self._fixture.start_button_status(False)
-                self._fixture.power_on_button_status(False)
                 if not ready:
                     if not self._is_cancel_test_by_op:
                         self._operator_interface.print_to_console(
@@ -385,6 +395,9 @@ class seacliffmotStation(test_station.TestStation):
                         self._operator_interface.print_to_console(
                             'Cancel start signal from dual %s.\n' % timeout_for_dual)
                     self._the_unit.close()
+                    self._the_unit = None
+                self._fixture.start_button_status(False)
+                self._fixture.power_on_button_status(False)
             except Exception as e:
                 self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
             self._operator_interface.prompt('', 'SystemButtonFace')
