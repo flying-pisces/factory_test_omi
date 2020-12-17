@@ -703,7 +703,7 @@ class MotAlgorithmHelper(object):
         # Perform CIE and RGB color calculations and mask to disp_fov
         u_prime_smoothed = mask * (4 * XYZ[0]) / (XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2])
         u_prime_smoothed[np.isnan(u_prime_smoothed)] = 0
-        v_prime_smoothed = mask * (9 * XYZ[0]) / (XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2])
+        v_prime_smoothed = mask * (9 * XYZ[1]) / (XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2])
         v_prime_smoothed[np.isnan(v_prime_smoothed)] = 0
 
         tmp_XYZ = XYZ[1] * mask
