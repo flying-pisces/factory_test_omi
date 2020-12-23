@@ -379,6 +379,12 @@ class seacliffmotStation(test_station.TestStation):
         self._latest_serial_number = serial_num
         return test_station.TestStation.validate_sn(self, serial_num)
 
+    def get_free_space_mb(self, folder):
+        import ctypes
+        free_bytes = ctypes.c_ulonglong(0)
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
+        return free_bytes.value / 1024 / 1024
+
     def is_ready(self):
         free_space = self.get_free_space_mb(self._station_config.ROOT_DIR)
         limit_free_space = 500
