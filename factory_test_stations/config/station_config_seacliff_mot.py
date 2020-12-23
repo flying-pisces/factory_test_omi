@@ -20,7 +20,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 ##################################
 # Fixture parameters
 # Fixture commands
-PROXY_COMMUNICATION_PATH = r"C:\Version\Release\vision.exe"
+PROXY_COMMUNICATION_PATH = r"C:\vision\Release\vision.exe"
 IS_PROXY_COMMUNICATION = True
 PROXY_ENDPOINT = 8000
 FIXTURE_COMPORT = "COM4" #
@@ -28,7 +28,7 @@ FIXTURE_PARTICLE_COMPORT = "COM8" #
 FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = "COM5" #
 
-AUTO_CFG_COMPORTS = False
+AUTO_CFG_COMPORTS = True
 FIXTURE_PARTICLE_COMPORT_FILTER = 'VID:PID=0403:6001'
 
 COMMAND_DISP_HELP = "$c.help"
@@ -125,7 +125,8 @@ FIXTURE_USB_ON_TIME = 1
 
 #################################
 # Fixture related parameters
-DISTANCE_BETWEEN_CAMERA_AND_DATUM = 26041
+# DISTANCE_BETWEEN_CAMERA_AND_DATUM = 26041
+DISTANCE_BETWEEN_CAMERA_AND_DATUM = 18530+18000
 
 ##################################
 # Test Equipment related parameters
@@ -141,7 +142,7 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 0.1
 
-VERSION_REVISION_EQUIPMENT = 46
+VERSION_REVISION_EQUIPMENT = 48
 FILE_COUNT_INC = 14
 
 # set sensor_temperature
@@ -244,7 +245,7 @@ VERSION = 'SunnyP2-PreBuild-Alpha'
 AUTO_CVT_BGR_IMAGE_FROM_XYZ = False
 AUTO_SAVE_2_TXT = False
 EQUIPMENT_SIM_CAPTURE_FROM_DIR = False
-DUT_SIM = True
-EQUIPMENT_SIM = True
-EQUIPMENT_WHEEL_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
+EQUIPMENT_WHEEL_SIM = False
+FIXTURE_SIM = False

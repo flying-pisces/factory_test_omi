@@ -564,7 +564,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         """
         self._alignment_pos = None
         self._write_serial(self._station_config.COMMAND_LOAD)
-        response = self.read_response()
+        response = self.read_response(timeout=10)
         if int(self._parse_response(r'LOAD:(\d+)', response).group(1)) != 0:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
@@ -583,7 +583,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._alignment_pos = None
         self._write_serial('{0}:{1}'.format(self._station_config.COMMAND_ALIGNMENT, serial_number))
         response = self.read_response(timeout=self._station_config.FIXTURE_ALIGNMENT_DLY)
-        if self._parse_response(r'ALIGNMENT:(\w+)', response).group(1).upper().find(r'ERROR') >= 0:
+        if self._parse_response(r'ALIGNMENT:([\+|\-|\,|\w]+)', response).group(1).upper().find(r'ERROR') >= 0:
             return
 
         delimiter = r'ALIGNMENT:([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?),' \
@@ -737,7 +737,7 @@ if __name__ == "__main__":
                 the_unit.load()
                 the_unit.power_on_button_status(True)
 
-                alignment_result = the_unit.alignment()
+                alignment_result = the_unit.alignment(None)
                 if alignment_result is None:
                     print('unable to alignment.')
                 else:

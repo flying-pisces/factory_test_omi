@@ -6,7 +6,7 @@ import os
 import re
 import ntpath
 import time
-from glob import glob
+import glob
 ########################################FIGURE OUT WHAT TO BUILD##################
 build_target = None
 if len(sys.argv) < 3:
@@ -31,6 +31,17 @@ def getrootdir():
     root_dir += "factory_test_omi\\"
     return root_dir
 
+def get_datas():
+     working_dir = os.getcwd()
+     datas = [('config\\*%s*.py'%build_target_station,'config')]
+
+     if len(glob.glob('shop_floor_interface\\*.py')) > 0:
+        datas.append(('shop_floor_interface\\*.py','..\\shop_floor_interface\\'))
+     if len(glob.glob('test_station\\test_equipment\\algorithm\\*.seqx')) > 0:
+        datas.append(('test_station\\test_equipment\\algorithm\\*.seqx',
+                '.\\test_station\\test_equipment\\algorithm\\'))
+     return datas
+
 ########################################Application setup############################
 searchpaths = [
     getrootdir(),
@@ -40,13 +51,11 @@ searchpaths = [
 a = Analysis([build_target],
              pathex=searchpaths,
              binaries=[],
-             datas=[('config\\*%s*.py'%build_target_station,'config'),
-             ('shop_floor_interface\\*.py','..\\shop_floor_interface\\'),
-             ('test_station\\test_equipment\\algorithm\\*.seqx','.\\test_station\\test_equipment\\algorithm\\')],
+             datas= get_datas(),
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
-             excludes=[],
+             excludes=['zmq'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher,
