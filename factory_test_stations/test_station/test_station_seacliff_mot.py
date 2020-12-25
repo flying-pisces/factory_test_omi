@@ -607,9 +607,9 @@ class seacliffmotStation(test_station.TestStation):
 
     def color_pattern_parametric_export_ex(self, capture_path, test_log):
         export_items_type_a = ['Lum_Ratio>0.8MaxLum', 'Lum_Ratio>0.8OnAxisLum', 'Lum_SSR', 'Lum_delta', 'Lum_mean',
-                               'u_mean', 'uv_delta<0.01_Ratio', 'uv_delta_to_OnAxis',
-                               'v_mean']
-        export_items_pattern_normal = ['Max Lum', "Max Lum u'", "Max Lum v'", "Max Lum x(deg)", 'Max Lum y(deg)']
+                               "u'_mean", "u'v'_delta<0.01_Ratio", "u'v'_delta_to_OnAxis",
+                               "v'_mean"]
+        export_items_pattern_normal = ['Max_Lum', "Max_Lum_u'", "Max_Lum_v'", "Max_Lum_x(deg)", 'Max_Lum_y(deg)']
         for pos_item in self._station_config.TEST_ITEM_POS:
             pos_name = pos_item['name']
             item_patterns = pos_item.get('pattern')
@@ -650,19 +650,22 @@ class seacliffmotStation(test_station.TestStation):
                                 measure_item_name = '{0}_{1}_{2}'.format(pos_name, pattern_name, measure_item)
                                 test_log.set_measured_value_by_name_ex(measure_item_name, test_value)
 
+                        normal_items = {}
                         test_values = [color_exports.get(c) for c in measure_items]
                         measure_item_names = ['{0}_{1}_{2}'.format(pos_name, pattern_name, c.replace(' ', ''))
                                               for c in measure_items]
-                        [test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
-                         for measure_item_name, export_value in zip(measure_item_names, test_values)]
+                        for measure_item_name, export_value in zip(measure_item_names, test_values):
+                            normal_items[measure_item_name] = export_value
 
                         for export_item, export_value in color_exports.items():
                             if export_item is None:
                                 continue
                             export_item_without_blank = export_item.replace(' ', '_')
                             measure_item_name = '{0}_{1}_{2}'.format(pos_name, pattern_name, export_item_without_blank)
-                            test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
-
+                            normal_items[measure_item_name] = export_value
+                        measure_items = [f'{pos_name}_{pattern_name}_{c}' for c in export_items_pattern_normal]
+                        [test_log.set_measured_value_by_name_ex(measure_item, normal_items.get(measure_item))
+                         for measure_item in measure_items]
                     except Exception as e:
                         self._operator_interface.print_to_console(
                             'Fail to export data for pattern: {0}_{1}, {2}\n'.format(pos_name, pattern_name, e.args))
