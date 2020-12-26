@@ -208,19 +208,21 @@ class seacliffmotStation(test_station.TestStation):
 
         @type test_log: test_station.test_log.test_log
         """
-
-        self._query_dual_start()
-        if self._the_unit is None:
-            raise test_station.TestStationProcessControlError(f'Fail to query dual_start for DUT {serial_number}.')
-
         msg0 = 'info --> lit up: {0}, emulator_dut: {1}, emulator_equip: {2}, emulator_fixture: {3},' \
-               ' particle:{4}, dut_checker:{5} ver: {6}\n' \
-            .format(
+               ' particle:{4}, dut_checker:{5} ver: {6}\n' .format(
                 self._station_config.DUT_LITUP_OUTSIDE, self._station_config.DUT_SIM,
                 self._station_config.EQUIPMENT_SIM, self._station_config.FIXTURE_SIM,
                 self._station_config.FIXTURE_PARTICLE_COUNTER, self._station_config.DISP_CHECKER_ENABLE,
                 self._sw_version)
         self._operator_interface.print_to_console(msg0)
+
+        self._query_dual_start()
+        if self._the_unit is None:
+            raise test_station.TestStationProcessControlError(f'Fail to query dual_start for DUT {serial_number}.')
+        self._probe_con_status = True
+        if not self._station_config.FIXTURE_SIM:
+            self._probe_con_status = self._fixture.query_probe_status() == 0
+
         self._overall_result = False
         self._overall_errorcode = ''
         pattern_value = None
@@ -453,12 +455,6 @@ class seacliffmotStation(test_station.TestStation):
                     elif ready_status == 0x03 or ready_status == 0x02:
                         self._operator_interface.print_to_console('Try to lit up DUT.\n')
                         self._retries_screen_on += 1
-                        self._probe_con_status = True
-                        # TODO: set the probe statue true.
-                        self._probe_con_status = self._fixture.query_probe_status() == 0
-                        if not self._station_config.FIXTURE_SIM and not self._probe_con_status:
-                            self._operator_interface.print_to_console('Please check the carrier connection.\n')
-                            continue
                         # power the dut on normally.
                         if power_on_trigger:
                             self._the_unit.screen_off()
@@ -477,7 +473,7 @@ class seacliffmotStation(test_station.TestStation):
                                 self._fixture.power_on_button_status(False)
                                 self._fixture.start_button_status(True)
                         else:
-                            self._fixture.power_on_button_status(True)
+                            self._fixture.power_on_button_status(False)
                             self._fixture.start_button_status(True)
                     elif ready_status == 0x01:
                         self._is_cancel_test_by_op = True  # Cancel test.
