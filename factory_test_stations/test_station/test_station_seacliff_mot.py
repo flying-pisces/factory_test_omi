@@ -105,7 +105,7 @@ class seacliffmotStation(test_station.TestStation):
                 finally:
                     a_serial.close()
 
-            if self._station_config.DUT_COMPORT is None:
+            if (self._station_config.DUT_COMPORT is None) and not self._station_config.DUT_ETH_PROXY:
                 try:
                     a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1, bytesize=8,
                                              timeout=1, xonxoff=0, rtscts=0)
@@ -142,7 +142,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.7.0'
+        self._sw_version = '1.0.0'
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -450,7 +450,7 @@ class seacliffmotStation(test_station.TestStation):
                             self._module_left_or_right = str(alignment_result[4]).upper()
                             self._is_alignment_success = True
 
-                    elif ready_status == 0x03:
+                    elif ready_status == 0x03 or ready_status == 0x02:
                         self._operator_interface.print_to_console('Try to lit up DUT.\n')
                         self._retries_screen_on += 1
                         self._probe_con_status = True
@@ -479,7 +479,7 @@ class seacliffmotStation(test_station.TestStation):
                         else:
                             self._fixture.power_on_button_status(True)
                             self._fixture.start_button_status(True)
-                    elif ready_status == 0x02:
+                    elif ready_status == 0x01:
                         self._is_cancel_test_by_op = True  # Cancel test.
                 time.sleep(0.1)
                 timeout_for_dual -= 1

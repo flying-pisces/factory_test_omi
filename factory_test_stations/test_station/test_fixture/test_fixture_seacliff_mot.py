@@ -171,7 +171,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                 self._station_config.IS_PROXY_COMMUNICATION:
             StationCommunicationProxy._communication_proxy_name = self._station_config.PROXY_COMMUNICATION_PATH
             StationCommunicationProxy.run_daemon_application()
-            time.sleep(1)
+            time.sleep(6)
             self._serial_port = StationCommunicationProxy(self._station_config.PROXY_ENDPOINT)
         else:
             self._serial_port = serial.Serial(self._station_config.FIXTURE_COMPORT,
@@ -742,12 +742,12 @@ if __name__ == "__main__":
                     print('unable to alignment.')
                 else:
                     print('alignment: x: {0}, y: {1}, a: {2}, z: {3}'.format(*alignment_result))
-                the_unit.mov_abs_xy_wrt_alignment(5071, 0)
-                the_unit.mov_abs_xy_wrt_alignment(-5071, 0)
-                the_unit.mov_abs_xy_wrt_alignment(0, 5071)
-                the_unit.mov_abs_xy_wrt_alignment(0, -5071)
+                    the_unit.mov_abs_xy_wrt_alignment(5071, 0)
+                    the_unit.mov_abs_xy_wrt_alignment(-5071, 0)
+                    the_unit.mov_abs_xy_wrt_alignment(0, 5071)
+                    the_unit.mov_abs_xy_wrt_alignment(0, -5071)
 
-                the_unit.mov_camera_z_wrt_alignment(20 * 1000)
+                    the_unit.mov_camera_z_wrt_alignment(20 * 1000)
 
                 the_unit.start_button_status(True)
                 time.sleep(1)
@@ -755,9 +755,9 @@ if __name__ == "__main__":
 
                 the_unit.power_on_button_status(True)
 
-                the_unit.mov_abs_xya(5000, 130 * 1000, 00)
-
-                the_unit.mov_abs_xya(10000, 130 * 1000, 5)
+                # the_unit.mov_abs_xya(5000, 130 * 1000, 00)
+                #
+                # the_unit.mov_abs_xya(10000, 130 * 1000, 5)
 
                 the_unit.set_tri_color(TriColorStatus.RED)
                 time.sleep(1)
@@ -768,6 +768,8 @@ if __name__ == "__main__":
                 the_unit.set_tri_color(TriColorStatus.YELLOW)
                 time.sleep(1)
                 the_unit.set_tri_color_off()
+
+                the_unit.unload()
 
             except seacliffmotFixtureError as e:
                 print(e.message)
