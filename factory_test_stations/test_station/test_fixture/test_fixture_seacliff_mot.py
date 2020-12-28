@@ -742,12 +742,13 @@ if __name__ == "__main__":
                     print('unable to alignment.')
                 else:
                     print('alignment: x: {0}, y: {1}, a: {2}, z: {3}'.format(*alignment_result))
-                    the_unit.mov_abs_xy_wrt_alignment(5071, 0)
-                    the_unit.mov_abs_xy_wrt_alignment(-5071, 0)
-                    the_unit.mov_abs_xy_wrt_alignment(0, 5071)
-                    the_unit.mov_abs_xy_wrt_alignment(0, -5071)
-
-                    the_unit.mov_camera_z_wrt_alignment(20 * 1000)
+                    for pos_item in station_config.TEST_ITEM_POS:
+                        pos_name = pos_item['name']
+                        x, y, z = pos_item.get('pos')
+                        print(f'Mov to POS {pos_name}')
+                        the_unit.mov_abs_xy_wrt_alignment(x, y)
+                        the_unit.mov_camera_z_wrt_alignment(z)
+                        time.sleep(1)
 
                 the_unit.start_button_status(True)
                 time.sleep(1)
