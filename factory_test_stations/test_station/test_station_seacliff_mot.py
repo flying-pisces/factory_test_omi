@@ -579,27 +579,29 @@ class seacliffmotStation(test_station.TestStation):
                     continue
 
                 pre_file_name = '{0}_{1}'.format(pos_name, pattern_name)
-                file_x = self.get_filenames_in_folder(capture_path, r'{0}_.*_X_float\.bin'.format(pre_file_name))
-                file_y = self.get_filenames_in_folder(capture_path, r'{0}_.*_Y_float\.bin'.format(pre_file_name))
-                file_z = self.get_filenames_in_folder(capture_path, r'{0}_.*_Z_float\.bin'.format(pre_file_name))
-                if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
-                    primary = ['X', 'Y', 'Z']
-                    pri_items = dict(zip(primary, [file_x[0], file_y[0], file_z[0]]))
-                    for pri_k, pri_v in pri_items.items():
-                        try:
-                            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
-                            self._operator_interface.print_to_console(
-                                'start to export {0}, {1}-{2}\n'.format(pos_name, pattern_name, pri_k))
-                            distortion_exports = mot_alg.distortion_centroid_parametric_export(pri_v)
-                            for export_item in export_items:
-                                export_value = distortion_exports.get(export_item)
-                                if export_value is None:
-                                    continue
-                                measure_item_name = '{0}_{1}_{2}_{3}'.format(pos_name, pattern_name, pri_k, export_item)
-                                test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
-                        except Exception as e:
-                            self._operator_interface.print_to_console(
-                                'Fail to export data for pattern: {0}_{1}\n'.format(pos_name, pattern_name))
+                primary = ['X', 'Y', 'Z']
+                if hasattr(self._station_config, 'ANALYSIS_GRP_DISTORTION_PRIMARY'):
+                    primary = self._station_config.ANALYSIS_GRP_DISTORTION_PRIMARY
+
+                for pri_k in primary:
+                    file_k = self.get_filenames_in_folder(capture_path, f'{pre_file_name}_.*_{pri_k}_float.bin')
+                    if len(file_k) <= 0:
+                        continue
+                    pri_v = file_k[0]
+                    try:
+                        mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
+                        self._operator_interface.print_to_console(
+                            'start to export {0}, {1}-{2}\n'.format(pos_name, pattern_name, pri_k))
+                        distortion_exports = mot_alg.distortion_centroid_parametric_export(pri_v)
+                        for export_item in export_items:
+                            export_value = distortion_exports.get(export_item)
+                            if export_value is None:
+                                continue
+                            measure_item_name = '{0}_{1}_{2}_{3}'.format(pos_name, pattern_name, pri_k, export_item)
+                            test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
+                    except Exception as e:
+                        self._operator_interface.print_to_console(
+                            f'Fail to export data for pattern: {pos_name}_{pattern_name} Distortion {pri_k}\n')
 
     def color_pattern_parametric_export_ex(self, capture_path, test_log):
         export_items_type_a = ['Lum_Ratio>0.8MaxLum', 'Lum_Ratio>0.8OnAxisLum', 'Lum_SSR', 'Lum_delta', 'Lum_mean',

@@ -179,6 +179,8 @@ ANALYSIS_GRP_DISTORTION = ['GreenDistortion']
 ANALYSIS_GRP_MONO_PATTERN = ['W255']
 ANALYSIS_GRP_COLOR_PATTERN = ['W255', 'R255', 'G255', 'B255']
 
+ANALYSIS_GRP_DISTORTION_PRIMARY = ['X', 'Y', 'Z']
+
 # 'setup': (filter, nd, iris) is used for capture image,
 # 'exposure': if not set , use seq-file.
 # !!! image in Nand: comborgb, Green_Checkerboard_Contrast_Left, Green_Checkerboard_Contrast_Right,
