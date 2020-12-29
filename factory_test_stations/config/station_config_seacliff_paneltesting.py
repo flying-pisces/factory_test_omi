@@ -86,6 +86,7 @@ FIXTURE_UNLOAD_DLY = 15
 DUT_LOAD_WITHOUT_OPERATOR = False
 
 DUT_LITUP_OUTSIDE = True
+TIMEOUT_FOR_BTN_IDLE = 20
 # Fixture Status Enum Values
 PTB_POSITION_STATUS = ["Testing Position", "Reset Position", "Outside Position", "Other Position"]
 BUTTON_STATUS = ["Enable", "Disable"]
