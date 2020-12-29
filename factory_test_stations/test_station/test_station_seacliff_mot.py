@@ -167,7 +167,8 @@ class seacliffmotStation(test_station.TestStation):
             self._fixture.initialize()
             self._equipment.initialize()
             self._equipment.open()
-        except:
+        except Exception as e:
+            self._operator_interface.operator_input(None, str(e), 'error')
             raise
 
     def _close_fixture(self):
@@ -362,6 +363,7 @@ class seacliffmotStation(test_station.TestStation):
             self.color_pattern_parametric_export_ex(capture_path, test_log)
 
         except seacliffmotStationError as e:
+            self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console(str(e))
         finally:
             try:
@@ -481,6 +483,7 @@ class seacliffmotStation(test_station.TestStation):
                 time.sleep(0.1)
                 timeout_for_dual -= 1
         except (seacliffmotStationError, DUTError, RuntimeError) as e:
+            self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
         finally:
             # noinspection PyBroadException
@@ -497,6 +500,7 @@ class seacliffmotStation(test_station.TestStation):
                 self._fixture.start_button_status(False)
                 self._fixture.power_on_button_status(False)
             except Exception as e:
+                self._operator_interface.operator_input(None, str(e), msg_type='error')
                 self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
             self._operator_interface.prompt('', 'SystemButtonFace')
 
