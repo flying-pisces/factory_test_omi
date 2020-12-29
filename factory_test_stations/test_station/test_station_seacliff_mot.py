@@ -414,7 +414,8 @@ class seacliffmotStation(test_station.TestStation):
         self._probe_con_status = False
         try:
             self._fixture.power_on_button_status(True)
-            timeout_for_btn_idle = 10
+            timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
+                                    else self._station_config.TIMEOUT_FOR_BTN_IDLE)
             timeout_for_dual = timeout_for_btn_idle
             self._the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
