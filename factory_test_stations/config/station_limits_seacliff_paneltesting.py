@@ -60,6 +60,36 @@ STATION_LIMITS_ARRAYS = [
     ["B255_Quality_MinSeparationDistance", None, None, 30047],
     ["B255_Quality_Res", True, True, 30048],
 
+    ['W000_Raw_Blemish_Info_X', None, None, 31000],
+    ['W000_Raw_Blemish_Info_Y', None, None, 31001],
+    ['W000_Raw_Blemish_Info_Size', None, None, 31002],
+    ['W000_Raw_Blemish_Info_Pixel', None, None, 31003],
+    ['W000_Raw_Blemish_Info_Contrast', None, None, 31004],
+
+    ['W255_Raw_Blemish_Info_X', None, None, 32000],
+    ['W255_Raw_Blemish_Info_Y', None, None, 32001],
+    ['W255_Raw_Blemish_Info_Size', None, None, 32002],
+    ['W255_Raw_Blemish_Info_Pixel', None, None, 32003],
+    ['W255_Raw_Blemish_Info_Contrast', None, None, 32004],
+
+    ['R255_Raw_Blemish_Info_X', None, None, 33000],
+    ['R255_Raw_Blemish_Info_Y', None, None, 33001],
+    ['R255_Raw_Blemish_Info_Size', None, None, 33002],
+    ['R255_Raw_Blemish_Info_Pixel', None, None, 33003],
+    ['R255_Raw_Blemish_Info_Contrast', None, None, 33004],
+
+    ['G255_Raw_Blemish_Info_X', None, None, 34000],
+    ['G255_Raw_Blemish_Info_Y', None, None, 34001],
+    ['G255_Raw_Blemish_Info_Size', None, None, 34002],
+    ['G255_Raw_Blemish_Info_Pixel', None, None, 34003],
+    ['G255_Raw_Blemish_Info_Contrast', None, None, 34004],
+
+    ['B255_Raw_Blemish_Info_X', None, None, 35000],
+    ['B255_Raw_Blemish_Info_Y', None, None, 35001],
+    ['B255_Raw_Blemish_Info_Size', None, None, 35002],
+    ['B255_Raw_Blemish_Info_Pixel', None, None, 35003],
+    ['B255_Raw_Blemish_Info_Contrast', None, None, 35004],
+
     # ["W255_NumDarkParticles", None, None, 101],
     # ["W255_NumDarkBlobs", None, None, 102],
     # ["W255_NumBrightParticles", None, None, 103],

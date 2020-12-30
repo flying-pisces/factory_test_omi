@@ -38,7 +38,7 @@ class pancakemuniStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '0.1.3'
+        self._sw_version = '0.1.4'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
@@ -689,6 +689,12 @@ class pancakemuniStation(test_station.TestStation):
                     self.calc_blemish_index(br_pattern,
                                             np.vstack([size_list, locax_list, locay_list, pixel_list, constrast_lst]), test_log)
 
+                    info_keys = ['X', 'Y', 'Size', 'Pixel', 'Contrast']
+                    for info_key, d in zip(info_keys, [locax_list, locay_list, size_list, pixel_list, constrast_lst]):
+                        defect_info = ';'.join([str(d1) for d1 in d])
+                        test_item = f'{br_pattern}_Raw_Blemish_Info_{info_key}'
+                        test_log.set_measured_value_by_name_ex(test_item, defect_info)
+
     @staticmethod
     def calc_separate_distance(defect_positions, mask_pos):
         distance_items = []
@@ -825,6 +831,12 @@ class pancakemuniStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex(test_item, qual_res)
                 self.calc_blemish_index(br_pattern,
                      np.vstack([size_list, locax_list, locay_list, pixel_list, constrast_lst]), test_log)
+
+                info_keys = ['X', 'Y', 'Size', 'Pixel', 'Contrast']
+                for info_key, d in zip(info_keys, [locax_list, locay_list, size_list, pixel_list, constrast_lst]):
+                    defect_info = ';'.join([str(d1) for d1 in d])
+                    test_item = f'{br_pattern}_Raw_Blemish_Info_{info_key}'
+                    test_log.set_measured_value_by_name_ex(test_item, defect_info)
 
     def uniformity_test_do(self, the_unit, serial_number, test_log):
         """
