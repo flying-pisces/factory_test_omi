@@ -145,7 +145,7 @@ COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255
 DUT_DISPLAYSLEEPTIME = 0.1
 
 VERSION_REVISION_EQUIPMENT = 53
-FILE_COUNT_INC = 14
+FILE_COUNT_INC = 4
 
 # set sensor_temperature
 TEST_SENSOR_TEMPERATURE = 25.0
@@ -174,14 +174,14 @@ CAM_INIT_CONFIG = {
 TEST_SEQ_WAIT_FOR_TEMPERATURE = False
 TEST_AUTO_EXPOSURE = True
 TEST_SEQ_USE_EXPO_FILE = False
-TEST_SEQ_SAVE_CAPTURE = True
+TEST_SEQ_SAVE_CAPTURE = False
 
 ANALYSIS_GRP_DISTORTION = ['GreenDistortion']
 ANALYSIS_GRP_MONO_PATTERN = ['W255']
 ANALYSIS_GRP_COLOR_PATTERN = ['W255', 'R255', 'G255', 'B255']
 
-ANALYSIS_GRP_DISTORTION_PRIMARY = ['X', 'Y', 'Z']
-
+# ANALYSIS_GRP_DISTORTION_PRIMARY = ['X', 'Y', 'Z']
+ANALYSIS_GRP_DISTORTION_PRIMARY = ['Y']
 # 'setup': (filter, nd, iris) is used for capture image,
 # 'exposure': if not set , use seq-file.
 # !!! image in Nand: comborgb, Green_Checkerboard_Contrast_Left, Green_Checkerboard_Contrast_Right,
