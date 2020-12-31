@@ -184,7 +184,7 @@ class seacliffeepromStation(test_station.TestStation):
         self._equip = test_equipment.seacliffeepromEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.2.0'
+        self._sw_version = '1.0.1'
         self._cvt_flag = {
             'S7.8': (2, True, 7, 8),
             'S1.6': (1, True, 1, 6),
@@ -308,10 +308,8 @@ class seacliffeepromStation(test_station.TestStation):
         if self._station_config.DUT_SIM:
             the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
 
-        self._operator_interface.print_to_console("Start write data to DUT. %s\n" % the_unit.serial_number)
-        test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+        calib_data = self._station_config.CALIB_REQ_DATA
         try:
-            calib_data = self._station_config.CALIB_REQ_DATA
             if self._station_config.USER_INPUT_CALIB_DATA in [0x01, True]:
                 dlg = EEPROMUserInputDialog(self._station_config, self._operator_interface,
                                             'EEPROM Parameter for SN:{0}'.format(serial_number))
@@ -320,19 +318,28 @@ class seacliffeepromStation(test_station.TestStation):
                 calib_data = dlg.current_cfg()
             elif self._station_config.USER_INPUT_CALIB_DATA == 0x02:
                 calib_data = None
-                calib_data_json_fn = self._station_config.CALIB_REQ_DATA_FILENAME
+                calib_data_json_fn = os.path.join(self._station_config.CALIB_REQ_DATA_FILENAME,
+                                                  f'eeprom_session_miz_{serial_number}.json')
                 if os.path.exists(calib_data_json_fn):
-                    calib_data = np.load(calib_data_json_fn)
+                    with open(f'{calib_data_json_fn}', 'r') as json_file:
+                        calib_data = json.load(json_file)
+                        eep_keys = set(self._eeprom_map_group.keys())
+                        if not eep_keys.issubset(calib_data.keys()):
+                            msg = f'unable to parse all the items from input items.\n'
+                            self._operator_interface.print_to_console(f'{eep_keys}\n')
+                            calib_data = None
+                            self._operator_interface.operator_input(None, msg, msg_type='error')
+        except:
+            calib_data = None
+            pass
 
-            if calib_data is None:
-                self._operator_interface.print_to_console(f'unable to get enough information for {serial_number}.\n')
-                raise seacliffeepromError('unable to get enough parameters for {0}'.format(serial_number))
-            eep_keys = set(self._eeprom_map_group.keys())
-            if not eep_keys.issubset(calib_data.keys()):
-                self._operator_interface.print_to_console(f'unable to parse all the items from input items.\n')
-                self._operator_interface.print_to_console(f'{eep_keys}\n')
-                raise seacliffeepromError('unable to get key_items for {0}'.format(serial_number))
+        if calib_data is None:
+            self._operator_interface.print_to_console(f'unable to get enough information for {serial_number}.\n')
+            raise test_station.TestStationProcessControlError(f'unable to get enough information for DUT {serial_number}.')
 
+        self._operator_interface.print_to_console("Start write data to DUT. %s\n" % the_unit.serial_number)
+        test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+        try:
             the_unit.initialize()
             the_unit.screen_on()
             the_unit.display_image(0x01)
@@ -386,8 +393,9 @@ class seacliffeepromStation(test_station.TestStation):
                     var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag)
 
                 var_data['CS'] = raw_data[29]
-                var_data['VALIDATION'] = raw_data[30:32]
 
+                msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[30:32]])
+                var_data['VALIDATION'] = msg
                 # mark: save them to database.
                 test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_X', var_data.get('display_boresight_x'))
                 test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_Y', var_data.get('display_boresight_y'))
@@ -458,7 +466,8 @@ class seacliffeepromStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex('CFG_Y_B255', var_data.get('y_B255'))
 
                 test_log.set_measured_value_by_name_ex('CFG_CS', raw_data_cpy[29])
-                test_log.set_measured_value_by_name_ex('CFG_VALIDATION_FIELD', raw_data_cpy[30:32])
+                msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data_cpy[30:32]])
+                test_log.set_measured_value_by_name_ex('CFG_VALIDATION_FIELD', msg)
 
                 self._operator_interface.print_to_console('screen off ...\n')
                 the_unit.screen_off()
@@ -486,7 +495,7 @@ class seacliffeepromStation(test_station.TestStation):
                 self._operator_interface.print_to_console(
                     f'write count exceed max: {self._station_config.NVM_WRITE_COUNT_MAX}\n')
             the_unit.close()
-        except seacliffeepromError:
+        except (seacliffeepromError, dut.DUTError) as e:
             self._operator_interface.print_to_console("Non-parametric Test Failure\n")
             return self.close_test(test_log)
 

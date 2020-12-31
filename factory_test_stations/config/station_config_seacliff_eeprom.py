@@ -7,7 +7,7 @@
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\eeprom_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
-CALIB_REQ_DATA_FILENAME = r'c:\oculus\run\seacliff_eeprom\calib_data_biz.npy'
+CALIB_REQ_DATA_FILENAME = r'c:\oculus\run\seacliff_eeprom\session_data'
 ##################################
 # serial number codes
 #
