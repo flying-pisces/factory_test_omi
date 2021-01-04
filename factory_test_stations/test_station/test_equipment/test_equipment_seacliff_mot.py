@@ -411,7 +411,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
 
 class MotAlgorithmHelper(object):
 
-    def __init__(self):
+    def __init__(self, operator_interface):
         self._noise_thresh = 0.05  # Percent of Y sum to exclude from color plots (use due to color calc noise in dim part of image)
         self._color_thresh = 0.01  # Thresh for color uniformity
         self._lum_thresh = 0.8  # Thresh for brightness uniformity
@@ -433,6 +433,7 @@ class MotAlgorithmHelper(object):
         self._y_autocollimator = 0
         self._fig_ind = 0
         np.seterr(invalid='ignore')
+        self._operator_interface = operator_interface
 
     @classmethod
     def get_export_data(cls, filename, station_config=None):
@@ -473,6 +474,7 @@ class MotAlgorithmHelper(object):
             frame3 = np.frombuffer(f.read(), dtype=np.float32)
             image_in = frame3.reshape(self._col, self._row).T
             image_in = np.flip(image_in, 1)
+        self._operator_interface.print_to_console(f'Read bin files named {os.path.basename(filename)}\n')
 
         XYZ = image_in
         CXYZ = image_in
@@ -620,7 +622,7 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'Max Lum'
         stats_summary[1, k] = max_XYZ_val
         k = k + 1
-        stats_summary[0, k] = 'Number of Dots'
+        stats_summary[0, k] = 'Number Of Dots'
         stats_summary[1, k] = num_dots
         k = k + 1
         stats_summary[0, k] = 'DispCen_x_cono'
@@ -668,6 +670,7 @@ class MotAlgorithmHelper(object):
             image_in = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ.append(image_in)
 
+        self._operator_interface.print_to_console(f'Read bin files named {fnamebase}\n')
         # cv2.namedWindow('img',0)
         # cv2.imshow('img',image_in)
         # cv2.waitKey(1000)

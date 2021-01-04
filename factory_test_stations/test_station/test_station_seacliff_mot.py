@@ -571,7 +571,7 @@ class seacliffmotStation(test_station.TestStation):
 
     def distortion_centroid_parametric_export_ex(self, capture_path, test_log):
         export_items = ['DispCen_x_cono', 'DispCen_y_cono', 'DispCen_x_display',
-                        'DispCen_y_display', 'Disp_Rotate_x', 'Disp_Rotate_y']
+                        'DispCen_y_display', 'Disp_Rotate_x', 'Disp_Rotate_y', 'Max Lum', 'Number Of Dots']
         for pos_item in self._station_config.TEST_ITEM_POS:
             pos_name = pos_item['name']
             item_patterns = pos_item.get('pattern')
@@ -594,7 +594,7 @@ class seacliffmotStation(test_station.TestStation):
                         continue
                     pri_v = file_k[0]
                     try:
-                        mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
+                        mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(self._operator_interface)
                         self._operator_interface.print_to_console(
                             'start to export {0}, {1}-{2}\n'.format(pos_name, pattern_name, pri_k))
                         distortion_exports = mot_alg.distortion_centroid_parametric_export(pri_v)
@@ -602,7 +602,8 @@ class seacliffmotStation(test_station.TestStation):
                             export_value = distortion_exports.get(export_item)
                             if export_value is None:
                                 continue
-                            measure_item_name = '{0}_{1}_{2}_{3}'.format(pos_name, pattern_name, pri_k, export_item)
+                            measure_item_name = '{0}_{1}_{2}_{3}'.format(
+                                pos_name, pattern_name, pri_k, export_item.replace(' ', ''))
                             test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
                     except Exception as e:
                         self._operator_interface.print_to_console(
@@ -631,7 +632,7 @@ class seacliffmotStation(test_station.TestStation):
                 file_z = self.get_filenames_in_folder(capture_path, r'{0}_.*_Z_float\.bin'.format(pre_file_name))
                 if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
                     try:
-                        mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
+                        mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(self._operator_interface)
                         self._operator_interface.print_to_console(
                             'start to export {0}, {1}\n'.format(pos_name, pattern_name))
                         color_exports = mot_alg.color_pattern_parametric_export(file_x[0],
