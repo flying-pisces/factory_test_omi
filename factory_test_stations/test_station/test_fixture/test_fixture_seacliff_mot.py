@@ -593,6 +593,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             math.degrees(math.asin(float(deters[3]) / self._rotate_scale)), int(deters[4]), deters[5]
         module_pos = self.module_pos()
         self._alignment_pos = (*module_pos, res[3])
+        self._operator_interface.print_to_console(f'alignment info for sn {serial_number} : {self._alignment_pos}\n')
         return res
 
     def _parse_response(self, regex, resp):
