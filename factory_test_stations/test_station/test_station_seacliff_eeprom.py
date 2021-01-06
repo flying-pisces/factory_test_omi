@@ -16,6 +16,10 @@ import Pmw
 import shutil
 import collections
 import numpy as np
+import suds.client
+import tkinter.simpledialog
+import tkinter as tk
+import datetime
 
 
 class EEPROMUserInputDialog(gui_utils.Dialog):
@@ -228,6 +232,7 @@ class seacliffeepromStation(test_station.TestStation):
             self._fixture.initialize()
             self._equip.initialize()
         except:
+            self._operator_interface.operator_input(None, 'Fail to initialize test_station. ', 'error')
             raise
 
     def close(self):
@@ -334,7 +339,7 @@ class seacliffeepromStation(test_station.TestStation):
             pass
 
         if calib_data is None:
-            self._operator_interface.print_to_console(f'unable to get enough information for {serial_number}.\n')
+            self._operator_interface.operator_input(None, f'unable to get enough information for {serial_number}.\n')
             raise test_station.TestStationProcessControlError(f'unable to get enough information for DUT {serial_number}.')
 
         self._operator_interface.print_to_console("Start write data to DUT. %s\n" % the_unit.serial_number)
@@ -374,7 +379,7 @@ class seacliffeepromStation(test_station.TestStation):
                         judge_by_camera = False
                     if not judge_by_camera:
                         break
-            if self._station_config.FIXTURE_SIM:
+            if self._station_config.FIXTURE_SIM or (not self._station_config.CAMERA_VERIFY_ENABLE):
                 judge_by_camera = True
             test_log.set_measured_value_by_name_ex('JUDGED_BY_CAM', judge_by_camera)
 
@@ -493,7 +498,7 @@ class seacliffeepromStation(test_station.TestStation):
                     'WRITE_COUNTS_CHECK', (post_write_count == (write_count + 1)))
             else:
                 self._operator_interface.print_to_console(
-                    f'write count exceed max: {self._station_config.NVM_WRITE_COUNT_MAX}\n')
+                    f'Exp: write count = {self._station_config.NVM_WRITE_COUNT_MAX} or fail to {judge_by_camera}\n')
             the_unit.close()
         except (seacliffeepromError, dut.DUTError) as e:
             self._operator_interface.print_to_console("Non-parametric Test Failure\n")
