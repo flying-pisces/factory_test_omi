@@ -170,6 +170,8 @@ CAM_INIT_CONFIG = {
     "RoiYBottom": 6001
 }
 
+MIN_SPACE_REQUIRED = 3500
+
 # parameters for test sequence.
 TEST_SEQ_WAIT_FOR_TEMPERATURE = False
 TEST_AUTO_EXPOSURE = True

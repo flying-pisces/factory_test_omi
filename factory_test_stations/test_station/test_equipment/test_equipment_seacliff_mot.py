@@ -418,7 +418,7 @@ class MotAlgorithmHelper(object):
     kernel_b = np.sum(_kernel)
     _kernel = _kernel / kernel_b  # normalize
 
-    def __init__(self, operator_interface):
+    def __init__(self):
         self._noise_thresh = 0.05  # Percent of Y sum to exclude from color plots (use due to color calc noise in dim part of image)
         self._color_thresh = 0.01  # Thresh for color uniformity
         self._lum_thresh = 0.8  # Thresh for brightness uniformity
@@ -438,7 +438,6 @@ class MotAlgorithmHelper(object):
         self._y_autocollimator = 0
         self._fig_ind = 0
         np.seterr(invalid='ignore')
-        self._operator_interface = operator_interface
 
     @classmethod
     def get_export_data(cls, filename, station_config=None):
@@ -479,7 +478,7 @@ class MotAlgorithmHelper(object):
             frame3 = np.frombuffer(f.read(), dtype=np.float32)
             image_in = frame3.reshape(self._col, self._row).T
             image_in = np.flip(image_in, 1)
-        self._operator_interface.print_to_console(f'Read bin files named {os.path.basename(filename)}\n')
+        print(f'Read bin files named {os.path.basename(filename)}\n')
 
         XYZ = image_in
         CXYZ = image_in
@@ -668,7 +667,7 @@ class MotAlgorithmHelper(object):
 
     def color_pattern_parametric_export(self, xfilename=r'W255_X_float.bin',
                                         brightness_statistics=True,
-                                        color_uniformity=True):
+                                        color_uniformity=True, multi_process=False):
         dirr = os.path.dirname(xfilename)
         fnamebase = os.path.basename(xfilename).lower().split('_x_float.bin')[0]
         filename = ['{0}_{1}_float.bin'.format(fnamebase, c) for c in ['X', 'Y', 'Z']]
@@ -685,13 +684,15 @@ class MotAlgorithmHelper(object):
         #     image_in = np.flip(image_in.T, 1)  # Implement flip for viewing to match DUT orientation
         #     # image_in = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
         #     xyz_array.append(image_in)
-
-        pool = mp.Pool(mp.cpu_count())
         file_names = [os.path.join(dirr, c) for c in filename]
-        XYZ = pool.map(MotAlgorithmHelper.read_image_and_blur, file_names)
-        pool.close()
+        if multi_process:
+            pool = mp.Pool(mp.cpu_count())
+            XYZ = pool.map(MotAlgorithmHelper.read_image_and_blur, file_names)
+            pool.close()
+        else:
+            XYZ = [MotAlgorithmHelper.read_image_and_blur(c) for c in file_names]
 
-        self._operator_interface.print_to_console(f'Read bin files named {fnamebase}\n')
+        print(f'Read bin files named {fnamebase}\n')
         # cv2.namedWindow('img',0)
         # cv2.imshow('img',image_in)
         # cv2.waitKey(1000)
@@ -857,6 +858,7 @@ class MotAlgorithmHelper(object):
                     self._chromaticity_fov[i]) + 'deg'
                 stats_summary[1, k] = percentuv
                 k = k + 1
+        del XYZ
 
         return dict(zip(stats_summary[0, 0:k], stats_summary[1, 0:k]))
 
