@@ -11,6 +11,8 @@ import glob
 import numpy as np
 from skimage import measure
 import cv2
+import multiprocessing as mp
+import hardware_station_common.utils.thread_utils as thread_utils
 
 
 try:
@@ -410,6 +412,11 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
 
 
 class MotAlgorithmHelper(object):
+    _kernel_width = 25  # Width of square smoothing kernel in pixels.
+    _kernel_shape = 'square'  # Use 'circle' or 'square' to change the smoothing kernel shape
+    _kernel = np.ones((_kernel_width, _kernel_width))
+    kernel_b = np.sum(_kernel)
+    _kernel = _kernel / kernel_b  # normalize
 
     def __init__(self, operator_interface):
         self._noise_thresh = 0.05  # Percent of Y sum to exclude from color plots (use due to color calc noise in dim part of image)
@@ -419,8 +426,6 @@ class MotAlgorithmHelper(object):
         self._disp_fov = 60  # Maximum FOV to display.  Use for masking.
         self._chromaticity_fov = [10, 20, 30]  # Limit FOV for chromaticity plot in degrees
         self._disp_ring_spacing = 10  # Spacing, in deg, of rings overlaid on plots
-        self._kernel_width = 25  # Width of square smoothing kernel in pixels.
-        self._kernel_shape = 'square'  # Use 'circle' or 'square' to change the smoothing kernel shape
         self._save_plots = 1  # Save output plots as PNG and SVG/EMF into same dirr as file
         # ----- Begin code -----#
         self._cam_fov = 60
@@ -521,11 +526,15 @@ class MotAlgorithmHelper(object):
         sMinorAxisLength = []
         print('stats num:', len(stats))
 
-        for i, stat in enumerate(stats):
-            if stat['MajorAxisLength'] >= axis_length_thresh:
-                scenters.append(list(stat['Centroid']))
-                sMajorAxisLength.append(stat['MajorAxisLength'])
-                sMinorAxisLength.append(stat['MinorAxisLength'])
+        # for i, stat in enumerate(stats):
+        #     if stat['MajorAxisLength'] >= axis_length_thresh:
+        #         scenters.append(list(stat['Centroid']))
+        #         sMajorAxisLength.append(stat['MajorAxisLength'])
+        #         sMinorAxisLength.append(stat['MinorAxisLength'])
+        for stat in [c for c in stats if c['MajorAxisLength'] >= axis_length_thresh]:
+            scenters.append(list(stat['Centroid']))
+            sMajorAxisLength.append(stat['MajorAxisLength'])
+            sMinorAxisLength.append(stat['MinorAxisLength'])
 
         print('num stats {0} / {1}'.format(len(scenters), len(stats)))
         num_dots = len(scenters)
@@ -647,6 +656,16 @@ class MotAlgorithmHelper(object):
         del CXYZ
         return dict(zip(list(stats_summary[0]), list(stats_summary[1])))
 
+    @staticmethod
+    def read_image_and_blur(bin_filename):
+        with open(bin_filename, 'rb') as fin:
+            I = np.frombuffer(fin.read(), dtype=np.float32)
+        image_in = np.reshape(I, (6001, 6001))
+        # Z = Z'        #Removed for viewing to match DUT orientation
+        image_in = np.flip(image_in.T, 1)  # Implement flip for viewing to match DUT orientation
+        image_in = cv2.filter2D(image_in, -1, MotAlgorithmHelper._kernel, borderType=cv2.BORDER_CONSTANT)
+        return image_in
+
     def color_pattern_parametric_export(self, xfilename=r'W255_X_float.bin',
                                         brightness_statistics=True,
                                         color_uniformity=True):
@@ -657,18 +676,20 @@ class MotAlgorithmHelper(object):
         x_angle_arr = np.linspace(-1 * self._cam_fov, self._cam_fov, self._col).reshape(-1, self._col)
         y_angle_arr = np.linspace(-1 * self._cam_fov, self._cam_fov, self._row).reshape(-1, self._row)
 
-        kernel = np.ones((self._kernel_width, self._kernel_width))
-        kernel_b = np.sum(kernel)
-        kernel = kernel / kernel_b  # normalize
-        XYZ = []
-        for i in range(0, 3):
-            with open(os.path.join(dirr, filename[i]), 'rb') as fin:
-                I = np.frombuffer(fin.read(), dtype=np.float32)
-            image_in = np.reshape(I, (self._col, self._row))
-            # Z = Z'        #Removed for viewing to match DUT orientation
-            image_in = np.flip(image_in.T, 1)  # Implement flip for viewing to match DUT orientation
-            image_in = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
-            XYZ.append(image_in)
+        # xyz_array = []
+        # for i in range(0, 3):
+        #     with open(os.path.join(dirr, filename[i]), 'rb') as fin:
+        #         I = np.frombuffer(fin.read(), dtype=np.float32)
+        #     image_in = np.reshape(I, (self._col, self._row))
+        #     # Z = Z'        #Removed for viewing to match DUT orientation
+        #     image_in = np.flip(image_in.T, 1)  # Implement flip for viewing to match DUT orientation
+        #     # image_in = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
+        #     xyz_array.append(image_in)
+
+        pool = mp.Pool(mp.cpu_count())
+        file_names = [os.path.join(dirr, c) for c in filename]
+        XYZ = pool.map(MotAlgorithmHelper.read_image_and_blur, file_names)
+        pool.close()
 
         self._operator_interface.print_to_console(f'Read bin files named {fnamebase}\n')
         # cv2.namedWindow('img',0)
