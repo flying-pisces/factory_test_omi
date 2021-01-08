@@ -16,9 +16,6 @@ import Pmw
 import shutil
 import collections
 import numpy as np
-import suds.client
-import tkinter.simpledialog
-import tkinter as tk
 import datetime
 
 

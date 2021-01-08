@@ -5,6 +5,15 @@ __author__ = 'chuckyin'
 # but they do need capital first letter.  (i.e. True or False)
 import os
 import sys
+
+import winsound
+import psutil
+import requests
+import logging
+import suds.client
+import tkinter.simpledialog
+
+
 ###################################
 # station_type
 #
