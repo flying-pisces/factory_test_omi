@@ -809,7 +809,7 @@ class MotAlgorithmHelper(object):
                 tmp = Y[tmp_chromaticity_mask == 1]
                 meanLum = np.mean(tmp)
                 deltaLum = np.max(tmp) - np.min(tmp)
-                stdLum = np.std(tmp)
+                stdLum = np.std(tmp, ddof=1)
                 percentLum_onaxis = np.sum(tmp > self._lum_thresh * Y[row_ind_onaxis, col_ind_onaxis]) / len(tmp)
                 percentLum_max = np.sum(tmp > self._lum_thresh * max_Y_val) / len(tmp)
                 # save data to cell
