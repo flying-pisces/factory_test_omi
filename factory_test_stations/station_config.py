@@ -12,6 +12,7 @@ import requests
 import logging
 import suds.client
 import tkinter.simpledialog
+import lxml
 
 
 ###################################
