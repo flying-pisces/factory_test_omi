@@ -349,10 +349,10 @@ class projectDut(hardware_station_common.test_station.dut.DUT):
         pass
 
     def initialize(self):
-        self._operator_interface.print_to_console("Initializing pancake uniformity Fixture\n")
+        self._operator_interface.print_to_console("Initializing pancake dut...\n")
 
     def close(self):
-        self._operator_interface.print_to_console("Closing pancake uniformity Fixture\n")
+        self._operator_interface.print_to_console("Closing pancake dut...\n")
 
 
 ############ projectDut is just an example

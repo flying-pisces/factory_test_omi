@@ -184,7 +184,7 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'E:\2019.12.17 data\offaxis_data 2019.12.17\offaxis_log 2019.12.17'
+EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis'
 CAMERA_SN = "Demo"
 DUT_SIM = True
 EQUIPMENT_SIM = True

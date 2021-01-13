@@ -18,7 +18,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 # Fixture parameters
 # Fixture commands
 FIXTURE_COMPORT = "COM3" #
-FIXTURE_PARTICLE_COMPORT = "COM3" #
+FIXTURE_PARTICLE_COMPORT = "COM1" #
 FIXTURE_PARTICLE_ADDR=1
 DUT_COMPORT = "COM4" #
 
@@ -143,9 +143,9 @@ Resolution_Bin_Y = 100
 
 CENTER_POINT_POS = 'P1'
 
-TEST_POINTS_POS = [('P1', (22, 22)), ('P2', (22, 5)), ('P3', (32, 10)), ('P4', (30, 22)),
-                   ('P5', (34, 34)), ('P6', (22, 5)),
-                   ('P7', (10, 32)), ('P8', (5, 22)), ('P9', (10, 10))]
+TEST_POINTS_POS = [('P1', (22, 22)), ('P2', (22, 5)), ('P3', (34, 10)), ('P4', (40, 22)),
+                   ('P5', (34, 34)), ('P6', (22, 40)),
+                   ('P7', (10, 34)), ('P8', (5, 22)), ('P9', (10, 10))]
 
 NEIGHBOR_POINTS = [('P1', ['P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9']),
                    ('P2', ['P3', 'P1', 'P9']),
@@ -190,8 +190,8 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads'
+EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\unif'
 DUT_SIM = True
 CAMERA_SN = "Demo"
 EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+FIXTURE_SIM = False
