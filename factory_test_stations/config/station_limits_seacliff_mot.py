@@ -103,6 +103,11 @@ STATION_LIMITS_ARRAYS = [
     ["normal_W255_u'v'_delta<0.01_Ratio_10deg", None, None, 20068],
     ["normal_W255_u'v'_delta<0.01_Ratio_20deg", None, None, 20069],
     ["normal_W255_u'v'_delta<0.01_Ratio_30deg", None, None, 20070],
+    ["normal_W255_ExposureTime_Filter_X", None, None, 20071],
+    ["normal_W255_ExposureTime_Filter_Xz", None, None, 20072],
+    ["normal_W255_ExposureTime_Filter_Ya", None, None, 20073],
+    ["normal_W255_ExposureTime_Filter_Yb", None, None, 20074],
+    ["normal_W255_ExposureTime_Filter_Z", None, None, 20075],
     ["normal_R255_Lum_-10.0deg_0.0deg", None, None, 21000],
     ["normal_R255_u'_-10.0deg_0.0deg", None, None, 21001],
     ["normal_R255_v'_-10.0deg_0.0deg", None, None, 21002],
@@ -154,6 +159,11 @@ STATION_LIMITS_ARRAYS = [
     ["normal_R255_u'v'_delta<0.01_Ratio_10deg", None, None, 21048],
     ["normal_R255_u'v'_delta<0.01_Ratio_20deg", None, None, 21049],
     ["normal_R255_u'v'_delta<0.01_Ratio_30deg", None, None, 21050],
+    ["normal_R255_ExposureTime_Filter_X", None, None, 21051],
+    ["normal_R255_ExposureTime_Filter_Xz", None, None, 21052],
+    ["normal_R255_ExposureTime_Filter_Ya", None, None, 21053],
+    ["normal_R255_ExposureTime_Filter_Yb", None, None, 21054],
+    ["normal_R255_ExposureTime_Filter_Z", None, None, 21055],
     ["normal_G255_Lum_-10.0deg_0.0deg", None, None, 22000],
     ["normal_G255_u'_-10.0deg_0.0deg", None, None, 22001],
     ["normal_G255_v'_-10.0deg_0.0deg", None, None, 22002],
@@ -205,6 +215,11 @@ STATION_LIMITS_ARRAYS = [
     ["normal_G255_u'v'_delta<0.01_Ratio_10deg", None, None, 22048],
     ["normal_G255_u'v'_delta<0.01_Ratio_20deg", None, None, 22049],
     ["normal_G255_u'v'_delta<0.01_Ratio_30deg", None, None, 22050],
+    ["normal_G255_ExposureTime_Filter_X", None, None, 22051],
+    ["normal_G255_ExposureTime_Filter_Xz", None, None, 22052],
+    ["normal_G255_ExposureTime_Filter_Ya", None, None, 22053],
+    ["normal_G255_ExposureTime_Filter_Yb", None, None, 22054],
+    ["normal_G255_ExposureTime_Filter_Z", None, None, 22055],
     ["normal_B255_Lum_-10.0deg_0.0deg", None, None, 23000],
     ["normal_B255_u'_-10.0deg_0.0deg", None, None, 23001],
     ["normal_B255_v'_-10.0deg_0.0deg", None, None, 23002],
@@ -256,6 +271,11 @@ STATION_LIMITS_ARRAYS = [
     ["normal_B255_u'v'_delta<0.01_Ratio_10deg", None, None, 23048],
     ["normal_B255_u'v'_delta<0.01_Ratio_20deg", None, None, 23049],
     ["normal_B255_u'v'_delta<0.01_Ratio_30deg", None, None, 23050],
+    ["normal_B255_ExposureTime_Filter_X", None, None, 23051],
+    ["normal_B255_ExposureTime_Filter_Xz", None, None, 23052],
+    ["normal_B255_ExposureTime_Filter_Ya", None, None, 23053],
+    ["normal_B255_ExposureTime_Filter_Yb", None, None, 23054],
+    ["normal_B255_ExposureTime_Filter_Z", None, None, 23055],
     # ["normal_GreenDistortion_X_MaxLum", None, None, 24000],
     # ["normal_GreenDistortion_X_NumberOfDots", None, None, 24001],
     # ["normal_GreenDistortion_X_DispCen_x_cono", None, None, 24002],
@@ -280,6 +300,11 @@ STATION_LIMITS_ARRAYS = [
     # ["normal_GreenDistortion_Z_DispCen_y_display", None, None, 24021],
     # ["normal_GreenDistortion_Z_Disp_Rotate_x", None, None, 24022],
     # ["normal_GreenDistortion_Z_Disp_Rotate_y", None, None, 24023],
+    ["normal_GreenDistortion_ExposureTime_Filter_X", None, None, 24024],
+    ["normal_GreenDistortion_ExposureTime_Filter_Xz", None, None, 24025],
+    ["normal_GreenDistortion_ExposureTime_Filter_Ya", None, None, 24026],
+    ["normal_GreenDistortion_ExposureTime_Filter_Yb", None, None, 24027],
+    ["normal_GreenDistortion_ExposureTime_Filter_Z", None, None, 24028],
 
 ]
 
@@ -335,6 +360,7 @@ if __name__ == '__main__':
     pri_items = ['X', 'Y', 'Z']
     ANALYSIS_GRP_MONO_PATTERN = ['W255']
     ANALYSIS_GRP_COLOR_PATTERN = ['W255', 'R255', 'G255', 'B255']
+    Exposure_Times = ['Filter_X', 'Filter_Xz', 'Filter_Ya', 'Filter_Yb', 'Filter_Z']
 
     for pos_id, pos_item in enumerate(TEST_ITEM_POS_DUMMY):
         pos_name = pos_item['name']
@@ -379,3 +405,9 @@ if __name__ == '__main__':
                             print('["{0}", None, None, {1}],'.format(
                                 measure_item_name, (pos_id + 2) * 10000 + pattern_idx * 1000 + code_ind))
                             code_ind += 1
+
+            for exposure in Exposure_Times:
+                measure_item_name = f'{pos_name}_{pattern_name}_ExposureTime_{exposure}'
+                print('["{0}", None, None, {1}],'.format(
+                    measure_item_name, (pos_id + 2) * 10000 + pattern_idx * 1000 + code_ind))
+                code_ind += 1
