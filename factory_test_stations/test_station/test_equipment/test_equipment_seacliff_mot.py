@@ -464,7 +464,7 @@ class MotAlgorithmHelper(object):
         with open(filename, 'rb') as f:
             frame3 = np.frombuffer(f.read(), dtype=dtype)
             image_in = frame3.reshape(col, row).T
-            image_in = np.flip(image_in, 1)
+            image_in = cv2.rotate(image_in, 0)
         return image_in
 
     def distortion_centroid_parametric_export(self, filename=r'/normal_GreenDistortion_X_float.bin'):
@@ -477,7 +477,7 @@ class MotAlgorithmHelper(object):
         with open(filename, 'rb') as f:
             frame3 = np.frombuffer(f.read(), dtype=np.float32)
             image_in = frame3.reshape(self._col, self._row).T
-            image_in = np.flip(image_in, 1)
+            image_in = cv2.rotate(image_in, 0)
         print(f'Read bin files named {os.path.basename(filename)}\n')
 
         XYZ = image_in
@@ -661,7 +661,7 @@ class MotAlgorithmHelper(object):
             I = np.frombuffer(fin.read(), dtype=np.float32)
         image_in = np.reshape(I, (6001, 6001))
         # Z = Z'        #Removed for viewing to match DUT orientation
-        image_in = np.flip(image_in.T, 1)  # Implement flip for viewing to match DUT orientation
+        image_in = cv2.rotate(image_in, 0)  # Implement flip for viewing to match DUT orientation
         image_in = cv2.filter2D(image_in, -1, MotAlgorithmHelper._kernel, borderType=cv2.BORDER_CONSTANT)
         return image_in
 
