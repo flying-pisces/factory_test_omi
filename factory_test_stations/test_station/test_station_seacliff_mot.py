@@ -278,7 +278,7 @@ class seacliffmotStation(test_station.TestStation):
                     capture_path = uut_dirs[-1]
             if not os.path.exists(capture_path):
                 test_station.utils.os_utils.mkdir_p(capture_path)
-                os.chmod(capture_path, 777)
+                os.chmod(capture_path, 0o777)
             config = dict(self._station_config.CAM_INIT_CONFIG)
 
             config["capturePath"] = capture_path
