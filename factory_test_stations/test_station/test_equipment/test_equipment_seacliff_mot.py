@@ -282,7 +282,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                 self._log(ret, "CmdMeasureAEStatus")
                 self.__check_ae_finish()
             # only export raw while not in emulated mode.
-            if not self._station_config.EQUIPMENT_SIM:
+            if (not self._station_config.EQUIPMENT_SIM) and self._station_config.TEST_SEQ_SAVE_CAPTURE:
                 ret = self._device.CmdExportRaw()
                 self._log(ret, "CmdExportRaw")
                 if ret['Error'] != 0:
