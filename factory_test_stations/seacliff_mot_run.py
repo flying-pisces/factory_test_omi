@@ -1,6 +1,7 @@
 import test_station
 import station_config
 import hardware_station_common.factory_test_gui as gui
+import test_station.test_station_seacliff_mot as test_station_mot
 import multiprocessing as mp
 if __name__ == '__main__':
 
@@ -11,6 +12,6 @@ if __name__ == '__main__':
     station_config.load_station('seacliff_mot')
     # we just have to pass in the TestStation constructor for this specific station
     # and the station_config
-    FACTORY_TEST_GUI = gui.FactoryTestGui(station_config, test_station.seacliffmotStation)
+    FACTORY_TEST_GUI = gui.FactoryTestGui(station_config, test_station_mot.seacliffmotStation)
     # enter the main loop
     FACTORY_TEST_GUI.main_loop()
