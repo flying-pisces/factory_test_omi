@@ -1,6 +1,6 @@
 import hardware_station_common.test_station.test_station as test_station
-import test_station.test_fixture.test_fixture_seacliff_eeprom as test_fixture
-import test_station.test_equipment.test_equipment_seacliff_eeprom as test_equipment
+import test_station.test_fixture.test_fixture_seacliff_eeprom as test_fixture_eeprom
+import test_station.test_equipment.test_equipment_seacliff_eeprom as test_equipment_seacliff_eeprom
 import hardware_station_common.utils.gui_utils as gui_utils
 import tkinter as tk
 import test_station.dut.dut as dut
@@ -181,11 +181,11 @@ class seacliffeepromStation(test_station.TestStation):
             sys.stdout = self
             sys.stderr = self
             sys.stdin = None
-        self._fixture = test_fixture.seacliffeepromFixture(station_config, operator_interface)
-        self._equip = test_equipment.seacliffeepromEquipment(station_config, operator_interface)
+        self._fixture = test_fixture_eeprom.seacliffeepromFixture(station_config, operator_interface)
+        self._equip = test_equipment_seacliff_eeprom.seacliffeepromEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.0.1'
+        self._sw_version = '1.1.0'
         self._cvt_flag = {
             'S7.8': (2, True, 7, 8),
             'S1.6': (1, True, 1, 6),

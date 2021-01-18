@@ -32,6 +32,7 @@ def load_station(station):
         STATION_NUMBER = 0
     #  add by elton:1028/2019
     config_path = os.getcwd()
+    bak_cwd = os.getcwd()
     if os.path.exists(__file__):
         config_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -46,3 +47,5 @@ def load_station(station):
         #exec(open(station_limits_file).read(), globals())
     except:
         raise
+    finally:
+        os.path.curdir = bak_cwd

@@ -106,7 +106,7 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._write_serial(self._station_config.COMMAND_HELP)
         response = self._read_response()
         if self._verbose:
-            print response
+            print(response)
         return response
 
     def reset(self):
@@ -147,7 +147,7 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
             self._particle_counter_client.close()
             self._particle_counter_client = None
         if self._verbose:
-            print "====== Fixture Close ========="
+            print("====== Fixture Close =========")
         return True
 
     ######################
@@ -286,7 +286,7 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
                                                                           2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
                 if rs is None or rs.isError():
                     if self._station_config.IS_VERBOSE:
-                        print "Retries to read data from particle counter {}/10. ".format(retries)
+                        print("Retries to read data from particle counter {}/10. ".format(retries))
                     retries += 1
                     time.sleep(0.5)
                 else:
@@ -329,7 +329,7 @@ if __name__ == "__main__":
         import station_config
         import hardware_station_common.operator_interface.operator_interface
 
-        print 'Self check for pancake_uniformity'
+        print('Self check for pancake_uniformity')
         station_config.load_station('pancake_uniformity')
         station_config.print_to_console = types.MethodType(print_to_console, station_config)
         the_fixture = pancakeuniformityFixture(station_config, station_config)

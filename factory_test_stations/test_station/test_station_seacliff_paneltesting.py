@@ -14,7 +14,7 @@ import sys
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_seacliff_paneltesting as test_fixture_paneltesting
-import test_station.test_equipment.test_equipment_seacliff_paneltesting as test_equipment
+import test_station.test_equipment.test_equipment_seacliff_paneltesting as test_equipment_seacliff_paneltesting
 import test_station.dut as dut
 import hardware_station_common.utils.gui_utils as gui_utils
 
@@ -38,7 +38,7 @@ class pancakemuniStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '0.1.4'
+        self._sw_version = '1.1.0'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
@@ -49,7 +49,7 @@ class pancakemuniStation(test_station.TestStation):
         if station_config.FIXTURE_SIM:
             self._fixture = projectstationFixture(station_config, operator_interface)
             pass
-        self._equipment = test_equipment.pancakemuniEquipment(station_config, operator_interface)
+        self._equipment = test_equipment_seacliff_paneltesting.pancakemuniEquipment(station_config, operator_interface)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
             if self._fixture.particle_counter_state() == 0:
                 self._fixture.particle_counter_on()
