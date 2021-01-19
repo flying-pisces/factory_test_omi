@@ -128,6 +128,7 @@ FIXTURE_USB_ON_TIME = 1
 #################################
 # Fixture related parameters
 # DISTANCE_BETWEEN_CAMERA_AND_DATUM = 26041
+# genius: 17750+18000, sunny: 18530+18000, gtk: 21450+18000
 DISTANCE_BETWEEN_CAMERA_AND_DATUM = 18530+18000
 
 ##################################
