@@ -11,12 +11,12 @@ CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-tes
 # serial number codes
 #
 SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Fake model number requirement, need config
+SERIAL_NUMBER_MODEL_NUMBER = r'\dPR0[\d|\w]{10}'  # Fake model number requirement, need config
 
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM3" #
+FIXTURE_COMPORT = "COM2" #
 FIXTURE_PARTICLE_COMPORT="COM1" #
 FIXTURE_PARTICLE_ADDR=1
 DUT_COMPORT = "COM9" #
@@ -95,7 +95,7 @@ FIXTURE_PTB_ON_TIME = 1
 FIXTURE_USB_OFF_TIME = 1
 FIXTURE_USB_ON_TIME = 1
 FIXTURE_PARTICLE_COUNTER = False
-FIXTRUE_PARTICLE_ADDR_READ = 40005
+FIXTRUE_PARTICLE_ADDR_READ = 40006
 FIXTRUE_PARTICLE_ADDR_START = 40003
 FIXTRUE_PARTICLE_ADDR_STATUS = 40003
 FIXTRUE_PARTICLE_START_DLY = 3
@@ -189,7 +189,8 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads'
+EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\pixel'
+CAMERA_SN = "Demo"
 DUT_SIM = True
 EQUIPMENT_SIM = True
-FIXTURE_SIM = False
+FIXTURE_SIM = True

@@ -9,9 +9,16 @@ import serial.tools.list_ports
 import time
 import re
 import pprint
+from pymodbus.client.sync import ModbusSerialClient
+from pymodbus.register_write_message import WriteSingleRegisterResponse
+from pymodbus.register_read_message import ReadHoldingRegistersResponse
+from pymodbus.constants import Defaults
+import time
+import ctypes
 
 class pancakeuniformityFixtureError(Exception):
     pass
+
 
 class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture.TestFixture):
     """
@@ -26,12 +33,7 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         self._end_delimiter = '\r\n'
         self._error_msg = 'This command is illegal,please check it again'
         self._read_error = False
-        # status of the platform
-        self.PTB_Position = None
-        self._Button_Status = None
-        self._PTB_Power_Status = None
-        self._USB_Power_Status = None
-        self.equipment = None
+        self._particle_counter_client = None  # type: ModbusSerialClient
 
     def is_ready(self):
         if self._serial_port is not None:
@@ -52,19 +54,23 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
                                           timeout=1,
                                           xonxoff=0,
                                           rtscts=0)
+        if self._station_config.FIXTURE_PARTICLE_COUNTER:
+                parity = 'N'
+                Defaults.Retries = 5
+                Defaults.RetryOnEmpty = True
+                self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
+                                                                   stopbits=1,
+                                                                   port=self._station_config.FIXTURE_PARTICLE_COMPORT,
+                                                                   timeout=2000)
+                if not self._particle_counter_client.connect():
+                    raise pancakeuniformityFixtureError('Unable to open particle counter port: %s'
+                                                        % self._station_config.FIXTURE_PARTICLE_COMPORT)
+
         if not self._serial_port:
             raise pancakeuniformityFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
-            return False
         else:
             self._operator_interface.print_to_console("Fixture %s Initialized.\n" % self._station_config.FIXTURE_COMPORT)
-            if self._PTB_Power_Status != '0':
-                self.poweron_ptb()
-                self._operator_interface.print_to_console("Power on PTB {}\n".format(self._PTB_Power_Status))
-            if self._USB_Power_Status != '0':
-                self.poweron_usb()
-                self._operator_interface.print_to_console("Power on USB {}\n".format(self._USB_Power_Status))
-        isinit = bool(self._serial_port) and not bool(int(self._PTB_Power_Status)) and not bool(int(self._USB_Power_Status))
-        return isinit
+            return True
 
     def _parsing_response(self, response):
         value = []
@@ -73,14 +79,11 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         return value
 
     def _write_serial(self, input_bytes):
-        if self._verbose:
-            print('writing: ' + input_bytes)
-        bytes_written = self._serial_port.write(input_bytes)
-        if self._verbose:
-            print("wrote, flushing")
         self._serial_port.flush()
         if self._verbose:
             print("flushed")
+            print('writing: ' + input_bytes)
+        bytes_written = self._serial_port.write(input_bytes)
         return bytes_written
 
     def _read_response(self, timeout=5):
@@ -99,23 +102,11 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
     ######################
     # Fixture info
     ######################
-    def status(self):
-        self._write_serial(self._station_config.COMMAND_STATUS)
-        response = self._read_response()
-        if self._verbose:
-            print response
-        value = self._parsing_response(response)
-        self.PTB_Position = int(value[0])
-        self._Button_Status = int(value[1])
-        self._PTB_Power_Status = int(value[2])
-        self._USB_Power_Status = int(value[6])
-        return response
-
     def help(self):
         self._write_serial(self._station_config.COMMAND_HELP)
         response = self._read_response()
         if self._verbose:
-            print response
+            print(response)
         return response
 
     def reset(self):
@@ -147,6 +138,7 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
         if hasattr(self, '_serial_port') \
                 and self._serial_port is not None \
                 and self._station_config.FIXTURE_COMPORT:
+            self.elminator_off()
             self._serial_port.close()
             self._serial_port = None
         if hasattr(self, '_particle_counter_client') and \
@@ -154,8 +146,8 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
                 and self._station_config.FIXTURE_PARTICLE_COUNTER:
             self._particle_counter_client.close()
             self._particle_counter_client = None
-            if self._verbose:
-                print "====== Fixture Close ========="
+        if self._verbose:
+            print("====== Fixture Close =========")
         return True
 
     ######################
@@ -240,86 +232,6 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
             raise pancakeuniformityFixtureError("Fail to Read %s" % response[0])
         return value
 
-    def poweron_usb(self):
-        self._write_serial(self._station_config.COMMAND_USB_POWER_ON)
-        time.sleep(self._station_config.FIXTURE_USB_ON_TIME)
-        response = self._read_response()
-        if self._verbose:
-            print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-            self._USB_Power_Status = value
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeuniformityFixtureError("Fail to Read %s" % response[0])
-        return value
-
-    def poweroff_usb(self):
-        self._write_serial(self._station_config.COMMAND_USB_POWER_OFF)
-        time.sleep(self._station_config.FIXTURE_USB_OFF_TIME)
-        response = self._read_response()
-        if self._verbose:
-            print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-            self._USB_Power_Status = value
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeuniformityFixtureError("Fail to Read %s" % response[0])
-        return value
-
-
-    def poweron_ptb(self):
-        self._write_serial(self._station_config.COMMAND_PTB_POWER_ON)
-        time.sleep(self._station_config.FIXTURE_PTB_ON_TIME)
-        response = self._read_response()
-        if self._verbose:
-            print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-            self._PTB_Power_Status = value
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeuniformityFixtureError("Fail to Read %s" % response[0])
-        return value
-
-    def poweroff_ptb(self):
-        self._write_serial(self._station_config.COMMAND_PTB_POWER_OFF)
-        time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
-        response = self._read_response()
-        if self._verbose:
-            print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-            self._PTB_Power_Status = value
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeuniformityFixtureError("Fail to Read %s" % response[0])
-        return value
-
-    def powercycle_dut(self):
-        self._write_serial(self._station_config.COMMAND_USB_POWER_OFF)
-        time.sleep(self._station_config.FIXTURE_USB_OFF_TIME)
-        self._write_serial(self._station_config.COMMAND_PTB_POWER_OFF)
-        time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
-        self._write_serial(self._station_config.COMMAND_PTB_POWER_ON)
-        time.sleep(self._station_config.FIXTURE_PTB_ON_TIME)
-        self._write_serial(self._station_config.COMMAND_USB_POWER_ON)
-        time.sleep(self._station_config.FIXTURE_USB_ON_TIME + self._station_config.DUT_ON_TIME)
-        response = self._read_response()
-        if self._verbose:
-            print(response[1])
-        if self._error_msg not in response[1]:
-            value = (response[1].split(self._start_delimiter))[1].split(self._end_delimiter)[0]
-        else:
-            value = None
-            self._read_error = "True"
-            raise pancakeuniformityFixtureError("Fail to Read %s" % response[0])
-        return value
     ######################
     # Fixture button system control
     ######################
@@ -349,6 +261,65 @@ class pancakeuniformityFixture(hardware_station_common.test_station.test_fixture
             raise pancakeuniformityFixtureError("Fail to Read %s" % response[0])
         return value
 
+    ######################
+    # Particle Counter Control
+    ######################
+    def particle_counter_on(self):
+        if self._particle_counter_client is not None:
+            wrs = self._particle_counter_client.\
+                write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                               1, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
+            if wrs is None or wrs.isError():
+                raise pancakeuniformityFixtureError('Failed to start particle counter .')
+
+    def particle_counter_off(self):
+        if self._particle_counter_client is not None:
+            self._particle_counter_client. write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
+                                                          0, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: WriteSingleRegisterResponse
+
+    def particle_counter_read_val(self):
+        if self._particle_counter_client is not None:
+            val = None
+            retries = 1
+            while retries <= 10:
+                rs = self._particle_counter_client.read_holding_registers(self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
+                                                                          2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
+                if rs is None or rs.isError():
+                    if self._station_config.IS_VERBOSE:
+                        print("Retries to read data from particle counter {}/10. ".format(retries))
+                    retries += 1
+                    time.sleep(0.5)
+                else:
+                    # val = rs.registers[0] * 65535 + rs.registers[1]
+                    # modified by elton.  for apc-r210/310
+                    val = ctypes.c_int32(rs.registers[0]  + (rs.registers[1] << 16)).value
+                    if hasattr(self._station_config, 'PARTICLE_COUNTER_APC') and self._station_config.PARTICLE_COUNTER_APC:
+                        val = (ctypes.c_int32((rs.registers[0] << 16) + rs.registers[1])).value
+                    break
+            if val is None:
+                raise pancakeuniformityFixtureError('Failed to read data from particle counter.')
+            return val
+
+    def particle_counter_state(self):
+        if self._particle_counter_client is not None:
+            retries = 1
+            val = None
+            while retries <= 10 and val is None:
+                rs = self._particle_counter_client.read_holding_registers(
+                    self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
+                    2,
+                    unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
+
+                if rs is None or rs.isError():
+                    if self._station_config.IS_VERBOSE:
+                        pprint.pprint("Retries to read data from particle counter {0}/10. ".format(retries))
+                    continue
+                val = rs.registers[0]
+            if val is None:
+                raise pancakeuniformityFixtureError('Failed to read data from particle counter.')
+            return val
+
+
 def print_to_console(self, msg):
     pass
 
@@ -358,7 +329,7 @@ if __name__ == "__main__":
         import station_config
         import hardware_station_common.operator_interface.operator_interface
 
-        print 'Self check for pancake_uniformity'
+        print('Self check for pancake_uniformity')
         station_config.load_station('pancake_uniformity')
         station_config.print_to_console = types.MethodType(print_to_console, station_config)
         the_fixture = pancakeuniformityFixture(station_config, station_config)

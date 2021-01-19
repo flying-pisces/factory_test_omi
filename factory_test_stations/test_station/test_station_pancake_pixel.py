@@ -11,9 +11,7 @@ import re
 import filecmp
 import numpy as np
 from itertools import islice
-from verifiction.particle_counter import ParticleCounter
-from verifiction.dut_checker import DutChecker
-from test_fixture.test_fixture_project_station import projectstationFixture
+from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 import pprint
 import types
 import glob
@@ -44,19 +42,17 @@ class pancakepixelStation(test_station.TestStation):
         if station_config.FIXTURE_SIM:
             self._fixture = projectstationFixture(station_config, operator_interface)
         self._equipment = test_equipment_pancake_pixel.pancakepixelEquipment(station_config)
-        self._particle_counter = ParticleCounter(station_config)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
-            self._particle_counter.initialize()
-            if self._particle_counter.particle_counter_state() == 0:
-                self._particle_counter.particle_counter_on()
+            if self._fixture.particle_counter_state() == 0:
+                self._fixture.particle_counter_on()
                 self._particle_counter_start_time = datetime.datetime.now()
-        self._dut_checker = DutChecker(station_config)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
         self._lastest_serial_number = None
         self._the_unit = None
         self._is_screen_on_by_op = False
         self._retries_screen_on = 0
+        self._is_cancel_test_by_op = False
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing station...\n")
@@ -69,31 +65,12 @@ class pancakepixelStation(test_station.TestStation):
                 self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
         self._equipment.initialize()
 
-    def _close_fixture(self):
-        if self._fixture is not None:
-            try:
-                self._operator_interface.print_to_console("Close...\n")
-                self._fixture.status()
-                self._fixture.elminator_off()
-            finally:
-                self._fixture.close()
-                self._fixture = None
-
-    def _close_particle_counter(self):
-        if self._particle_counter is not None:
-            try:
-                pass
-                # turn off the particle_counter manually.
-                # self._particle_counter.particle_counter_off()
-            finally:
-                self._particle_counter.close()
-                self._particle_counter = None
-
     def close(self):
-        self._close_fixture()
-        self._close_particle_counter()
+        if self._fixture is not None:
+            self._fixture.close()
+            self._fixture = None
         self._equipment.close()
-
+        self._equipment = None
 
     def _do_test(self, serial_number, test_log):
         # type: (str, test_station.test_log) -> tuple
@@ -168,7 +145,7 @@ class pancakepixelStation(test_station.TestStation):
             self._operator_interface.print_to_console("Read the particle count in the fixture... \n")
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
-                particle_count = self._particle_counter.particle_counter_read_val()
+                particle_count = self._fixture.particle_counter_read_val()
             test_log.set_measured_value_by_name_ex("ENV_ParticleCounter", particle_count)
 
             self._operator_interface.print_to_console("Set Camera Database. %s\n" % self._station_config.CAMERA_SN)
@@ -202,16 +179,20 @@ class pancakepixelStation(test_station.TestStation):
             self.dark_subpixel_do(self._the_unit, serial_number, test_log)
             self.data_export(serial_number, test_log)
 
-        except Exception, e:
+        except Exception as e:
             self._operator_interface.print_to_console("Test exception . {}\n".format(e))
         finally:
             self._operator_interface.print_to_console('release current test resource.\n')
-            if self._the_unit is not None:
-                self._the_unit.close()
-                self._the_unit = None
-            if self._fixture is not None:
-                self._fixture.unload()
-                self._fixture.elminator_off()
+            # noinspection PyBroadException
+            try:
+                if self._the_unit is not None:
+                    self._the_unit.close()
+                    self._the_unit = None
+                if self._fixture is not None:
+                    self._fixture.unload()
+                    self._fixture.elminator_off()
+            except:
+                pass
 
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
             overall_result, first_failed_test_result = self.close_test(test_log)
@@ -233,7 +214,7 @@ class pancakepixelStation(test_station.TestStation):
 
     def is_ready(self):
         ready = False
-        cancel = False
+        self._is_cancel_test_by_op = False
         power_on_trigger = False
         self._is_screen_on_by_op = False
         self._retries_screen_on = 0
@@ -243,15 +224,14 @@ class pancakepixelStation(test_station.TestStation):
         self._the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
         if self._station_config.DUT_SIM:
             self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
-        self._the_unit.initialize()
 
+        timeout_for_btn_idle = 20
+        timeout_for_dual = timeout_for_btn_idle
         try:
+            self._the_unit.initialize()
             self._fixture.button_enable()
-            timeout_for_btn_idle = 20
-            timeout_for_dual = timeout_for_btn_idle
-
             while timeout_for_dual > 0:
-                if ready or cancel:
+                if ready or self._is_cancel_test_by_op:
                     break
                 msg_prompt = 'Load DUT, and then Press L-Btn(Cancel)/R-Btn(Litup) in %s S...'
                 if power_on_trigger:
@@ -284,22 +264,26 @@ class pancakepixelStation(test_station.TestStation):
                             power_on_trigger = True
                             timeout_for_dual = timeout_for_btn_idle
                     elif ready_status == 0x02:
-                        cancel = True # Cancel test.
+                        self._is_cancel_test_by_op = True # Cancel test.
                 time.sleep(0.1)
                 timeout_for_dual -= 1
-            if not ready:
-                if not cancel:
-                    self._operator_interface.print_to_console(
-                        'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
-                else:
-                    self._operator_interface.print_to_console(
-                        'Cancel start signal from dual %s.\n' % timeout_for_dual)
-                self._the_unit.close()
-                self._the_unit = None
-                raise test_station.TestStationSerialNumberError('Fail to Wait for press dual-btn ...')
+
+
+        except Exception as e:
+            self._operator_interface.print_to_console('Fixture is not ready for reason: %s.\n' % e)
         finally:
+            # noinspection PyBroadException
             try:
                 self._fixture.button_disable()
+                if not ready:
+                    if not self._is_cancel_test_by_op:
+                        self._operator_interface.print_to_console(
+                            'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
+                    else:
+                        self._operator_interface.print_to_console(
+                            'Cancel start signal from dual %s.\n' % timeout_for_dual)
+                    self._the_unit.close()
+                    self._the_unit = None
             except:
                 pass
             self._operator_interface.prompt('', 'SystemButtonFace')
@@ -347,11 +331,11 @@ class pancakepixelStation(test_station.TestStation):
             defect_index = abs_contrast * np.array(location_index) * np.array(size_index)
             blemish_index = np.sum(defect_index)
             if self._station_config.IS_VERBOSE:
-                print 'constrast_{}:{}'.format(pattern, constrast_lst)
-                print 'locationX_{}:{}'.format(pattern, locax_list)
-                print 'locationY_{}:{}'.format(pattern, locay_list)
-                print 'size     _{}:{}'.format(pattern, size_list)
-                print 'pixel    _{}:{}'.format(pattern, pixel_list)
+                pprint.pprint('constrast_{}:{}'.format(pattern, constrast_lst))
+                pprint.pprint('locationX_{}:{}'.format(pattern, locax_list))
+                pprint.pprint('locationY_{}:{}'.format(pattern, locay_list))
+                pprint.pprint('size     _{}:{}'.format(pattern, size_list))
+                pprint.pprint('pixel    _{}:{}'.format(pattern, pixel_list))
         test_log.set_measured_value_by_name_ex(test_item, blemish_index)
 
     def data_export(self, serial_number, test_log):
@@ -451,7 +435,7 @@ class pancakepixelStation(test_station.TestStation):
                 pixel_list = []
                 constrast_lst = []
                 for c, result in analysis_result.items():
-                    if not isinstance(result, dict) or not result.has_key('NumDefects'):
+                    if not isinstance(result, dict) or 'NumDefects' not in result:
                         continue
                     num = int(result['NumDefects'])
                     self._operator_interface.print_to_console("prase numDefect {}, Num={}.\n"
@@ -634,7 +618,7 @@ class pancakepixelStation(test_station.TestStation):
             pixel_list = []
             constrast_lst = []
             for c, result in analysis_result.items():
-                if not isinstance(result, dict) or not result.has_key('NumDefects'):
+                if not isinstance(result, dict) or 'NumDefects' not in result:
                     continue
                 num = int(result['NumDefects'])
                 self._operator_interface.print_to_console("prase numDefect {}, Num={}.\n"

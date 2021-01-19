@@ -5,6 +5,17 @@ __author__ = 'chuckyin'
 # but they do need capital first letter.  (i.e. True or False)
 import os
 import sys
+
+import winsound
+import psutil
+import requests
+import logging
+import suds.client
+import tkinter.simpledialog
+import lxml
+from lxml import etree
+
+
 ###################################
 # station_type
 #
@@ -21,6 +32,7 @@ def load_station(station):
         STATION_NUMBER = 0
     #  add by elton:1028/2019
     config_path = os.getcwd()
+    bak_cwd = os.getcwd()
     if os.path.exists(__file__):
         config_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -32,6 +44,8 @@ def load_station(station):
         #execfile(station_config_file, globals())  # imports station_config into current namespace
         #execfile(station_limits_file, globals())
         exec(open(station_config_file).read(), globals())
-        exec(open(station_limits_file).read(), globals())
+        #exec(open(station_limits_file).read(), globals())
     except:
         raise
+    finally:
+        os.path.curdir = bak_cwd

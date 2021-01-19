@@ -7,7 +7,10 @@ from enum import Enum
 import json
 import os
 
+
 class Conoscope:
+    DLL_PATH = '.'
+    VERSION_REVISION = 52
     class Filter(Enum):
         BK7 = 0
         Mirror = 1
@@ -28,10 +31,10 @@ class Conoscope:
         Invalid = 5
 
     class Iris(Enum):
-        aperture_02 = 0
-        aperture_03 = 1
-        aperture_04 = 2
-        aperture_05 = 3
+        aperture_2mm = 0
+        aperture_3mm = 1
+        aperture_4mm = 2
+        aperture_5mm = 3
         Invalid = 4
 
     class WheelState(Enum):
@@ -46,6 +49,37 @@ class Conoscope:
         TemperatureMonitoringState_Locked = 2
         TemperatureMonitoringState_Aborted = 3
         TemperatureMonitoringState_Error = 4
+
+    class CfgFileState(Enum):
+        CfgFileState_NotDone = 0
+        CfgFileState_Reading = 1
+        CfgFileState_Writing = 2
+        CfgFileState_ReadDone = 3
+        CfgFileState_WriteDone = 4
+        CfgFileState_ReadError = 5
+        CfgFileState_WriteError = 6
+
+    class CaptureSequenceState(Enum):
+        CaptureSequenceState_NotStarted = 0
+        CaptureSequenceState_Setup = 1
+        CaptureSequenceState_WaitForTemp = 2
+        CaptureSequenceState_AutoExpo = 3
+        CaptureSequenceState_Measure = 4
+        CaptureSequenceState_Process = 5
+        CaptureSequenceState_Done = 6
+        CaptureSequenceState_Error = 7
+        CaptureSequenceState_Cancel = 8
+
+    class MeasureAEState(Enum):
+        MeasureAEState_NotStarted = 0
+        MeasureAEState_Process = 1
+        MeasureAEState_Done = 2
+        MeasureAEState_Error = 3
+        MeasureAEState_Cancel = 4
+
+    class ExportFormat(Enum):
+        Bin = 0
+        BinJpg = 1
 
     class ApplicationThread(threading.Thread):
         def __init__(self, threadID, name, counter):
@@ -67,14 +101,30 @@ class Conoscope:
         _fields_ = [
             ("cfgPath", ctypes.c_char_p),
             ("capturePath", ctypes.c_char_p),
-            ("autoExposure", ctypes.c_bool),
-            ("autoExposurePixelMax", ctypes.c_float)]
+            ("fileNamePrepend", ctypes.c_char_p),
+            ("fileNameAppend", ctypes.c_char_p),
+            ("exportFileNameFormat", ctypes.c_char_p),
+            ("exportFormat", ctypes.c_int),
+            ("AEMinExpoTimeUs", ctypes.c_int),
+            ("AEMaxExpoTimeUs", ctypes.c_int),
+            ("AEExpoTimeGranularityUs", ctypes.c_int),
+            ("AELevelPercent", ctypes.c_float),
+            ("AEMeasAreaHeight", ctypes.c_int),
+            ("AEMeasAreaWidth", ctypes.c_int),
+            ("AEMeasAreaX", ctypes.c_int),
+            ("AEMeasAreaY", ctypes.c_int),
+            ("bUseRoi", ctypes.c_bool),
+            ("RoiXLeft", ctypes.c_int),
+            ("RoiXRight", ctypes.c_int),
+            ("RoiYTop", ctypes.c_int),
+            ("RoiYBottom", ctypes.c_int)]
 
     class ConoscopeDebugSettings(ctypes.Structure):
         _fields_ = [
             ("debugMode", ctypes.c_bool),
             ("emulatedCamera", ctypes.c_bool),
-            ("dummyRawImagePath", ctypes.c_char_p)]
+            ("dummyRawImagePath", ctypes.c_char_p),
+            ("emulatedWheel", ctypes.c_bool),]
 
     class SetupConfig(ctypes.Structure):
         _fields_ = [
@@ -108,19 +158,92 @@ class Conoscope:
             ("bFlatField", ctypes.c_bool),
             ("bAbsolute", ctypes.c_bool)]
 
-    def __init__(self):
+    class CfgFileStatus(ctypes.Structure):
+        _fields_ = [
+            ("eState", ctypes.c_int),
+            ("progress", ctypes.c_int),
+            ("elapsedTime", ctypes.c_int64),
+            ("fileName", ctypes.c_char_p)]
+        
+    class CaptureSequenceConfig(ctypes.Structure):
+        _fields_ = [
+            ("sensorTemperature", ctypes.c_float),
+            ("bWaitForSensorTemperature", ctypes.c_bool),
+            ("eNd", ctypes.c_int),
+            ("eIris", ctypes.c_int),
+            ("exposureTimeUs_FilterX", ctypes.c_int),
+            ("exposureTimeUs_FilterXz", ctypes.c_int),
+            ("exposureTimeUs_FilterYa", ctypes.c_int),
+            ("exposureTimeUs_FilterYb", ctypes.c_int),
+            ("exposureTimeUs_FilterZ", ctypes.c_int),
+            ("nbAcquisition", ctypes.c_int),
+            ("bAutoExposure", ctypes.c_bool),
+            ("bUseExpoFile", ctypes.c_bool),
+            ("bSaveCapture", ctypes.c_bool),
+            ("bUseRoi", ctypes.c_bool),
+            ("RoiXLeft", ctypes.c_int),
+            ("RoiXRight", ctypes.c_int),
+            ("RoiYTop", ctypes.c_int),
+            ("RoiYBottom", ctypes.c_int)]
+     
+    class CaptureSequenceStatus(ctypes.Structure):
+        _fields_ = [
+            ("nbSteps", ctypes.c_int),
+            ("currentSteps", ctypes.c_int),
+            ("eFilter", ctypes.c_int),
+            ("state", ctypes.c_int)]
+
+    class MeasureAEStatus(ctypes.Structure):
+        _fields_ = [
+            ("exposureTimeUs", ctypes.c_int),
+            ("nbAcquisition", ctypes.c_int),
+            ("state", ctypes.c_int)]
+
+    def __init__(self, emulate_camera=False, emulate_wheel=False):
         print("create an instance of the conoscope")
 
         self.conoscopeConfig = Conoscope.ConoscopeConfig()
         self.conoscopeDebugSettings = Conoscope.ConoscopeDebugSettings()
         self.setupConfig = Conoscope.SetupConfig()
         self.measureConfig = Conoscope.MeasureConfig(200000, 1, 1, False)
-        dllPath = os.path.join(os.path.join(os.getcwd(), "test_station\\test_equipment\\ConoscopeLib.dll")) # ugly hack
+
+        dllPath = os.path.join(os.path.join(os.getcwd(), Conoscope.DLL_PATH, 'ConoscopeLib.dll'))  # ugly hack
         if os.path.isfile(dllPath):
+            os.environ['PATH'] += ';' + os.path.dirname(dllPath)
             os.chdir(os.path.dirname(dllPath))
-            conoscopeDll = cdll.LoadLibrary("ConoscopeLib.dll")
+            conoscopeDll = cdll.LoadLibrary(os.path.basename(dllPath))
         else:
-            conoscopeDll = cdll.LoadLibrary("ConoscopeLib.dll")
+            raise FileNotFoundError(dllPath)
+
+        self.cfgFileStatus = Conoscope.CfgFileStatus()
+        self.captureSequenceConfig = Conoscope.CaptureSequenceConfig()
+        self.captureSequenceStatus = Conoscope.CaptureSequenceStatus()
+
+        self.measureAEStatus = Conoscope.MeasureAEStatus()
+
+        # conoscopeDll = ctypes.WinDLL("ConoscopeLib.dll")
+
+        # hllApiProto = ctypes.WINFUNCTYPE (
+        #  ctypes.c_int,      # Return type.
+        #  ctypes.c_void_p,   # Parameters 1 ...
+        #  ctypes.c_void_p,
+        #  ctypes.c_void_p,
+        #  ctypes.c_void_p)   # ... thru 4.
+
+        # hllApiParams = (1, "p1", 0), (1, "p2", 0), (1, "p3",0), (1, "p4",0),
+
+        # Actually map the call ("HLLAPI(...)") to a Python name.
+        # hllApi = hllApiProto (("HLLAPI", conoscopeDll), hllApiParams)
+
+        # p1 = ctypes.c_int (1)
+        # p2 = ctypes.c_char_p (sessionVar)
+        # p3 = ctypes.c_int (1)
+        # p4 = ctypes.c_int (0)
+        # hllApi (ctypes.byref (p1), p2, ctypes.byref (p3), ctypes.byref (p4))
+
+        #RunApplicationProto = ctypes.WINFUNCTYPE(
+        #    ctypes.c_char_p)  # Return type.
+        #self.__RunApplication = RunApplicationProto(("RunApplication", conoscopeDll)),
 
         CmdRunApp_Proto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p)  # Return type.
@@ -133,10 +256,6 @@ class Conoscope:
         CmdGetVersionProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p)  # Return type.
         self.__CmdGetVersion = CmdGetVersionProto(("CmdGetVersion", conoscopeDll))
-
-        CmdGetInfoProto = ctypes.WINFUNCTYPE(
-            ctypes.c_char_p)  # Return type.
-        self.__CmdGetInfo = CmdGetInfoProto(("CmdGetInfo", conoscopeDll))
 
         CmdOpenProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p)  # Return type.
@@ -172,6 +291,7 @@ class Conoscope:
 
         CmdExportProcessedBufferProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p,  # Return type.
+            ctypes.c_void_p,
             ctypes.c_void_p)
         self.__CmdExportProcessedBuffer = CmdExportProcessedBufferProto(("CmdExportProcessedBuffer", conoscopeDll))
 
@@ -183,29 +303,75 @@ class Conoscope:
             ctypes.c_char_p)  # Return type.
         self.__CmdReset = CmdResetProto(("CmdReset", conoscopeDll))
 
-        CmdTerminateProto = ctypes.WINFUNCTYPE(
-            ctypes.c_char_p)  # Return type.
-        self.__CmdTerminate = CmdTerminateProto(("CmdTerminate", conoscopeDll))
-
         CmdSetConfigProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p,  # Return type.
             ctypes.c_void_p)
-        self.__CmdSetConfig = CmdSetConfigProto(("CmdSetConfig_", conoscopeDll))
+        self.__CmdSetConfig = CmdSetConfigProto(("CmdSetConfig", conoscopeDll))
 
         CmdGetConfigProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p,  # Return type.
             ctypes.c_void_p)
-        self.__CmdGetConfig = CmdGetConfigProto(("CmdGetConfig_", conoscopeDll))
+        self.__CmdGetConfig = CmdGetConfigProto(("CmdGetConfig", conoscopeDll))
 
         CmdSetDebugConfigProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p,  # Return type.
             ctypes.c_void_p)
-        self.__CmdSetDebugConfig = CmdSetDebugConfigProto(("CmdSetDebugConfig_", conoscopeDll))
+        self.__CmdSetDebugConfig = CmdSetDebugConfigProto(("CmdSetDebugConfig", conoscopeDll))
 
         CmdGetDebugConfigProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p,  # Return type.
             ctypes.c_void_p)
-        self.__CmdGetDebugConfig = CmdGetDebugConfigProto(("CmdGetDebugConfig_", conoscopeDll))
+        self.__CmdGetDebugConfig = CmdGetDebugConfigProto(("CmdGetDebugConfig", conoscopeDll))
+
+        CmdCfgFileWriteProto = ctypes.WINFUNCTYPE(
+            ctypes.c_char_p)  # Return type.
+        self.__CmdCfgFileWrite = CmdCfgFileWriteProto(("CmdCfgFileWrite", conoscopeDll))
+
+        CmdCfgFileReadProto = ctypes.WINFUNCTYPE(
+            ctypes.c_char_p)  # Return type.
+        self.__CmdCfgFileRead = CmdCfgFileReadProto(("CmdCfgFileRead", conoscopeDll))
+            
+        CmdCfgFileStatusProto = ctypes.WINFUNCTYPE(
+            ctypes.c_char_p,  # Return type.
+            ctypes.c_void_p)
+        self.__CmdCfgFileStatus = CmdCfgFileStatusProto(("CmdCfgFileStatus", conoscopeDll))
+
+        CmdGetCaptureSequenceProto = ctypes.WINFUNCTYPE(
+            ctypes.c_char_p,  # Return type.
+            ctypes.c_void_p)
+        self.__CmdGetCaptureSequence = CmdGetCaptureSequenceProto(("CmdGetCaptureSequence", conoscopeDll))
+            
+        CmdCaptureSequenceProto = ctypes.WINFUNCTYPE(
+            ctypes.c_char_p,  # Return type.
+            ctypes.c_void_p)
+        self.__CmdCaptureSequence = CmdCaptureSequenceProto(("CmdCaptureSequence", conoscopeDll))
+            
+        CmdCaptureSequenceCancelProto = ctypes.WINFUNCTYPE(
+            ctypes.c_char_p)  # Return type.
+        self.__CmdCaptureSequenceCancel = CmdCaptureSequenceCancelProto(("CmdCaptureSequenceCancel", conoscopeDll))
+            
+        CmdCaptureSequenceStatusProto = ctypes.WINFUNCTYPE(
+            ctypes.c_char_p,  # Return type.
+            ctypes.c_void_p)
+        self.__CmdCaptureSequenceStatus = CmdCaptureSequenceStatusProto(("CmdCaptureSequenceStatus", conoscopeDll))
+
+        CmdMeasureAEProto = ctypes.WINFUNCTYPE(
+            ctypes.c_char_p,  # Return type.
+            ctypes.c_void_p)
+        self.__CmdMeasureAE = CmdMeasureAEProto(("CmdMeasureAE", conoscopeDll))
+
+        CmdMeasureAECancelProto = ctypes.WINFUNCTYPE(
+            ctypes.c_char_p)  # Return type.
+        self.__CmdMeasureAECancel = CmdMeasureAECancelProto(("CmdMeasureAECancel", conoscopeDll))
+
+        CmdMeasureAEStatusProto = ctypes.WINFUNCTYPE(
+            ctypes.c_char_p,  # Return type.
+            ctypes.c_void_p)
+        self.__CmdMeasureAEStatus = CmdMeasureAEStatusProto(("CmdMeasureAEStatus", conoscopeDll))
+
+        CmdTerminateProto = ctypes.WINFUNCTYPE(
+            ctypes.c_char_p)  # Return type.
+        self.__CmdTerminate = CmdTerminateProto(("CmdTerminate", conoscopeDll))
 
         # create a thread to execute application
         try:
@@ -216,14 +382,51 @@ class Conoscope:
             # magic sleep
             time.sleep(0.5)
         except:
-            print("Error: unable to start thread")
+            errorMessage = "Error: unable to start thread"
+            print(errorMessage)
+            raise Exception(errorMessage)
+
+        # check version of the dll matches with the version of this file
+        ret = self.__CmdGetVersion()
+        version = json.loads(ret)
+
+        libNameKey = 'Lib_Name'
+        libVersionKey = 'Lib_Version'
+
+        libName = 'CONOSCOPE_LIB'
+        #versionMajor = 0
+        #versionMinor = 8
+        #versionRevision = 27
+
+        if (libNameKey in version) and (version[libNameKey] == libName):
+            if libVersionKey in version:
+                versionNumber = version[libVersionKey].split('.')
+
+                versionMajorLib = int(versionNumber[0])
+                versionMinorLib = int(versionNumber[1])
+                versionRevisionLib = int(versionNumber[2])
+
+                if Conoscope.VERSION_REVISION != versionRevisionLib:
+                    errorMessage = "Error: invalid revision {0}.{1}.{2} != {3}".format(
+                        versionMajorLib, versionMinorLib, versionRevisionLib, Conoscope.VERSION_REVISION)
+                    print(errorMessage)
+                    raise Exception(errorMessage)
+            else:
+                errorMessage = "Error: unknown version"
+                print(errorMessage)
+                raise Exception(errorMessage)
+        else:
+            errorMessage = "Error: invalid lib"
+            print(errorMessage)
+            raise Exception(errorMessage)
 
         # configure the conoscope to default value
         ret = self.CmdGetDebugConfig()
 
         # configure conoscope in normal mode
         ret = self.CmdSetDebugConfig({"debugMode": False,
-                                                "emulatedCamera": False})
+                                      "emulatedCamera": emulate_camera,
+                                      "emulatedWheel": emulate_wheel})
         print("instance done")
 
     def __del__(self):
@@ -294,7 +497,6 @@ class Conoscope:
 
     def CmdMeasure(self, config):
         Conoscope.__FillStructure(self.measureConfig, config)
-
         return Conoscope.__Result(self.__CmdMeasure(ctypes.byref(self.measureConfig)))
 
     def CmdExportRaw(self):
@@ -347,3 +549,64 @@ class Conoscope:
         ret = Conoscope.__Result(self.__CmdGetDebugConfig(ctypes.byref(self.conoscopeDebugSettings)))
         return ret
 
+    #def CmdCfgFileWrite(self):
+    #    ret = Conoscope.__Result(self.__CmdCfgFileWrite())
+
+    def CmdCfgFileRead(self):
+        ret = Conoscope.__Result(self.__CmdCfgFileRead())
+        return ret
+            
+    def CmdCfgFileStatus(self):
+        ret = Conoscope.__Result(self.__CmdCfgFileStatus(ctypes.byref(self.cfgFileStatus)))
+        return ret
+
+    def CmdGetCaptureSequence(self):
+        ret = Conoscope.__Result(self.__CmdGetCaptureSequence(ctypes.byref(self.captureSequenceConfig)))
+        return ret
+
+    def CmdCaptureSequence(self, config):
+        Conoscope.__FillStructure(self.captureSequenceConfig, config)
+        ret = Conoscope.__Result(self.__CmdCaptureSequence(ctypes.byref(self.captureSequenceConfig)))
+        return ret
+
+    def CmdCaptureSequenceCancel(self):
+        ret = Conoscope.__Result(self.__CmdCaptureSequenceCancel())
+        return ret
+
+    def CmdCaptureSequenceStatus(self):
+        status = Conoscope.CaptureSequenceStatus()
+        ret = self.__CmdCaptureSequenceStatus(ctypes.byref(status))
+
+        self.captureSequenceStatus = status
+
+        returnVal = Conoscope.__Result(ret)
+
+        # update return value with setup status
+        returnVal["nbSteps"] = status.nbSteps
+        returnVal["currentSteps"] = status.currentSteps
+        returnVal["eFilter"] = Conoscope.Filter(status.eFilter)
+        returnVal["state"] = Conoscope.CaptureSequenceState(status.state)
+
+        return returnVal
+
+    def CmdMeasureAE(self, config):
+        Conoscope.__FillStructure(self.measureConfig, config)
+        return Conoscope.__Result(self.__CmdMeasureAE(ctypes.byref(self.measureConfig)))
+
+    def CmdMeasureAECancel(self):
+        return Conoscope.__Result(self.__CmdMeasureAECancel())
+
+    def CmdMeasureAEStatus(self):
+        status = Conoscope.MeasureAEStatus()
+        ret = self.__CmdMeasureAEStatus(ctypes.byref(status))
+
+        self.measureAEStatus = status
+
+        returnVal = Conoscope.__Result(ret)
+
+        # update return value with setup status
+        returnVal["exposureTimeUs"] = status.exposureTimeUs
+        returnVal["nbAcquisition"] = status.nbAcquisition
+        returnVal["state"] = Conoscope.MeasureAEState(status.state)
+
+        return returnVal

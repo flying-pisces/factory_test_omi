@@ -1,5 +1,6 @@
 import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_project_station as test_fixture_project_station
+import hardware_station_common.utils.gui_utils as gui_utils
 import test_station.dut as dut
 import time
 import os
@@ -22,6 +23,7 @@ class projectstationStation(test_station.TestStation):
 
     def initialize(self):
         try:
+            gui_utils.messagebox.showwarning('Please make sure the Carrier is not be blocked.')
             self._operator_interface.print_to_console("Initializing project station station...\n")
             self._fixture.initialize()
         except:
@@ -54,7 +56,7 @@ class projectstationStation(test_station.TestStation):
 
             if os.path.exists(os.path.join(self._station_config.RAW_DIR, "testimage.png")):
                 b_result = True
-                self._operator_interface.display_image(os.path.join(self._station_config.RAW_DIR, "testimage.png"))
+                # self._operator_interface.display_image(os.path.join(self._station_config.RAW_DIR, "testimage.png"))
             else:
                 b_result = False
             self._operator_interface.wait(a_result, "\n***********Testing Item 2 ***************\n")
@@ -75,6 +77,7 @@ class projectstationStation(test_station.TestStation):
         return self._overall_result, self._first_failed_test_result
 
     def is_ready(self):
+        self._operator_interface.print_to_console("\n***********Is Ready ?-- ***************\n")
         return True
         self._fixture.is_ready()
         timeout_for_dual = 5
