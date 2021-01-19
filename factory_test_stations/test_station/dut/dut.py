@@ -94,7 +94,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         # hardware_station_common.test_station.dut.DUT.__init__(self, serialNumber, station_config, operatorInterface)
         self._verbose = station_config.IS_VERBOSE
         self.is_screen_poweron = False
-        self._serial_port = None # type: serial.Serial
+        self._serial_port = None  # type: serial.Serial
         self._logger = logging.getLogger(__name__)
         self._logger.setLevel(logging.DEBUG)
         self._start_delimiter = "$"

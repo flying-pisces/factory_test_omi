@@ -156,7 +156,7 @@ CAM_INIT_CONFIG = {
     "exportFormat": 0,
     "AEMinExpoTimeUs": 10,
     "AEMaxExpoTimeUs": 9985000,
-    "AEExpoTimeGranularityUs": 11111,
+    "AEExpoTimeGranularityUs": 11146,
     "AELevelPercent": 80.0,
 
     "AEMeasAreaHeight": 0,
@@ -247,6 +247,8 @@ DATA_STATUS_DEGS = [10, 20, 30]
 FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
+# UI_MODE
+OPTIMIZE_UI_MODE = True
 
 VERSION = 'SunnyP2-PreBuild-Alpha'
 AUTO_CVT_BGR_IMAGE_FROM_XYZ = False

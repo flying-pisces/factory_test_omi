@@ -81,7 +81,7 @@ class seacliffmotStation(test_station.TestStation):
                                 modbus_client.close()
                                 # type: ReadHoldingRegistersResponse
                                 if rs is None or rs.isError():
-                                    retries = retries + 1
+                                    # retries = retries + 1
                                     time.sleep(0.05)
                                 else:
                                     self._station_config.FIXTURE_PARTICLE_COMPORT = com.device
@@ -93,6 +93,7 @@ class seacliffmotStation(test_station.TestStation):
             if hit_success:
                 continue
             if (self._station_config.FIXTURE_COMPORT is None) and (not self._station_config.IS_PROXY_COMMUNICATION):
+                a_serial = None
                 try:
                     a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1, bytesize=8,
                                              timeout=1, xonxoff=0, rtscts=0)
@@ -106,7 +107,8 @@ class seacliffmotStation(test_station.TestStation):
                 except Exception as e:
                     pass
                 finally:
-                    a_serial.close()
+                    if a_serial is not None:
+                        a_serial.close()
 
             if (self._station_config.DUT_COMPORT is None) and not self._station_config.DUT_ETH_PROXY:
                 try:
@@ -233,6 +235,7 @@ class seacliffmotStation(test_station.TestStation):
         pattern_value = None
         cpu_count = mp.cpu_count()
         self._pool = mp.Pool(2)
+        self._pool_alg_dic = {}
         try:
             self._operator_interface.print_to_console(
                 "\n*********** Fixture at %s to load DUT %s ***************\n"
@@ -274,7 +277,7 @@ class seacliffmotStation(test_station.TestStation):
                 uut_dirs = [c for c in glob.glob(os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, r'*'))
                             if os.path.isdir(c)
                             and os.path.relpath(c, self._station_config.RAW_IMAGE_LOG_DIR)
-                                .upper().startswith(serial_number.upper())]
+                            .upper().startswith(serial_number.upper())]
                 if len(uut_dirs) > 0:
                     capture_path = uut_dirs[-1]
             if not os.path.exists(capture_path):
@@ -379,6 +382,11 @@ class seacliffmotStation(test_station.TestStation):
         finally:
             self._pool.close()
             self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')
+            self._operator_interface.print_to_console('Please wait...')
+            while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
+                self._operator_interface.wait(1, '.')
+            self._operator_interface.wait(0, '\n...finish to process')
+            self._operator_interface.print_to_console('\n')
             self._pool.join()
             self._pool = None
             try:
@@ -387,11 +395,10 @@ class seacliffmotStation(test_station.TestStation):
             except:
                 self._the_unit = None
 
-        print(f'--------------------------{serial_number}----------------------------- \n')
+        self._operator_interface.print_to_console(f'Finish------------{serial_number}-------\n')
         return self.close_test(test_log)
 
     def close_test(self, test_log):
-        ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###
         self._overall_result = test_log.get_overall_result()
         self._first_failed_test_result = test_log.get_first_failed_test_result()
         return self._overall_result, self._first_failed_test_result
@@ -431,11 +438,11 @@ class seacliffmotStation(test_station.TestStation):
         self._is_alignment_success = False
         self._module_left_or_right = None
         self._probe_con_status = False
+        timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
+                                    else self._station_config.TIMEOUT_FOR_BTN_IDLE)
+        timeout_for_dual = timeout_for_btn_idle
         try:
             self._fixture.power_on_button_status(True)
-            timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
-                                    else self._station_config.TIMEOUT_FOR_BTN_IDLE)
-            timeout_for_dual = timeout_for_btn_idle
             self._the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
             while timeout_for_dual > 0:
@@ -547,7 +554,7 @@ class seacliffmotStation(test_station.TestStation):
                 if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
                     self._operator_interface.print_to_console('Read X/Y/Z float from {0} bins.\n'.format(pre_file_name))
                     group_data = [test_equipment_seacliff_mot.MotAlgorithmHelper.get_export_data(fn,
-                                     station_config=self._station_config)
+                                  station_config=self._station_config)
                                   for fn in (file_x[0], file_y[0], file_z[0])]
 
                     # group_data[0] = np.linspace(-10, 10, 5)
@@ -566,9 +573,9 @@ class seacliffmotStation(test_station.TestStation):
                     xyY_mask = np.dstack([mask, mask, mask])
                     xyY = np.where(xyY_mask, np.zeros_like(xyY_mask), np.dstack([x, y, Y]))
 
-                    self._operator_interface.print_to_console('start to export data for %s\n' % pre_file_name )
+                    self._operator_interface.print_to_console('start to export data for %s\n' % pre_file_name)
+                    img_base_name = os.path.basename(file_x[0]).split('_X_float.bin')[0]
                     if self._station_config.AUTO_CVT_BGR_IMAGE_FROM_XYZ:
-                        img_base_name = os.path.basename(file_x[0]).split('_X_float.bin')[0]
                         self._operator_interface.print_to_console('save {0} bgr image.\n'.format(pre_file_name))
                         img_file_name = os.path.join(os.path.dirname(file_x[0]), img_base_name + '.bmp')
                         xyz = cv2.merge(group_data)
@@ -650,11 +657,13 @@ class seacliffmotStation(test_station.TestStation):
                                     pos_name_i, pattern_name_i, pri_k_i, export_item.replace(' ', ''))
                                 test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
                             print(f'distortion_centroid_parallel_callback<<<<<<<<{pattern_name_i}\n')
+                            self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
 
                         self._pool.apply_async(
                             seacliffmotStation.distortion_centroid_parametric_export_ex_parallel, (
                                 pos_name, pattern_name, pri_k, pri_v,),
                             callback=distortion_centroid_parametric_export_ex_parallel_callback)
+                        self._pool_alg_dic[f'{pos_name}_{pattern_name}'] = False
 
                     except Exception as e:
                         self._operator_interface.print_to_console(
@@ -719,6 +728,7 @@ class seacliffmotStation(test_station.TestStation):
                             pos_name_i, pattern_name_i, color_exports = res
                             print(f'color_pattern_parametric_export_ex_parallel_callback>>>>>>>>>{pattern_name_i}\n')
                             lum_u_v_keys = ['Lum', 'u\'', 'v\'']
+                            measure_items = []
                             for pole, azi in self._station_config.DATA_AT_POLE_AZI:
                                 keys = ['{0}(x={1}deg,y={2}deg)'.format(c, pole, azi) for c in lum_u_v_keys]
                                 measure_items = ['{0}_{1}deg_{2}deg'.format(c, pole, azi) for c in lum_u_v_keys]
@@ -751,6 +761,7 @@ class seacliffmotStation(test_station.TestStation):
                             [test_log.set_measured_value_by_name_ex(measure_item, normal_items.get(measure_item))
                              for measure_item in measure_items]
                             print(f'distortion_centroid_parametric_export_ex_parallel_callback<<<<<<<<{pattern_name_i}\n')
+                            self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
 
                         brightness_statistics = (pattern_name in self._station_config.ANALYSIS_GRP_MONO_PATTERN)
                         color_uniformity = (pattern_name in self._station_config.ANALYSIS_GRP_COLOR_PATTERN)
@@ -758,6 +769,7 @@ class seacliffmotStation(test_station.TestStation):
                             seacliffmotStation.color_pattern_parametric_export_ex_parallel,
                             (pos_name, pattern_name, file_x[0], brightness_statistics, color_uniformity),
                             callback=color_pattern_parametric_export_ex_parallel_callback)
+                        self._pool_alg_dic[f'{pos_name}_{pattern_name}'] = False
 
                     except Exception as e:
                         self._operator_interface.print_to_console(

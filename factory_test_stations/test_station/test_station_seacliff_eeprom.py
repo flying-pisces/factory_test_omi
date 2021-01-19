@@ -434,7 +434,7 @@ class seacliffeepromStation(test_station.TestStation):
                     # encode the tar_val
                     raw_data_cpy[memory_idx: (memory_idx+memory_len)] = self.cvt_to_hex(tar_val, flag)
 
-                raw_data_cpy[29:30] = self.uchar_checksum(raw_data_cpy[0:25])
+                raw_data_cpy[29:30] = self.uchar_checksum(raw_data_cpy[0:29])
                 validate_field_result = 0
                 for ind, val in enumerate(items_chk_result):
                     validate_field_result |= 0 if val else (0x01 << (15-ind))
