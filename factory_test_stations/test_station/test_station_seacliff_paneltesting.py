@@ -114,7 +114,7 @@ class pancakemuniStation(test_station.TestStation):
                                 modbus_client.close()
                                 # type: ReadHoldingRegistersResponse
                                 if rs is None or rs.isError():
-                                    retries = retries + 1
+                                    # retries = retries + 1
                                     time.sleep(0.05)
                                 else:
                                     self._station_config.FIXTURE_PARTICLE_COMPORT = com.device
@@ -207,7 +207,7 @@ class pancakemuniStation(test_station.TestStation):
             self._operator_interface.print_to_console('open the drawer automatically...\n')
             self._fixture.unload()
         except (test_fixture_paneltesting.seacliffpaneltestingFixtureError,
-                test_equipment.pancakemuniEquipmentError) as e:
+                test_equipment_seacliff_paneltesting.pancakemuniEquipmentError) as e:
             raise test_station.TestStationError('Unable to initialized.')
 
     def close(self):
