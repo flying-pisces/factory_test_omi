@@ -108,7 +108,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         try:
             if hasattr(self._station_config, 'DUT_ETH_PROXY') and self._station_config.DUT_ETH_PROXY:
                 self._serial_port = DutEthernetCommunicationProxy()
-                print(f'DUT {self.serial_number} Initialised.  Port = 8080. ')
+                if self._verbose:
+                    print(f'DUT {self.serial_number} Initialised.  Port = 8080. ')
             else:
                 self._serial_port = serial.Serial(self._station_config.DUT_COMPORT,
                                                   baudrate=115200,
@@ -121,7 +122,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                                                   timeout=1,
                                                   writeTimeout=None,
                                                   interCharTimeout=None)
-                print(f'DUT {self.serial_number} Initialised COM = {self._station_config.DUT_COMPORT}. ')
+                if self._verbose:
+                    print(f'DUT {self.serial_number} Initialised COM = {self._station_config.DUT_COMPORT}. ')
         except:
             raise DUTError('Unable to open DUT with Com={0} or Ethernet'.format(self._station_config.DUT_COMPORT))
         return True
@@ -252,7 +254,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                     print('.')
                 continue
             response.append(line_in.decode())
-            if self._verbose and len(response) > 1:
+            if self._verbose and len(response) > 1 and self._verbose:
                 pprint.pprint(response)
             recvobj = self._prase_respose('System OK', response)
             if int(recvobj[0]) != 0x00:
@@ -379,7 +381,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         return self._prase_respose(self._station_config.COMMAND_DISP_GETBOARDID, response)
 
     def _prase_respose(self, command, response):
-        print("command : {0},,,{1}".format(command, response))
+        if self._verbose:
+            print("command : {0},,,{1}".format(command, response))
         if response is None:
             return None
         cmd1 = command.split(self._spliter)[0]

@@ -23,8 +23,8 @@ def chk_and_set_measured_value_by_name(test_log, item, value):
     """
     if item in test_log.results_array():
         test_log.set_measured_value_by_name(item, value)
-    else:
-        pprint.pprint(item)
+    # else:
+    #     pprint.pprint(item)
 
 
 class seacliffmotStationError(Exception):
@@ -385,8 +385,8 @@ class seacliffmotStation(test_station.TestStation):
             self._operator_interface.print_to_console('Please wait...')
             while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
                 self._operator_interface.wait(1, '.')
-            self._operator_interface.wait(0, '\n...finish to process')
-            self._operator_interface.print_to_console('\n')
+            self._operator_interface.wait(0, '\n')
+            self._operator_interface.print_to_console('finish to process\n')
             self._pool.join()
             self._pool = None
             try:
@@ -595,7 +595,7 @@ class seacliffmotStation(test_station.TestStation):
 
     @staticmethod
     def distortion_centroid_parametric_export_ex_parallel(pos_name, pattern_name, pri_key, fil):
-        print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
+        # print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
         mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
         distortion_exports = mot_alg.distortion_centroid_parametric_export(fil)
         return pos_name, pattern_name, pri_key, distortion_exports
@@ -648,7 +648,7 @@ class seacliffmotStation(test_station.TestStation):
 
                         def distortion_centroid_parametric_export_ex_parallel_callback(res):
                             pos_name_i, pattern_name_i, pri_k_i, distortion_exports = res
-                            print(f'distortion_centroid_parallel_callback>>>>>>>>>{pattern_name_i}\n')
+                            # print(f'distortion_centroid_parallel_callback>>>>>>>>>{pattern_name_i}\n')
                             for export_item in export_items:
                                 export_value = distortion_exports.get(export_item)
                                 if export_value is None:
@@ -656,7 +656,7 @@ class seacliffmotStation(test_station.TestStation):
                                 measure_item_name = '{0}_{1}_{2}_{3}'.format(
                                     pos_name_i, pattern_name_i, pri_k_i, export_item.replace(' ', ''))
                                 test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
-                            print(f'distortion_centroid_parallel_callback<<<<<<<<{pattern_name_i}\n')
+                            # print(f'distortion_centroid_parallel_callback<<<<<<<<{pattern_name_i}\n')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
 
                         self._pool.apply_async(
@@ -671,7 +671,7 @@ class seacliffmotStation(test_station.TestStation):
 
     @staticmethod
     def color_pattern_parametric_export_ex_parallel(pos_name, pattern_name, fil, brightness_statistics, color_uniformity):
-        print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
+        # print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
         mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
         color_exports = mot_alg.color_pattern_parametric_export(
             fil, brightness_statistics=brightness_statistics, color_uniformity=color_uniformity, multi_process=False)
@@ -726,7 +726,7 @@ class seacliffmotStation(test_station.TestStation):
 
                         def color_pattern_parametric_export_ex_parallel_callback(res):
                             pos_name_i, pattern_name_i, color_exports = res
-                            print(f'color_pattern_parametric_export_ex_parallel_callback>>>>>>>>>{pattern_name_i}\n')
+                            # print(f'color_pattern_parametric_export_ex_parallel_callback>>>>>>>>>{pattern_name_i}\n')
                             lum_u_v_keys = ['Lum', 'u\'', 'v\'']
                             measure_items = []
                             for pole, azi in self._station_config.DATA_AT_POLE_AZI:
@@ -760,7 +760,7 @@ class seacliffmotStation(test_station.TestStation):
                             measure_items = [f'{pos_name_i}_{pattern_name_i}_{c}' for c in export_items_pattern_normal]
                             [test_log.set_measured_value_by_name_ex(measure_item, normal_items.get(measure_item))
                              for measure_item in measure_items]
-                            print(f'distortion_centroid_parametric_export_ex_parallel_callback<<<<<<<<{pattern_name_i}\n')
+                            # print(f'distortion_centroid_parametric_export_ex_parallel_callback<<<<<<<<{pattern_name_i}\n')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
 
                         brightness_statistics = (pattern_name in self._station_config.ANALYSIS_GRP_MONO_PATTERN)

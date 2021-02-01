@@ -117,8 +117,8 @@ def chk_and_set_measured_value_by_name(test_log, item, value):
     """
     if item in test_log.results_array():
         test_log.set_measured_value_by_name(item, value)
-    else:
-        pprint.pprint(item)
+    # else:
+    #     pprint.pprint(item)
 
 
 class seacliffeepromError(Exception):
@@ -388,6 +388,7 @@ class seacliffeepromStation(test_station.TestStation):
                 raw_data = ['0x00'] * 45
                 if not self._station_config.DUT_SIM:
                     raw_data = the_unit.nvm_read_data()[2:]
+                self._operator_interface.print_to_console('RD_DATA:  \n' + ','.join(raw_data))
                 # mark: convert raw data before flush to dict.
                 for key, mapping in self._eeprom_map_group.items():
                     memory_idx = mapping[0] - 6
@@ -448,8 +449,8 @@ class seacliffeepromStation(test_station.TestStation):
                     the_unit.nvm_write_data(raw_data_cpy)
                 else:
                     self._operator_interface.print_to_console('write configuration protected ...\n')
-                    print('WR_DATA_SIM:  \n' + ','.join(raw_data_cpy))
                     time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
+                self._operator_interface.print_to_console('WR_DATA:  \n' + ','.join(raw_data_cpy))
 
                 test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_X', var_data.get('display_boresight_x'))
                 test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_Y', var_data.get('display_boresight_y'))
@@ -481,6 +482,7 @@ class seacliffeepromStation(test_station.TestStation):
                 data_from_nvram = raw_data_cpy.copy()
                 if not self._station_config.DUT_SIM:
                     data_from_nvram = the_unit.nvm_read_data()[2:]
+                self._operator_interface.print_to_console('RD_DATA After flushing:  \n' + ','.join(data_from_nvram))
                 data_from_nvram_cap = [c.upper() for c in data_from_nvram]
                 raw_data_cpy_cap = [c.upper() for c in raw_data_cpy]
                 test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', data_from_nvram_cap == raw_data_cpy_cap)

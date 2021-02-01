@@ -47,7 +47,8 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
 
     ## Eldim specific return.
     def _log(self, ret, functionName):
-        print("  {0}".format(functionName))
+        if self._verbose:
+            print("  {0}".format(functionName))
         try:
             # case of return value is a string
             # print("  -> {0}".format(ret))
@@ -93,15 +94,13 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         ret = self._device.CmdOpen()
         self._open = self._log(ret, "CmdOpen")
         if self._verbose:
-            self._operator_interface.print_to_console("Open Status is \n{0}\n".format(str(self._open)))
+           print("Open Status is \n{0}\n".format(str(self._open)))
         return self._open
 
     def reset(self):
         ret = self._device.CmdReset()
         if self._verbose:
-            self._operator_interface.print_to_console("Open Status is \n{0}\n".format(str(self._log(ret, "CmdReset"))))
-        else:
-            self._log(ret, "CmdReset")
+           print("Open Status is \n{0}\n".format(str(self._log(ret, "CmdReset"))))
         return self._log(ret, "CmdReset")
 
     def close(self):
@@ -128,13 +127,14 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
             aeState = ret["state"]
             if aeExpo != ret["exposureTimeUs"]:
                 aeExpo = ret["exposureTimeUs"]
-                print("  state = {0} ({1} us)".format(aeState, aeExpo))
+                if self._verbose:
+                    print("  state = {0} ({1} us)".format(aeState, aeExpo))
             if (aeState == Conoscope.MeasureAEState.MeasureAEState_Done) or \
                     (aeState == Conoscope.MeasureAEState.MeasureAEState_Error) or \
                     (aeState == Conoscope.MeasureAEState.MeasureAEState_Cancel):
                 bDone = True
-
-                print("  state = {0} ({1} us)".format(aeState, ret["exposureTimeUs"]))
+                if self._verbose:
+                    print("  state = {0} ({1} us)".format(aeState, ret["exposureTimeUs"]))
             else:
                 time.sleep(0.1)
 
@@ -142,7 +142,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         done = False
         processStateCurrent = None
         processStepCurrent = None
-        print("wait for the sequence to be finished")
+        self._operator_interface.print_to_console("wait for the sequence to be finished.\n")
         while done is False:
             ret = self._device.CmdCaptureSequenceStatus()
             processState = ret['state']
@@ -151,17 +151,20 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
 
             if (processStateCurrent is None) or (processStateCurrent != processState) or (
                     processStepCurrent != processStep):
-                print("  step {0}/{1} state {2}".format(processStep, processNbSteps, processState))
+                if self._verbose:
+                    print("  step {0}/{1} state {2}".format(processStep, processNbSteps, processState))
 
                 processStateCurrent = processState
                 processStepCurrent = processStep
 
             if processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Error:
                 done = True
-                print("Error happened")
+                if self._verbose:
+                    print("Error happened")
             elif processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Done:
                 done = True
-                print("Process Done")
+                if self._verbose:
+                    print("Process Done")
 
             if done is False:
                 time.sleep(0.05)
@@ -377,7 +380,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         processStateCurrent = None
         processStepCurrent = None
 
-        print("wait for the sequence to be finished")
+        self._operator_interface.print_to_console("wait for the sequence to be finished.\n")
 
         while done is False:
             ret = self._device.CmdCaptureSequenceStatus()
@@ -389,17 +392,20 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
 
             if (processStateCurrent is None) or (processStateCurrent != processState) or (
                     processStepCurrent != processStep):
-                print("  step {0}/{1} state {2}".format(processStep, processNbSteps, processState))
+                if self._verbose:
+                    print("  step {0}/{1} state {2}".format(processStep, processNbSteps, processState))
 
                 processStateCurrent = processState
                 processStepCurrent = processStep
 
             if processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Error:
                 done = True
-                print("Error happened")
+                if self._verbose:
+                    print("Error happened")
             elif processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Done:
                 done = True
-                print("Process Done")
+                if self._verbose:
+                    print("Process Done")
 
             if done is False:
                 time.sleep(1)
@@ -418,7 +424,8 @@ class MotAlgorithmHelper(object):
     kernel_b = np.sum(_kernel)
     _kernel = _kernel / kernel_b  # normalize
 
-    def __init__(self):
+    def __init__(self, is_verbose=False):
+        self._verbose = is_verbose
         self._noise_thresh = 0.05  # Percent of Y sum to exclude from color plots (use due to color calc noise in dim part of image)
         self._color_thresh = 0.01  # Thresh for color uniformity
         self._lum_thresh = 0.8  # Thresh for brightness uniformity
@@ -478,7 +485,8 @@ class MotAlgorithmHelper(object):
             frame3 = np.frombuffer(f.read(), dtype=np.float32)
             image_in = frame3.reshape(self._col, self._row).T
             image_in = cv2.rotate(image_in, 0)
-        print(f'Read bin files named {os.path.basename(filename)}\n')
+        if self._verbose:
+            print(f'Read bin files named {os.path.basename(filename)}\n')
 
         XYZ = image_in
         CXYZ = image_in
@@ -502,7 +510,8 @@ class MotAlgorithmHelper(object):
 
         Lumiance_thresh = 10
         axis_length_thresh = 10
-        print(XYZ.shape, np.max(XYZ))
+        if self._verbose:
+            print(XYZ.shape, np.max(XYZ))
 
         # label_image = np.uint8(np.where(XYZ > Lumiance_thresh,255,0))
         # XYZ = cv2.blur(XYZ,(3,3))
@@ -518,12 +527,13 @@ class MotAlgorithmHelper(object):
 
         label_image = measure.label(label_image, connectivity=2)
         stats = measure.regionprops(label_image)
-
-        print('stas', stats[0]['Centroid'])
+        if self._verbose:
+            print('stas', stats[0]['Centroid'])
         scenters = []
         sMajorAxisLength = []
         sMinorAxisLength = []
-        print('stats num:', len(stats))
+        if self._verbose:
+            print('stats num:', len(stats))
 
         # for i, stat in enumerate(stats):
         #     if stat['MajorAxisLength'] >= axis_length_thresh:
@@ -534,12 +544,13 @@ class MotAlgorithmHelper(object):
             scenters.append(list(stat['Centroid']))
             sMajorAxisLength.append(stat['MajorAxisLength'])
             sMinorAxisLength.append(stat['MinorAxisLength'])
-
-        print('num stats {0} / {1}'.format(len(scenters), len(stats)))
+        if self._verbose:
+            print('num stats {0} / {1}'.format(len(scenters), len(stats)))
         num_dots = len(scenters)
         bb = np.nonzero(np.array(sMinorAxisLength) > 50)
-        print('sMinorAxisLength,max', np.max(sMinorAxisLength))
-        print('majorlenght:', np.max(sMajorAxisLength))
+        if self._verbose:
+            print('sMinorAxisLength,max', np.max(sMinorAxisLength))
+            print('majorlenght:', np.max(sMajorAxisLength))
 
         centroid = np.zeros((num_dots, 2))
         for i in range(0, num_dots):
@@ -691,8 +702,8 @@ class MotAlgorithmHelper(object):
             pool.close()
         else:
             XYZ = [MotAlgorithmHelper.read_image_and_blur(c) for c in file_names]
-
-        print(f'Read bin files named {fnamebase}\n')
+        if self._verbose:
+            print(f'Read bin files named {fnamebase}\n')
         # cv2.namedWindow('img',0)
         # cv2.imshow('img',image_in)
         # cv2.waitKey(1000)

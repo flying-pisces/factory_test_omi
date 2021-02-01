@@ -133,8 +133,8 @@ DISTANCE_BETWEEN_CAMERA_AND_DATUM = 18530+18000
 
 ##################################
 # Test Equipment related parameters
-IS_PRINT_TO_LOG = False
-IS_VERBOSE = True # some path bug, temp set False and work on True later
+IS_PRINT_TO_LOG = True
+IS_VERBOSE = False # some path bug, temp set False and work on True later
 CFG_PATH = r'Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
 
@@ -249,6 +249,9 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 # UI_MODE
 OPTIMIZE_UI_MODE = True
+SHOW_CONSOLE = True
+
+SHOPFLOOR_SYSTEM = 'genius_mot'
 
 VERSION = 'SunnyP2-PreBuild-Alpha'
 AUTO_CVT_BGR_IMAGE_FROM_XYZ = False
