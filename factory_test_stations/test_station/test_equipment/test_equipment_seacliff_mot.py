@@ -194,7 +194,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                     if re.search(r'\.bin', file_name, re.I) and re.search(filename_prepend, file_name, re.I):
                         file_names.append(os.path.join(home, file_name))
 
-        if isinstance(exposure_cfg, str):
+        if isinstance(exposure_cfg, str) or isinstance(exposure_cfg, tuple):
             if self._station_config.TEST_SEQ_USE_EXPO_FILE:
                 capture_seq_exposure = os.path.join(self._station_config.SEQUENCE_RELATIVEPATH, pattern_name + '.json')
                 target_seq_name = os.path.join(self._station_config.CONOSCOPE_DLL_PATH, 'CaptureSequenceExposureTime.json')
@@ -234,10 +234,17 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                                      "eNd": setup_cfg[1],  # Conoscope.Nd.Nd_1.value,
                                      "eIris": setup_cfg[2],  # Conoscope.Iris.aperture_4mm.value,
                                      "nbAcquisition": 1,
-                                     "exposureTimeUs": int(exposure_cfg),
                                      "bAutoExposure": self._station_config.TEST_AUTO_EXPOSURE,
                                      "bUseExpoFile": self._station_config.TEST_SEQ_USE_EXPO_FILE,
                                      'bSaveCapture': self._station_config.TEST_SEQ_SAVE_CAPTURE}
+            if isinstance(exposure_cfg, tuple):
+                captureSequenceConfig['exposureTimeUs_FilterX'] = exposure_cfg[0]
+                captureSequenceConfig['exposureTimeUs_FilterXz'] = exposure_cfg[1]
+                captureSequenceConfig['exposureTimeUs_FilterYa'] = exposure_cfg[2]
+                captureSequenceConfig['exposureTimeUs_FilterYb'] = exposure_cfg[3]
+                captureSequenceConfig['exposureTimeUs_FilterZ'] = exposure_cfg[4]
+            elif re.match('^\d+$', exposure_cfg):
+                captureSequenceConfig['exposureTimeUs'] = int(exposure_cfg)
             ret = self._device.CmdCaptureSequence(captureSequenceConfig)
             if ret['Error'] != 0:
                 seacliffmotEquipmentError('Fail to CmdCaptureSequence.')
