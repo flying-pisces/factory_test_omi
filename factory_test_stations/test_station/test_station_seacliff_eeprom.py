@@ -446,7 +446,23 @@ class seacliffeepromStation(test_station.TestStation):
                 print('Write configuration...........\n')
                 self._operator_interface.print_to_console('write configuration to eeprom ...\n')
                 if not self._station_config.NVM_WRITE_PROTECT:
-                    the_unit.nvm_write_data(raw_data_cpy)
+                    max_tries = 3
+                    write_tries = 1
+                    nvm_write_data_success = False
+                    while write_tries <= max_tries and not nvm_write_data_success:
+                        try:
+                            the_unit.nvm_write_data(raw_data_cpy)
+                            nvm_write_data_success = True
+                        except:
+                            if write_tries == max_tries:
+                                raise
+                            else:
+                                try:
+                                    the_unit.screen_off()
+                                    the_unit.screen_on()
+                                except:
+                                    pass
+                        write_tries += 1
                 else:
                     self._operator_interface.print_to_console('write configuration protected ...\n')
                     time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
