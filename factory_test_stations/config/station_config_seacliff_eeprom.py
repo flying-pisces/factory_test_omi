@@ -58,7 +58,7 @@ CAMERA_CHECK_CFG = [
         'pattern': (255, 0, 0),
         'chk_lsl': [0, 43, 46],
         'chk_usl': [30, 255, 255],
-        'determine':[50, 100],
+        'determine':[30, 100],
     },
 
     # {
