@@ -132,12 +132,20 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         if not self.is_screen_poweron:
             self._power_off()
             time.sleep(0.5)
-            recvobj = self._power_on()
-            if recvobj is None:
-                raise DUTError("Exit power_on because can't receive any data from dut.")
-            self.is_screen_poweron = True
-            if recvobj[0] != '0000':
-                raise DUTError("Exit power_off because rev err msg. Msg = {0}".format(recvobj))
+            retries = 1
+            recvobj = None
+            while retries <= 5 and not self.is_screen_poweron:
+                recvobj = self._power_on()
+                if recvobj is None:
+                    raise DUTError("Exit power_on because can't receive any data from dut.")
+                if recvobj[0] == '0000':
+                    self.is_screen_poweron = True
+                else:
+                    if self._verbose:
+                        print(f'Fail to power on DUT. Retries = {retries}, REV={recvobj}')
+                retries += 1
+            if not self.is_screen_poweron:
+                raise DUTError(f"Exit power_off because rev err msg. retries = {retries}, Msg = {recvobj}")
             return True
 
     def screen_off(self):
