@@ -1,3 +1,18 @@
+"""
+Release Note:
+========================================================
+Version 1.1.1b
+2021-2-9 author<xxx@xxx.com>
+-1. change datetime format to local time.
+-2. optimize setting for auto exposure time in sequence-mode.
+-3. fix: unable to power on DUT in fixture emulator mode.
+-4. optimize loop-testing mode.
+
+========================================================
+Version 1.1.0
+2020-1-18 elton<elton.tian@myzygroup.com>
+-1. Init version for MOT
+"""
 
 ##################################
 # directories
