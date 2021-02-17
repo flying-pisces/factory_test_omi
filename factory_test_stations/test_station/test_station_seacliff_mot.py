@@ -596,9 +596,12 @@ class seacliffmotStation(test_station.TestStation):
     @staticmethod
     def distortion_centroid_parametric_export_ex_parallel(pos_name, pattern_name, pri_key, fil):
         # print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
-        mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
-        distortion_exports = mot_alg.distortion_centroid_parametric_export(fil)
-        return pos_name, pattern_name, pri_key, distortion_exports
+        try:
+            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
+            distortion_exports = mot_alg.distortion_centroid_parametric_export(fil)
+            return pos_name, pattern_name, pri_key, distortion_exports
+        except:
+            return None
 
     def distortion_centroid_parametric_export_ex(self, ana_pos_item, ana_pattern, capture_path, test_log):
         export_items = ['DispCen_x_cono', 'DispCen_y_cono', 'DispCen_x_display',
@@ -647,16 +650,17 @@ class seacliffmotStation(test_station.TestStation):
                         # distortion_exports = mot_alg.distortion_centroid_parametric_export(pri_v)
 
                         def distortion_centroid_parametric_export_ex_parallel_callback(res):
-                            pos_name_i, pattern_name_i, pri_k_i, distortion_exports = res
-                            # print(f'distortion_centroid_parallel_callback>>>>>>>>>{pattern_name_i}\n')
-                            for export_item in export_items:
-                                export_value = distortion_exports.get(export_item)
-                                if export_value is None:
-                                    continue
-                                measure_item_name = '{0}_{1}_{2}_{3}'.format(
-                                    pos_name_i, pattern_name_i, pri_k_i, export_item.replace(' ', ''))
-                                test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
-                            # print(f'distortion_centroid_parallel_callback<<<<<<<<{pattern_name_i}\n')
+                            if isinstance(res, tuple):
+                                pos_name_i, pattern_name_i, pri_k_i, distortion_exports = res
+                                # print(f'distortion_centroid_parallel_callback>>>>>>>>>{pattern_name_i}\n')
+                                for export_item in export_items:
+                                    export_value = distortion_exports.get(export_item)
+                                    if export_value is None:
+                                        continue
+                                    measure_item_name = '{0}_{1}_{2}_{3}'.format(
+                                        pos_name_i, pattern_name_i, pri_k_i, export_item.replace(' ', ''))
+                                    test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
+                                # print(f'distortion_centroid_parallel_callback<<<<<<<<{pattern_name_i}\n')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
 
                         self._pool.apply_async(
@@ -672,10 +676,13 @@ class seacliffmotStation(test_station.TestStation):
     @staticmethod
     def color_pattern_parametric_export_ex_parallel(pos_name, pattern_name, fil, brightness_statistics, color_uniformity):
         # print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
-        mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
-        color_exports = mot_alg.color_pattern_parametric_export(
-            fil, brightness_statistics=brightness_statistics, color_uniformity=color_uniformity, multi_process=False)
-        return pos_name, pattern_name, color_exports
+        try:
+            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
+            color_exports = mot_alg.color_pattern_parametric_export(
+                fil, brightness_statistics=brightness_statistics, color_uniformity=color_uniformity, multi_process=False)
+            return pos_name, pattern_name, color_exports
+        except:
+            return None
 
     def color_pattern_parametric_export_ex(self, ana_pos_item, ana_pattern, capture_path, test_log):
         export_items_type_a = ['Lum_Ratio>0.8MaxLum', 'Lum_Ratio>0.8OnAxisLum', 'Lum_SSR', 'Lum_delta', 'Lum_mean',
@@ -725,41 +732,42 @@ class seacliffmotStation(test_station.TestStation):
                         #      color_uniformity=(pattern_name in self._station_config.ANALYSIS_GRP_COLOR_PATTERN))
 
                         def color_pattern_parametric_export_ex_parallel_callback(res):
-                            pos_name_i, pattern_name_i, color_exports = res
-                            # print(f'color_pattern_parametric_export_ex_parallel_callback>>>>>>>>>{pattern_name_i}\n')
-                            lum_u_v_keys = ['Lum', 'u\'', 'v\'']
-                            measure_items = []
-                            for pole, azi in self._station_config.DATA_AT_POLE_AZI:
-                                keys = ['{0}(x={1}deg,y={2}deg)'.format(c, pole, azi) for c in lum_u_v_keys]
-                                measure_items = ['{0}_{1}deg_{2}deg'.format(c, pole, azi) for c in lum_u_v_keys]
-                                test_values = [color_exports.get(c) for c in keys]
-                                for measure_item, test_value in zip(measure_items, test_values):
-                                    measure_item_name = '{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, measure_item)
-                                    test_log.set_measured_value_by_name_ex(measure_item_name, test_value)
+                            if isinstance(res, tuple):
+                                pos_name_i, pattern_name_i, color_exports = res
+                                # print(f'color_pattern_parametric_export_ex_parallel_callback>>>>>>>>>{pattern_name_i}\n')
+                                lum_u_v_keys = ['Lum', 'u\'', 'v\'']
+                                measure_items = []
+                                for pole, azi in self._station_config.DATA_AT_POLE_AZI:
+                                    keys = ['{0}(x={1}deg,y={2}deg)'.format(c, pole, azi) for c in lum_u_v_keys]
+                                    measure_items = ['{0}_{1}deg_{2}deg'.format(c, pole, azi) for c in lum_u_v_keys]
+                                    test_values = [color_exports.get(c) for c in keys]
+                                    for measure_item, test_value in zip(measure_items, test_values):
+                                        measure_item_name = '{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, measure_item)
+                                        test_log.set_measured_value_by_name_ex(measure_item_name, test_value)
 
-                            for deg in self._station_config.DATA_STATUS_DEGS:
-                                measure_items = ['{0}_{1}deg'.format(c, deg) for c in export_items_type_a]
+                                for deg in self._station_config.DATA_STATUS_DEGS:
+                                    measure_items = ['{0}_{1}deg'.format(c, deg) for c in export_items_type_a]
+                                    test_values = [color_exports.get(c) for c in measure_items]
+                                    for measure_item, test_value in zip(measure_items, test_values):
+                                        measure_item_name = '{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, measure_item)
+                                        test_log.set_measured_value_by_name_ex(measure_item_name, test_value)
+
+                                normal_items = {}
                                 test_values = [color_exports.get(c) for c in measure_items]
-                                for measure_item, test_value in zip(measure_items, test_values):
-                                    measure_item_name = '{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, measure_item)
-                                    test_log.set_measured_value_by_name_ex(measure_item_name, test_value)
+                                measure_item_names = ['{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, c.replace(' ', ''))
+                                                      for c in measure_items]
+                                for measure_item_name, export_value in zip(measure_item_names, test_values):
+                                    normal_items[measure_item_name] = export_value
 
-                            normal_items = {}
-                            test_values = [color_exports.get(c) for c in measure_items]
-                            measure_item_names = ['{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, c.replace(' ', ''))
-                                                  for c in measure_items]
-                            for measure_item_name, export_value in zip(measure_item_names, test_values):
-                                normal_items[measure_item_name] = export_value
-
-                            for export_item, export_value in color_exports.items():
-                                if export_item is None:
-                                    continue
-                                export_item_without_blank = export_item.replace(' ', '_')
-                                measure_item_name = '{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, export_item_without_blank)
-                                normal_items[measure_item_name] = export_value
-                            measure_items = [f'{pos_name_i}_{pattern_name_i}_{c}' for c in export_items_pattern_normal]
-                            [test_log.set_measured_value_by_name_ex(measure_item, normal_items.get(measure_item))
-                             for measure_item in measure_items]
+                                for export_item, export_value in color_exports.items():
+                                    if export_item is None:
+                                        continue
+                                    export_item_without_blank = export_item.replace(' ', '_')
+                                    measure_item_name = '{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, export_item_without_blank)
+                                    normal_items[measure_item_name] = export_value
+                                measure_items = [f'{pos_name_i}_{pattern_name_i}_{c}' for c in export_items_pattern_normal]
+                                [test_log.set_measured_value_by_name_ex(measure_item, normal_items.get(measure_item))
+                                 for measure_item in measure_items]
                             # print(f'distortion_centroid_parametric_export_ex_parallel_callback<<<<<<<<{pattern_name_i}\n')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
 
