@@ -1,3 +1,19 @@
+"""
+Release Note:
+========================================================
+Version 1.1.1b
+2021-2-17 elton.tian<elton.tian@myzygroup.com>
+-1. init version base on ERS P2.
+-2. change datetime format to local time.
+-3. fix: unable to power on DUT in fixture emulator mode.
+-4. optimize loop-testing mode.
+-5. optimize auto-finder for ParticleCounter.
+
+========================================================
+Version 0.1.4
+2020-12-30 elton<elton.tian@myzygroup.com>
+-1. Init version for bluni based on ERS P1.
+"""
 ##################################
 # directories
 #
