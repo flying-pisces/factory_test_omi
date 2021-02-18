@@ -629,6 +629,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                         time.sleep(0.05)
                     else:
                         val = 1
+                except:
+                    pass
                 finally:
                     retries += 1
                     self._particle_counter_client.close()
@@ -649,6 +651,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                         time.sleep(0.05)
                     else:
                         val = 1
+                except:
+                    pass
                 finally:
                     retries += 1
                     self._particle_counter_client.close()
@@ -673,6 +677,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                         val = ctypes.c_int32(rs.registers[0] + (rs.registers[1] << 16)).value
                         if hasattr(self._station_config, 'PARTICLE_COUNTER_APC') and self._station_config.PARTICLE_COUNTER_APC:
                             val = (ctypes.c_int32((rs.registers[0] << 16) + rs.registers[1])).value
+                except:
+                    pass
                 finally:
                     self._particle_counter_client.close()
                     retries += 1
@@ -695,6 +701,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                         time.sleep(0.05)
                     else:
                         val = rs.registers[0]
+                except:
+                    pass
                 finally:
                     self._particle_counter_client.close()
                     retries += 1
