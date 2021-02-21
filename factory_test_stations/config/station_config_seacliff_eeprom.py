@@ -86,12 +86,6 @@ DISP_CHECKER_COLOR = (0, 0, 255)
 DISP_CHECKER_LOCATION = (25, 5)
 DISP_CHECKER_COUNT = 2
 
-##################################
-# serial number codes
-#
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config
-
 NVM_WRITE_COUNT_MAX = 6
 # calibration required data.
 USER_INPUT_CALIB_DATA = True
@@ -135,6 +129,10 @@ USE_WORKORDER_ENTRY = True
 ######## To be config per station type 
 IS_VERBOSE = False
 IS_PRINT_TO_LOG = False
+
+# UI_MODE
+OPTIMIZE_UI_MODE = True
+SHOW_CONSOLE = True
 
 #####
 ### Facebook_IT Enable boolean
