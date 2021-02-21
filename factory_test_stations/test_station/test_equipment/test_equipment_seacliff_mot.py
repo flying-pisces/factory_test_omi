@@ -587,6 +587,7 @@ class MotAlgorithmHelper(object):
             meany = np.sum(np.float32(im) * y) / area - d - 1
             centroid[i, 1] = int(scenters[i][0]) + meany
             centroid[i, 0] = meanx + int(scenters[i][1])
+            del im
 
         image_center = centroid[bb, :].reshape(2, )
         # centroid = np.array(sorted(centroid, key=lambda xx: xx[0]))
@@ -669,18 +670,22 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'Disp_Rotate_y'
         stats_summary[1, k] = k2
         k = k + 1
-        del XYZ
-        del CXYZ
+        # del XYZ, CXYZ
+        del XYZ, CXYZ, x_angle_arr, y_angle_arr, image_in, col_deg_arr, row_deg_arr, radius_deg_arr, mask
+        del masked_tristim, label_image, stats, bb, centroid, x_points, y_points, image_center
+
         return dict(zip(list(stats_summary[0]), list(stats_summary[1])))
 
     @staticmethod
     def read_image_and_blur(bin_filename):
+        I = None
         with open(bin_filename, 'rb') as fin:
             I = np.frombuffer(fin.read(), dtype=np.float32)
         image_in = np.reshape(I, (6001, 6001))
         # Z = Z'        #Removed for viewing to match DUT orientation
         image_in = cv2.rotate(image_in, 0)  # Implement flip for viewing to match DUT orientation
         image_in = cv2.filter2D(image_in, -1, MotAlgorithmHelper._kernel, borderType=cv2.BORDER_CONSTANT)
+        del I
         return image_in
 
     def color_pattern_parametric_export(self, xfilename=r'W255_X_float.bin',
@@ -803,6 +808,7 @@ class MotAlgorithmHelper(object):
                 y_angle_arr[0, row_ind]) + 'deg)'
             stats_summary[1, k] = v_prime_smoothed_masked[row_ind, col_ind]
             k = k + 1
+            del col_ind, row_ind
         if brightness_statistics:
             # Max brightness
             stats_summary[0, k] = 'Max Lum'
@@ -849,6 +855,8 @@ class MotAlgorithmHelper(object):
                     self._chromaticity_fov[i]) + 'deg'
                 stats_summary[1, k] = percentLum_max
                 k = k + 1
+                del tmp_chromaticity_mask
+            del Y
         if color_uniformity:
             # color uniformity
             for i in range(0, 3):
@@ -876,7 +884,13 @@ class MotAlgorithmHelper(object):
                     self._chromaticity_fov[i]) + 'deg'
                 stats_summary[1, k] = percentuv
                 k = k + 1
-        del XYZ
+                del tmpv_prime, tmpu_prime, tmp_chromaticity_mask
+        # del XYZ
+        del XYZ, filename, x_angle_arr, y_angle_arr, file_names, col_deg_arr, row_deg_arr, radius_deg_arr
+        del chromaticity_mask, chromaticity_mask1, chromaticity_mask2, chromaticity_mask3,
+        del cam_fov_mask, u_prime_smoothed, v_prime_smoothed, tmp_XYZ, XYZ_mask, u_prime_smoothed_masked,
+        del v_prime_smoothed_masked, masked_tristim, max_Y_xloc_deg, max_Y_yloc_deg,
+        del col_ind_onaxis, row_ind_onaxis, x_sample_arr, y_sample_arr
 
         return dict(zip(stats_summary[0, 0:k], stats_summary[1, 0:k]))
 

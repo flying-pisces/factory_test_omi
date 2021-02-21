@@ -375,7 +375,7 @@ class seacliffmotStation(test_station.TestStation):
             self.data_export(serial_number, capture_path, test_log)
             # self.distortion_centroid_parametric_export_ex(capture_path, test_log)
             # self.color_pattern_parametric_export_ex(capture_path, test_log)
-
+            del config
         except seacliffmotStationError as e:
             self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console(str(e))
@@ -394,7 +394,7 @@ class seacliffmotStation(test_station.TestStation):
                 self._fixture.unload()
             except:
                 self._the_unit = None
-
+        del self._pool_alg_dic
         self._operator_interface.print_to_console(f'Finish------------{serial_number}-------\n')
         return self.close_test(test_log)
 
@@ -589,6 +589,7 @@ class seacliffmotStation(test_station.TestStation):
                         np.savetxt(txt_x_file_name, group_data[0])
                         np.savetxt(txt_y_file_name, group_data[1])
                         np.savetxt(txt_z_file_name, group_data[2])
+                    del group_data, X, Y, Z, x, y, xyY, xyY_mask
                 self._operator_interface.print_to_console('parse data {0} finished.\n'.format(pre_file_name))
         del data_items_XYZ
         pass
@@ -596,12 +597,13 @@ class seacliffmotStation(test_station.TestStation):
     @staticmethod
     def distortion_centroid_parametric_export_ex_parallel(pos_name, pattern_name, pri_key, fil):
         # print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
+        distortion_exports = None
         try:
             mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
             distortion_exports = mot_alg.distortion_centroid_parametric_export(fil)
-            return pos_name, pattern_name, pri_key, distortion_exports
         except:
-            return None
+            pass
+        return pos_name, pattern_name, pri_key, distortion_exports
 
     def distortion_centroid_parametric_export_ex(self, ana_pos_item, ana_pattern, capture_path, test_log):
         export_items = ['DispCen_x_cono', 'DispCen_y_cono', 'DispCen_x_display',
@@ -634,6 +636,7 @@ class seacliffmotStation(test_station.TestStation):
                         if isinstance(exposure_items, dict):
                             [test_log.set_measured_value_by_name_ex(f'{pre_file_name}_ExposureTime_{k}', v)
                              for k, v in exposure_items.items()]
+                        del exposure_items
                     except Exception as e:
                         self._operator_interface.print_to_console(
                             f'Fail to load Json file {pre_file_name}. exp = {str(e)}.\n')
@@ -650,8 +653,8 @@ class seacliffmotStation(test_station.TestStation):
                         # distortion_exports = mot_alg.distortion_centroid_parametric_export(pri_v)
 
                         def distortion_centroid_parametric_export_ex_parallel_callback(res):
-                            if isinstance(res, tuple):
-                                pos_name_i, pattern_name_i, pri_k_i, distortion_exports = res
+                            pos_name_i, pattern_name_i, pri_k_i, distortion_exports = res
+                            if distortion_exports is not None:
                                 # print(f'distortion_centroid_parallel_callback>>>>>>>>>{pattern_name_i}\n')
                                 for export_item in export_items:
                                     export_value = distortion_exports.get(export_item)
@@ -668,7 +671,6 @@ class seacliffmotStation(test_station.TestStation):
                                 pos_name, pattern_name, pri_k, pri_v,),
                             callback=distortion_centroid_parametric_export_ex_parallel_callback)
                         self._pool_alg_dic[f'{pos_name}_{pattern_name}'] = False
-
                     except Exception as e:
                         self._operator_interface.print_to_console(
                             f'Fail to export data for pattern: {pos_name}_{pattern_name} Distortion {pri_k}\n')
@@ -676,13 +678,14 @@ class seacliffmotStation(test_station.TestStation):
     @staticmethod
     def color_pattern_parametric_export_ex_parallel(pos_name, pattern_name, fil, brightness_statistics, color_uniformity):
         # print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
+        color_exports = None
         try:
             mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
             color_exports = mot_alg.color_pattern_parametric_export(
                 fil, brightness_statistics=brightness_statistics, color_uniformity=color_uniformity, multi_process=False)
-            return pos_name, pattern_name, color_exports
         except:
-            return None
+            pass
+        return pos_name, pattern_name, color_exports
 
     def color_pattern_parametric_export_ex(self, ana_pos_item, ana_pattern, capture_path, test_log):
         export_items_type_a = ['Lum_Ratio>0.8MaxLum', 'Lum_Ratio>0.8OnAxisLum', 'Lum_SSR', 'Lum_delta', 'Lum_mean',
@@ -732,8 +735,8 @@ class seacliffmotStation(test_station.TestStation):
                         #      color_uniformity=(pattern_name in self._station_config.ANALYSIS_GRP_COLOR_PATTERN))
 
                         def color_pattern_parametric_export_ex_parallel_callback(res):
-                            if isinstance(res, tuple):
-                                pos_name_i, pattern_name_i, color_exports = res
+                            pos_name_i, pattern_name_i, color_exports = res
+                            if color_exports is not None:
                                 # print(f'color_pattern_parametric_export_ex_parallel_callback>>>>>>>>>{pattern_name_i}\n')
                                 lum_u_v_keys = ['Lum', 'u\'', 'v\'']
                                 measure_items = []
@@ -768,6 +771,7 @@ class seacliffmotStation(test_station.TestStation):
                                 measure_items = [f'{pos_name_i}_{pattern_name_i}_{c}' for c in export_items_pattern_normal]
                                 [test_log.set_measured_value_by_name_ex(measure_item, normal_items.get(measure_item))
                                  for measure_item in measure_items]
+                                del measure_items, measure_item_names, test_values
                             # print(f'distortion_centroid_parametric_export_ex_parallel_callback<<<<<<<<{pattern_name_i}\n')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
 
@@ -782,3 +786,4 @@ class seacliffmotStation(test_station.TestStation):
                     except Exception as e:
                         self._operator_interface.print_to_console(
                             'Fail to export data for pattern: {0}_{1}, {2}\n'.format(pos_name, pattern_name, e.args))
+            del grp, analysis_patterns
