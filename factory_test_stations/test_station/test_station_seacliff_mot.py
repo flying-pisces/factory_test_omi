@@ -376,6 +376,13 @@ class seacliffmotStation(test_station.TestStation):
             # self.distortion_centroid_parametric_export_ex(capture_path, test_log)
             # self.color_pattern_parametric_export_ex(capture_path, test_log)
             del config
+        except test_equipment_seacliff_mot.seacliffmotEquipmentError as e:
+            self._operator_interface.print_to_console(str(e))
+            self._operator_interface.print_to_console('Reset taprisiot automatically by command.\n')
+            self._equipment.reset()
+            self._equipment.close()
+            self._operator_interface.print_to_console('open taprisiot automatically.\n')
+            self._equipment.open()
         except seacliffmotStationError as e:
             self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console(str(e))
