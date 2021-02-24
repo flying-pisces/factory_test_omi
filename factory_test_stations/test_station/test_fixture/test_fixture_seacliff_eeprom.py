@@ -55,14 +55,14 @@ class seacliffeepromFixture(hardware_station_common.test_station.test_fixture.Te
         return (self._station_config.DISP_CHECKER_L_HsvH <= h <= self._station_config.DISP_CHECKER_H_HsvH and
                 self._station_config.DISP_CHECKER_L_HsvS <= s <= self._station_config.DISP_CHECKER_H_HsvS)
 
-    def CheckImage(self, pattern, lower, upper):
+    def CheckImage(self, exp_fn, lower, upper):
         img = self._captureImg()  # type: np.ndarray
         if img is None:
             raise seacliffeepromFixtureErr('Fail to capture image from camera.')
 
         roi_img = img[self._station_config.CAMERA_CHECK_ROI[1]:self._station_config.CAMERA_CHECK_ROI[3],
               self._station_config.CAMERA_CHECK_ROI[0]:self._station_config.CAMERA_CHECK_ROI[2]]
-        cv2.imwrite('{0}.bmp'.format(pattern), roi_img)
+        cv2.imwrite(exp_fn, roi_img)
 
         hsv = cv2.cvtColor(roi_img, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, lowerb=np.array(lower), upperb=np.array(upper))

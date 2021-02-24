@@ -12,7 +12,7 @@ CALIB_REQ_DATA_FILENAME = r'c:\oculus\run\seacliff_eeprom\session_data'
 # serial number codes
 #
 SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = '\dPR0[\w|\d]{10}'  # Peak panel SN
+SERIAL_NUMBER_MODEL_NUMBER = '\dPR0[\w]{10}'  # Peak panel SN
 
 ##################################
 # Fixture parameters

@@ -367,7 +367,14 @@ class seacliffeepromStation(test_station.TestStation):
                     determine = check_cfg.get('determine')
                     self._operator_interface.print_to_console('check image with {0} ...\n'.format(pattern))
                     the_unit.display_color(pattern)
-                    percent = int(self._fixture.CheckImage(pattern, chk_lsl, chk_usl) * 100)
+
+                    img_dir = os.path.join(self._station_config.ROOT_DIR, 'factory-test_debug', 'Imgs')
+                    if not os.path.exists(img_dir):
+                        test_station.test_station.utils.os_utils.mkdir_p(img_dir)
+                        os.chmod(img_dir, 0o777)
+                    img_fn = os.path.join(
+                        img_dir, f"{serial_number}_{pattern}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.bmp")
+                    percent = int(self._fixture.CheckImage(img_fn, chk_lsl, chk_usl) * 100)
                     self._operator_interface.print_to_console(
                         'check result with pattern: {0}:{1} ...{2}\n'.format(pattern, determine, percent))
                     if (determine is None) or (determine[0] <= percent <= determine[1]):
@@ -466,7 +473,7 @@ class seacliffeepromStation(test_station.TestStation):
                 else:
                     self._operator_interface.print_to_console('write configuration protected ...\n')
                     time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
-                self._operator_interface.print_to_console('WR_DATA:  \n' + ','.join(raw_data_cpy))
+                self._operator_interface.print_to_console('WR_DATA:  \n' + ','.join(raw_data_cpy) + '\n')
 
                 test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_X', var_data.get('display_boresight_x'))
                 test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_Y', var_data.get('display_boresight_y'))
@@ -511,16 +518,19 @@ class seacliffeepromStation(test_station.TestStation):
 
                 test_log.set_measured_value_by_name_ex(
                     'WRITE_COUNTS_CHECK', (post_write_count == (write_count + 1)))
+                del data_from_nvram, raw_data_cpy, raw_data_cpy_cap
             else:
                 self._operator_interface.print_to_console(
                     f'Exp: write count = {self._station_config.NVM_WRITE_COUNT_MAX} or fail to {judge_by_camera}\n')
-            the_unit.close()
-        except (seacliffeepromError, dut.DUTError) as e:
-            self._operator_interface.print_to_console("Non-parametric Test Failure\n")
-            return self.close_test(test_log)
 
-        else:
-            return self.close_test(test_log)
+        except (seacliffeepromError, dut.DUTError) as e:
+            self._operator_interface.print_to_console(f"Non-parametric Test Failure, {str(e)}\n")
+        finally:
+            try:
+                the_unit.close()
+            except:
+                pass
+            self.close_test(test_log)
 
     def close_test(self, test_log):
         ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###

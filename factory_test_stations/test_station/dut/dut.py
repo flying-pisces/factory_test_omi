@@ -275,10 +275,20 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             break
 
     def nvm_read_statistics(self):
-        self._write_serial_cmd(self._station_config.COMMAND_NVM_WRITE_CNT)
-        resp = self._read_response()
-        recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_WRITE_CNT, resp)
-        if int(recv_obj[0]) != 0x00:
+        retries = 1
+        recvobj = None
+        success = False
+        while retries < 5 and not success:
+            try:
+                self._write_serial_cmd(self._station_config.COMMAND_NVM_WRITE_CNT)
+                resp = self._read_response()
+                recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_WRITE_CNT, resp)
+                if int(recv_obj[0]) == 0x00:
+                   success = True
+            except:
+                pass
+            retries += 1
+        if not success:
             raise DUTError('Fail to read write count. = {0}'.format(recv_obj))
         return recv_obj
 
@@ -302,11 +312,21 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         @type data_len: int
         @return: [errcode, len, data...]
         """
-        cmd = '{0},{1}'.format(self._station_config.COMMAND_NVM_READ, data_len)
-        self._write_serial_cmd(cmd)
-        resp = self._read_response()
-        recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_READ, resp)
-        if int(recv_obj[0]) != 0x00:
+        retries = 1
+        recv_obj = None
+        success = False
+        while retries < 5 and not success:
+            try:
+                cmd = '{0},{1}'.format(self._station_config.COMMAND_NVM_READ, data_len)
+                self._write_serial_cmd(cmd)
+                resp = self._read_response()
+                recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_READ, resp)
+                if int(recv_obj[0]) == 0x00:
+                    success = True
+            except:
+                pass
+            retries += 1
+        if not success:
             raise DUTError('Fail to read write count. = {0}'.format(recv_obj))
         return recv_obj
 
