@@ -193,6 +193,7 @@ class seacliffeepromStation(test_station.TestStation):
             'U0.16': (2, False, 0, 16),
             'U8.8': (2, False, 8, 8),
         }
+        self._nvm_data_len = 45
         self._eeprom_map_group = collections.OrderedDict({
             'display_boresight_x': (6, 'S7.8', lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else None)),
             'display_boresight_y': (8, 'S7.8', lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else None)),
@@ -316,7 +317,7 @@ class seacliffeepromStation(test_station.TestStation):
                 dlg = EEPROMUserInputDialog(self._station_config, self._operator_interface,
                                             'EEPROM Parameter for SN:{0}'.format(serial_number))
                 while dlg.is_looping:
-                    self._operator_interface.wait(0.5, None, False)
+                    self._operator_interface.wait(0.5, '')
                 calib_data = dlg.current_cfg()
             elif self._station_config.USER_INPUT_CALIB_DATA == 0x02:
                 calib_data = None
@@ -331,7 +332,7 @@ class seacliffeepromStation(test_station.TestStation):
                             self._operator_interface.print_to_console(f'{eep_keys}\n')
                             calib_data = None
                             self._operator_interface.operator_input(None, msg, msg_type='error')
-        except:
+        except Exception as e:
             calib_data = None
             pass
 
@@ -344,17 +345,7 @@ class seacliffeepromStation(test_station.TestStation):
         try:
             the_unit.initialize()
             the_unit.screen_on()
-            the_unit.display_image(0x01)
-
-            self._operator_interface.print_to_console('read write count for nvram ...\n')
-            write_status = the_unit.nvm_read_statistics()
-            write_count = 0
-            post_write_count = 0
-            if self._station_config.DUT_SIM:
-                write_status = [0, 1]
-            if write_status is not None:
-                write_count = int(write_status[1])
-                test_log.set_measured_value_by_name_ex('PRE_WRITE_COUNTS', write_count)
+            post_data_check = False
 
             # TODO: capture the image to determine the status of DUT.
             self._operator_interface.print_to_console('image capture and verification ...\n')
@@ -386,45 +377,65 @@ class seacliffeepromStation(test_station.TestStation):
             if self._station_config.FIXTURE_SIM or (not self._station_config.CAMERA_VERIFY_ENABLE):
                 judge_by_camera = True
             test_log.set_measured_value_by_name_ex('JUDGED_BY_CAM', judge_by_camera)
+            the_unit.nvm_speed_mode(mode='low')
+            self._operator_interface.print_to_console('read write count for nvram ...\n')
+            write_status = the_unit.nvm_read_statistics()
+            write_count = 0
+            post_write_count = 0
+            if self._station_config.DUT_SIM:
+                write_status = [0, 1]
+                post_write_count = 1
+            if write_status is not None:
+                write_count = int(write_status[1])
+                test_log.set_measured_value_by_name_ex('PRE_WRITE_COUNTS', write_count)
 
             if (0 <= write_count < self._station_config.NVM_WRITE_COUNT_MAX) and judge_by_camera:
                 self._operator_interface.print_to_console('read all data from eeprom ...\n')
 
                 var_data = dict(calib_data)  # type: dict
 
-                raw_data = ['0x00'] * 45
+                raw_data = ['0x00'] * self._nvm_data_len
                 if not self._station_config.DUT_SIM:
                     raw_data = the_unit.nvm_read_data()[2:]
-                self._operator_interface.print_to_console('RD_DATA:  \n' + ','.join(raw_data))
+                    for key, mapping in self._eeprom_map_group.items():
+                        memory_idx = mapping[0] - 6
+                        flag = mapping[1]
+                        var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag)
+
+                    var_data['CS'] = raw_data[29]
+                    msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[30:32]])
+                    var_data['VALIDATION'] = msg
+                self._operator_interface.print_to_console('RD_DATA:\n')
+                self._operator_interface.print_to_console(f"<-- {','.join(raw_data)}\n")
                 # mark: convert raw data before flush to dict.
-                for key, mapping in self._eeprom_map_group.items():
-                    memory_idx = mapping[0] - 6
-                    flag = mapping[1]
-                    var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag)
-
-                var_data['CS'] = raw_data[29]
-
-                msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[30:32]])
-                var_data['VALIDATION'] = msg
-                # mark: save them to database.
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_X', var_data.get('display_boresight_x'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_Y', var_data.get('display_boresight_y'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_ROTATION', var_data.get('rotation'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_W255', var_data.get('lv_W255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_W255', var_data.get('x_W255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_W255', var_data.get('y_W255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_R255', var_data.get('lv_R255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_R255', var_data.get('x_R255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_R255', var_data.get('y_R255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_G255', var_data.get('lv_G255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_G255', var_data.get('x_G255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_G255', var_data.get('y_G255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_B255', var_data.get('lv_B255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_B255', var_data.get('x_B255'))
-                test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_B255', var_data.get('y_B255'))
-
-                test_log.set_measured_value_by_name_ex('CURRENT_CS', var_data.get('CS'))
-                test_log.set_measured_value_by_name_ex('CURRENT_VALIDATION_FIELD', var_data.get('VALIDATION'))
+                # for key, mapping in self._eeprom_map_group.items():
+                #     memory_idx = mapping[0] - 6
+                #     flag = mapping[1]
+                #     var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag)
+                #
+                # var_data['CS'] = raw_data[29]
+                #
+                # msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[30:32]])
+                # var_data['VALIDATION'] = msg
+                # # mark: save them to database.
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_X', var_data.get('display_boresight_x'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_Y', var_data.get('display_boresight_y'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_ROTATION', var_data.get('rotation'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_W255', var_data.get('lv_W255'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_W255', var_data.get('x_W255'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_W255', var_data.get('y_W255'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_R255', var_data.get('lv_R255'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_R255', var_data.get('x_R255'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_R255', var_data.get('y_R255'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_G255', var_data.get('lv_G255'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_G255', var_data.get('x_G255'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_G255', var_data.get('y_G255'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_B255', var_data.get('lv_B255'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_B255', var_data.get('x_B255'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_B255', var_data.get('y_B255'))
+                #
+                # test_log.set_measured_value_by_name_ex('CURRENT_CS', var_data.get('CS'))
+                # test_log.set_measured_value_by_name_ex('CURRENT_VALIDATION_FIELD', var_data.get('VALIDATION'))
 
                 raw_data_cpy = raw_data.copy()  # place holder for all the bytes.
                 var_data = dict(calib_data)  # type: dict
@@ -448,32 +459,37 @@ class seacliffeepromStation(test_station.TestStation):
                     validate_field_result |= 0 if val else (0x01 << (15-ind))
                 raw_data_cpy[30:32] = [f'0x{c:02X}' for c in
                                        validate_field_result.to_bytes(2, byteorder='big', signed=False)]
-                # TODO: config all the data to array.
 
+                # TODO: config all the data to array.
                 print('Write configuration...........\n')
-                self._operator_interface.print_to_console('write configuration to eeprom ...\n')
-                if not self._station_config.NVM_WRITE_PROTECT:
-                    max_tries = 3
+                self._operator_interface.print_to_console(f"WR_DATA:  \n --> {','.join(raw_data_cpy)} \n")
+                if raw_data != raw_data_cpy and not self._station_config.NVM_WRITE_PROTECT:
+                    self._operator_interface.print_to_console('write configuration to eeprom ...\n')
+                    max_tries = 2
                     write_tries = 1
                     nvm_write_data_success = False
                     while write_tries <= max_tries and not nvm_write_data_success:
+                        self._operator_interface.print_to_console(f'try to nvm_write {write_tries} / {max_tries}\n')
                         try:
                             the_unit.nvm_write_data(raw_data_cpy)
                             nvm_write_data_success = True
-                        except:
+                        except Exception as e:
+                            self._operator_interface.print_to_console(f'msg for write data: {str(e)} \n')
                             if write_tries == max_tries:
                                 raise
                             else:
                                 try:
                                     the_unit.screen_off()
                                     the_unit.screen_on()
+                                    the_unit.nvm_speed_mode(mode='low')
                                 except:
                                     pass
                         write_tries += 1
                 else:
-                    self._operator_interface.print_to_console('write configuration protected ...\n')
-                    time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
-                self._operator_interface.print_to_console('WR_DATA:  \n' + ','.join(raw_data_cpy) + '\n')
+                    post_data_check = True
+                    same_mem = raw_data == raw_data_cpy
+                    self._operator_interface.print_to_console(f'write configuration protected ...MemCmp: {same_mem}\n')
+                    # time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
 
                 test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_X', var_data.get('display_boresight_x'))
                 test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_Y', var_data.get('display_boresight_y'))
@@ -498,39 +514,52 @@ class seacliffeepromStation(test_station.TestStation):
                 self._operator_interface.print_to_console('screen off ...\n')
                 the_unit.screen_off()
 
-                # TODO: it is able to do verification after flushing the NVRAM.
+                # double check after flushing the NVRAM.
                 self._operator_interface.print_to_console('screen on ...\n')
                 the_unit.screen_on()
+                the_unit.nvm_speed_mode(mode='low')
                 self._operator_interface.print_to_console('read configuration from eeprom ...\n')
-                data_from_nvram = raw_data_cpy.copy()
-                if not self._station_config.DUT_SIM:
-                    data_from_nvram = the_unit.nvm_read_data()[2:]
-                self._operator_interface.print_to_console('RD_DATA After flushing:  \n' + ','.join(data_from_nvram))
-                data_from_nvram_cap = [c.upper() for c in data_from_nvram]
-                raw_data_cpy_cap = [c.upper() for c in raw_data_cpy]
-                test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', data_from_nvram_cap == raw_data_cpy_cap)
 
+                raw_data_cpy_cap = [c.upper() for c in raw_data_cpy]
+                read_tries = 1
+                data_from_nvram = None
+                data_from_nvram_cap = None
+
+                while read_tries <= 5 and not post_data_check:
+                    if not self._station_config.DUT_SIM:
+                        try:
+                            data_from_nvram = the_unit.nvm_read_data()[2:]
+                            data_from_nvram_cap = [c.upper() for c in data_from_nvram]
+                            if data_from_nvram_cap == raw_data_cpy_cap:
+                                post_data_check = True
+                        except Exception as e2:
+                            self._operator_interface.print_to_console(f'msg for read data: {str(e2)}\n')
+                    self._operator_interface.print_to_console(f"RD_DATA {read_tries}:  {','.join(data_from_nvram)}.\n")
+                    read_tries += 1
+
+                test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', post_data_check)
                 self._operator_interface.print_to_console('read write count for nvram ...\n')
                 write_status = the_unit.nvm_read_statistics()
                 if write_status is not None:
                     post_write_count = int(write_status[1])
                 test_log.set_measured_value_by_name_ex('POST_WRITE_COUNTS', post_write_count)
 
-                test_log.set_measured_value_by_name_ex(
-                    'WRITE_COUNTS_CHECK', (post_write_count == (write_count + 1)))
-                del data_from_nvram, raw_data_cpy, raw_data_cpy_cap
-            else:
+                test_log.set_measured_value_by_name_ex('WRITE_COUNTS_CHECK', post_write_count >= write_count)
+                del data_from_nvram, raw_data_cpy, raw_data_cpy_cap, data_from_nvram_cap
+            elif write_count >= self._station_config.NVM_WRITE_COUNT_MAX:
                 self._operator_interface.print_to_console(
-                    f'Exp: write count = {self._station_config.NVM_WRITE_COUNT_MAX} or fail to {judge_by_camera}\n')
+                    f'Exp: write times: {write_count} exceed max count: {self._station_config.NVM_WRITE_COUNT_MAX}\n')
+            elif not judge_by_camera:
+                self._operator_interface.print_to_console(f'fail to judge by Camera: {judge_by_camera}\n')
 
-        except (seacliffeepromError, dut.DUTError) as e:
+        except (seacliffeepromError, dut.DUTError, Exception) as e:
             self._operator_interface.print_to_console(f"Non-parametric Test Failure, {str(e)}\n")
         finally:
             try:
                 the_unit.close()
             except:
                 pass
-            self.close_test(test_log)
+        return self.close_test(test_log)
 
     def close_test(self, test_log):
         ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###

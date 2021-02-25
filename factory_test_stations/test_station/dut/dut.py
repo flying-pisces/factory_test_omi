@@ -330,6 +330,25 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             raise DUTError('Fail to read write count. = {0}'.format(recv_obj))
         return recv_obj
 
+    def nvm_speed_mode(self, mode='normal'):
+        '''
+        $C.SET.B7MODE,0x0302 //低速模式
+        $C.SET.B7MODE,0x030b //高速模式
+        @param mode:
+        @type high_mode:
+        @return:
+        @rtype:
+        '''
+        speed_mode = {
+            'normal': '0x0302',
+            'low': '0x030b'
+        }
+        cmd = '{0},{1}'.format(self._station_config.COMMAND_SPEED_MODE, speed_mode.get(mode))
+        self._write_serial_cmd(cmd)
+        time.sleep(0.01)
+        response = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_SPEED_MODE, response)
+
     def _timeout_execute(self, cmd, timeout=0):
         if timeout == 0:
             timeout = win32event.INFINITE
@@ -516,7 +535,7 @@ class projectDut(object):
         pass
 
     def initialize(self):
-        self._operator_interface.print_to_console("Initializing pancake uniformity Fixture\n")
+        self._operator_interface.print_to_console("Initializing pancake Fixture_DUT.\n")
 
     def close(self):
         self._operator_interface.print_to_console("Closing pancake uniformity Fixture\n")
@@ -525,7 +544,7 @@ class projectDut(object):
         def not_find(*args, **kwargs):
             pass
         if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image', 'nvm_read_statistics',
-                    'nvm_write_data', '_get_color_ext', 'render_image', 'nvm_read_data']:
+                    'nvm_write_data', '_get_color_ext', 'render_image', 'nvm_read_data', 'nvm_speed_mode']:
             return not_find
 
 if __name__ == "__main__" :
