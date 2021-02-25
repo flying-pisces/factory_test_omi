@@ -449,6 +449,10 @@ class seacliffmotStation(test_station.TestStation):
                                     else self._station_config.TIMEOUT_FOR_BTN_IDLE)
         timeout_for_dual = timeout_for_btn_idle
         try:
+            # disable all the buttons.
+            self._fixture.start_button_status(False)
+            self._fixture.power_on_button_status(False)
+
             self._fixture.power_on_button_status(True)
             self._the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")

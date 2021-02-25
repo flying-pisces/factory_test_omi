@@ -449,9 +449,19 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         theta = int(math.sin(math.radians(a)) * self._rotate_scale)
         cmd_mov = '{0}:{1}, {2}, {3}'.format(self._station_config.COMMAND_MODULE_MOVE,
                                              int(x), int(y), int(theta))
-        self._write_serial(cmd_mov)
-        response = self.read_response(timeout=20)
-        if int(self._parse_response(r'MODULE_MOVE:(\d+)', response).group(1)) != 0:
+        success = False
+        retries = 1
+        response = None
+        while retries <= 5 and not success:
+            self._write_serial(cmd_mov)
+            response = self.read_response(timeout=20)
+            rev_code = int(self._parse_response(r'MODULE_MOVE:(\d+)', response).group(1))
+            if rev_code == 0:
+                success = True
+            elif rev_code != 31:  # add retry for errcode 31
+                break
+            retries += 1
+        if not success:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
     def module_pos(self):
