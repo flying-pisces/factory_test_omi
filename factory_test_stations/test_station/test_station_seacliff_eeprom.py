@@ -17,6 +17,7 @@ import shutil
 import collections
 import numpy as np
 import datetime
+import hardware_station_common
 
 
 class EEPROMUserInputDialog(gui_utils.Dialog):
@@ -185,7 +186,7 @@ class seacliffeepromStation(test_station.TestStation):
         self._equip = test_equipment_seacliff_eeprom.seacliffeepromEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.1.1'
+        self._sw_version = '1.1.2'
         self._cvt_flag = {
             'S7.8': (2, True, 7, 8),
             'S1.6': (1, True, 1, 6),
@@ -194,6 +195,7 @@ class seacliffeepromStation(test_station.TestStation):
             'U8.8': (2, False, 8, 8),
         }
         self._nvm_data_len = 45
+        self._max_retries = 5
         self._eeprom_map_group = collections.OrderedDict({
             'display_boresight_x': (6, 'S7.8', lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else None)),
             'display_boresight_y': (8, 'S7.8', lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else None)),
@@ -361,7 +363,7 @@ class seacliffeepromStation(test_station.TestStation):
 
                     img_dir = os.path.join(self._station_config.ROOT_DIR, 'factory-test_debug', 'Imgs')
                     if not os.path.exists(img_dir):
-                        test_station.test_station.utils.os_utils.mkdir_p(img_dir)
+                        hardware_station_common.utils.os_utils.mkdir_p(img_dir)
                         os.chmod(img_dir, 0o777)
                     img_fn = os.path.join(
                         img_dir, f"{serial_number}_{pattern}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.bmp")
@@ -377,7 +379,7 @@ class seacliffeepromStation(test_station.TestStation):
             if self._station_config.FIXTURE_SIM or (not self._station_config.CAMERA_VERIFY_ENABLE):
                 judge_by_camera = True
             test_log.set_measured_value_by_name_ex('JUDGED_BY_CAM', judge_by_camera)
-            the_unit.nvm_speed_mode(mode='low')
+            # the_unit.nvm_speed_mode(mode='low')
             self._operator_interface.print_to_console('read write count for nvram ...\n')
             write_status = the_unit.nvm_read_statistics()
             write_count = 0
@@ -396,7 +398,11 @@ class seacliffeepromStation(test_station.TestStation):
 
                 raw_data = ['0x00'] * self._nvm_data_len
                 if not self._station_config.DUT_SIM:
-                    raw_data = the_unit.nvm_read_data()[2:]
+                    try:
+                        raw_data = the_unit.nvm_read_data()[2:]
+                    except Exception as e:
+                        self._operator_interface.print_to_console(f'Fail to read initialized data, exp: {str(e)}')
+                        raw_data = ['0x00'] * self._nvm_data_len
                     for key, mapping in self._eeprom_map_group.items():
                         memory_idx = mapping[0] - 6
                         flag = mapping[1]
@@ -463,7 +469,8 @@ class seacliffeepromStation(test_station.TestStation):
                 # TODO: config all the data to array.
                 print('Write configuration...........\n')
                 self._operator_interface.print_to_console(f"WR_DATA:  \n --> {','.join(raw_data_cpy)} \n")
-                if raw_data != raw_data_cpy and not self._station_config.NVM_WRITE_PROTECT:
+                same_mem = [d1.upper() for d1 in raw_data] == [d2.upper() for d2 in raw_data_cpy]
+                if not same_mem and not self._station_config.NVM_WRITE_PROTECT:
                     self._operator_interface.print_to_console('write configuration to eeprom ...\n')
                     max_tries = 2
                     write_tries = 1
@@ -481,13 +488,12 @@ class seacliffeepromStation(test_station.TestStation):
                                 try:
                                     the_unit.screen_off()
                                     the_unit.screen_on()
-                                    the_unit.nvm_speed_mode(mode='low')
+                                    # the_unit.nvm_speed_mode(mode='low')
                                 except:
                                     pass
                         write_tries += 1
                 else:
                     post_data_check = True
-                    same_mem = raw_data == raw_data_cpy
                     self._operator_interface.print_to_console(f'write configuration protected ...MemCmp: {same_mem}\n')
                     # time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
 
@@ -517,7 +523,7 @@ class seacliffeepromStation(test_station.TestStation):
                 # double check after flushing the NVRAM.
                 self._operator_interface.print_to_console('screen on ...\n')
                 the_unit.screen_on()
-                the_unit.nvm_speed_mode(mode='low')
+                # the_unit.nvm_speed_mode(mode='low')
                 self._operator_interface.print_to_console('read configuration from eeprom ...\n')
 
                 raw_data_cpy_cap = [c.upper() for c in raw_data_cpy]
@@ -525,7 +531,7 @@ class seacliffeepromStation(test_station.TestStation):
                 data_from_nvram = None
                 data_from_nvram_cap = None
 
-                while read_tries <= 5 and not post_data_check:
+                while read_tries <= self._max_retries and not post_data_check:
                     if not self._station_config.DUT_SIM:
                         try:
                             data_from_nvram = the_unit.nvm_read_data()[2:]

@@ -1,3 +1,23 @@
+"""
+Release Note:
+========================================================
+Version 1.1.2
+2021-2-27 elton<elton.tian@mygyroup.com>
+-1. save images captured from CCD.
+-2. fix bugs for opt_issue.
+-3. skip to flash when the data to be write is equal to the data read from device.
+
+========================================================
+Version 1.1.1
+2021-2-9 author<xxx@xxx.com>
+-1. change datetime format to local time.
+
+========================================================
+Version 1.1.0
+2020-1-18 elton<elton.tian@myzygroup.com>
+-1. Init version for EEPROM
+"""
+
 ##################################
 # directories
 #

@@ -340,8 +340,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         @rtype:
         '''
         speed_mode = {
-            'normal': '0x0302',
-            'low': '0x030b'
+            'low': '0x0302',
+            'normal': '0x030b'
         }
         cmd = '{0},{1}'.format(self._station_config.COMMAND_SPEED_MODE, speed_mode.get(mode))
         self._write_serial_cmd(cmd)
