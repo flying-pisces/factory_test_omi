@@ -66,6 +66,7 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
                                                                    stopbits=1,
                                                                    port=self._station_config.FIXTURE_PARTICLE_COMPORT,
                                                                    timeout=2000)
+                self._particle_counter_client.inter_char_timeout = 0.2
                 if not self._particle_counter_client.connect():
                     raise pancakeoffaxisFixtureError( 'Unable to open particle counter port: %s'
                                                       % self._station_config.FIXTURE_PARTICLE_COMPORT)

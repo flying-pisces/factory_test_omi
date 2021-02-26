@@ -189,7 +189,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                                                                stopbits=1,
                                                                port=self._station_config.FIXTURE_PARTICLE_COMPORT,
                                                                timeout=2000)
-            if not self._particle_counter_client:
+            self._particle_counter_client.inter_char_timeout = 0.2
+            if not self._particle_counter_client.connect():
                 raise seacliffmotFixtureError('Unable to open particle counter port: %s'
                                                  % self._station_config.FIXTURE_PARTICLE_COMPORT)
         if not self._serial_port:
@@ -278,6 +279,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             if hasattr(self, '_particle_counter_client') and \
                     self._particle_counter_client is not None \
                     and self._station_config.FIXTURE_PARTICLE_COUNTER:
+                self._particle_counter_client.close()
                 self._particle_counter_client = None
         except Exception as e:
             print('Exception while closing. {0}'.format(str(e)))
@@ -631,7 +633,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             retries = 1
             while (retries <= 10) and (val is None):
                 try:
-                    self._particle_counter_client.connect()
                     wrs = self._particle_counter_client. \
                         write_register(self._station_config.FIXTRUE_PARTICLE_ADDR_START,
                                        1, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
@@ -643,7 +644,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                     pass
                 finally:
                     retries += 1
-                    self._particle_counter_client.close()
             if val is None:
                 raise seacliffmotFixtureError('Failed to start particle counter .')
 
@@ -653,7 +653,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             retries = 1
             while (retries <= 10) and (val is None):
                 try:
-                    self._particle_counter_client.connect()
                     wrs = self._particle_counter_client.write_register(
                         self._station_config.FIXTRUE_PARTICLE_ADDR_START, 0,
                         unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: WriteSingleRegisterResponse
@@ -665,7 +664,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                     pass
                 finally:
                     retries += 1
-                    self._particle_counter_client.close()
 
     def particle_counter_read_val(self):
         if self._particle_counter_client is not None:
@@ -673,7 +671,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             retries = 1
             while (retries <= 10) and (val is None):
                 try:
-                    self._particle_counter_client.connect()
                     rs = self._particle_counter_client.read_holding_registers(
                         self._station_config.FIXTRUE_PARTICLE_ADDR_READ,
                         2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)  # type: ReadHoldingRegistersResponse
@@ -690,7 +687,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                 except:
                     pass
                 finally:
-                    self._particle_counter_client.close()
                     retries += 1
             if val is None:
                 raise seacliffmotFixtureError('Failed to read data from particle counter.')
@@ -702,7 +698,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             retries = 1
             while (retries <= 10) and (val is None):
                 try:
-                    self._particle_counter_client.connect()
                     rs = self._particle_counter_client.read_holding_registers(
                         self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
                         2,
@@ -714,7 +709,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                 except:
                     pass
                 finally:
-                    self._particle_counter_client.close()
                     retries += 1
             if val is None:
                 raise seacliffmotFixtureError('Fail to read data from particle counter. ')
