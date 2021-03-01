@@ -312,7 +312,9 @@ class seacliffeepromStation(test_station.TestStation):
         the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
         if self._station_config.DUT_SIM:
             the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
-
+        write_in_slow_mod = False
+        if hasattr(self._station_config, 'NVM_WRITE_SLOW_MOD') and self._station_config.NVM_WRITE_SLOW_MOD:
+            write_in_slow_mod = True
         calib_data = self._station_config.CALIB_REQ_DATA
         try:
             if self._station_config.USER_INPUT_CALIB_DATA in [0x01, True]:
@@ -379,7 +381,8 @@ class seacliffeepromStation(test_station.TestStation):
             if self._station_config.FIXTURE_SIM or (not self._station_config.CAMERA_VERIFY_ENABLE):
                 judge_by_camera = True
             test_log.set_measured_value_by_name_ex('JUDGED_BY_CAM', judge_by_camera)
-            # the_unit.nvm_speed_mode(mode='low')
+            if write_in_slow_mod:
+                the_unit.nvm_speed_mode(mode='low')
             self._operator_interface.print_to_console('read write count for nvram ...\n')
             write_status = the_unit.nvm_read_statistics()
             write_count = 0
@@ -488,7 +491,9 @@ class seacliffeepromStation(test_station.TestStation):
                                 try:
                                     the_unit.screen_off()
                                     the_unit.screen_on()
-                                    # the_unit.nvm_speed_mode(mode='low')
+                                    if write_in_slow_mod:
+                                        the_unit.nvm_speed_mode(mode='low')
+                                    time.sleep(1)
                                 except:
                                     pass
                         write_tries += 1
@@ -523,9 +528,17 @@ class seacliffeepromStation(test_station.TestStation):
                 # double check after flushing the NVRAM.
                 self._operator_interface.print_to_console('screen on ...\n')
                 the_unit.screen_on()
-                # the_unit.nvm_speed_mode(mode='low')
-                self._operator_interface.print_to_console('read configuration from eeprom ...\n')
+                if write_in_slow_mod:
+                    the_unit.nvm_speed_mode(mode='low')
 
+                self._operator_interface.print_to_console('read write count for nvram ...\n')
+                write_status = the_unit.nvm_read_statistics()
+                if write_status is not None:
+                    post_write_count = int(write_status[1])
+                test_log.set_measured_value_by_name_ex('POST_WRITE_COUNTS', post_write_count)
+                test_log.set_measured_value_by_name_ex('WRITE_COUNTS_CHECK', post_write_count >= write_count)
+
+                self._operator_interface.print_to_console('read configuration from eeprom ...\n')
                 raw_data_cpy_cap = [c.upper() for c in raw_data_cpy]
                 read_tries = 1
                 data_from_nvram = None
@@ -544,13 +557,7 @@ class seacliffeepromStation(test_station.TestStation):
                     read_tries += 1
 
                 test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', post_data_check)
-                self._operator_interface.print_to_console('read write count for nvram ...\n')
-                write_status = the_unit.nvm_read_statistics()
-                if write_status is not None:
-                    post_write_count = int(write_status[1])
-                test_log.set_measured_value_by_name_ex('POST_WRITE_COUNTS', post_write_count)
 
-                test_log.set_measured_value_by_name_ex('WRITE_COUNTS_CHECK', post_write_count >= write_count)
                 del data_from_nvram, raw_data_cpy, raw_data_cpy_cap, data_from_nvram_cap
             elif write_count >= self._station_config.NVM_WRITE_COUNT_MAX:
                 self._operator_interface.print_to_console(

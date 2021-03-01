@@ -398,7 +398,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                 msg = msg + line_in.decode()
         response = msg.splitlines(keepends=False)
         if self._verbose and len(response) > 1:
-            pprint.pprint(response)
+            print('rev command <---------- {0}'.format(response))
         return response
 
     def _vsyn_time(self):

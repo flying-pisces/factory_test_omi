@@ -4,8 +4,9 @@ Release Note:
 Version 1.1.2
 2021-2-27 elton<elton.tian@mygyroup.com>
 -1. save images captured from CCD.
--2. fix bugs for opt_issue.
+-2. try to fix bugs about opt_issue with retry strategy.
 -3. skip to flash when the data to be write is equal to the data read from device.
+-4. add optional to write/read in normal/slow mode for nvm.
 
 ========================================================
 Version 1.1.1
@@ -67,6 +68,7 @@ COMMAND_DISP_POWEROFF_DLY = 0.2
 DUT_DISPLAYSLEEPTIME = 0.5
 DUT_NVRAM_WRITE_TIMEOUT = 10
 NVM_WRITE_PROTECT = True
+NVM_WRITE_SLOW_MOD = False
 
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\config\MER-132-43U3C(FQ0200080140).txt'
 CAMERA_VERIFY_ENABLE = False
