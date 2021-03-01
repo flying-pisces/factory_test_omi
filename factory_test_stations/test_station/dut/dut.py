@@ -574,6 +574,7 @@ if __name__ == "__main__" :
     station_config.COMMAND_NVM_WRITE_CNT = 'NVMWCNT'
     station_config.COMMAND_NVM_READ = 'NVMRead'
     station_config.COMMAND_NVM_WRITE = 'NVMWrite'
+    station_config.COMMAND_SPEED_MODE = 'SET.B7MODE'
 
     station_config.COMMAND_DISP_POWERON_DLY = 2
     station_config.COMMAND_DISP_RESET_DLY = 1
