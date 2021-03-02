@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.1.3b
+2021-3-2 elton<elton.tian@mygyroup.com>
+-1. read ecc before/after execute write command.
+
+========================================================
 Version 1.1.2
 2021-2-27 elton<elton.tian@mygyroup.com>
 -1. save images captured from CCD.
@@ -59,6 +64,7 @@ COMMAND_NVM_WRITE_CNT = 'NVMWCNT'
 COMMAND_NVM_READ = 'NVMRead'
 COMMAND_NVM_WRITE = 'NVMWrite'
 COMMAND_SPEED_MODE = 'SET.B7MODE'
+COMMAND_GETB5ECC = 'Get.B5ECC'
 
 COMMAND_DISP_POWERON_DLY = 1.5
 COMMAND_DISP_RESET_DLY = 1
@@ -68,7 +74,10 @@ COMMAND_DISP_POWEROFF_DLY = 0.2
 DUT_DISPLAYSLEEPTIME = 0.5
 DUT_NVRAM_WRITE_TIMEOUT = 10
 NVM_WRITE_PROTECT = True
+NVM_EEC_READ = False
 NVM_WRITE_SLOW_MOD = False
+
+MIN_SPACE_REQUIRED = 500
 
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\config\MER-132-43U3C(FQ0200080140).txt'
 CAMERA_VERIFY_ENABLE = False

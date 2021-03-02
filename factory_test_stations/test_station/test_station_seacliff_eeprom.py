@@ -481,7 +481,11 @@ class seacliffeepromStation(test_station.TestStation):
                     while write_tries <= max_tries and not nvm_write_data_success:
                         self._operator_interface.print_to_console(f'try to nvm_write {write_tries} / {max_tries}\n')
                         try:
+                            if self._station_config.NVM_EEC_READ:
+                                the_unit.nvm_get_ecc()
                             the_unit.nvm_write_data(raw_data_cpy)
+                            if self._station_config.NVM_EEC_READ:
+                                the_unit.nvm_get_ecc()
                             nvm_write_data_success = True
                         except Exception as e:
                             self._operator_interface.print_to_console(f'msg for write data: {str(e)} \n')

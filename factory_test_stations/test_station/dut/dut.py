@@ -303,7 +303,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         resp = self._read_response(timeout=self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
         recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_WRITE, resp)
         if int(recv_obj[0]) != 0x00:
-            raise DUTError('Fail to read write count. = {0}'.format(recv_obj))
+            raise DUTError('Fail to nvm write data = {0}'.format(recv_obj))
         return recv_obj
 
     def nvm_read_data(self, data_len=45):
@@ -348,6 +348,25 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         time.sleep(0.01)
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_SPEED_MODE, response)
+
+    def nvm_get_ecc(self):
+        retries = 1
+        recv_obj = None
+        success = False
+        while retries < 5 and not success:
+            try:
+                cmd = self._station_config.COMMAND_GETB5ECC
+                self._write_serial_cmd(cmd)
+                response = self._read_response()
+                recv_obj = self._prase_respose(cmd, response)
+                if int(recv_obj[0]) == 0:
+                    success = True
+            except:
+                pass
+            retries += 1
+        if not success:
+            raise DUTError('Fail to read get ecc. = {0}'.format(recv_obj))
+        return recv_obj
 
     def _timeout_execute(self, cmd, timeout=0):
         if timeout == 0:
