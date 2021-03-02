@@ -553,7 +553,10 @@ class seacliffeepromStation(test_station.TestStation):
                                 post_data_check = True
                         except Exception as e2:
                             self._operator_interface.print_to_console(f'msg for read data: {str(e2)}\n')
-                    self._operator_interface.print_to_console(f"RD_DATA {read_tries}:  {','.join(data_from_nvram)}.\n")
+                    dummy_msg = None
+                    if isinstance(data_from_nvram, list):
+                        dummy_msg = ','.join(data_from_nvram)
+                    self._operator_interface.print_to_console(f"RD_DATA {read_tries}:  {dummy_msg}.\n")
                     read_tries += 1
 
                 test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', post_data_check)
