@@ -300,6 +300,7 @@ class seacliffmotStation(test_station.TestStation):
 
                 self._operator_interface.print_to_console('mov dut to pos = {0}\n'.format(pos_name))
                 self._fixture.mov_abs_xy_wrt_alignment(pos_val[0], pos_val[1])
+                time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                 self._fixture.mov_camera_z_wrt_alignment(pos_val[2])
                 time.sleep(self._station_config.FIXTURE_MECH_STABLE_DLY)
 
@@ -437,11 +438,12 @@ class seacliffmotStation(test_station.TestStation):
                                     else self._station_config.TIMEOUT_FOR_BTN_IDLE)
         timeout_for_dual = timeout_for_btn_idle
         try:
-            # disable all the buttons.
-            self._fixture.start_button_status(False)
             self._fixture.power_on_button_status(False)
-
+            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
+            self._fixture.start_button_status(False)
+            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._fixture.power_on_button_status(True)
+            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
             while timeout_for_dual > 0:
@@ -473,6 +475,7 @@ class seacliffmotStation(test_station.TestStation):
                             self._the_unit.screen_on()
                         self._the_unit.display_color((255, 0, 0))
                         self._fixture.power_on_button_status(False)
+                        time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                         alignment_result = self._fixture.alignment(self._latest_serial_number)
                         if isinstance(alignment_result, tuple):
                             self._module_left_or_right = str(alignment_result[4]).upper()
@@ -497,9 +500,11 @@ class seacliffmotStation(test_station.TestStation):
                                 color_check_result = True
                             if color_check_result:
                                 self._fixture.power_on_button_status(False)
+                                time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                                 self._fixture.start_button_status(True)
                         else:
                             self._fixture.power_on_button_status(False)
+                            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                             self._fixture.start_button_status(True)
                     elif ready_status == 0x01:
                         self._is_cancel_test_by_op = True  # Cancel test.
@@ -521,6 +526,7 @@ class seacliffmotStation(test_station.TestStation):
                     self._the_unit.close()
                     self._the_unit = None
                 self._fixture.start_button_status(False)
+                time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                 self._fixture.power_on_button_status(False)
             except Exception as e:
                 self._operator_interface.operator_input(None, str(e), msg_type='error')
