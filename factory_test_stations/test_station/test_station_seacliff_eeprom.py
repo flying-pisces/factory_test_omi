@@ -186,7 +186,7 @@ class seacliffeepromStation(test_station.TestStation):
         self._equip = test_equipment_seacliff_eeprom.seacliffeepromEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.1.2'
+        self._sw_version = '1.1.3'
         self._cvt_flag = {
             'S7.8': (2, True, 7, 8),
             'S1.6': (1, True, 1, 6),
@@ -474,33 +474,51 @@ class seacliffeepromStation(test_station.TestStation):
                 self._operator_interface.print_to_console(f"WR_DATA:  \n --> {','.join(raw_data_cpy)} \n")
                 same_mem = [d1.upper() for d1 in raw_data] == [d2.upper() for d2 in raw_data_cpy]
                 if not same_mem and not self._station_config.NVM_WRITE_PROTECT:
-                    self._operator_interface.print_to_console('write configuration to eeprom ...\n')
-                    max_tries = 2
-                    write_tries = 1
-                    nvm_write_data_success = False
-                    while write_tries <= max_tries and not nvm_write_data_success:
-                        self._operator_interface.print_to_console(f'try to nvm_write {write_tries} / {max_tries}\n')
-                        try:
-                            if self._station_config.NVM_EEC_READ:
-                                the_unit.nvm_get_ecc()
-                            the_unit.nvm_write_data(raw_data_cpy)
-                            if self._station_config.NVM_EEC_READ:
-                                the_unit.nvm_get_ecc()
-                            nvm_write_data_success = True
-                        except Exception as e:
-                            self._operator_interface.print_to_console(f'msg for write data: {str(e)} \n')
-                            if write_tries == max_tries:
-                                raise
-                            else:
-                                try:
-                                    the_unit.screen_off()
-                                    the_unit.screen_on()
-                                    if write_in_slow_mod:
-                                        the_unit.nvm_speed_mode(mode='low')
-                                    time.sleep(1)
-                                except:
-                                    pass
-                        write_tries += 1
+                    configuration_success_by_count = 1
+                    while configuration_success_by_count <= 3 and post_write_count <= write_count:
+                        self._operator_interface.print_to_console(
+                            f'write configuration to eeprom ...{configuration_success_by_count} / 3\n')
+                        max_tries = 2
+                        write_tries = 1
+                        nvm_write_data_success = False
+                        while write_tries <= max_tries and not nvm_write_data_success:
+                            self._operator_interface.print_to_console(f'try to nvm_write {write_tries} / {max_tries}\n')
+                            try:
+                                if self._station_config.NVM_EEC_READ:
+                                    the_unit.nvm_get_ecc()
+                                the_unit.nvm_write_data(raw_data_cpy)
+                                if self._station_config.NVM_EEC_READ:
+                                    the_unit.nvm_get_ecc()
+                                nvm_write_data_success = True
+                            except Exception as e:
+                                self._operator_interface.print_to_console(f'msg for write data: {str(e)} \n')
+                                if write_tries == max_tries:
+                                    raise
+                                else:
+                                    try:
+                                        the_unit.screen_off()
+                                        the_unit.screen_on()
+                                        if write_in_slow_mod:
+                                            the_unit.nvm_speed_mode(mode='low')
+                                        time.sleep(1)
+                                    except:
+                                        pass
+                            write_tries += 1
+
+                        self._operator_interface.print_to_console('screen off ...\n')
+                        the_unit.screen_off()
+
+                        # double check after flushing the NVRAM.
+                        self._operator_interface.print_to_console('screen on ...\n')
+                        the_unit.screen_on()
+                        if write_in_slow_mod:
+                            the_unit.nvm_speed_mode(mode='low')
+
+                        self._operator_interface.print_to_console('read write count for nvram ...\n')
+                        write_status = the_unit.nvm_read_statistics()
+                        if write_status is not None:
+                            post_write_count = int(write_status[1])
+                        configuration_success_by_count += 1
                 else:
                     post_data_check = True
                     self._operator_interface.print_to_console(f'write configuration protected ...MemCmp: {same_mem}\n')
@@ -526,19 +544,19 @@ class seacliffeepromStation(test_station.TestStation):
                 msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data_cpy[30:32]])
                 test_log.set_measured_value_by_name_ex('CFG_VALIDATION_FIELD', msg)
 
-                self._operator_interface.print_to_console('screen off ...\n')
-                the_unit.screen_off()
-
-                # double check after flushing the NVRAM.
-                self._operator_interface.print_to_console('screen on ...\n')
-                the_unit.screen_on()
-                if write_in_slow_mod:
-                    the_unit.nvm_speed_mode(mode='low')
-
-                self._operator_interface.print_to_console('read write count for nvram ...\n')
-                write_status = the_unit.nvm_read_statistics()
-                if write_status is not None:
-                    post_write_count = int(write_status[1])
+                # self._operator_interface.print_to_console('screen off ...\n')
+                # the_unit.screen_off()
+                #
+                # # double check after flushing the NVRAM.
+                # self._operator_interface.print_to_console('screen on ...\n')
+                # the_unit.screen_on()
+                # if write_in_slow_mod:
+                #     the_unit.nvm_speed_mode(mode='low')
+                #
+                # self._operator_interface.print_to_console('read write count for nvram ...\n')
+                # write_status = the_unit.nvm_read_statistics()
+                # if write_status is not None:
+                #     post_write_count = int(write_status[1])
                 test_log.set_measured_value_by_name_ex('POST_WRITE_COUNTS', post_write_count)
                 test_log.set_measured_value_by_name_ex('WRITE_COUNTS_CHECK', post_write_count >= write_count)
 

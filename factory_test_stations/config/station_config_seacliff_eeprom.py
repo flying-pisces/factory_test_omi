@@ -1,9 +1,10 @@
 """
 Release Note:
 ========================================================
-Version 1.1.3b
+Version 1.1.3
 2021-3-2 elton<elton.tian@mygyroup.com>
 -1. read ecc before/after execute write command.
+-2. retries automatically when the write count not changed after flushing.
 
 ========================================================
 Version 1.1.2
@@ -77,7 +78,7 @@ NVM_WRITE_PROTECT = True
 NVM_EEC_READ = False
 NVM_WRITE_SLOW_MOD = False
 
-MIN_SPACE_REQUIRED = 500
+MIN_SPACE_REQUIRED = [('C:', 500)]
 
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\config\MER-132-43U3C(FQ0200080140).txt'
 CAMERA_VERIFY_ENABLE = False
