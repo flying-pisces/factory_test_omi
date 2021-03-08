@@ -1,10 +1,12 @@
 """
 Release Note:
+
 ========================================================
 Version 1.1.3
-2021-3-2 elton<elton.tian@mygyroup.com>
+2021-3-8 elton<elton.tian@mygyroup.com>
 -1. read ecc before/after execute write command.
 -2. retries automatically when the write count not changed after flushing.
+-3. change default exposure time to 400k us
 
 ========================================================
 Version 1.1.2
@@ -75,14 +77,14 @@ COMMAND_DISP_POWEROFF_DLY = 0.2
 DUT_DISPLAYSLEEPTIME = 0.5
 DUT_NVRAM_WRITE_TIMEOUT = 10
 NVM_WRITE_PROTECT = True
-NVM_EEC_READ = False
-NVM_WRITE_SLOW_MOD = False
+NVM_EEC_READ = True
+NVM_WRITE_SLOW_MOD = True
 
 MIN_SPACE_REQUIRED = [('C:', 500)]
 
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\config\MER-132-43U3C(FQ0200080140).txt'
 CAMERA_VERIFY_ENABLE = False
-CAMERA_EXPOSURE = 80000
+CAMERA_EXPOSURE = 400000
 CAMERA_GAIN = 1.0
 
 CAMERA_CHECK_ROI = (400, 260, 820, 650)  # resolution: 1292 * 964

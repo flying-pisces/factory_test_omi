@@ -392,6 +392,7 @@ class seacliffeepromStation(test_station.TestStation):
                 post_write_count = 1
             if write_status is not None:
                 write_count = int(write_status[1])
+                post_write_count = write_count
                 test_log.set_measured_value_by_name_ex('PRE_WRITE_COUNTS', write_count)
 
             if (0 <= write_count < self._station_config.NVM_WRITE_COUNT_MAX) and judge_by_camera:
