@@ -1,5 +1,10 @@
 """
 Release Note:
+========================================================
+Version 1.1.4
+2021-3-18 elton<elton.tian@mygyroup.com>
+-1. keep the unit unable to power on in not testing mode.
+-2. add inplace check for module.
 
 ========================================================
 Version 1.1.3
@@ -68,6 +73,7 @@ COMMAND_NVM_READ = 'NVMRead'
 COMMAND_NVM_WRITE = 'NVMWrite'
 COMMAND_SPEED_MODE = 'SET.B7MODE'
 COMMAND_GETB5ECC = 'Get.B5ECC'
+COMMAND_GET_MODULE_INPLACE = 'GET.MODULE.INPLACE'
 
 COMMAND_DISP_POWERON_DLY = 1.5
 COMMAND_DISP_RESET_DLY = 1
@@ -79,6 +85,7 @@ DUT_NVRAM_WRITE_TIMEOUT = 10
 NVM_WRITE_PROTECT = True
 NVM_EEC_READ = True
 NVM_WRITE_SLOW_MOD = True
+DUT_CHK_MODULE_INPLACE = True
 
 MIN_SPACE_REQUIRED = [('C:', 500)]
 

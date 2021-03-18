@@ -128,7 +128,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             raise DUTError('Unable to open DUT with Com={0} or Ethernet'.format(self._station_config.DUT_COMPORT))
         return True
 
-    def screen_on(self):
+    def screen_on(self, ignore_err=False):
         if not self.is_screen_poweron:
             self._power_off()
             time.sleep(0.5)
@@ -145,7 +145,10 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                         print(f'Fail to power on DUT. Retries = {retries}, REV={recvobj}')
                 retries += 1
             if not self.is_screen_poweron:
-                raise DUTError(f"Exit power_off because rev err msg. retries = {retries}, Msg = {recvobj}")
+                if ignore_err and recvobj is not None:
+                    return recvobj
+                else:
+                    raise DUTError(f"Exit power_off because rev err msg. retries = {retries}, Msg = {recvobj}")
             return True
 
     def screen_off(self):
@@ -368,6 +371,24 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             raise DUTError('Fail to read get ecc. = {0}'.format(recv_obj))
         return recv_obj
 
+    def get_module_inplace(self):
+        retries = 1
+        recv_obj = None
+        success = False
+        while retries < 5 and not success:
+            try:
+                cmd = self._station_config.COMMAND_GET_MODULE_INPLACE
+                self._write_serial_cmd(cmd)
+                response = self._read_response()
+                recv_obj = self._prase_respose(cmd, response)
+                if int(recv_obj[0]) == 0:
+                    success = True
+            except:
+                pass
+        if not success:
+            raise DUTError('Fail to read get_module_inplace = {0}'.format(recv_obj))
+        return recv_obj
+
     def _timeout_execute(self, cmd, timeout=0):
         if timeout == 0:
             timeout = win32event.INFINITE
@@ -563,7 +584,8 @@ class projectDut(object):
         def not_find(*args, **kwargs):
             pass
         if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image', 'nvm_read_statistics',
-                    'nvm_write_data', '_get_color_ext', 'render_image', 'nvm_read_data', 'nvm_speed_mode']:
+                    'nvm_write_data', '_get_color_ext', 'render_image', 'nvm_read_data', 'nvm_speed_mode',
+                    'get_module_inplace']:
             return not_find
 
 if __name__ == "__main__" :

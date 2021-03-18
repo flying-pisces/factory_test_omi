@@ -186,7 +186,7 @@ class seacliffeepromStation(test_station.TestStation):
         self._equip = test_equipment_seacliff_eeprom.seacliffeepromEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.1.3'
+        self._sw_version = '1.1.4'
         self._cvt_flag = {
             'S7.8': (2, True, 7, 8),
             'S1.6': (1, True, 1, 6),
@@ -312,6 +312,7 @@ class seacliffeepromStation(test_station.TestStation):
         the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
         if self._station_config.DUT_SIM:
             the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
+
         write_in_slow_mod = False
         if hasattr(self._station_config, 'NVM_WRITE_SLOW_MOD') and self._station_config.NVM_WRITE_SLOW_MOD:
             write_in_slow_mod = True
@@ -346,10 +347,37 @@ class seacliffeepromStation(test_station.TestStation):
 
         self._operator_interface.print_to_console("Start write data to DUT. %s\n" % the_unit.serial_number)
         test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+
         try:
             the_unit.initialize()
-            the_unit.screen_on()
+            recv_obj = the_unit.screen_on(ignore_err=True)
+            if recv_obj is True:
+                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', 0)
+                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_RES', True)
+            elif isinstance(recv_obj, tuple):
+                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', recv_obj[1])
+                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_RES', False)
+                raise seacliffeepromError(f'Unable to power on DUT. {str(recv_obj)}')
+
             post_data_check = False
+            self._operator_interface.print_to_console('Start to query holder position. ')
+            retries_query = 1
+            module_inplace = False
+            if not hasattr(self._station_config, 'DUT_CHK_MODULE_INPLACE'):
+                module_inplace = True
+            else:
+                module_inplace = not self._station_config.DUT_CHK_MODULE_INPLACE
+            while not module_inplace and retries_query <= 10:
+                self._operator_interface.print_to_console(f'Please push the holder into the carbinet. {retries_query}\n')
+                rev_obj = the_unit.get_module_inplace()
+                if rev_obj is not None:
+                    module_inplace = int(rev_obj[1]) == 1
+                if module_inplace:
+                    continue
+                time.sleep(1)
+                retries_query += 1
+            if not module_inplace:
+                raise test_station.TestStationProcessControlError(f'Fail to check position for DUT {serial_number}.')
 
             # TODO: capture the image to determine the status of DUT.
             self._operator_interface.print_to_console('image capture and verification ...\n')
