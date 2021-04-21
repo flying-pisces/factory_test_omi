@@ -7,6 +7,7 @@ Change List:
 0.0.3:  Adjust to support UTC.
 0.0.4:  Relase thread for upload automatically when closing.
 0.0.5:  if not all the item tested, set MultiErrCode to 99999 .
+0.0.6:  all test items upload to mes.
 """
 
 # !/usr/bin/env python
@@ -81,8 +82,12 @@ class ShopFloor_genius(object):
             'END_TIME': 'End_Time',
             'OVERALL_RESULT': 'Overall_Result',
             'OVERALL_ERRORCODE': '',
-            'PRE_WRITE_COUNTS': 'PRE_WRITE_COUNTS',
+            'ELAPSED_SECONDS': 'ELAPSED_SECONDS',
+            'SW_VERSION': 'SW_VERSION',
             'JUDGED_BY_CAM': 'JUDGED_BY_CAM',
+            'PRE_WRITE_COUNTS': 'PRE_WRITE_COUNTS',
+            'CFG_BORESIGHT_X': 'CFG_BORESIGHT_X',
+            'CFG_BORESIGHT_Y': 'CFG_BORESIGHT_Y',
             'CFG_ROTATION': 'CFG_ROTATION',
             'CFG_LV_W255': 'CFG_LV_W255',
             'CFG_X_W255': 'CFG_X_W255',
@@ -96,6 +101,9 @@ class ShopFloor_genius(object):
             'CFG_LV_B255': 'CFG_LV_B255',
             'CFG_X_B255': 'CFG_X_B255',
             'CFG_Y_B255': 'CFG_Y_B255',
+            'CFG_CS': 'CFG_CS',
+            'CFG_VALIDATION_FIELD': 'CFG_VALIDATION_FIELD',
+            'POST_DATA_CHECK': 'POST_DATA_CHECK',
             'POST_WRITE_COUNTS': 'POST_WRITE_COUNTS',
             'WRITE_COUNTS_CHECK': 'WRITE_COUNTS_CHECK',
         }
@@ -107,26 +115,21 @@ class ShopFloor_genius(object):
             'END_TIME': 'End_Time',
             'OVERALL_RESULT': 'Overall_Result',
             'OVERALL_ERRORCODE': '',
-            'GD_Y_DISPCEN_X': 'normal_GreenDistortion_Y_DispCen_x_display',
-            'GD_Y_DISPCEN_Y': 'normal_GreenDistortion_Y_DispCen_y_display',
-            'GD_Y_DISPROTATE_X': 'normal_GreenDistortion_Y_Disp_Rotate_x',
-            'W255_LUM': 'normal_W255_Lum_0.0deg_0.0deg',
-            'W255_U': "normal_W255_u'_0.0deg_0.0deg",
-            'W255_V': "normal_W255_v'_0.0deg_0.0deg",
-            'R255_LUM': 'normal_R255_Lum_0.0deg_0.0deg',
-            'G255_LUM': 'normal_G255_Lum_0.0deg_0.0deg',
-            'B255_LUM': 'normal_B255_Lum_0.0deg_0.0deg',
-            'R255_U': "normal_R255_u'_0.0deg_0.0deg",
-            'R255_V': "normal_R255_v'_0.0deg_0.0deg",
-            'G255_U': "normal_G255_u'_0.0deg_0.0deg",
-            'G255_V': "normal_G255_v'_0.0deg_0.0deg",
-            'B255_U': "normal_B255_u'_0.0deg_0.0deg",
-            'B255_V': "normal_B255_v'_0.0deg_0.0deg",
-            'SAVE_W255': 'Test_RAW_IMAGE_SAVE_SUCCESS_normal_W255',
-            'SAVE_R255': 'Test_RAW_IMAGE_SAVE_SUCCESS_normal_R255',
-            'SAVE_G255': 'Test_RAW_IMAGE_SAVE_SUCCESS_normal_G255',
-            'SAVE_B255': 'Test_RAW_IMAGE_SAVE_SUCCESS_normal_B255',
-            'SAVE_GD': 'Test_RAW_IMAGE_SAVE_SUCCESS_normal_GreenDistortion'
+            'normal_GrDist_Y_DispCen_x_disp': 'normal_GreenDistortion_Y_DispCen_x_display',
+            'normal_GrDist_Y_DispCen_y_disp': 'normal_GreenDistortion_Y_DispCen_y_display',
+            'normal_GrDist_Y_Disp_Rotate_x': 'normal_GreenDistortion_Y_Disp_Rotate_x',
+            'normal_W255_Lum_0deg_0deg': 'normal_W255_Lum_0.0deg_0.0deg',
+            'normal_W255_u_0deg_0deg': "normal_W255_u'_0.0deg_0.0deg",
+            'normal_W255_v_0deg_0deg': "normal_W255_v'_0.0deg_0.0deg",
+            'normal_R255_Lum_0deg_0deg': 'normal_R255_Lum_0.0deg_0.0deg',
+            'normal_G255_Lum_0deg_0deg': 'normal_G255_Lum_0.0deg_0.0deg',
+            'normal_B255_Lum_0deg_0deg': 'normal_B255_Lum_0.0deg_0.0deg',
+            'normal_R255_u_0deg_0deg': "normal_R255_u'_0.0deg_0.0deg",
+            'normal_R255_v_0deg_0deg': "normal_R255_v'_0.0deg_0.0deg",
+            'normal_G255_u_0deg_0deg': "normal_G255_u'_0.0deg_0.0deg",
+            'normal_G255_v_0deg_0deg': "normal_G255_v'_0.0deg_0.0deg",
+            'normal_B255_u_0deg_0deg': "normal_B255_u'_0.0deg_0.0deg",
+            'normal_B255_v_0deg_0deg': "normal_B255_v'_0.0deg_0.0deg",
         }
         # </editor-fold>
 
@@ -284,7 +287,7 @@ class ShopFloor_genius(object):
         while count < self._max_retries and (not success):
             try:
                 client = suds.client.Client(SF_LOADER_URL, timeout=self._time_out)
-                res = client.service.EEPROM_MYZY_LOG_Loader(lcd_avi_data)
+                res = client.service.EEPROM_Overall_LOG_Loader(lcd_avi_data)
                 if res is not None:
                     success = True
             except Exception as e:

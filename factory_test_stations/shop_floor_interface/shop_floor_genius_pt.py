@@ -7,6 +7,7 @@ Change List:
 0.0.3:  Adjust to support UTC.
 0.0.4:  Relase thread for upload automatically when closing.
 0.0.5:  if not all the item tested, set MultiErrCode to 99999 .
+0.0.6:  all test items upload to mes.
 """
 
 # !/usr/bin/env python
@@ -776,7 +777,7 @@ class ShopFloor_genius(object):
         while count < self._max_retries and (not success):
             try:
                 client = suds.client.Client(SF_LOADER_URL, timeout=self._time_out)
-                res = client.service.LCD_AVI_MYZY_LOG_Loader(lcd_avi_data)
+                res = client.service.Bluni_Overall_LOG_Loader(lcd_avi_data)
                 if res is not None:
                     success = True
             except Exception as e:
