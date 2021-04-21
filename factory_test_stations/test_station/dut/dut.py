@@ -31,12 +31,12 @@ class DUTError(Exception):
 class DutEthernetCommunicationProxy(object):
     _progress_handle = None
 
-    def __init__(self, port=8080):
+    def __init__(self, ipaddr):
         """
         :type port: int
         """
-        self._addr = "192.168.1.10"
-        self._port = port
+        self._addr = ipaddr[0]
+        self._port = ipaddr[1]
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # type: socket.socket
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
@@ -107,7 +107,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         self.is_screen_poweron = False
         try:
             if hasattr(self._station_config, 'DUT_ETH_PROXY') and self._station_config.DUT_ETH_PROXY:
-                self._serial_port = DutEthernetCommunicationProxy()
+                self._serial_port = DutEthernetCommunicationProxy(self._station_config.DUT_ETH_PROXY_ADDR)
                 if self._verbose:
                     print(f'DUT {self.serial_number} Initialised.  Port = 8080. ')
             else:
@@ -124,8 +124,9 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                                                   interCharTimeout=None)
                 if self._verbose:
                     print(f'DUT {self.serial_number} Initialised COM = {self._station_config.DUT_COMPORT}. ')
-        except:
-            raise DUTError('Unable to open DUT with Com={0} or Ethernet'.format(self._station_config.DUT_COMPORT))
+        except Exception as e:
+            raise DUTError('Unable to open DUT with Com={0} or Ethernet: Exp={1}'
+                           .format(self._station_config.DUT_COMPORT, str(e)))
         return True
 
     def screen_on(self, ignore_err=False):
