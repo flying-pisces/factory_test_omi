@@ -73,6 +73,18 @@ class StationCommunicationProxy(object):
         """
         self._sock.sendall(cmd)
 
+    def clear_buff(self):
+        """
+        Clear buffers
+        """
+        self._sock.setblocking(False)
+        while True:
+            try:
+                __ = self._sock.recvfrom(2048)
+            except:
+                break
+        self._sock.setblocking(True)
+
     @staticmethod
     def run_daemon_application(cmd=None):
         import win32process
@@ -219,6 +231,10 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         return bytes_written
 
     def flush_data(self):
+        if isinstance(self._serial_port, StationCommunicationProxy):
+            self._serial_port.clear_buff()
+            if self._verbose:
+                print(f'Clear buffer for StationCommunicationProxy\n')
         if self._serial_port is not None:
             self._serial_port.flush()
 

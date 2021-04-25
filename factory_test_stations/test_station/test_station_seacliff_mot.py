@@ -438,6 +438,7 @@ class seacliffmotStation(test_station.TestStation):
                                     else self._station_config.TIMEOUT_FOR_BTN_IDLE)
         timeout_for_dual = timeout_for_btn_idle
         try:
+            self._fixture.flush_data()
             self._fixture.power_on_button_status(False)
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._fixture.start_button_status(False)
