@@ -1,5 +1,5 @@
 __author__ = 'elton.tian'
-__version__ = '0.0.0'
+__version__ = '0.0.6'
 """
 Change List:
 0.0.1:  Init Version, 
@@ -111,25 +111,21 @@ class ShopFloor_genius(object):
             'MODEL_NAME': '',
             'UUT_SERIAL_NUMBER': 'UUT_Serial_Number',
             'STATION_ID': 'Station_ID',
-            'START_TIME': 'Start_Time',
-            'END_TIME': 'End_Time',
-            'OVERALL_RESULT': 'Overall_Result',
-            'OVERALL_ERRORCODE': '',
-            'normal_GrDist_Y_DispCen_x_disp': 'normal_GreenDistortion_Y_DispCen_x_display',
-            'normal_GrDist_Y_DispCen_y_disp': 'normal_GreenDistortion_Y_DispCen_y_display',
-            'normal_GrDist_Y_Disp_Rotate_x': 'normal_GreenDistortion_Y_Disp_Rotate_x',
-            'normal_W255_Lum_0deg_0deg': 'normal_W255_Lum_0.0deg_0.0deg',
-            'normal_W255_u_0deg_0deg': "normal_W255_u'_0.0deg_0.0deg",
-            'normal_W255_v_0deg_0deg': "normal_W255_v'_0.0deg_0.0deg",
-            'normal_R255_Lum_0deg_0deg': 'normal_R255_Lum_0.0deg_0.0deg',
-            'normal_G255_Lum_0deg_0deg': 'normal_G255_Lum_0.0deg_0.0deg',
-            'normal_B255_Lum_0deg_0deg': 'normal_B255_Lum_0.0deg_0.0deg',
-            'normal_R255_u_0deg_0deg': "normal_R255_u'_0.0deg_0.0deg",
-            'normal_R255_v_0deg_0deg': "normal_R255_v'_0.0deg_0.0deg",
-            'normal_G255_u_0deg_0deg': "normal_G255_u'_0.0deg_0.0deg",
-            'normal_G255_v_0deg_0deg': "normal_G255_v'_0.0deg_0.0deg",
-            'normal_B255_u_0deg_0deg': "normal_B255_u'_0.0deg_0.0deg",
-            'normal_B255_v_0deg_0deg': "normal_B255_v'_0.0deg_0.0deg",
+            'NORMAL_GRDIST_Y_DISPCEN_X_DISP': 'normal_GreenDistortion_Y_DispCen_x_display',
+            'NORMAL_GRDIST_Y_DISPCEN_Y_DISP': 'normal_GreenDistortion_Y_DispCen_y_display',
+            'NORMAL_GRDIST_Y_DISP_ROTATE_X': 'normal_GreenDistortion_Y_Disp_Rotate_x',
+            'NORMAL_W255_LUM_0DEG_0DEG': 'normal_W255_Lum_0.0deg_0.0deg',
+            'NORMAL_W255_U_0DEG_0DEG': "normal_W255_u'_0.0deg_0.0deg",
+            'NORMAL_W255_V_0DEG_0DEG': "normal_W255_v'_0.0deg_0.0deg",
+            'NORMAL_R255_LUM_0DEG_0DEG': 'normal_R255_Lum_0.0deg_0.0deg',
+            'NORMAL_G255_LUM_0DEG_0DEG': 'normal_G255_Lum_0.0deg_0.0deg',
+            'NORMAL_B255_LUM_0DEG_0DEG': 'normal_B255_Lum_0.0deg_0.0deg',
+            'NORMAL_R255_U_0DEG_0DEG': "normal_R255_u'_0.0deg_0.0deg",
+            'NORMAL_R255_V_0DEG_0DEG': "normal_R255_v'_0.0deg_0.0deg",
+            'NORMAL_G255_U_0DEG_0DEG': "normal_G255_u'_0.0deg_0.0deg",
+            'NORMAL_G255_V_0DEG_0DEG': "normal_G255_v'_0.0deg_0.0deg",
+            'NORMAL_B255_U_0DEG_0DEG': "normal_B255_u'_0.0deg_0.0deg",
+            'NORMAL_B255_V_0DEG_0DEG': "normal_B255_v'_0.0deg_0.0deg",
         }
         # </editor-fold>
 
@@ -168,7 +164,7 @@ class ShopFloor_genius(object):
         for log in res.LOG.diffgram[0].DocumentElement[0].Log:
             dd = dict(log)
             for k, v in self._mes_mot_dic.items():
-                if v is None or v == '':
+                if v is None or v == '' or dd.get(k) is None:
                     continue
                 res_tbl_items[v] = dd.get(k)[0]
         return res_tbl_items
