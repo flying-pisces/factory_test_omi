@@ -179,6 +179,16 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             raise DUTError("Exit get_color because rev err msg. Msg = {}".format(recvobj))
         return tuple([int(x, 16) for x in recvobj[1:]])
 
+    def get_measure_blu(self):
+        """
+        COMMAND_MEASURE_BLU = Measure,BLU
+        --> $C.Measure,BLU
+        <-- $P.Measure,0000,71.2 mA
+        """
+        self._write_serial_cmd(self._station_config.COMMAND_MEASURE_BLU)
+        resp = self._read_response()
+        return self._prase_respose(self._station_config.COMMAND_MEASURE_BLU, resp)
+
     def display_color_check(self, color):
         norm_color = tuple([c / 255.0 for c in color])
         color1 = np.float32([[norm_color]])
@@ -198,11 +208,12 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         time.sleep(self._station_config.DUT_DISPLAYSLEEPTIME)
 
     def display_image(self, image, is_ddr_data=False):
-        recvobj = self._showImage(image, is_ddr_data)
-        if recvobj is None:
-            raise DUTError("Exit disp_image because can't receive any data from dut.")
-        if int(recvobj[0]) != 0x00:
-            raise DUTError("Exit disp_image because rev err msg. Msg = {0}".format(recvobj))
+        if self.is_screen_poweron:
+            recvobj = self._showImage(image, is_ddr_data)
+            if recvobj is None:
+                raise DUTError("Exit disp_image because can't receive any data from dut.")
+            if int(recvobj[0]) != 0x00:
+                raise DUTError("Exit disp_image because rev err msg. Msg = {0}".format(recvobj))
         time.sleep(self._station_config.DUT_DISPLAYSLEEPTIME)
 
     def vsync_microseconds(self):
@@ -242,10 +253,10 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                 self._reboot()
             except:
                 pass
-            time.sleep(10)
             self.is_screen_poweron = False
             self._serial_port.close()
-            self._serial_port = DutEthernetCommunicationProxy()
+            time.sleep(delay_seconds)
+            self._serial_port = DutEthernetCommunicationProxy(self._station_config.DUT_ETH_PROXY_ADDR)
             return
 
         recvobj = self._reboot()

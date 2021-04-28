@@ -438,7 +438,6 @@ class seacliffmotStation(test_station.TestStation):
                                     else self._station_config.TIMEOUT_FOR_BTN_IDLE)
         timeout_for_dual = timeout_for_btn_idle
         try:
-            self._fixture.flush_data()
             self._fixture.power_on_button_status(False)
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._fixture.start_button_status(False)
@@ -459,6 +458,7 @@ class seacliffmotStation(test_station.TestStation):
                     self._is_alignment_success = True
                     self._module_left_or_right = 'L'
                     self._fixture._alignment_pos = (0, 0, 0, 0)
+                    self._the_unit.screen_on()
                     ready = True
                     continue
 
@@ -488,7 +488,7 @@ class seacliffmotStation(test_station.TestStation):
                         # power the dut on normally.
                         if power_on_trigger:
                             self._the_unit.screen_off()
-                            self._the_unit.reboot()  # Reboot
+                            # self._the_unit.reboot()  # Reboot
                         self._the_unit.screen_on()
                         power_on_trigger = True
                         # check the color sensor
