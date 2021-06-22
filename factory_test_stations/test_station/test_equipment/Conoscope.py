@@ -10,7 +10,7 @@ import os
 
 class Conoscope:
     DLL_PATH = '.'
-    VERSION_REVISION = 52
+    VERSION_REVISION = 65
     class Filter(Enum):
         BK7 = 0
         Mirror = 1
@@ -81,6 +81,17 @@ class Conoscope:
         Bin = 0
         BinJpg = 1
 
+    class CxpLinkConfig(Enum):
+        CXP6_X2 = 0
+        CXP6_X4 = 1
+
+    class ComposeOuputImage(Enum):
+        ComposeOuputImage_XYZ = 0
+        ComposeOuputImage_X = 1
+        ComposeOuputImage_Y = 2
+        ComposeOuputImage_Z = 3
+        ComposeOuputImage_None = 4
+
     class ApplicationThread(threading.Thread):
         def __init__(self, threadID, name, counter):
             threading.Thread.__init__(self)
@@ -117,7 +128,8 @@ class Conoscope:
             ("RoiXLeft", ctypes.c_int),
             ("RoiXRight", ctypes.c_int),
             ("RoiYTop", ctypes.c_int),
-            ("RoiYBottom", ctypes.c_int)]
+            ("RoiYBottom", ctypes.c_int),
+            ("cxpLinkConfig", ctypes.c_int)]
 
     class ConoscopeDebugSettings(ctypes.Structure):
         _fields_ = [
@@ -180,11 +192,7 @@ class Conoscope:
             ("bAutoExposure", ctypes.c_bool),
             ("bUseExpoFile", ctypes.c_bool),
             ("bSaveCapture", ctypes.c_bool),
-            ("bUseRoi", ctypes.c_bool),
-            ("RoiXLeft", ctypes.c_int),
-            ("RoiXRight", ctypes.c_int),
-            ("RoiYTop", ctypes.c_int),
-            ("RoiYBottom", ctypes.c_int)]
+            ("eOuputImage", ctypes.c_int)]
      
     class CaptureSequenceStatus(ctypes.Structure):
         _fields_ = [

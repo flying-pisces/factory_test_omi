@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.1.2
+2021-2-9 author<xxx@xxx.com>
+-1. update reading for exposure_time from Eldim-Conoscope.
+
+========================================================
 Version 1.1.1b
 2021-2-9 author<xxx@xxx.com>
 -1. change datetime format to local time.
@@ -166,7 +171,7 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 0
 
-VERSION_REVISION_EQUIPMENT = 57
+VERSION_REVISION_EQUIPMENT = 67
 FILE_COUNT_INC = 4
 
 # set sensor_temperature
@@ -176,7 +181,7 @@ TEST_SENSOR_TEMPERATURE = 25.0
 CAM_INIT_CONFIG = {
     "exportFormat": 0,
     "AEMinExpoTimeUs": 10,
-    "AEMaxExpoTimeUs": 9985000,
+    "AEMaxExpoTimeUs": 99999,
     "AEExpoTimeGranularityUs": 11146,
     "AELevelPercent": 80.0,
 
@@ -192,7 +197,34 @@ CAM_INIT_CONFIG = {
     "RoiYBottom": 6001
 }
 
+SEQ_CAP_INIT_CONFIG = {
+    "sensorTemperature": 25,
+    "bWaitForSensorTemperature": False,
+    # "eNd": setup_cfg[1],  # Conoscope.Nd.Nd_1.value,
+    # "eIris": setup_cfg[2],  # Conoscope.Iris.aperture_4mm.value,
+    "nbAcquisition": 1,
+    'bUseRoi': False,
+    'RoiXLeft': 0,
+    'RoiXRight': 6001,
+    'RoiYTop': 0,
+    'RoiYBottom': 6001,
+    "bAutoExposure": True,
+    "bUseExpoFile": False,
+    'bSaveCapture': False,
+    'eOuputImage': 3,
+    "exposureTimeUs_FilterX": 10,
+    "exposureTimeUs_FilterXz": 10,
+    "exposureTimeUs_FilterYa": 10,
+    "exposureTimeUs_FilterYb": 10,
+    "exposureTimeUs_FilterZ": 10,
+}
 
+MEASURE_CAP_INIT_CONFIG = {
+    "sensorTemperature": 25,
+    # "eFilter": setup_cfg[0],  # self._device.Filter.Yb.value,
+    # "eNd": setup_cfg[1],  # self._device.Nd.Nd_3.value,
+    # "eIris": setup_cfg[2],  # self._device.Iris.aperture_2mm.value
+}
 
 MIN_SPACE_REQUIRED = [('C:\\', 500), ('D:\\', 3500)]
 
@@ -272,7 +304,7 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 # UI_MODE
 OPTIMIZE_UI_MODE = True
-SHOW_CONSOLE = True
+SHOW_CONSOLE = False
 
 SHOPFLOOR_SYSTEM = 'genius_mot'
 
@@ -280,7 +312,7 @@ VERSION = 'SunnyP2-PreBuild-Alpha'
 AUTO_CVT_BGR_IMAGE_FROM_XYZ = False
 AUTO_SAVE_2_TXT = False
 EQUIPMENT_SIM_CAPTURE_FROM_DIR = False
-DUT_SIM = False
+DUT_SIM = True
 EQUIPMENT_SIM = True
 EQUIPMENT_WHEEL_SIM = True
 FIXTURE_SIM = True

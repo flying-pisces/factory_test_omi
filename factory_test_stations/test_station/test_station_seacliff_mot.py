@@ -147,7 +147,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.1.0sp1'
+        self._sw_version = '1.1.2'
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -626,29 +626,15 @@ class seacliffmotStation(test_station.TestStation):
                 if (ana_pattern != pattern_name) or (not pattern_info):
                     continue
 
-                pre_file_name = '{0}_{1}'.format(pos_name, pattern_name)
+                file_x, file_y, file_z = self.extract_basic_info_for_pattern(capture_path, pattern_name, pos_name,
+                                                                             test_log)
                 primary = ['X', 'Y', 'Z']
+                primary_dict = dict(zip(primary, [file_x, file_y, file_z]))
                 if hasattr(self._station_config, 'ANALYSIS_GRP_DISTORTION_PRIMARY'):
                     primary = self._station_config.ANALYSIS_GRP_DISTORTION_PRIMARY
 
-                json_k = seacliffmotStation.get_filenames_in_folder(capture_path, f'{pre_file_name}_.*'+r'_iris_\d.json')
-                if len(json_k) > 0:
-                    pri_v = json_k[0]
-                    try:
-                        exposure_items = None
-                        with open(pri_v, 'r') as json_file:
-                            json_data = json.load(json_file)
-                            exposure_items = json_data.get('ExposureTimeUs')
-                        if isinstance(exposure_items, dict):
-                            [test_log.set_measured_value_by_name_ex(f'{pre_file_name}_ExposureTime_{k}', v)
-                             for k, v in exposure_items.items()]
-                        del exposure_items
-                    except Exception as e:
-                        self._operator_interface.print_to_console(
-                            f'Fail to load Json file {pre_file_name}. exp = {str(e)}.\n')
-
                 for pri_k in primary:
-                    file_k = seacliffmotStation.get_filenames_in_folder(capture_path, f'{pre_file_name}_.*_{pri_k}_float.bin')
+                    file_k = primary_dict.get(pri_k)
                     if len(file_k) <= 0:
                         continue
                     pri_v = file_k[0]
@@ -670,6 +656,7 @@ class seacliffmotStation(test_station.TestStation):
                                         pos_name_i, pattern_name_i, pri_k_i, export_item.replace(' ', ''))
                                     test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
                                 # print(f'distortion_centroid_parallel_callback<<<<<<<<{pattern_name_i}\n')
+                            self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
 
                         self._pool.apply_async(
@@ -711,26 +698,8 @@ class seacliffmotStation(test_station.TestStation):
                 if (pattern_name != ana_pattern) or (not pattern_info):
                     continue
 
-                pre_file_name = '{0}_{1}'.format(pos_name, pattern_name)
-                json_k = seacliffmotStation.get_filenames_in_folder(
-                    capture_path, f'{pre_file_name}_.*' + r'_iris_\d.json')
-                if len(json_k) > 0:
-                    pri_v = json_k[0]
-                    try:
-                        exposure_items = None
-                        with open(pri_v, 'r') as json_file:
-                            json_data = json.load(json_file)
-                            exposure_items = json_data.get('ExposureTimeUs')
-                        if isinstance(exposure_items, dict):
-                            [test_log.set_measured_value_by_name_ex(f'{pre_file_name}_ExposureTime_{k}', v)
-                             for k, v in exposure_items.items()]
-                    except Exception as e:
-                        self._operator_interface.print_to_console(
-                            f'Fail to load Json file {pre_file_name}. exp = {str(e)}.\n')
-
-                file_x = seacliffmotStation.get_filenames_in_folder(capture_path, r'{0}_.*_X_float\.bin'.format(pre_file_name))
-                file_y = seacliffmotStation.get_filenames_in_folder(capture_path, r'{0}_.*_Y_float\.bin'.format(pre_file_name))
-                file_z = seacliffmotStation.get_filenames_in_folder(capture_path, r'{0}_.*_Z_float\.bin'.format(pre_file_name))
+                file_x, file_y, file_z = self.extract_basic_info_for_pattern(capture_path, pattern_name, pos_name,
+                                                                             test_log)
                 if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
                     try:
                         self._operator_interface.print_to_console(
@@ -793,3 +762,36 @@ class seacliffmotStation(test_station.TestStation):
                         self._operator_interface.print_to_console(
                             'Fail to export data for pattern: {0}_{1}, {2}\n'.format(pos_name, pattern_name, e.args))
             del grp, analysis_patterns
+
+    def extract_basic_info_for_pattern(self, capture_path, pattern_name, pos_name, test_log):
+        pre_file_name = '{0}_{1}'.format(pos_name, pattern_name)
+        json_k = seacliffmotStation.get_filenames_in_folder(
+            capture_path, f'{pre_file_name}_.*' + r'_iris_\d.json')
+        if len(json_k) > 0:
+            pri_v = json_k[0]
+            try:
+                exposure_items = {}
+                with open(pri_v, 'r') as json_file:
+                    json_data = json.load(json_file)
+                    exposure_items = json_data.get('Captures')
+                filters = ['X', 'Xz', 'Ya', 'Yb', 'Z']
+                exp_filters = [c for c in filters if c in exposure_items.keys()]
+                if isinstance(exposure_items, dict):
+                    [test_log.set_measured_value_by_name_ex(
+                        f'{pre_file_name}_ExposureTime_Filter_{k}',
+                        exposure_items[k]['exposureTimeUs'])
+                        for k in exp_filters]
+                    [test_log.set_measured_value_by_name_ex(
+                        f'{pre_file_name}_SaturationLevel_{k}',
+                        exposure_items[k]['saturationLevel'])
+                        for k in exp_filters]
+            except Exception as e:
+                self._operator_interface.print_to_console(
+                    f'Fail to load Json file {pre_file_name}. exp = {str(e)}.\n')
+        file_x = seacliffmotStation.get_filenames_in_folder(capture_path,
+                                                            r'{0}_.*_X_float\.bin'.format(pre_file_name))
+        file_y = seacliffmotStation.get_filenames_in_folder(capture_path,
+                                                            r'{0}_.*_Y_float\.bin'.format(pre_file_name))
+        file_z = seacliffmotStation.get_filenames_in_folder(capture_path,
+                                                            r'{0}_.*_Z_float\.bin'.format(pre_file_name))
+        return file_x, file_y, file_z

@@ -13,7 +13,10 @@ from skimage import measure
 import cv2
 import multiprocessing as mp
 import hardware_station_common.utils.thread_utils as thread_utils
-
+from skimage import measure
+import os
+import scipy
+import csv
 
 try:
     from test_station.test_equipment.Conoscope import Conoscope
@@ -179,6 +182,10 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         exposure_cfg = pattern.get('exposure')  # type: (int, str)
         if setup_cfg is None:
             raise seacliffmotEquipmentError('Fail to set setup_config.')
+        out_image_mode = 0
+        if pattern.get('oi_mode'):
+            out_image_mode = pattern.get('oi_mode')
+
         current_config = self._device.CmdGetConfig()
         capture_path = current_config['CapturePath']
         path_prefix = os.path.basename(capture_path).split('_')[0]
@@ -195,7 +202,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                         file_names.append(os.path.join(home, file_name))
 
         if isinstance(exposure_cfg, str) or isinstance(exposure_cfg, tuple):
-            if self._station_config.TEST_SEQ_USE_EXPO_FILE:
+            if self._station_config.SEQ_CAP_INIT_CONFIG['bUseExpoFile']:
                 capture_seq_exposure = os.path.join(self._station_config.SEQUENCE_RELATIVEPATH, pattern_name + '.json')
                 target_seq_name = os.path.join(self._station_config.CONOSCOPE_DLL_PATH, 'CaptureSequenceExposureTime.json')
                 if not os.path.exists(capture_seq_exposure):
@@ -229,33 +236,29 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                     processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Done):
                 raise seacliffmotEquipmentError('Fail to CmdMeasureSequence.{0}'.format(processState))
 
-            captureSequenceConfig = {"sensorTemperature": self._station_config.TEST_SENSOR_TEMPERATURE,
-                                     "bWaitForSensorTemperature": self._station_config.TEST_SEQ_WAIT_FOR_TEMPERATURE,
-                                     "eNd": setup_cfg[1],  # Conoscope.Nd.Nd_1.value,
-                                     "eIris": setup_cfg[2],  # Conoscope.Iris.aperture_4mm.value,
-                                     "nbAcquisition": 1,
-                                     "bAutoExposure": self._station_config.TEST_AUTO_EXPOSURE,
-                                     "bUseExpoFile": self._station_config.TEST_SEQ_USE_EXPO_FILE,
-                                     'bSaveCapture': self._station_config.TEST_SEQ_SAVE_CAPTURE}
-            if isinstance(exposure_cfg, tuple):
+            captureSequenceConfig = self._station_config.SEQ_CAP_INIT_CONFIG.copy()
+            captureSequenceConfig["eNd"] = setup_cfg[1]  # Conoscope.Nd.Nd_1.value,
+            captureSequenceConfig["eIris"] = setup_cfg[2]  # Conoscope.Iris.aperture_4mm.value,
+            captureSequenceConfig['eOuputImage'] = out_image_mode  # Conoscope.ComposeOuputImage
+
+            if isinstance(exposure_cfg, tuple) and captureSequenceConfig['bAutoExposure']:
                 captureSequenceConfig['exposureTimeUs_FilterX'] = exposure_cfg[0]
                 captureSequenceConfig['exposureTimeUs_FilterXz'] = exposure_cfg[1]
                 captureSequenceConfig['exposureTimeUs_FilterYa'] = exposure_cfg[2]
                 captureSequenceConfig['exposureTimeUs_FilterYb'] = exposure_cfg[3]
                 captureSequenceConfig['exposureTimeUs_FilterZ'] = exposure_cfg[4]
-            elif re.match('^\d+$', exposure_cfg):
-                captureSequenceConfig['exposureTimeUs'] = int(exposure_cfg)
             ret = self._device.CmdCaptureSequence(captureSequenceConfig)
             if ret['Error'] != 0:
                 seacliffmotEquipmentError('Fail to CmdCaptureSequence.')
             self.__check_seq_finish()
+            del captureSequenceConfig
         elif isinstance(exposure_cfg, int):
-            setupConfig = {"sensorTemperature": self._station_config.TEST_SENSOR_TEMPERATURE,
-                           "eFilter": setup_cfg[0],  # self._device.Filter.Yb.value,
-                           "eNd": setup_cfg[1],  # self._device.Nd.Nd_3.value,
-                           "eIris": setup_cfg[2],  # self._device.Iris.aperture_2mm.value
-                           'autoExposure': self._station_config.TEST_AUTO_EXPOSURE,
-                           }
+            setupConfig = self._station_config.MEASURE_CAP_INIT_CONFIG.copy()
+
+            setupConfig["eFilter"] = setup_cfg[0]  # self._device.Filter.Yb.value,
+            setupConfig["eNd"] = setup_cfg[1]  # self._device.Nd.Nd_3.value,
+            setupConfig["eIris"] = setup_cfg[2]  # self._device.Iris.aperture_2mm.value
+
             ret = self._device.CmdSetup(setupConfig)
             self._log(ret, "CmdSetup")
             if ret['Error'] != 0:
@@ -677,14 +680,12 @@ class MotAlgorithmHelper(object):
         return dict(zip(list(stats_summary[0]), list(stats_summary[1])))
 
     @staticmethod
-    def read_image_and_blur(bin_filename):
+    def read_image_raw(bin_filename):
         I = None
         with open(bin_filename, 'rb') as fin:
             I = np.frombuffer(fin.read(), dtype=np.float32)
         image_in = np.reshape(I, (6001, 6001))
         # Z = Z'        #Removed for viewing to match DUT orientation
-        image_in = cv2.rotate(image_in, 0)  # Implement flip for viewing to match DUT orientation
-        image_in = cv2.filter2D(image_in, -1, MotAlgorithmHelper._kernel, borderType=cv2.BORDER_CONSTANT)
         del I
         return image_in
 
@@ -710,12 +711,19 @@ class MotAlgorithmHelper(object):
         file_names = [os.path.join(dirr, c) for c in filename]
         if multi_process:
             pool = mp.Pool(mp.cpu_count())
-            XYZ = pool.map(MotAlgorithmHelper.read_image_and_blur, file_names)
+            XYZ_t = pool.map(MotAlgorithmHelper.read_image_raw, file_names)
             pool.close()
         else:
-            XYZ = [MotAlgorithmHelper.read_image_and_blur(c) for c in file_names]
+            XYZ_t = [MotAlgorithmHelper.read_image_raw(c) for c in file_names]
         if self._verbose:
             print(f'Read bin files named {fnamebase}\n')
+        XYZ = []
+        for image_in in XYZ_t:
+            image_in = cv2.rotate(image_in, 0)  # Implement flip for viewing to match DUT orientation
+            image_in = cv2.filter2D(image_in, -1, MotAlgorithmHelper._kernel, borderType=cv2.BORDER_CONSTANT)
+            XYZ.append(image_in)
+        del XYZ_t
+
         # cv2.namedWindow('img',0)
         # cv2.imshow('img',image_in)
         # cv2.waitKey(1000)
@@ -894,7 +902,475 @@ class MotAlgorithmHelper(object):
 
         return dict(zip(stats_summary[0, 0:k], stats_summary[1, 0:k]))
 
+    @staticmethod
+    def calc_gl_for_brightdot(np_luv):
+        x = 9 * np_luv[:, 1] / (6 * np_luv[:, 1] - 16 * np_luv[:, 2] + 12)
+        y = 4 * np_luv[:, 2] / (6 * np_luv[:, 1] - 16 * np_luv[:, 2] + 12)
+        Y_rgb_measure = np_luv[:, 0][1:]
+        x_w, y_w, Y_w = 0.3127, 0.329, np_luv[0, 0]
+        x_r, y_r = x[1], y[1]
+        x_g, y_g = x[2], y[2]
+        x_b, y_b = x[3], y[3]
+        w255 = np.array([Y_w * x_w / y_w, Y_w, Y_w * (1 - x_w - y_w) / y_w])
+        m = np.array([[x_r / y_r, x_g / y_g, x_b / y_b],
+                      [1, 1, 1],
+                      [(1 - x_r - y_r) / y_r, (1 - x_g - y_g) / y_g, (1 - x_b - y_b) / y_b]])
+        Y_rgb = np.dot(np.linalg.pinv(m), w255)
+        Y_scale = Y_rgb / Y_rgb_measure
+        # Lum for R255, G255, B255
+        Lum_before = Y_rgb_measure
+        # Lum for Red, Green and Blue for D65
+        Lum_after = Y_rgb / np.max(Y_scale)
+        Gamma = 2.2
+        gray_levels = np.round(np.power(Lum_after / Lum_before, 1 / Gamma) * 255)
+        return [int(c) for c in gray_levels]
 
+    @staticmethod
+    def interp2(xx, yy, z, xi, yi):
+        f = scipy.interpolate.interp2d(
+            xx.astype(np.float64), yy.astype(np.float64), z.astype(np.float64), kind='linear')
+        return f(xi, yi)
+
+    @staticmethod
+    def sub2ind(array_shape, rows, cols):
+        ind = rows * array_shape[1] + cols
+        ind[ind < 0] = -1
+        ind[ind >= array_shape[0] * array_shape[1]] = -1
+        return ind
+
+    @staticmethod
+    def ind2sub(array_shape, xind):
+        if isinstance(xind, np.ndarray):
+            ind = xind.astype(np.int)
+        elif isinstance(xind, np.int64):
+            ind = np.array([xind])
+        else:
+            raise NotImplementedError(f'Not support by ind2sub {type(xind)}')
+
+        ind[ind < 0] = -1
+        ind[ind >= array_shape[0] * array_shape[1]] = -1
+        rows = (ind.astype('int') // array_shape[1])
+        cols = ind % array_shape[1]
+        return (rows, cols)
+
+    def white_dot_pattern_w255_read(self, xfilename=r'W255_X_float.bin', multi_process=False):
+        dirr = os.path.dirname(xfilename)
+        fnamebase = os.path.basename(xfilename).lower().split('_x_float.bin')[0]
+        filename = ['{0}_{1}_float.bin'.format(fnamebase, c) for c in ['X', 'Y', 'Z']]
+        XYZ = []
+
+        file_names = [os.path.join(dirr, c) for c in filename]
+        if multi_process:
+            pool = mp.Pool(mp.cpu_count())
+            XYZ_t = pool.map(MotAlgorithmHelper.read_image_raw, file_names)
+            pool.close()
+        else:
+            XYZ_t = [MotAlgorithmHelper.read_image_raw(c) for c in file_names]
+        if self._verbose:
+            print(f'Read bin files named {fnamebase}\n')
+        for image_in in XYZ_t:
+            # Z = Z'        #Removed for viewing to match DUT orientation
+            image_in = np.rot90(image_in.T, 3)
+            image_in = cv2.flip(image_in, 0)
+            # image_in = cv2.rotate(image_in, 0)  # Implement flip for viewing to match DUT orientation
+            image_in = cv2.filter2D(image_in, -1, MotAlgorithmHelper._kernel, borderType=cv2.BORDER_CONSTANT)
+            XYZ.append(image_in)
+        return XYZ
+
+    def white_dot_pattern_parametric_export(self, XYZ_W, GL, xfilename=r'WhiteDot_X_float.bin', export_csv=False, n_dots=15):
+        # ----- Begin code -----#
+        cam_fov = 60
+        mask_fov = 30
+        row = 6001
+        col = 6001
+        pixel_spacing = 0.02  # Degrees per pixel
+        kernel_width = 20  # Width of square smoothing kernel in pixels.
+        kernel_shape = 'square'  # Use 'circle' or 'square' to change the smoothing kernel shape
+        x_w = 0.3127  # color x for D65
+        y_w = 0.3290  # color y for D65
+        # XYZ_W = np.ones((3, 3, 3))
+        Lum_W = XYZ_W[:, :, 1]
+        Color_x_W = XYZ_W[:, :, 0] / (XYZ_W[:, :, 0] + XYZ_W[:, :, 1] + XYZ_W[:, :, 2])
+        Color_y_W = XYZ_W[:, :, 1] / (XYZ_W[:, :, 0] + XYZ_W[:, :, 1] + XYZ_W[:, :, 2])
+        # LumRatio_W = Lum_W(3001,3001)./Lum_W
+        # dColor_x_W = Color_x_W-Color_x_W(3001,3001)
+        # dColor_y_W = Color_y_W-Color_y_W(3001,3001)
+        ##
+        # Read in the WhiteDot image
+        dirr = os.path.dirname(xfilename)
+        fnamebase = os.path.basename(xfilename).lower().split('_x_float.bin')[0]
+        filename = ['{0}_{1}_float.bin'.format(fnamebase, c) for c in ['X', 'Y', 'Z']]
+
+        primary = ['X', 'Y', 'Z']
+
+        x_angle_arr = np.linspace(-1 * cam_fov, cam_fov, col)
+        y_angle_arr = np.linspace(-1 * cam_fov, cam_fov, row)
+
+        kernel = np.ones((kernel_width, kernel_width))
+
+        kernel = kernel / np.sum(kernel)  # normalize
+        XYZ = []
+        XYZ_t = [MotAlgorithmHelper.read_image_raw(os.path.join(dirr, c)) for c in filename]
+        for image_in in XYZ_t:
+            image_in = np.rot90(image_in.T, 3)
+            image_in = np.flip(image_in, 0)
+            # image_in = cv2.rotate(image_in, 0)
+
+            XYZ.append(image_in)
+        del XYZ_t
+        XYZ = np.stack(XYZ, axis=2)
+        Y = XYZ[:, :, 1]
+
+        # Create array of angle rings to display
+        angle_arr = np.linspace(0, 2 * np.pi, 361)
+
+        disp_fov = cam_fov
+        # Create array of angle ring to show area where masking occurs
+        disp_fov_ring_x = disp_fov * np.sin(angle_arr)
+        disp_fov_ring_y = disp_fov * np.cos(angle_arr)
+
+        # Create viewing masks
+
+        col_deg_arr = np.tile(x_angle_arr, (row, 1))
+        row_deg_arr = np.tile(y_angle_arr.T, (col, 1)).T
+        # print(row_deg_arr.shape)
+        radius_deg_arr = (col_deg_arr ** 2 + row_deg_arr ** 2) ** (1 / 2)
+        mask = np.ones((row, col))
+        # mask(radius_deg_arr > mask_fov) = 0#有问题
+        mask[np.where(radius_deg_arr > mask_fov)] = 0
+
+        masked_tristim = Y * mask
+        max_XYZ_val = np.max(masked_tristim)
+
+        Lumiance_thresh = 10
+        Length_thresh = 10
+        Img = cv2.inRange(masked_tristim, 10, 255) // 255
+        # figure,imagesc(x_angle_arr,y_angle_arr,Img)
+        Img = measure.label(Img, connectivity=2)
+        stats = measure.regionprops(Img)
+        scenters = []
+        sMajorAxisLength = []
+        sMinorAxisLength = []
+
+        for i, stat in enumerate(stats):
+            if stat['MajorAxisLength'] >= Length_thresh:
+                scenters.append(list(stat['Centroid']))
+                sMajorAxisLength.append(stat['MajorAxisLength'])
+                sMinorAxisLength.append(stat['MinorAxisLength'])
+
+        # print('num stats 0 / 1'.format(len(scenters), len(stats)))
+        num_dots = len(scenters)
+
+        a = np.nonzero(np.array(sMajorAxisLength) < Length_thresh)
+        b = np.nonzero(np.array(sMinorAxisLength) > 50)
+
+        centroid = np.zeros((num_dots, 2))
+        for i in range(0, num_dots):
+            mlen = sMajorAxisLength[i]
+            d = np.floor(sMajorAxisLength[i] / 2) + 1
+
+            scenter = scenters[i]
+            scentery = scenters[i][1]
+            scentera = int(np.floor(scenters[i][1] - d))
+            scenterb = int(np.floor(scenters[i][1] + d))
+            scenterc = int(np.floor(scenters[i][0] - d))
+            scenterd = int(np.floor(scenters[i][0] + d))
+            im = Y[scenterc:scenterd + 1, scentera:scenterb + 1]
+            [rows, cols] = im.shape
+            x = np.ones((rows, 1)) * np.arange(1, cols + 1)  # # Matrix with each pixel set to its x coordinate
+            y = np.arange(1, rows + 1).reshape(rows, -1) * np.ones((1, cols))
+            area = np.sum(im)
+
+            hx = np.sum(np.float32(im) * x)
+            hy = np.sum(np.float32(im) * y)
+
+            meanx = np.sum(np.float32(im) * x) / area - d - 1
+            meany = np.sum(np.float32(im) * y) / area - d - 1
+            centroid[i, 1] = int(scenters[i][0]) + meany
+            centroid[i, 0] = meanx + int(scenters[i][1])
+
+        I = np.lexsort(centroid.T[:1, :])
+        Centroid = centroid[I, :]
+
+        Centroid2 = np.empty(Centroid.shape, np.object)
+        for i in range(0, n_dots):
+            Centroid_temp = Centroid[i * n_dots:(i + 1) * n_dots, :]
+            I = np.lexsort(Centroid_temp.T[:2, :])
+            Centroid_temp = Centroid_temp[I, :]
+            Centroid2[i * n_dots:(i + 1) * n_dots, :] = Centroid_temp  # 有问题
+
+        centroid = Centroid2
+
+        # figure,plot(centroid(:,1),centroid(:,2),'.')
+        # plt.figure(1)
+        # plt.plot(centroid[:,0],centroid[:,1],'.')
+        Size = np.shape(centroid)
+        Lum_WP_output = []
+        Color_WP_x_output = []
+        Color_WP_y_output = []
+        dxdy_WP_output = []
+        Lum_WP_output_corrected = []
+        Color_WP_x_output_corrected = []
+        Color_WP_y_output_corrected = []
+        dxdy_WP_output_corrected = []
+        R_output = []
+
+        if Size[0] == n_dots ** 2:
+            Lum = np.empty((n_dots ** 2,), dtype=np.object)
+            Color_x = np.empty(Lum.shape, dtype=np.object)
+            Color_y = np.empty(Lum.shape, dtype=np.object)
+            Color_x_corrected = np.empty(Lum.shape, dtype=np.object)
+            Lum_corrected = np.empty(Lum.shape, dtype=np.object)
+            Color_y_corrected = np.empty(Lum.shape, dtype=np.object)
+
+            for i in range(0, n_dots**2):
+                d = 25
+                # np.trunc the index about center.
+                cx1 = int(np.trunc(centroid[i, 1] - d))
+                cx2 = int(np.trunc(centroid[i, 1] + d)) + 1
+                cy1 = int(np.trunc(centroid[i, 0] - d))
+                cy2 = int(np.trunc(centroid[i, 0] + d)) + 1
+                im = XYZ[cx1:cx2, cy1:cy2, :]
+
+                X_center = cv2.filter2D(im[:, :, 0], -1, kernel, borderType=cv2.BORDER_CONSTANT)
+                Y_center = cv2.filter2D(im[:, :, 1], -1, kernel, borderType=cv2.BORDER_CONSTANT)
+                Z_center = cv2.filter2D(im[:, :, 2], -1, kernel, borderType=cv2.BORDER_CONSTANT)
+                #
+                Lum[i] = Y_center[26, 26]
+                Color_x[i] = X_center[26, 26] / (X_center[26, 26] + Y_center[26, 26] + Z_center[26, 26])
+                Color_y[i] = Y_center[26, 26] / (X_center[26, 26] + Y_center[26, 26] + Z_center[26, 26])
+
+                cx0 = int(np.trunc(centroid[i, 1]))
+                cy0 = int(np.trunc(centroid[i, 0]))
+                LumRatio_W = Lum_W[3000, 3000] / Lum_W[cx0, cy0]
+                dColor_x_W = Color_x_W[3000, 3000] - Color_x_W[cx0, cy0]
+                dColor_y_W = Color_y_W[3000, 3000] - Color_y_W[cx0, cy0]
+                Lum_corrected[i] = Lum[i] * LumRatio_W
+                Color_x_corrected[i] = Color_x[i] + dColor_x_W
+                Color_y_corrected[i] = Color_y[i] + dColor_y_W
+
+            xx = np.arange(255 - (n_dots - 1) * 2, 256, 2)
+            yy = np.arange(255 - (n_dots - 1) * 2, 256, 2)
+            [XX, YY] = np.meshgrid(xx, yy)
+            Lum2D = np.reshape(Lum, (n_dots, n_dots)).T
+            Color_x_2D = np.reshape(Color_x, (n_dots, n_dots)).T
+            Color_y_2D = np.reshape(Color_y, (n_dots, n_dots)).T
+            Lum2D_corrected = np.reshape(Lum_corrected, (n_dots, n_dots)).T
+            Color_x_2D_corrected = np.reshape(Color_x_corrected, (n_dots, n_dots)).T
+            Color_y_2D_corrected = np.reshape(Color_y_corrected, (n_dots, n_dots)).T
+
+            xq = np.arange(255 - (n_dots - 1) * 2, 256, 1)
+            yq = np.arange(255 - (n_dots - 1) * 2, 256, 1)
+            [Xq, Yq] = np.meshgrid(xq, xq)
+            XX, YY = xx, yy
+            Lum2Dq = MotAlgorithmHelper.interp2(XX, YY, Lum2D, xq, yq)
+
+            Color_x_2Dq = MotAlgorithmHelper.interp2(XX, YY, Color_x_2D, xq, yq)
+            Color_y_2Dq = MotAlgorithmHelper.interp2(XX, YY, Color_y_2D, xq, yq)
+            Lum2Dq_corrected = MotAlgorithmHelper.interp2(XX, YY, Lum2D_corrected, xq, yq)
+            Color_x_2Dq_corrected = MotAlgorithmHelper.interp2(XX, YY, Color_x_2D_corrected, xq, yq)
+            Color_y_2Dq_corrected = MotAlgorithmHelper.interp2(XX, YY, Color_y_2D_corrected, xq, yq)
+
+            dx = Color_x_2Dq - x_w
+            dy = Color_y_2Dq - y_w
+            dxdy = np.sqrt(dx ** 2 + dy ** 2)
+            dx_corrected = Color_x_2Dq_corrected - x_w
+            dy_corrected = Color_y_2Dq_corrected - y_w
+            dxdy_corrected = np.sqrt(dx_corrected ** 2 + dy_corrected ** 2)
+
+            # GL = [100, 100, 100]
+            if np.min(GL) < 255 - (n_dots - 1) * 2:
+                Lum_WP_output = np.nan
+                Color_WP_x_output = np.nan
+                Color_WP_y_output = np.nan
+                Lum_WP_output_corrected = np.nan
+                Color_WP_x_output_corrected = np.nan
+                Color_WP_y_output_corrected = np.nan
+            else:
+                if GL[2] == 255:
+                    row = GL[1]
+                    col = GL[0]
+                elif GL[1] == 255:
+                    row = GL[2]
+                    col = GL[0]
+                else:
+                    row = GL[2]
+                    col = GL[1]
+
+                row = row - (255 - (n_dots - 1) * 2)
+                col = col - (255 - (n_dots - 1) * 2)
+                Lum_WP_output = Lum2Dq[row, col]
+                Color_WP_x_output = Color_x_2Dq[row, col]
+                Color_WP_y_output = Color_y_2Dq[row, col]
+                dxdy_WP_output = np.sqrt((Color_WP_x_output - x_w) ** 2 + (Color_WP_y_output - y_w) ** 2)
+                Lum_WP_output_corrected = Lum2Dq_corrected[row, col]
+                Color_WP_x_output_corrected = Color_x_2Dq_corrected[row, col]
+                Color_WP_y_output_corrected = Color_y_2Dq_corrected[row, col]
+                dxdy_WP_output_corrected = np.sqrt(
+                    (Color_WP_x_output_corrected - x_w) ** 2 + (Color_WP_y_output_corrected - y_w) ** 2)
+
+            R_output, G_output, B_output = np.empty((5,), np.object),  np.empty((5,), np.object),  np.empty((5,), np.object)
+            Lum_output = np.empty((5,), np.object)
+            Color_x_output = np.empty((5,), np.object)
+            Color_y_output = np.empty((5,), np.object)
+            dxdy_output_corrected = np.empty((5,), np.object)
+            dxdy_output = np.empty((5,), np.object)
+            Color_x_output = np.empty((5,), np.object)
+
+            min_ext = lambda data: (np.min(data), np.argmin(data))
+            for i in range(0, 1):
+                min_val, idx = min_ext(dxdy)
+
+                row, col = MotAlgorithmHelper.ind2sub(dxdy.shape, idx)
+                row = row[0]
+                col = col[0]
+                if GL[2] == 255:
+                    R_output[i] = Xq[row, col]
+                    G_output[i] = Yq[row, col]
+                    B_output[i] = 255
+                elif GL[1] == 255:
+                    R_output[i] = Xq[row, col]
+                    G_output[i] = 255
+                    B_output[i] = Yq[row, col]
+                else:
+                    R_output[i] = 255
+                    G_output[i] = Xq[row, col]
+                    B_output[i] = Yq[row, col]
+
+                Lum_output[i] = Lum2Dq[row, col]
+                Color_x_output[i] = Color_x_2Dq[row, col]
+                Color_y_output[i] = Color_y_2Dq[row, col]
+                dxdy_output[i] = dxdy[row, col]
+                dxdy[row, col] = 1
+
+            R_output_corrected = np.empty((5,), np.object)
+            G_output_corrected = np.empty((5,), np.object)
+            B_output_corrected = np.empty((5,), np.object)
+            Lum_output_corrected = np.empty((5,), np.object)
+            Color_x_output_corrected = np.empty((5,), np.object)
+            Color_y_output_corrected = np.empty((5,), np.object)
+
+            for i in range(0, 1):
+                min_val, idx = min_ext(dxdy_corrected)
+                row, col = MotAlgorithmHelper.ind2sub(dxdy_corrected.shape, idx)
+                row = row[0]
+                col = col[0]
+                if GL[2] == 255:
+                    R_output_corrected[i] = Xq[row, col]
+                    G_output_corrected[i] = Yq[row, col]
+                    B_output_corrected[i] = 255
+                elif GL[1] == 255:
+                    R_output_corrected[i] = Xq[row, col]
+                    G_output_corrected[i] = 255
+                    B_output_corrected[i] = Yq[row, col]
+                else:
+                    R_output_corrected[i] = 255
+                    G_output_corrected[i] = Xq[row, col]
+                    B_output_corrected[i] = Yq[row, col]
+
+                Lum_output_corrected[i] = Lum2Dq_corrected[row, col]
+                Color_x_output_corrected[i] = Color_x_2Dq_corrected[row, col]
+                Color_y_output_corrected[i] = Color_y_2Dq_corrected[row, col]
+                dxdy_output_corrected[i] = dxdy_corrected[row, col]
+                dxdy_corrected[row, col] = 1
+
+        # Output Statistics
+        k = 0
+        stats_summary = np.empty((2, 82), dtype=object)
+        stats_summary[0, k] = 'dir'
+        stats_summary[1, k] = os.path.join(dirr, fnamebase)
+        k = k + 1
+
+        stats_summary[0, k] = 'WP0 R'
+        stats_summary[1, k] = GL[0]
+        k = k + 1
+        stats_summary[0, k] = 'WP0 G'
+        stats_summary[1, k] = GL[1]
+        k = k + 1
+        stats_summary[0, k] = 'WP0 B'
+        stats_summary[1, k] = GL[2]
+        k = k + 1
+        stats_summary[0, k] = 'WP0 Lum'
+        stats_summary[1, k] = Lum_WP_output
+        k = k + 1
+        stats_summary[0, k] = 'WP0 x'
+        stats_summary[1, k] = Color_WP_x_output
+        k = k + 1
+        stats_summary[0, k] = 'WP0 y'
+        stats_summary[1, k] = Color_WP_y_output
+        k = k + 1
+        stats_summary[0, k] = 'WP0 dxy to d65'
+        stats_summary[1, k] = dxdy_WP_output
+        k = k + 1
+        stats_summary[0, k] = 'WP0_corrected Lum'
+        stats_summary[1, k] = Lum_WP_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP0_corrected x'
+        stats_summary[1, k] = Color_WP_x_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP0_corrected y'
+        stats_summary[1, k] = Color_WP_y_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP0_corrected dxy to d65'
+        stats_summary[1, k] = dxdy_WP_output_corrected
+        k = k + 1
+
+        for i in range(0, 1):
+            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' R'
+            stats_summary[1, k] = R_output[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' G'
+            stats_summary[1, k] = G_output[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' B'
+            stats_summary[1, k] = B_output[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' Lum'
+            stats_summary[1, k] = Lum_output[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' x'
+            stats_summary[1, k] = Color_x_output[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' y'
+            stats_summary[1, k] = Color_y_output[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' dxy to d65'
+            stats_summary[1, k] = dxdy_output[i]
+            k = k + 1
+
+        for i in range(0, 1):
+            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' R'
+            stats_summary[1, k] = R_output_corrected[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' G'
+            stats_summary[1, k] = G_output_corrected[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' B'
+            stats_summary[1, k] = B_output_corrected[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' Lum'
+            stats_summary[1, k] = Lum_output_corrected[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' x'
+            stats_summary[1, k] = Color_x_output_corrected[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' y'
+            stats_summary[1, k] = Color_y_output_corrected[i]
+            k = k + 1
+            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' dxy to d65'
+            stats_summary[1, k] = dxdy_output_corrected[i]
+            k = k + 1
+        if export_csv:
+            with open(os.path.join(os.path.expanduser('~/Desktop'), 'abcd.csv'), 'w',
+                      encoding='utf-8', newline='') as csv_file:
+                wr = csv.DictWriter(csv_file, fieldnames=stats_summary[0, :])
+                wr.writeheader()
+                wr.writerow(dict(zip(stats_summary[0, :], stats_summary[1, :])))
+        del XYZ, XYZ_W,
+        del Lum_WP_output, Color_WP_x_output, Color_WP_y_output, dxdy_WP_output, Lum_WP_output_corrected,
+        del Color_WP_x_output_corrected, Color_WP_y_output_corrected, dxdy_WP_output_corrected,
+        del R_output, G_output, B_output
+        return dict(zip(*stats_summary))
 
 def print_to_console(self, msg):
     pass
@@ -904,20 +1380,60 @@ if __name__ == "__main__":
     sys.path.append("../../")
     import types
     import station_config
+
     import hardware_station_common.operator_interface.operator_interface as operator_interface
+    import csv
 
-    station_config.load_station('seacliff_mot')
-    station_config.print_to_console = types.MethodType(print_to_console, station_config)
-    station_config._verbose = True
-    the_equipment = seacliffmotEquipment(station_config, station_config)
-    print(the_equipment.version())
-    print(the_equipment.get_config())
+    x = np.arange(20, 90.1, 10)
+    y = np.arange(0, 20.1, 5)
+    z = np.array([[8.9, 10.32, 11.3, 12.5, 13.9, 15.3, 17.8, 21.3],
+                  [8.7, 10.8, 11, 12.1, 13.2, 14.8, 16.55, 20.8],
+                  [8.3, 9.65, 10.88, 12, 13.2, 14.6, 16.4, 20.5],
+                  [8.1, 9.4, 10.7, 11.9, 13.1, 14.5, 16.2, 20.3],
+                  [8.1, 9.2, 10.8, 12, 13.2, 14.8, 16.9, 20.9]])
 
-    config = {"capturePath": "C:\\oculus\\factory_test_omi\\factory_test_stations\\factory-test_logs\\raw\\AA_seacliff_mot-01_20200612-100304"}
-    print(the_equipment.set_config(config))
-    print(the_equipment.open())
-    the_equipment.measure_and_export(station_config.TESTTYPE)
-    print(the_equipment.reset())
-    print(the_equipment.close())
+    xi = np.arange(20, 91)
+    yi = np.arange(0, 21)
+    zi = MotAlgorithmHelper.interp2(x, y, z, xi, yi)
 
-    the_equipment.kill()
+
+
+    fn = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw\WhitePointCorrection'
+    summarys = []
+    with open(os.path.join(fn, 'aaa.csv'), encoding='utf-8') as text:
+        rows = csv.reader(text, delimiter=',', )
+        for row in rows:
+            summarys.append(row)
+    _exported_parametric = dict(zip(summarys[0], summarys[1]))
+    ref_patterns = ['W255', 'R255', 'G255', 'B255']
+    ref_luv = []
+    for pattern in ref_patterns:
+        items = [f" normal_{pattern}_{c}_0.0deg_0.0deg" for c in ["Lum", "u'", "v'"]]
+        ref_luv.append(tuple([float(_exported_parametric[c]) for c in items]))
+
+    gl = MotAlgorithmHelper.calc_gl_for_brightdot(np.array(ref_luv))
+
+    x_bin = 'normal_W255_20210306_084517_nd_0_iris_5_X_float.bin'
+    aa = MotAlgorithmHelper()
+    XYZ = aa.white_dot_pattern_w255_read(os.path.join(fn, x_bin))
+    XYZ_W = np.stack(XYZ, axis=2)
+    # x_bin = 'normal_WhiteDot7_20210306_084914_nd_0_iris_5_X_float.bin'
+    x_bin = 'normal_WhiteDotV2_20201218_031726_nd_0_iris_5_X_float.bin'
+    exp = aa.white_dot_pattern_parametric_export(XYZ_W, gl, os.path.join(fn, x_bin), export_csv=True, n_dots=21)
+    pass
+
+    # station_config.load_station('seacliff_mot')
+    # station_config.print_to_console = types.MethodType(print_to_console, station_config)
+    # station_config._verbose = True
+    # the_equipment = seacliffmotEquipment(station_config, station_config)
+    # print(the_equipment.version())
+    # print(the_equipment.get_config())
+    #
+    # config = {"capturePath": "C:\\oculus\\factory_test_omi\\factory_test_stations\\factory-test_logs\\raw\\AA_seacliff_mot-01_20200612-100304"}
+    # print(the_equipment.set_config(config))
+    # print(the_equipment.open())
+    # the_equipment.measure_and_export(station_config.TESTTYPE)
+    # print(the_equipment.reset())
+    # print(the_equipment.close())
+    #
+    # the_equipment.kill()
