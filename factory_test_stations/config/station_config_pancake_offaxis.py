@@ -174,6 +174,7 @@ POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
              ('P4', (1800, 0), ['W255', "W000", "R255", "G255", "B255"]),
              ('P6', (0, 1800), ['W255', "W000", "R255", "G255", "B255"]),
              ('P8', (1800, 0), ['W255', "W000", "R255", "G255", "B255"])]
+
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
@@ -197,6 +198,11 @@ COLORSHIFT_AT_POLE_AZI = [(10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10,
                          (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338)]
 
 CR_AT_POLE_AZI = [(0, 0), (30, 0), (30, 90), (30, 180), (30, 270)]
+
+EXPORT_RAW_DATA_PATTERN = {'P1': ['W255', 'W000']}
+EXPORT_RAW_DATA_PATTERN_AZI = [('Vertical', 90), ('Diagonal', 45), ('Horizontal', 0), ('Diagonal', 135)]
+EXPORT_RAW_DATA_PATTERN_POLE = list(range(-60, 61, 2))
+IS_EXPORT_RAW_DATA = True
 
 ##################################
 # IT and work order
