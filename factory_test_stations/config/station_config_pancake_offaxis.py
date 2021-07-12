@@ -1,3 +1,20 @@
+"""
+Release Note:
+========================================================
+Version 2.1.0
+2021-7-12 author<elton.tian@myzygroup.com>
+-1. export raw data for P1
+
+========================================================
+Version 2.0.3
+2020-10-28 author<elton.tian@myzygroup.com>
+-1. add test patterns
+
+========================================================
+Version 1.1.0
+2020-1-18 elton<elton.tian@myzygroup.com>
+-1. Init version for OffAxis
+"""
 ##################################
 # directories
 #
