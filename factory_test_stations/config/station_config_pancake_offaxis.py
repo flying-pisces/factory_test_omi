@@ -28,16 +28,16 @@ CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-tes
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
+SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = r'^\dPRP[\w|\d]{10}$'  # Peak panel SN
 
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM2" #
-FIXTURE_PARTICLE_COMPORT = "COM2" #
+FIXTURE_COMPORT = "COM11" #
+FIXTURE_PARTICLE_COMPORT = "COM1" #
 FIXTURE_PARTICLE_ADDR = 1
-DUT_COMPORT = "COM1" #
+DUT_COMPORT = "COM5" #
 
 DUT_LITUP_OUTSIDE = True
 TIMEOUT_FOR_BTN_IDLE = 10
@@ -168,6 +168,7 @@ SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqx
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
+USE_MULTI_DB = True
 
 FOCUS_DISTANCE = 0.45
 APERTURE = 8.0
@@ -187,11 +188,10 @@ CAMERA_SN = "159496752"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
-             ('P2', (0, 1800), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P4', (1800, 0), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P6', (0, 1800), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P8', (1800, 0), ['W255', "W000", "R255", "G255", "B255"])]
-
+             ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+             ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
+             ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+             ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"])]
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
@@ -229,10 +229,10 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 DATA_COLLECT_ONLY = False
-EQUIPMENT_DEMO_DATABASE = r'C:\360Downloads\offaxis_2'
+EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis_2'
 
-DUT_SIM = True
-CAMERA_SN = "Demo"
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+# CAMERA_SN = "159496752"
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False
 
