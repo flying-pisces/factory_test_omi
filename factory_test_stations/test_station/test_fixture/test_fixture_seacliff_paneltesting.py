@@ -82,7 +82,7 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
             parity = 'N'
             Defaults.Retries = 5
             Defaults.RetryOnEmpty = True
-            timeout_modbus = 5 if not hasattr(self._station_config, 'PARTICLE_COUNTER_TIMEOUT') \
+            timeout_modbus = 2 if not hasattr(self._station_config, 'PARTICLE_COUNTER_TIMEOUT') \
                 else self._station_config.PARTICLE_COUNTER_TIMEOUT
             self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
                                                                stopbits=1,
@@ -334,7 +334,7 @@ class seacliffpaneltestingFixture(hardware_station_common.test_station.test_fixt
         """
         self._safe_position = None
         self._write_serial(self._station_config.COMMAND_LOAD)
-        response = self.read_response()
+        response = self.read_response(timeout=self._station_config.FIXTURE_LOAD_DLY)
         if int(self._parse_response(r'LOAD:(\d+)', response).group(1)) != 0:
             raise seacliffpaneltestingFixtureError('fail to send command. %s' % response)
 

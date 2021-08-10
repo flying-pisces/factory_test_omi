@@ -1,3 +1,4 @@
+from typing import Callable
 import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_seacliff_mot as test_fixture_seacliff_mot
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
@@ -147,7 +148,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.1.2'
+        self._sw_version = '1.2.0'
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -222,6 +223,9 @@ class seacliffmotStation(test_station.TestStation):
                 self._station_config.FIXTURE_PARTICLE_COUNTER, self._station_config.DISP_CHECKER_ENABLE,
                 self._sw_version)
         self._operator_interface.print_to_console(msg0)
+        is_query_temp = (hasattr(self._station_config, 'QUERY_DUT_TEMP_PER_PATTERN')
+                         and self._station_config.QUERY_DUT_TEMP_PER_PATTERN
+                         and not self._station_config.FIXTURE_SIM)
 
         self._query_dual_start()
         if self._the_unit is None:
@@ -232,10 +236,13 @@ class seacliffmotStation(test_station.TestStation):
 
         self._overall_result = False
         self._overall_errorcode = ''
-        pattern_value = None
+        latest_pattern_value_bak = None
         cpu_count = mp.cpu_count()
         self._pool = mp.Pool(2)
         self._pool_alg_dic = {}
+        self._exported_parametric = {}
+        self._gl_W255 = None
+        self._temperature_dic = {}
         try:
             self._operator_interface.print_to_console(
                 "\n*********** Fixture at %s to load DUT %s ***************\n"
@@ -290,19 +297,23 @@ class seacliffmotStation(test_station.TestStation):
 
             self._operator_interface.print_to_console("set current config = {0}\n".format(config))
             self._equipment.set_config(config)
+            current_test_position = None
+            patterns_in_testing = []
 
             for pos_item in self._station_config.TEST_ITEM_POS:
                 pos_name = pos_item['name']
                 pos_val = pos_item['pos']
                 item_patterns = pos_item.get('pattern')
-                if item_patterns is None:
+                item_condition_a_patterns = pos_item.get('condition_A_patterns')
+                if item_patterns is None and item_condition_a_patterns is None:
                     continue
-
-                self._operator_interface.print_to_console('mov dut to pos = {0}\n'.format(pos_name))
-                self._fixture.mov_abs_xy_wrt_alignment(pos_val[0], pos_val[1])
-                time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-                self._fixture.mov_camera_z_wrt_alignment(pos_val[2])
-                time.sleep(self._station_config.FIXTURE_MECH_STABLE_DLY)
+                if current_test_position != pos_name:
+                    self._operator_interface.print_to_console('mov dut to pos = {0}\n'.format(pos_name))
+                    self._fixture.mov_abs_xy_wrt_alignment(pos_val[0], pos_val[1])
+                    time.sleep(self._station_config.FIXTURE_SOCK_DLY)
+                    self._fixture.mov_camera_z_wrt_alignment(pos_val[2])
+                    time.sleep(self._station_config.FIXTURE_MECH_STABLE_DLY)
+                    current_test_position = pos_name
 
                 for pattern_name in item_patterns:
                     pattern_info = self.get_test_item_pattern(pattern_name)
@@ -310,73 +321,87 @@ class seacliffmotStation(test_station.TestStation):
                         self._operator_interface.print_to_console(
                             'Unable to find information for pattern: %s \n' % pattern_name)
                         continue
+                    patterns_in_testing.append((pos_name, pattern_name))
                     self._operator_interface.print_to_console('test pattern name = {0}\n'.format(pattern_name))
 
-                    # <editor-fold desc="Render images while not the same pattern.">
-                    if pattern_value != pattern_info['pattern']:
-                        pattern_value = pattern_info['pattern']
-                        msg = 'try to render image  {0} -> {1} to {2} module.\n'\
-                            .format(pattern_name, pattern_value, self._module_left_or_right)
-                        self._operator_interface.print_to_console(msg)
-                        pattern_value_valid = True
-                        if isinstance(pattern_value, (int, str)):
-                            self._the_unit.display_image(pattern_value, False)
-                        elif isinstance(pattern_value, tuple):
-                            if len(pattern_value) == 0x03:
-                                self._the_unit.display_color(pattern_value)
-                            elif len(pattern_value) == 0x02 and self._module_left_or_right == 'L':
-                                self._the_unit.display_image(pattern_value[0])
-                            elif len(pattern_value) == 0x02 and self._module_left_or_right == 'R':
-                                self._the_unit.display_image(pattern_value[1])
-                            else:
-                                pattern_value_valid = False
-                        else:
-                            pattern_value_valid = False
+                    if latest_pattern_value_bak != pattern_info['pattern']:
+                        latest_pattern_value_bak = pattern_info['pattern']
+                        pattern_value_valid = self.render_pattern_on_dut(pattern_name, latest_pattern_value_bak)
                         if not pattern_value_valid:
                             self._operator_interface.print_to_console('Unable to change pattern: {0} = {1} \n'
-                                                                      .format(pattern_name, pattern_value))
+                                                                      .format(pattern_name, latest_pattern_value_bak))
                             continue
-                    # </editor-fold>
 
-                    pre_file_name = '{0}_{1}_'.format(pos_name, pattern_name)
-                    config = {'fileNamePrepend': pre_file_name}
-                    self._operator_interface.print_to_console("set current config = {0}\n".format(config))
-                    self._equipment.set_config(config)
-                    pattern: dict
-                    pattern = [c for c in self._station_config.TEST_ITEM_PATTERNS if c['name'] == pattern_name][-1]
-                    exposure_cfg = pattern.get('exposure')  # type: (str, int)
-                    file_count_per_capture = self._station_config.FILE_COUNT_INC
+                    dut_temp = 30
+                    if is_query_temp:
+                        self._operator_interface.print_to_console(f'query temperature for {pos_name}_{pattern_name}\n')
+                        dut_temp = self._fixture.query_temp(test_fixture_seacliff_mot.QueryTempParts.UUTNearBy)
+                    self._temperature_dic[f'{pos_name}_{pattern_name}'] = dut_temp
+                    test_log.set_measured_value_by_name_ex(f'UUT_TEMPERATURE_{pos_name}_{pattern_name}', dut_temp)
 
-                    test_item_raw_files_pre = sum([len(files) for r, d, files in os.walk(capture_path)])
-                    test_item_raw_files_post = test_item_raw_files_pre
-
-                    if self._station_config.EQUIPMENT_SIM and not self._station_config.EQUIPMENT_SIM_CAPTURE_FROM_DIR:
-                        self._operator_interface.print_to_console(
-                            "Skip to Capture Bin File for color {0} in emulator mode\n".format(pattern_value))
-                        test_item_raw_files_post += file_count_per_capture
-                    else:
-                        msg = '********* Eldim Capturing Bin File for color {0} ***************\n'.format(pattern_value)
-                        self._operator_interface.print_to_console(msg)
-                        self._equipment.do_measure_and_export(pos_name, pattern_name)
-                        test_item_raw_files_post = sum([len(files) for r, d, files in os.walk(capture_path)])
+                    raw_success_save = self.capture_images_for_pattern(pos_name, capture_path, pattern_name,
+                                                                       pattern_name)
 
                     measure_item_name = 'Test_RAW_IMAGE_SAVE_SUCCESS_{0}_{1}'.format(pos_name, pattern_name)
-                    raw_success_save = (test_item_raw_files_pre + file_count_per_capture) == test_item_raw_files_post
-                    self._operator_interface.print_to_console(
-                        'file count detect {0} --> {1}. \n'.format(test_item_raw_files_pre, test_item_raw_files_post))
                     test_log.set_measured_value_by_name_ex(measure_item_name, raw_success_save)
+
                     # current_obj = self._station_config.copy()
-                    if pattern_name in self._station_config.ANALYSIS_GRP_DISTORTION:
-                        self.distortion_centroid_parametric_export_ex(pos_name, pattern_name, capture_path, test_log)
-                    elif pattern_name in set(self._station_config.ANALYSIS_GRP_COLOR_PATTERN
-                                             + self._station_config.ANALYSIS_GRP_MONO_PATTERN):
-                        self.color_pattern_parametric_export_ex(pos_name, pattern_name, capture_path, test_log)
+                    self.do_pattern_parametric_export(pos_name, pattern_name, capture_path, test_log)
+
+                self._operator_interface.print_to_console('Wait init pattern to complete.\n')
+                self._operator_interface.print_to_console('Please wait...')
+                while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
+                    self._operator_interface.wait(1, '.')
+                self._operator_interface.wait(0, '\n')
+                ref_patterns = ['W255', 'R255', 'G255', 'B255']
+                exp_data = tuple([self._exported_parametric[f'{pos_name}_{c}'] for c in ref_patterns])
+                self._gl_W255 = test_equipment_seacliff_mot.MotAlgorithmHelper.calc_gl_for_brightdot(*exp_data)
+                self._operator_interface.print_to_console(f"\ncalc gray level from W/R/G/B --> {self._gl_W255['GL']}\n")
+                patterns_in_testing = []
+                for pattern_name, n_dots, pattern_group in item_condition_a_patterns:
+                    rel_pattern_name = None
+                    if self._gl_W255['GL'][2] == 255:
+                        rel_pattern_name = pattern_group[0]
+                    elif self._gl_W255['GL'][1] == 255:
+                        rel_pattern_name = pattern_group[1]
+                    elif self._gl_W255['GL'][0] == 255:
+                        rel_pattern_name = pattern_group[2]
+
+                    pattern_info = self.get_test_item_pattern(rel_pattern_name)
+                    if not pattern_info:
+                        self._operator_interface.print_to_console(
+                            'Unable to find information for pattern: %s \n' % rel_pattern_name)
+                        continue
+                    patterns_in_testing.append((pos_name, rel_pattern_name))
+                    self._operator_interface.print_to_console('test pattern name = {0}\n'.format(pattern_name))
+                    if latest_pattern_value_bak != pattern_info['pattern']:
+                        latest_pattern_value_bak = pattern_info['pattern']
+                        pattern_value_valid = self.render_pattern_on_dut(rel_pattern_name, latest_pattern_value_bak)
+                        if not pattern_value_valid:
+                            self._operator_interface.print_to_console('Unable to change pattern: {0} = {1} \n'
+                                                                      .format(pattern_name, latest_pattern_value_bak))
+                            continue
+
+                    measure_item_name = 'Test_Pattern_{0}_{1}'.format(pos_name, pattern_name)
+                    test_log.set_measured_value_by_name_ex(measure_item_name, rel_pattern_name)
+                    dut_temp = -1
+                    if is_query_temp:
+                        self._operator_interface.print_to_console(f'query temperature for {pos_name}_{pattern_name}\n')
+                        dut_temp = self._fixture.query_temp(test_fixture_seacliff_mot.QueryTempParts.UUTNearBy)
+                    self._temperature_dic[f'{pos_name}_{pattern_name}'] = dut_temp
+                    test_log.set_measured_value_by_name_ex(f'UUT_TEMPERATURE_{pos_name}_{pattern_name}', dut_temp)
+
+                    raw_success_save = self.capture_images_for_pattern(
+                        pos_name, capture_path, rel_pattern_name, pattern_name)
+
+                    measure_item_name = 'Test_RAW_IMAGE_SAVE_SUCCESS_{0}_{1}'.format(pos_name, pattern_name)
+                    test_log.set_measured_value_by_name_ex(measure_item_name, raw_success_save)
+
+                    self.do_pattern_parametric_export(pos_name, pattern_name, capture_path, test_log)
 
             self._operator_interface.print_to_console("all images captured, now start to export data. \n")
             self.data_export(serial_number, capture_path, test_log)
-            # self.distortion_centroid_parametric_export_ex(capture_path, test_log)
-            # self.color_pattern_parametric_export_ex(capture_path, test_log)
-            del config
+            del config, patterns_in_testing
         except test_equipment_seacliff_mot.seacliffmotEquipmentError as e:
             self._operator_interface.print_to_console(str(e))
             self._operator_interface.print_to_console('Reset taprisiot automatically by command.\n')
@@ -394,7 +419,7 @@ class seacliffmotStation(test_station.TestStation):
             while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
                 self._operator_interface.wait(1, '.')
             self._operator_interface.wait(0, '\n')
-            self._operator_interface.print_to_console('finish to process\n')
+            self._operator_interface.print_to_console('\nfinish to process\n')
             self._pool.join()
             self._pool = None
             try:
@@ -405,6 +430,63 @@ class seacliffmotStation(test_station.TestStation):
         del self._pool_alg_dic
         self._operator_interface.print_to_console(f'Finish------------{serial_number}-------\n')
         return self.close_test(test_log)
+
+    def do_pattern_parametric_export(self, pos_name, pattern_name, capture_path, test_log):
+        if pattern_name in self._station_config.ANALYSIS_GRP_DISTORTION:
+            self.distortion_centroid_parametric_export_ex(pos_name, pattern_name, capture_path, test_log)
+        elif pattern_name in self._station_config.ANALYSIS_GRP_NORMAL_PATTERN.keys():
+            self.normal_pattern_parametric_export_ex(pos_name, pattern_name, capture_path, test_log)
+        elif pattern_name in [c[0] for c in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX]:
+            self.grade_a_patterns_parametric_export_ex(pos_name, pattern_name, capture_path, test_log)
+
+    def capture_images_for_pattern(self, pos_name, capture_path, pattern_name, exp_pattern_name):
+        pre_file_name = '{0}_{1}_'.format(pos_name, exp_pattern_name)
+        config = {'fileNamePrepend': pre_file_name}
+        self._operator_interface.print_to_console("set current config = {0}\n".format(config))
+        self._equipment.set_config(config)
+        pattern: dict
+        pattern = self.get_test_item_pattern(pattern_name)
+        pattern_value = pattern.get('pattern')
+        out_image_mode = 0
+        if pattern.get('oi_mode'):
+            out_image_mode = pattern.get('oi_mode')
+        file_count_per_capture = self._station_config.FILE_COUNT_INC.get(out_image_mode)
+        lambda_sum_files: Callable[[], int] = lambda: sum([len(list(filter(
+            lambda x: re.search('(_float.bin|.json)$', x, re.I | re.S), files))) for r, d, files in os.walk(capture_path)])
+        test_item_raw_files_pre = lambda_sum_files()
+        if self._station_config.EQUIPMENT_SIM and not self._station_config.EQUIPMENT_SIM_CAPTURE_FROM_DIR:
+            self._operator_interface.print_to_console(
+                "Skip to Capture Bin File for color {0} in emulator mode\n".format(pattern_value))
+            test_item_raw_files_post = test_item_raw_files_pre + file_count_per_capture
+        else:
+            msg = '********* Eldim Capturing Bin File for color {0} ***************\n'.format(pattern_value)
+            self._operator_interface.print_to_console(msg)
+            self._equipment.do_measure_and_export(pos_name, pattern_name)
+            test_item_raw_files_post = lambda_sum_files()
+        self._operator_interface.print_to_console(
+            'file count detect {0} --> {1}. \n'.format(test_item_raw_files_pre, test_item_raw_files_post))
+        raw_success_save = (test_item_raw_files_pre + file_count_per_capture) == test_item_raw_files_post
+        return raw_success_save
+
+    def render_pattern_on_dut(self, pattern_name, pattern_value):
+        msg = 'try to render image  {0} -> {1} to {2} module.\n' \
+            .format(pattern_name, pattern_value, self._module_left_or_right)
+        self._operator_interface.print_to_console(msg)
+        pattern_value_valid = True
+        if isinstance(pattern_value, (int, str)):
+            self._the_unit.display_image(pattern_value, False)
+        elif isinstance(pattern_value, tuple):
+            if len(pattern_value) == 0x03:
+                self._the_unit.display_color(pattern_value)
+            elif len(pattern_value) == 0x02 and self._module_left_or_right == 'L':
+                self._the_unit.display_image(pattern_value[0])
+            elif len(pattern_value) == 0x02 and self._module_left_or_right == 'R':
+                self._the_unit.display_image(pattern_value[1])
+            else:
+                pattern_value_valid = False
+        else:
+            pattern_value_valid = False
+        return pattern_value_valid
 
     def close_test(self, test_log):
         self._overall_result = test_log.get_overall_result()
@@ -438,6 +520,7 @@ class seacliffmotStation(test_station.TestStation):
                                     else self._station_config.TIMEOUT_FOR_BTN_IDLE)
         timeout_for_dual = timeout_for_btn_idle
         try:
+            self._fixture.flush_data()
             self._fixture.power_on_button_status(False)
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._fixture.start_button_status(False)
@@ -456,7 +539,7 @@ class seacliffmotStation(test_station.TestStation):
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
                     self._is_alignment_success = True
-                    self._module_left_or_right = 'L'
+                    self._module_left_or_right = 'R'
                     self._fixture._alignment_pos = (0, 0, 0, 0)
                     self._the_unit.screen_on()
                     ready = True
@@ -488,7 +571,7 @@ class seacliffmotStation(test_station.TestStation):
                         # power the dut on normally.
                         if power_on_trigger:
                             self._the_unit.screen_off()
-                            # self._the_unit.reboot()  # Reboot
+                            self._the_unit.reboot()  # Reboot
                         self._the_unit.screen_on()
                         power_on_trigger = True
                         # check the color sensor
@@ -601,19 +684,19 @@ class seacliffmotStation(test_station.TestStation):
         pass
 
     @staticmethod
-    def distortion_centroid_parametric_export_ex_parallel(pos_name, pattern_name, pri_key, fil):
-        # print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
+    def distortion_centroid_parametric_export_ex_parallel(pos_name, pattern_name, opt):
         distortion_exports = None
         try:
-            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
+            pri_key = opt['pri_key']
+            fil = opt['fil']
+            save_plots = opt['save_plots']
+            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(save_plots=save_plots)
             distortion_exports = mot_alg.distortion_centroid_parametric_export(fil)
         except:
             pass
         return pos_name, pattern_name, pri_key, distortion_exports
 
     def distortion_centroid_parametric_export_ex(self, ana_pos_item, ana_pattern, capture_path, test_log):
-        export_items = ['DispCen_x_cono', 'DispCen_y_cono', 'DispCen_x_display',
-                        'DispCen_y_display', 'Disp_Rotate_x', 'Disp_Rotate_y', 'Max Lum', 'Number Of Dots']
         self._operator_interface.print_to_console(f'Try to analysis data for {ana_pos_item} --> {ana_pattern}\n')
         for pos_item in self._station_config.TEST_ITEM_POS:
             pos_name = pos_item['name']
@@ -641,27 +724,26 @@ class seacliffmotStation(test_station.TestStation):
                     try:
                         self._operator_interface.print_to_console(
                             'start to export {0}, {1}-{2}\n'.format(pos_name, pattern_name, pri_k))
-                        # mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
-                        # distortion_exports = mot_alg.distortion_centroid_parametric_export(pri_v)
 
                         def distortion_centroid_parametric_export_ex_parallel_callback(res):
                             pos_name_i, pattern_name_i, pri_k_i, distortion_exports = res
                             if distortion_exports is not None:
-                                # print(f'distortion_centroid_parallel_callback>>>>>>>>>{pattern_name_i}\n')
-                                for export_item in export_items:
-                                    export_value = distortion_exports.get(export_item)
-                                    if export_value is None:
-                                        continue
+                                self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = distortion_exports
+                                for export_key, export_value in distortion_exports.items():
                                     measure_item_name = '{0}_{1}_{2}_{3}'.format(
-                                        pos_name_i, pattern_name_i, pri_k_i, export_item.replace(' ', ''))
+                                        pos_name_i, pattern_name_i, pri_k_i, export_key)
                                     test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
-                                # print(f'distortion_centroid_parallel_callback<<<<<<<<{pattern_name_i}\n')
                             self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
 
+                        opt = {
+                            'pri_key': pri_k,
+                            'fil': pri_v,
+                            'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG
+                        }
                         self._pool.apply_async(
                             seacliffmotStation.distortion_centroid_parametric_export_ex_parallel, (
-                                pos_name, pattern_name, pri_k, pri_v,),
+                                pos_name, pattern_name, opt),
                             callback=distortion_centroid_parametric_export_ex_parallel_callback)
                         self._pool_alg_dic[f'{pos_name}_{pattern_name}'] = False
                     except Exception as e:
@@ -669,99 +751,150 @@ class seacliffmotStation(test_station.TestStation):
                             f'Fail to export data for pattern: {pos_name}_{pattern_name} Distortion {pri_k}\n')
 
     @staticmethod
-    def color_pattern_parametric_export_ex_parallel(pos_name, pattern_name, fil, brightness_statistics, color_uniformity):
-        # print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
-        color_exports = None
+    def normal_pattern_parametric_export_ex_parallel(pos_name, pattern_name, opt):
+        parametric_exports = None
         try:
-            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
-            color_exports = mot_alg.color_pattern_parametric_export(
-                fil, brightness_statistics=brightness_statistics, color_uniformity=color_uniformity, multi_process=False)
-        except:
+            alg_optional = opt['alg']
+            fil = opt['filename']
+            save_plots = opt['save_plots']
+            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(save_plots=save_plots)
+            if alg_optional == 'w':
+                dut_temp = opt['temperature']
+                module_LR = opt['moduleLR']
+                parametric_exports = mot_alg.color_pattern_parametric_export_W255(module_LR, dut_temp, fil)
+            elif alg_optional in ['r', 'g', 'b']:
+                dut_temp = opt['temperature']
+                parametric_exports = mot_alg.color_pattern_parametric_export_RGB(alg_optional, dut_temp, fil)
+            elif alg_optional in ['br']:
+                dut_temp = opt['temperature']
+                parametric_exports = mot_alg.rgbboresight_parametric_export(dut_temp, fil)
+            elif alg_optional in ['gd']:
+                parametric_exports = mot_alg.distortion_centroid_parametric_export(fil)
+        except Exception as e:
             pass
-        return pos_name, pattern_name, color_exports
+        return pos_name, pattern_name, parametric_exports
 
-    def color_pattern_parametric_export_ex(self, ana_pos_item, ana_pattern, capture_path, test_log):
-        export_items_type_a = ['Lum_Ratio>0.8MaxLum', 'Lum_Ratio>0.8OnAxisLum', 'Lum_SSR', 'Lum_delta', 'Lum_mean',
-                               "u'_mean", "u'v'_delta<0.01_Ratio", "u'v'_delta_to_OnAxis",
-                               "v'_mean"]
-        export_items_pattern_normal = ['Max_Lum', "Max_Lum_u'", "Max_Lum_v'", "Max_Lum_x(deg)", 'Max_Lum_y(deg)']
+    def normal_pattern_parametric_export_ex(self, ana_pos_item, ana_pattern, capture_path, test_log):
         self._operator_interface.print_to_console(f'Try to analysis data for {ana_pos_item} --> {ana_pattern}\n')
         for pos_item in self._station_config.TEST_ITEM_POS:
             pos_name = pos_item['name']
             item_patterns = pos_item.get('pattern')
             if (ana_pos_item != pos_name) or (item_patterns is None):
                 continue
-            grp = set(self._station_config.ANALYSIS_GRP_COLOR_PATTERN + self._station_config.ANALYSIS_GRP_MONO_PATTERN)
-            analysis_patterns = [c for c in item_patterns if c in grp]
-            for pattern_name in analysis_patterns:
-                pattern_info = self.get_test_item_pattern(pattern_name)
-                if (pattern_name != ana_pattern) or (not pattern_info):
-                    continue
 
+            pattern_info = self.get_test_item_pattern(ana_pattern)
+            if not pattern_info:
+                continue
+            alg_optional = self._station_config.ANALYSIS_GRP_NORMAL_PATTERN.get(ana_pattern)
+            if not alg_optional:
+                continue
+
+            file_x, file_y, file_z = self.extract_basic_info_for_pattern(capture_path, ana_pattern, pos_name,
+                                                                         test_log)
+            if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
+                try:
+                    self._operator_interface.print_to_console(
+                        'start to export {0}, {1}\n'.format(pos_name, ana_pattern))
+
+                    def color_pattern_parametric_export_ex_parallel_callback(res):
+                        pos_name_i, pattern_name_i, color_exports = res
+                        if color_exports is not None:
+                            self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = color_exports
+                            for export_key, export_value in color_exports.items():
+                                measure_item_name = '{0}_{1}_{2}'.format(
+                                    pos_name_i, pattern_name_i, export_key)
+                                test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
+                        self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}')
+                        self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
+                    dut_temp = self._temperature_dic[f'{pos_name}_{ana_pattern}']
+                    opt = {
+                        'alg': alg_optional,
+                        'filename': file_x[0],
+                        'temperature': dut_temp,
+                        'moduleLR': self._module_left_or_right,
+                        'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG,
+                    }
+                    self._pool.apply_async(
+                        seacliffmotStation.normal_pattern_parametric_export_ex_parallel,
+                        (pos_name, ana_pattern, opt),
+                        callback=color_pattern_parametric_export_ex_parallel_callback)
+                    self._pool_alg_dic[f'{pos_name}_{ana_pattern}'] = False
+
+                except Exception as e:
+                    self._operator_interface.print_to_console(
+                        'Fail to export data for pattern: {0}_{1}, {2}\n'.format(pos_name, ana_pattern, e.args))
+
+    @staticmethod
+    def grade_a_pattern_parametric_export_ex_parallel(pos_name, pattern_name, opt):
+        # print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
+        white_dot_exports = None
+        XYZ = []
+        XYZ_W = []
+        try:
+            n_dots = opt['nDots']
+            fil = opt['filename']
+            fil_ref = opt['refname']
+            save_plots = opt['save_plots']
+            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(save_plots=save_plots)
+            XYZ = mot_alg.white_dot_pattern_w255_read(fil_ref, multi_process=False)
+            XYZ_W = np.stack(XYZ, axis=2)
+            white_dot_exports = mot_alg.white_dot_pattern_parametric_export(XYZ_W,
+                        opt['GL'], opt['x_w'], opt['y_w'],
+                        opt['ModuleTemp'], fil)
+        except Exception as e:
+            pass
+        finally:
+            del XYZ, XYZ_W
+        return pos_name, pattern_name, white_dot_exports
+
+    def grade_a_patterns_parametric_export_ex(self, ana_pos_item, ana_pattern, capture_path, test_log):
+        self._operator_interface.print_to_console(f'Try to analysis data for {ana_pos_item} --> {ana_pattern}\n')
+        for pos_item in self._station_config.TEST_ITEM_POS:
+            pos_name = pos_item['name']
+            item_patterns = pos_item.get('condition_A_patterns')
+            if (ana_pos_item != pos_name) or (item_patterns is None):
+                continue
+
+            for pattern_name, n_dots, __ in item_patterns:
+                grps = [c for c in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX if c[0] == pattern_name]
+                if len(grps) <= 0 or pattern_name != ana_pattern:
+                    continue
+                grp = grps[0]
+                file_ref = seacliffmotStation.get_filenames_in_folder(
+                    capture_path, rf'{pos_name}_{grp[1]}_.*_X_float\.bin')
                 file_x, file_y, file_z = self.extract_basic_info_for_pattern(capture_path, pattern_name, pos_name,
                                                                              test_log)
-                if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
+                if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x) and len(file_ref) > 0:
                     try:
                         self._operator_interface.print_to_console(
                             'start to export {0}, {1}\n'.format(pos_name, pattern_name))
-                        # mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper()
-                        # color_exports = mot_alg.color_pattern_parametric_export(file_x[0],
-                        #      brightness_statistics=(pattern_name in self._station_config.ANALYSIS_GRP_MONO_PATTERN),
-                        #      color_uniformity=(pattern_name in self._station_config.ANALYSIS_GRP_COLOR_PATTERN))
 
-                        def color_pattern_parametric_export_ex_parallel_callback(res):
-                            pos_name_i, pattern_name_i, color_exports = res
-                            if color_exports is not None:
-                                # print(f'color_pattern_parametric_export_ex_parallel_callback>>>>>>>>>{pattern_name_i}\n')
-                                lum_u_v_keys = ['Lum', 'u\'', 'v\'']
-                                measure_items = []
-                                for pole, azi in self._station_config.DATA_AT_POLE_AZI:
-                                    keys = ['{0}(x={1}deg,y={2}deg)'.format(c, pole, azi) for c in lum_u_v_keys]
-                                    measure_items = ['{0}_{1}deg_{2}deg'.format(c, pole, azi) for c in lum_u_v_keys]
-                                    test_values = [color_exports.get(c) for c in keys]
-                                    for measure_item, test_value in zip(measure_items, test_values):
-                                        measure_item_name = '{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, measure_item)
-                                        test_log.set_measured_value_by_name_ex(measure_item_name, test_value)
-
-                                for deg in self._station_config.DATA_STATUS_DEGS:
-                                    measure_items = ['{0}_{1}deg'.format(c, deg) for c in export_items_type_a]
-                                    test_values = [color_exports.get(c) for c in measure_items]
-                                    for measure_item, test_value in zip(measure_items, test_values):
-                                        measure_item_name = '{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, measure_item)
-                                        test_log.set_measured_value_by_name_ex(measure_item_name, test_value)
-
-                                normal_items = {}
-                                test_values = [color_exports.get(c) for c in measure_items]
-                                measure_item_names = ['{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, c.replace(' ', ''))
-                                                      for c in measure_items]
-                                for measure_item_name, export_value in zip(measure_item_names, test_values):
-                                    normal_items[measure_item_name] = export_value
-
-                                for export_item, export_value in color_exports.items():
-                                    if export_item is None:
-                                        continue
-                                    export_item_without_blank = export_item.replace(' ', '_')
-                                    measure_item_name = '{0}_{1}_{2}'.format(pos_name_i, pattern_name_i, export_item_without_blank)
-                                    normal_items[measure_item_name] = export_value
-                                measure_items = [f'{pos_name_i}_{pattern_name_i}_{c}' for c in export_items_pattern_normal]
-                                [test_log.set_measured_value_by_name_ex(measure_item, normal_items.get(measure_item))
-                                 for measure_item in measure_items]
-                                del measure_items, measure_item_names, test_values
-                            # print(f'distortion_centroid_parametric_export_ex_parallel_callback<<<<<<<<{pattern_name_i}\n')
+                        def grade_a_parametric_export_ex_parallel_callback(res):
+                            pos_name_i, pattern_name_i, white_dot_exports = res
+                            if white_dot_exports is not None:
+                                self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = white_dot_exports
+                                for export_key, export_value in white_dot_exports.items():
+                                    measure_item_name = '{0}_{1}_{2}'.format(
+                                        pos_name_i, pattern_name_i, export_key)
+                                    test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
+                            self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
+                        opt = {'ModuleTemp': self._temperature_dic[f'{pos_name}_{pattern_name}'],
+                               'nDots': n_dots,
+                               'filename': file_x[0],
+                               'refname': file_ref[0],
+                               'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG}
+                        opt.update(self._gl_W255.copy())
 
-                        brightness_statistics = (pattern_name in self._station_config.ANALYSIS_GRP_MONO_PATTERN)
-                        color_uniformity = (pattern_name in self._station_config.ANALYSIS_GRP_COLOR_PATTERN)
                         self._pool.apply_async(
-                            seacliffmotStation.color_pattern_parametric_export_ex_parallel,
-                            (pos_name, pattern_name, file_x[0], brightness_statistics, color_uniformity),
-                            callback=color_pattern_parametric_export_ex_parallel_callback)
+                            seacliffmotStation.grade_a_pattern_parametric_export_ex_parallel,
+                            (pos_name, pattern_name, opt),
+                            callback=grade_a_parametric_export_ex_parallel_callback)
                         self._pool_alg_dic[f'{pos_name}_{pattern_name}'] = False
 
                     except Exception as e:
                         self._operator_interface.print_to_console(
                             'Fail to export data for pattern: {0}_{1}, {2}\n'.format(pos_name, pattern_name, e.args))
-            del grp, analysis_patterns
 
     def extract_basic_info_for_pattern(self, capture_path, pattern_name, pos_name, test_log):
         pre_file_name = '{0}_{1}'.format(pos_name, pattern_name)
@@ -778,7 +911,7 @@ class seacliffmotStation(test_station.TestStation):
                 exp_filters = [c for c in filters if c in exposure_items.keys()]
                 if isinstance(exposure_items, dict):
                     [test_log.set_measured_value_by_name_ex(
-                        f'{pre_file_name}_ExposureTime_Filter_{k}',
+                        f'{pre_file_name}_ExposureTime_{k}',
                         exposure_items[k]['exposureTimeUs'])
                         for k in exp_filters]
                     [test_log.set_measured_value_by_name_ex(

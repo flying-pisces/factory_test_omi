@@ -37,8 +37,13 @@ def get_datas():
 
      if len(glob.glob('shop_floor_interface\\*.py')) > 0:
         datas.append(('shop_floor_interface\\*.py','..\\shop_floor_interface\\'))
-     if len(glob.glob('test_station\\test_equipment\\algorithm\\*.seqx')) > 0:
-        datas.append(('test_station\\test_equipment\\algorithm\\*.seqx',
+     #  file extend name changed to seqxc from version 1.8
+     if len(glob.glob('test_station\\test_equipment\\algorithm\\*.seqxc')) > 0:
+        datas.append(('test_station\\test_equipment\\algorithm\\*.seqxc',
+                '.\\test_station\\test_equipment\\algorithm\\'))
+     # json file for mot.
+     if len(glob.glob('test_station\\test_equipment\\algorithm\\*.json')) > 0:
+        datas.append(('test_station\\test_equipment\\algorithm\\*.json',
                 '.\\test_station\\test_equipment\\algorithm\\'))
      return datas
 

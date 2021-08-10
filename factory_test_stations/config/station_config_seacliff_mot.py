@@ -1,9 +1,42 @@
 """
 Release Note:
 ========================================================
+Version 1.2.0
+2021-8-6 elton<elton.tian@myzygroup>
+-1. algorithm V3 for MOT.
+
+========================================================
+Version 1.1.1b5
+2021-6-4 author<xxx@xxx.com>
+-1. remove default setting for white-dotV.
+-2. update taprisoit to ver67
+
+========================================================
+Version 1.1.1b4
+2021-5-20 author<xxx@xxx.com>
+-1. add white-dotV2 pattern for MOT.
+
+========================================================
+Version 1.1.1b3
+2021-4-24 author<xxx@xxx.com>
+-1. add white-dot pattern for MOT.
+
+========================================================
+Version 1.1.1b2
+2021-3-1 author<xxx@xxx.com>
+-1. record temp. for each pattern.
+
+========================================================
 Version 1.1.2
 2021-2-9 author<xxx@xxx.com>
 -1. update reading for exposure_time from Eldim-Conoscope.
+
+========================================================
+Version 1.1.1
+2021-2-25 author<xxx@xxx.com>
+-1. disable all the button before testing.
+-2. optimize connection for fixture.
+-3. reset trapsiot automatically while some errors comes out from trapsiot.
 
 ========================================================
 Version 1.1.1b
@@ -19,6 +52,7 @@ Version 1.1.0
 -1. Init version for MOT
 """
 
+
 ##################################
 # directories
 #
@@ -27,10 +61,10 @@ Version 1.1.0
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 SEQUENCE_RELATIVEPATH = r'C:\oculus\run\seacliff_mot_run\test_station\test_equipment\algorithm'
-CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment'
+CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment_eldim'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_mot_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
-
+RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
 ##################################
 # serial number codes
 #
@@ -69,6 +103,7 @@ COMMAND_DISP_WRITE = "MIPI.Write"
 COMMAND_DISP_2832WRITE = "t.2832_MIPI_WRITE"
 COMMAND_DISP_VSYNC = "REFRESHRATE"
 COMMAND_DISP_GET_COLOR = "GetColor"
+COMMAND_MEASURE_BLU = "Measure,BLU"
 
 COMMAND_DISP_POWERON_DLY = 0.5
 COMMAND_DISP_RESET_DLY = 1
@@ -154,14 +189,15 @@ FIXTURE_USB_ON_TIME = 1
 #################################
 # Fixture related parameters
 # DISTANCE_BETWEEN_CAMERA_AND_DATUM = 26041
-# genius: 17750+18000, sunny: 18530+18000, gtk: 21450+18000
-DISTANCE_BETWEEN_CAMERA_AND_DATUM = 18530+18000
+# genius: 17750+18000, sunny: 18530+18000, gtk: 21450+18000, us: 21950+18000
+DISTANCE_BETWEEN_CAMERA_AND_DATUM = 21950+18000
 
 ##################################
 # Test Equipment related parameters
+SORTED_EXPORT_LOG = False
 IS_PRINT_TO_LOG = False
 IS_VERBOSE = False # some path bug, temp set False and work on True later
-CFG_PATH = r'..\Cfg'
+CFG_PATH = r'../Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
@@ -171,8 +207,8 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 0
 
-VERSION_REVISION_EQUIPMENT = 67
-FILE_COUNT_INC = 4
+VERSION_REVISION_EQUIPMENT = 69
+FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 
 # set sensor_temperature
 TEST_SENSOR_TEMPERATURE = 25.0
@@ -181,7 +217,7 @@ TEST_SENSOR_TEMPERATURE = 25.0
 CAM_INIT_CONFIG = {
     "exportFormat": 0,
     "AEMinExpoTimeUs": 10,
-    "AEMaxExpoTimeUs": 99999,
+    "AEMaxExpoTimeUs": 9985000,
     "AEExpoTimeGranularityUs": 11146,
     "AELevelPercent": 80.0,
 
@@ -208,8 +244,8 @@ SEQ_CAP_INIT_CONFIG = {
     'RoiXRight': 6001,
     'RoiYTop': 0,
     'RoiYBottom': 6001,
-    "bAutoExposure": True,
-    "bUseExpoFile": False,
+    "bAutoExposure": False,
+    "bUseExpoFile": True,
     'bSaveCapture': False,
     'eOuputImage': 3,
     "exposureTimeUs_FilterX": 10,
@@ -230,13 +266,17 @@ MIN_SPACE_REQUIRED = [('C:\\', 500), ('D:\\', 3500)]
 
 # parameters for test sequence.
 TEST_SEQ_WAIT_FOR_TEMPERATURE = False
-TEST_AUTO_EXPOSURE = True
-TEST_SEQ_USE_EXPO_FILE = False
+TEST_AUTO_EXPOSURE = False
 TEST_SEQ_SAVE_CAPTURE = False
 
 ANALYSIS_GRP_DISTORTION = ['GreenDistortion']
-ANALYSIS_GRP_MONO_PATTERN = ['W255']
-ANALYSIS_GRP_COLOR_PATTERN = ['W255', 'R255', 'G255', 'B255']
+ANALYSIS_GRP_NORMAL_PATTERN = {'W255': 'w', 
+    'R255': 'r', 
+    'G255': 'g', 
+    'B255': 'b', 
+    'RGBBoresight': 'br',
+    }
+ANALYSIS_GRP_COLOR_PATTERN_EX = [('WhiteDot', 'W255'), ('WhiteDotV2', 'W255')]
 
 # ANALYSIS_GRP_DISTORTION_PRIMARY = ['X', 'Y', 'Z']
 ANALYSIS_GRP_DISTORTION_PRIMARY = ['Y']
@@ -250,22 +290,31 @@ ANALYSIS_GRP_DISTORTION_PRIMARY = ['Y']
 #                                   pattern named with right, should be render to left-module.
 
 TEST_ITEM_PATTERNS = [
-    {'name': 'W255', 'pattern': (255, 255, 255), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'W255', 'pattern': (255, 255, 255), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
     {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'W000', 'pattern': (0, 0, 0), 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'RGB', 'pattern': 0, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'R255', 'pattern': (255, 0, 0), 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'G255', 'pattern': (0, 255, 0), 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'B255', 'pattern': (0, 0, 255), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'R255', 'pattern': (255, 0, 0), 'setup': (7, 0, 3), 'exposure': (144900, 980852, 468134, 980852, 980852)},
+    {'name': 'G255', 'pattern': (0, 255, 0), 'setup': (7, 0, 3), 'exposure': (300935, 980852, 345533, 178334, 980852)},
+    {'name': 'B255', 'pattern': (0, 0, 255), 'setup': (7, 0, 3), 'exposure': (980852, 156050, 980852, 980852, 167184)},
     {'name': 'GreenContrast', 'pattern': (2, 1), 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'WhiteContrast', 'pattern': (4, 3), 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'GreenSharpness', 'pattern': 5, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'GreenDistortion', 'pattern': (7, 6), 'setup': (7, 0, 3), 'exposure': '5000'}
+    {'name': 'GreenDistortion', 'pattern': (7, 6), 'setup': (7, 0, 3), 'exposure': (378967, 980852, 434700, 222917, 980852), 'oi_mode': 2},
+    {'name': 'WhiteDot7', 'pattern': (8, 9), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'WhiteDot8', 'pattern': (10, 11), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'WhiteDot9', 'pattern': (12, 13), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'WhiteDot10', 'pattern': (14, 15), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'WhiteDot11', 'pattern': (16, 17), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'WhiteDot12', 'pattern': (18, 19), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'RGBBoresight', 'pattern': (20, 21), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
 ]
 
 TEST_ITEM_POS = [
     {'name': 'normal', 'pos': (0, 0, 15000),
-     'pattern': ['W255', 'R255', 'G255', 'B255', 'GreenDistortion']
+     'pattern': ['W255', 'R255', 'G255', 'B255', 'RGBBoresight', 'GreenDistortion'],
+     'condition_A_patterns':[
+                             ('WhiteDot', 21, ['WhiteDot10', 'WhiteDot11', 'WhiteDot12'])]
      },
     # {'name': 'normal', 'pos': (0, 0, 15000),
     #  'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
@@ -311,6 +360,7 @@ SHOPFLOOR_SYSTEM = 'genius_mot'
 VERSION = 'SunnyP2-PreBuild-Alpha'
 AUTO_CVT_BGR_IMAGE_FROM_XYZ = False
 AUTO_SAVE_2_TXT = False
+AUTO_SAVE_PROCESSED_PNG = True
 EQUIPMENT_SIM_CAPTURE_FROM_DIR = False
 DUT_SIM = True
 EQUIPMENT_SIM = True

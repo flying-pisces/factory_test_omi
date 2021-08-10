@@ -16,6 +16,8 @@ import hardware_station_common.utils.thread_utils as thread_utils
 from skimage import measure
 import os
 import scipy
+import matplotlib.pyplot as plt
+import matplotlib
 import csv
 
 try:
@@ -434,27 +436,14 @@ class MotAlgorithmHelper(object):
     kernel_b = np.sum(_kernel)
     _kernel = _kernel / kernel_b  # normalize
 
-    def __init__(self, is_verbose=False):
+    def __init__(self, is_verbose=False, save_plots=True):
         self._verbose = is_verbose
-        self._noise_thresh = 0.05  # Percent of Y sum to exclude from color plots (use due to color calc noise in dim part of image)
-        self._color_thresh = 0.01  # Thresh for color uniformity
-        self._lum_thresh = 0.8  # Thresh for brightness uniformity
-        self._fixed_chroma_clims = 0  # If 1, then chroma plots range [0 1].  Otherwise auto scale
-        self._disp_fov = 60  # Maximum FOV to display.  Use for masking.
-        self._chromaticity_fov = [10, 20, 30]  # Limit FOV for chromaticity plot in degrees
-        self._disp_ring_spacing = 10  # Spacing, in deg, of rings overlaid on plots
-        self._save_plots = 1  # Save output plots as PNG and SVG/EMF into same dirr as file
-        # ----- Begin code -----#
+        self._save_plots = save_plots
         self._cam_fov = 60
         self._row = 6001
         self._col = 6001
-        self._pixel_spacing = 0.02  # Degrees per pixel
-
-        self._mask_fov = 30
-        self._x_autocollimator = 0
-        self._y_autocollimator = 0
-        self._fig_ind = 0
-        np.seterr(invalid='ignore')
+        self._exp_dir = 'exp'
+        np.seterr(invalid='ignore', divide='ignore')
 
     @classmethod
     def get_export_data(cls, filename, station_config=None):
@@ -485,8 +474,11 @@ class MotAlgorithmHelper(object):
         return image_in
 
     def distortion_centroid_parametric_export(self, filename=r'/normal_GreenDistortion_X_float.bin'):
+        mask_fov = 30
+        x_autocollimator = 0
+        y_autocollimator = 0
         dirr = os.path.dirname(filename)
-
+        fnamebase = os.path.basename(filename).lower().split('_x_float.bin')[0]
         x_angle_arr = np.linspace(-1 * self._cam_fov, self._cam_fov, self._col).reshape(-1, self._col)
         y_angle_arr = np.linspace(-1 * self._cam_fov, self._cam_fov, self._row).reshape(-1, self._col)
         #
@@ -494,7 +486,7 @@ class MotAlgorithmHelper(object):
         with open(filename, 'rb') as f:
             frame3 = np.frombuffer(f.read(), dtype=np.float32)
             image_in = frame3.reshape(self._col, self._row).T
-            image_in = cv2.rotate(image_in, 0)
+            image_in = np.rot90(image_in, 3)
         if self._verbose:
             print(f'Read bin files named {os.path.basename(filename)}\n')
 
@@ -513,7 +505,7 @@ class MotAlgorithmHelper(object):
         radius_deg_arr = (col_deg_arr ** 2 + row_deg_arr ** 2) ** (1 / 2)
         mask = np.ones((self._row, self._col))
         # mask[np.where(radius_deg_arr > disp_fov)] = 0
-        mask[np.where(radius_deg_arr > self._mask_fov)] = 0
+        mask[np.where(radius_deg_arr > mask_fov)] = 0
 
         masked_tristim = XYZ * mask
         max_XYZ_val = np.max(masked_tristim)
@@ -603,36 +595,17 @@ class MotAlgorithmHelper(object):
         x1 = centroid[x_points, 0].reshape(-1)
         y1 = centroid[x_points, 1].reshape(-1)
 
-        c1 = np.polyfit(x1, y1, 1)
+        c1 = self.polyfit_ex(x1, y1, 1)
         k1 = np.degrees(np.arctan(c1[0]))
 
         x2 = centroid[y_points, 0].reshape(-1)
         y2 = centroid[y_points, 1].reshape(-1)
 
-        c2 = np.polyfit(x2, y2, 1)
+        c2 = self.polyfit_ex(x2, y2, 1)
         k2 = np.degrees(np.arctan(c2[0]))
-        #
-        # plt.plot(centroid[:, 1], centroid[:, 0], 'x')
-        # plt.plot(image_center[1], image_center[0], 's')
-        # plt.plot(x1, np.polyval(c1, x1))
-        # plt.plot(x2, np.polyval(c2, x2))
-        # plt.xlabel('X / pixels')
-        # plt.ylabel('Y / pixels')
-        # plt.title('Center of Dots')
-        #
-        # Data = [filename[-11:], max_XYZ_val, num_dots, image_center[1], image_center[0], k1, k2]
-        # end = time.time()
-        # print(end - start)
-        # print('filename:',filename)
-        # print('final Data', Data)
-        # plt.show()
-        # with open('DATA.csv', 'a+', encoding='utf-8') as f:
-        #     csv_writer = csv.writer(f)
-        #     csv_writer.writerow(Data)
-        # return Data
 
-        x_deg = self._x_autocollimator
-        y_deg = self._y_autocollimator
+        x_deg = x_autocollimator
+        y_deg = y_autocollimator
         # col_ind and row_ind are the x and y pixel value of the cross-pattern
         # from autocollimator in Eldim conoscope. After autocollimator alignment,
         # these value should be the center pixel of the image, which should be
@@ -644,16 +617,16 @@ class MotAlgorithmHelper(object):
         display_center[1] = 0.4563 * (image_center[1] - (row_ind + 1))
 
         k = 0
-        stats_summary = np.empty((2, 9), dtype=object)
+        stats_summary = np.empty((2, 100), dtype=object)
         # stats_summary = cell(2,1)
-        stats_summary[0, k] = dirr
-        stats_summary[1, k] = os.path.join(dirr, os.path.basename(filename))
-        k = k + 1
-        stats_summary[0, k] = 'Max Lum'
-        stats_summary[1, k] = max_XYZ_val
-        k = k + 1
-        stats_summary[0, k] = 'Number Of Dots'
-        stats_summary[1, k] = num_dots
+        stats_summary[0, k] = 'dir'
+        stats_summary[1, k] = os.path.join(dirr, fnamebase)
+        # k = k + 1
+        # stats_summary[0, k] = 'Max Lum'
+        # stats_summary[1, k] = max_XYZ_val
+        # k = k + 1
+        # stats_summary[0, k] = 'Number Of Dots'
+        # stats_summary[1, k] = num_dots
         k = k + 1
         stats_summary[0, k] = 'DispCen_x_cono'
         stats_summary[1, k] = image_center[0]
@@ -677,7 +650,7 @@ class MotAlgorithmHelper(object):
         del XYZ, CXYZ, x_angle_arr, y_angle_arr, image_in, col_deg_arr, row_deg_arr, radius_deg_arr, mask
         del masked_tristim, label_image, stats, bb, centroid, x_points, y_points, image_center
 
-        return dict(zip(list(stats_summary[0]), list(stats_summary[1])))
+        return dict(np.transpose(stats_summary[:, 0:k]))
 
     @staticmethod
     def read_image_raw(bin_filename):
@@ -689,9 +662,177 @@ class MotAlgorithmHelper(object):
         del I
         return image_in
 
-    def color_pattern_parametric_export(self, xfilename=r'W255_X_float.bin',
-                                        brightness_statistics=True,
-                                        color_uniformity=True, multi_process=False):
+    def color_pattern_parametric_export_RGB(self, primary='r', module_temp=30, xfilename=r'R255_X_float.bin'):
+
+        # ----- Adjustable Parameters for Output -----#
+        # startdirr = 'C:\Users\xiaobotian\Desktop\FMOT\MOT data\20200704 MOT data\C3-LH0007_SEACLIFF_MOT-01_20200703-235556\19043959\20200703_235715_nd_0_iris_5_X_float.bin'
+        ModuleTemp = module_temp
+        TargetTemp = 47
+        dLum_R = -0.02253
+        dColor_x_R = 0.000121
+        dColor_y_R = -0.00047
+        dLum_G = -0.01266
+        dColor_x_G = 0.000733
+        dColor_y_G = -0.00103
+        dLum_B = -0.01019
+        dColor_x_B = -0.000012
+        dColor_y_B = -0.00016
+
+        coeff = {
+            'r': (dLum_R, dColor_x_R, dColor_y_R),
+            'g': (dLum_G, dColor_x_G, dColor_y_G),
+            'b': (dLum_B, dColor_x_B, dColor_y_B),
+        }
+
+        dLum, dColor_x, dColor_y = coeff[primary]
+        # # Color offsite is used for MOT correlation
+        Color_x_offsite = 0
+        Color_y_offsite = 0
+        # # Data processin setting
+
+        noise_thresh = 0.05  # Percent of Y sum to exclude from color plots (use due to color calc noise in dim part of image)
+        color_thresh = 0.01  # Thresh for color uniformity
+        lum_thresh = 0.7  # Thresh for brightness uniformity v3.0
+        fixed_chroma_clims = 0  # If 1, then chroma plots range [0 1].  Otherwise auto scale
+        disp_fov = 60  # Maximum FOV to display.  Use for masking.
+        chromaticity_fov = 30  # Limit FOV for chromaticity plot in degrees v3.0
+        disp_ring_spacing = 10  # Spacing, in deg, of rings overlaid on plots
+        kernel_width = 25  # Width of square smoothing kernel in pixels.
+        kernel_shape = 'square'  # Use 'circle' or 'square' to change the smoothing kernel shape
+
+        # ----- Begin code -----#
+        cam_fov = 60
+        row = 6001
+        col = 6001
+        pixel_spacing = 0.02  # Degrees per pixel
+
+        dirr = os.path.dirname(xfilename)
+        fnamebase = os.path.basename(xfilename).lower().split('_x_float.bin')[0]
+        filename = ['{0}_{1}_float.bin'.format(fnamebase, c) for c in ['X', 'Y', 'Z']]
+        primary = ['X', 'Y', 'Z']
+
+        x_angle_arr = np.linspace(-1 * cam_fov, cam_fov, col).reshape(-1, col)
+        y_angle_arr = np.linspace(-1 * cam_fov, cam_fov, row).reshape(-1, row)
+
+        kernel = np.ones((kernel_width, kernel_width))
+        kernel_b = np.sum(kernel)
+        kernel = kernel / kernel_b  # normalize
+        XYZ = []
+        for i in range(0, 3):
+            with open(os.path.join(dirr, filename[i]), 'rb') as fin:
+                I = np.frombuffer(fin.read(), dtype=np.float32)
+            image_in = np.reshape(I, (col, row)).T
+            image_in = np.rot90(image_in, 3)
+            image_in = np.flip(image_in, 0)
+
+            image_in = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
+            XYZ.append(image_in)
+
+        XYZ = np.stack(XYZ, axis=2)
+        ## Save parametric data
+        # Create viewing masks
+        col_deg_arr = np.tile(x_angle_arr, (row, 1))
+        row_deg_arr = np.tile(y_angle_arr.T, (1, col))
+        radius_deg_arr = (col_deg_arr ** 2 + row_deg_arr ** 2) ** (1 / 2)
+        mask = np.ones((row, col))
+        mask[radius_deg_arr > disp_fov] = 0
+        chromaticity_mask = np.ones((row, col))
+        chromaticity_mask[radius_deg_arr > chromaticity_fov] = 0
+
+        cam_fov_mask = np.ones((row, col))
+        cam_fov_mask[radius_deg_arr > cam_fov] = 0
+
+        # Perform CIE and RGB color calculations and mask to disp_fov
+        # y are ued for absolute color value, color u' and v' are used for
+        # calculate color uniformity
+        x_smoothed = mask * (XYZ[:, :, 0]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
+        x_smoothed[np.isnan(x_smoothed)] = 0
+        x_smoothed = x_smoothed + Color_x_offsite
+        y_smoothed = mask * (XYZ[:, :, 1]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
+        y_smoothed[np.isnan(y_smoothed)] = 0
+        y_smoothed = y_smoothed + Color_y_offsite
+
+        tmp_XYZ = XYZ[:, :, 1] * mask
+        XYZ_mask = np.zeros((row, col))
+        XYZ_mask[tmp_XYZ > noise_thresh * np.max(tmp_XYZ)] = 1
+
+        x_smoothed_masked = x_smoothed * XYZ_mask
+        y_smoothed_masked = y_smoothed * XYZ_mask
+        x_smoothed_masked_TargetTemp = x_smoothed_masked + (TargetTemp - ModuleTemp) * dColor_x
+        y_smoothed_masked_TargetTemp = y_smoothed_masked + (TargetTemp - ModuleTemp) * dColor_y
+
+        # np.nonzero max value location for brightness
+        Lum_masked = XYZ[:, :, 1] * mask
+        Lum_masked_TargetTemp = Lum_masked * (1 + (TargetTemp - ModuleTemp) * dLum)
+        max_Y_val = np.max(Lum_masked[:])
+        [rowsOfMaxes, colsOfMaxes] = np.nonzero(np.array(Lum_masked) == np.array(max_Y_val))
+
+        max_Y_xloc_deg = x_angle_arr[0, colsOfMaxes]
+        max_Y_yloc_deg = y_angle_arr[0, rowsOfMaxes]
+        max_Y_xloc_pix = colsOfMaxes
+        max_Y_yloc_pix = rowsOfMaxes
+
+        # Output Statistics
+        # dirr='chenyuyi'
+        k = 0
+
+        x_deg = 0
+        y_deg = 0
+        col_ind_onaxis = np.nonzero(np.abs(x_angle_arr - x_deg) == np.min(np.abs(x_angle_arr - x_deg)))[1][0]
+        row_ind_onaxis = np.nonzero(np.abs(y_angle_arr - y_deg) == np.min(np.abs(y_angle_arr - y_deg)))[1][0]
+        # On-axis and off-axis brightness and color values
+        x_deg = 0
+        y_deg = 0
+        col_ind = np.nonzero(np.abs(x_angle_arr - x_deg) == np.min(np.abs(x_angle_arr - x_deg)))[1][0]
+        row_ind = np.nonzero(np.abs(y_angle_arr - y_deg) == np.min(np.abs(y_angle_arr - y_deg)))[1][0]
+        stats_summary = np.empty((2, 100), np.object)
+        stats_summary[0, k] = 'dir'
+        stats_summary[1, k] = os.path.join(dirr, fnamebase)
+        k = k + 1
+        stats_summary[0, k] = 'Module Temperature'
+        stats_summary[1, k] = ModuleTemp
+        k = k + 1
+        stats_summary[0, k] = 'OnAxis Lum'
+        stats_summary[1, k] = Lum_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = 'OnAxis x'
+        stats_summary[1, k] = x_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = 'OnAxis y'
+        stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = 'OnAxis Lum at 47C'
+        stats_summary[1, k] = Lum_masked_TargetTemp[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = 'OnAxis x at 47C'
+        stats_summary[1, k] = x_smoothed_masked_TargetTemp[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = 'OnAxis y at 47C'
+        stats_summary[1, k] = y_smoothed_masked_TargetTemp[row_ind, col_ind]
+        k += 1
+        del Lum_masked, Lum_masked_TargetTemp, XYZ, cam_fov_mask, chromaticity_mask, col_deg_arr
+        del colsOfMaxes, image_in, mask, radius_deg_arr, row_deg_arr, rowsOfMaxes, tmp_XYZ
+        del x_angle_arr, x_smoothed_masked, x_smoothed_masked_TargetTemp,
+        del y_smoothed_masked_TargetTemp, y_smoothed, y_smoothed_masked,
+        return dict(np.transpose(stats_summary[:, 0:k]))
+
+    def color_pattern_parametric_export_W255(self, ModuleLR='L', module_temp=30, xfilename=r'W255_X_float.bin'):
+        # TargetTemp is the target temperature, and dLum, dColor is the
+        # luminance and color drift per degree
+        ModuleTemp = module_temp
+        TargetTemp = 47
+        dLum = -0.0155
+        dColor_x = -0.001094
+        dColor_y = -0.001043
+        # Color offsite is used for MOT correlation
+        Color_x_offsite = 0
+        Color_y_offsite = 0
+        chromaticity_fov = 30
+
+        lum_thresh = 0.7
+        noise_thresh = 0.05
+        disp_fov = 60
+
         dirr = os.path.dirname(xfilename)
         fnamebase = os.path.basename(xfilename).lower().split('_x_float.bin')[0]
         filename = ['{0}_{1}_float.bin'.format(fnamebase, c) for c in ['X', 'Y', 'Z']]
@@ -699,42 +840,18 @@ class MotAlgorithmHelper(object):
         x_angle_arr = np.linspace(-1 * self._cam_fov, self._cam_fov, self._col).reshape(-1, self._col)
         y_angle_arr = np.linspace(-1 * self._cam_fov, self._cam_fov, self._row).reshape(-1, self._row)
 
-        # xyz_array = []
-        # for i in range(0, 3):
-        #     with open(os.path.join(dirr, filename[i]), 'rb') as fin:
-        #         I = np.frombuffer(fin.read(), dtype=np.float32)
-        #     image_in = np.reshape(I, (self._col, self._row))
-        #     # Z = Z'        #Removed for viewing to match DUT orientation
-        #     image_in = np.flip(image_in.T, 1)  # Implement flip for viewing to match DUT orientation
-        #     # image_in = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
-        #     xyz_array.append(image_in)
         file_names = [os.path.join(dirr, c) for c in filename]
-        if multi_process:
-            pool = mp.Pool(mp.cpu_count())
-            XYZ_t = pool.map(MotAlgorithmHelper.read_image_raw, file_names)
-            pool.close()
-        else:
-            XYZ_t = [MotAlgorithmHelper.read_image_raw(c) for c in file_names]
+        XYZ_t = [MotAlgorithmHelper.read_image_raw(c) for c in file_names]
         if self._verbose:
             print(f'Read bin files named {fnamebase}\n')
         XYZ = []
-        for image_in in XYZ_t:
-            image_in = cv2.rotate(image_in, 0)  # Implement flip for viewing to match DUT orientation
+        for c in XYZ_t:
+            image_in = np.rot90(c.T, 3)
+            image_in = np.flip(image_in, 0)
             image_in = cv2.filter2D(image_in, -1, MotAlgorithmHelper._kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ.append(image_in)
         del XYZ_t
-
-        # cv2.namedWindow('img',0)
-        # cv2.imshow('img',image_in)
-        # cv2.waitKey(1000)
-        # path = 'XYZ.pkl'
-        # f = open(path, 'wb')
-        # pickle.dump(XYZ, f)
-        # f.close()
-
-        # f1 = open(path, 'rb')
-        # XYZ = pickle.load(f1)
-        # print(len(XYZ))
+        XYZ = np.stack(XYZ, axis=2)
 
         ## Save parametric data
         # Create viewing masks
@@ -742,36 +859,45 @@ class MotAlgorithmHelper(object):
         row_deg_arr = np.tile(y_angle_arr.T, (1, self._col))
         radius_deg_arr = (col_deg_arr ** 2 + row_deg_arr ** 2) ** (1 / 2)
         mask = np.ones((self._row, self._col))
-        mask[radius_deg_arr > self._disp_fov] = 0
-        chromaticity_mask = np.ones((self._row, self._col, 3))  # 3 field mask defined by chromaticity_fov
-        chromaticity_mask1 = np.ones((self._row, self._col))
-        chromaticity_mask1[radius_deg_arr > self._chromaticity_fov[0]] = 0
-        chromaticity_mask[:, :, 0] = chromaticity_mask1
-        chromaticity_mask2 = np.ones((self._row, self._col))
-        chromaticity_mask2[radius_deg_arr > self._chromaticity_fov[1]] = 0
-        chromaticity_mask[:, :, 1] = chromaticity_mask2
-        chromaticity_mask3 = np.ones((self._row, self._col))
-        chromaticity_mask3[radius_deg_arr > self._chromaticity_fov[2]] = 0
-        chromaticity_mask[:, :, 2] = chromaticity_mask3
+        mask[radius_deg_arr > disp_fov] = 0
+        chromaticity_mask = np.ones((self._row, self._col))  # 3 field mask defined by chromaticity_fov
+
+        chromaticity_mask[radius_deg_arr > chromaticity_fov] = 0
         cam_fov_mask = np.ones((self._row, self._col))
         cam_fov_mask[radius_deg_arr > self._cam_fov] = 0
 
         # Perform CIE and RGB color calculations and mask to disp_fov
-        u_prime_smoothed = mask * (4 * XYZ[0]) / (XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2])
+        # y are ued for absolute color value, color u' and v' are used for
+        # calculate color uniformity
+        x_smoothed = mask * (XYZ[:, :, 0]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
+        x_smoothed[np.isnan(x_smoothed)] = 0
+        x_smoothed = x_smoothed + Color_x_offsite
+        y_smoothed = mask * (XYZ[:, :, 1]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
+        y_smoothed[np.isnan(y_smoothed)] = 0
+        y_smoothed = y_smoothed + Color_y_offsite
+
+        # Perform CIE and RGB color calculations and mask to disp_fov
+        u_prime_smoothed = mask * (4 * XYZ[:, :, 0]) / (XYZ[:, :, 0] + 15 * XYZ[:, :, 1] + 3 * XYZ[:, :, 2])
         u_prime_smoothed[np.isnan(u_prime_smoothed)] = 0
-        v_prime_smoothed = mask * (9 * XYZ[1]) / (XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2])
+        v_prime_smoothed = mask * (9 * XYZ[:, :, 1]) / (XYZ[:, :, 0] + 15 * XYZ[:, :, 1] + 3 * XYZ[:, :, 2])
         v_prime_smoothed[np.isnan(v_prime_smoothed)] = 0
 
-        tmp_XYZ = XYZ[1] * mask
+        tmp_XYZ = XYZ[:, :, 1] * mask
         XYZ_mask = np.zeros((self._row, self._col))
-        XYZ_mask[tmp_XYZ > self._noise_thresh * np.max(tmp_XYZ)] = 1
+        XYZ_mask[tmp_XYZ > noise_thresh * np.max(tmp_XYZ)] = 1
 
+        x_smoothed_masked = x_smoothed * XYZ_mask
+        y_smoothed_masked = y_smoothed * XYZ_mask
         u_prime_smoothed_masked = u_prime_smoothed * XYZ_mask
         v_prime_smoothed_masked = v_prime_smoothed * XYZ_mask
+        x_smoothed_masked_TargetTemp = x_smoothed_masked + (TargetTemp - ModuleTemp) * dColor_x
+        y_smoothed_masked_TargetTemp = y_smoothed_masked + (TargetTemp - ModuleTemp) * dColor_y
+
         # Find max value location for brightness
-        masked_tristim = XYZ[1] * mask
-        max_Y_val = np.max(masked_tristim)
-        [rowsOfMaxes, colsOfMaxes] = np.nonzero(masked_tristim == max_Y_val)
+        Lum_masked = XYZ[:, :, 1] * mask
+        Lum_masked_TargetTemp = Lum_masked * (1 + (TargetTemp - ModuleTemp) * dLum)
+        max_Y_val = np.max(Lum_masked)
+        [rowsOfMaxes, colsOfMaxes] = np.nonzero(Lum_masked == max_Y_val)
         rowsOfMaxes = rowsOfMaxes[0]
         colsOfMaxes = colsOfMaxes[0]
         max_Y_xloc_deg = x_angle_arr[0, colsOfMaxes]
@@ -785,132 +911,461 @@ class MotAlgorithmHelper(object):
         y_deg = 0
         col_ind_onaxis = np.nonzero(np.abs(x_angle_arr - x_deg) == np.min(np.abs(x_angle_arr - x_deg)))[1][0]
         row_ind_onaxis = np.nonzero(np.abs(y_angle_arr - y_deg) == np.min(np.abs(y_angle_arr - y_deg)))[1][0]
-        # On-axis and off-axis brightness and color values
-        x_sample_arr = [0, -1 * self._chromaticity_fov[2], -1 * self._chromaticity_fov[1],
-                        -1 * self._chromaticity_fov[0],
-                        self._chromaticity_fov[0],
-                        self._chromaticity_fov[1], self._chromaticity_fov[2], 0, 0, 0, 0, 0, 0]
-        y_sample_arr = [0, 0, 0, 0, 0, 0, 0, -1 * self._chromaticity_fov[2], -1 * self._chromaticity_fov[1],
-                        -1 * self._chromaticity_fov[0],
-                        self._chromaticity_fov[0], self._chromaticity_fov[1], self._chromaticity_fov[2]]
 
-        stats_summary = np.empty((2, 3 * len(x_sample_arr) + 1 + 12 + 20), dtype=object)
-        stats_summary[0, k] = dirr
-        stats_summary[1, k] = dirr + fnamebase
+        stats_summary = np.empty((2, 100), dtype=object)
+        stats_summary[0, k] = 'dir'
+        stats_summary[1, k] = os.path.join(dirr, fnamebase)
+        k = k + 1
+        stats_summary[0, k] = 'Module Temperature'
+        stats_summary[1, k] = ModuleTemp
         k = k + 1
 
-        for i in range(0, len(x_sample_arr)):
-            x_deg = x_sample_arr[i]
-            y_deg = y_sample_arr[i]
+        x_deg = 0
+        y_deg = 0
+        col_ind = np.nonzero(np.abs(x_angle_arr - x_deg) == np.min(np.abs(x_angle_arr - x_deg)))[1][0]
+        row_ind = np.nonzero(np.abs(y_angle_arr - y_deg) == np.min(np.abs(y_angle_arr - y_deg)))[1][0]
+        stats_summary[0, k] = 'OnAxis Lum'
+        stats_summary[1, k] = Lum_masked[row_ind][col_ind]
+        k = k + 1
+        stats_summary[0, k] = 'OnAxis x'
+        stats_summary[1, k] = x_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = 'OnAxis y'
+        stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = 'OnAxis Lum at 47C'
+        stats_summary[1, k] = Lum_masked_TargetTemp[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = 'OnAxis x at 47C'
+        stats_summary[1, k] = x_smoothed_masked_TargetTemp[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = 'OnAxis y at 47C'
+        stats_summary[1, k] = y_smoothed_masked_TargetTemp[row_ind, col_ind]
+        k = k + 1
+
+        # sky luminance and color
+        x_deg = 0
+        y_deg = -chromaticity_fov
+        col_ind = np.nonzero(abs(x_angle_arr - x_deg) == np.min(min(abs(x_angle_arr - x_deg))))[1][0]
+        row_ind = np.nonzero(abs(y_angle_arr - y_deg) == np.min(min(abs(y_angle_arr - y_deg))))[1][0]
+        stats_summary[0, k] = f'Sky Lum({chromaticity_fov}deg)'
+        stats_summary[1, k] = Lum_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Sky x({chromaticity_fov}deg)'
+        stats_summary[1, k] = x_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Sky y({chromaticity_fov}deg)'
+        stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        # % Ground luminance and color
+        x_deg = 0
+        y_deg = chromaticity_fov
+        col_ind = np.nonzero(abs(x_angle_arr - x_deg) == np.min(min(abs(x_angle_arr - x_deg))))[1][0]
+        row_ind = np.nonzero(abs(y_angle_arr - y_deg) == np.min(min(abs(y_angle_arr - y_deg))))[1][0]
+        stats_summary[0, k] = f'Ground Lum({chromaticity_fov}deg)'
+        stats_summary[1, k] = Lum_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Ground x({chromaticity_fov}deg)'
+        stats_summary[1, k] = x_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Ground y({chromaticity_fov}deg)'
+        stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        # % Nasal luminance and color
+        if ModuleLR == 'L':
+            x_deg = chromaticity_fov
+            y_deg = 0
+        else:
+            x_deg = -chromaticity_fov
+            y_deg = 0
+
+        col_ind = np.nonzero(abs(x_angle_arr - x_deg) == np.min(min(abs(x_angle_arr - x_deg))))[1][0]
+        row_ind = np.nonzero(abs(y_angle_arr - y_deg) == np.min(min(abs(y_angle_arr - y_deg))))[1][0]
+        stats_summary[0, k] = f'Nasal Lum({chromaticity_fov}deg)'
+        stats_summary[1, k] = Lum_masked[row_ind, col_ind]
+        k = k + 1;
+        stats_summary[0, k] = f'Nasal x({chromaticity_fov}deg)'
+        stats_summary[1, k] = x_smoothed_masked[row_ind, col_ind]
+        k = k + 1;
+        stats_summary[0, k] = f'Nasal y({chromaticity_fov}deg)'
+        stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
+        k = k + 1;
+        # % Temporal luminance and color
+        if ModuleLR == 'L':
+            x_deg = -chromaticity_fov;
+            y_deg = 0;
+        else:
+            x_deg = chromaticity_fov;
+            y_deg = 0;
+
+        col_ind = np.nonzero(abs(x_angle_arr - x_deg) == np.min(min(abs(x_angle_arr - x_deg))))[1][0]
+        row_ind = np.nonzero(abs(y_angle_arr - y_deg) == np.min(min(abs(y_angle_arr - y_deg))))[1][0]
+        stats_summary[0, k] = f'Temporal Lum({chromaticity_fov}deg)'
+        stats_summary[1, k] = Lum_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Temporal x({chromaticity_fov}deg)'
+        stats_summary[1, k] = x_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Temporal y({chromaticity_fov}deg)'
+        stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        del col_ind, row_ind
+
+        # % Max brightness
+        stats_summary[0, k] = 'Max Lum'
+        stats_summary[1, k] = max_Y_val
+        k = k + 1
+        stats_summary[0, k] = 'Max Lum x'
+        stats_summary[1, k] = x_smoothed_masked[max_Y_yloc_pix, max_Y_xloc_pix]
+        k = k + 1
+        stats_summary[0, k] = 'Max Lum y'
+        stats_summary[1, k] = y_smoothed_masked[max_Y_yloc_pix, max_Y_xloc_pix]
+        k = k + 1
+        stats_summary[0, k] = 'Max Lum x(deg)'
+        stats_summary[1, k] = max_Y_xloc_deg
+        k = k + 1
+        stats_summary[0, k] = 'Max Lum y(deg)'
+        stats_summary[1, k] = max_Y_yloc_deg
+        k = k + 1
+        # % Brightness uniformity
+        Y = XYZ[:, :, 1]
+
+        tmp_chromaticity_mask = chromaticity_mask
+        tmp = Y[tmp_chromaticity_mask == 1]
+        meanLum = np.mean(tmp)
+        deltaLum = max(tmp) - min(tmp)
+        stdLum = np.std(tmp, ddof=1)
+        percentLum_5 = np.percentile(tmp, 5)
+        percentLum_95 = np.percentile(tmp, 95)
+        percentLum_onaxis = np.sum(tmp > lum_thresh * Y[row_ind_onaxis, col_ind_onaxis]) / len(tmp)
+        percentLum_max = np.sum(tmp > lum_thresh * max_Y_val) / len(tmp)
+
+        # %save data to cell
+        stats_summary[0, k] = f'Lum_mean_{chromaticity_fov}deg'
+        stats_summary[1, k] = meanLum
+        k = k + 1
+        stats_summary[0, k] = f'Lum_delta_{chromaticity_fov}deg'
+        stats_summary[1, k] = deltaLum
+        k = k + 1
+        stats_summary[0, k] = f'Lum 5%{chromaticity_fov}deg'
+        stats_summary[1, k] = percentLum_5
+        k = k + 1
+        stats_summary[0, k] = f'Lum 95%{chromaticity_fov}deg'
+        stats_summary[1, k] = percentLum_95
+        k = k + 1
+        stats_summary[0, k] = f'Lum_Ratio>{lum_thresh}OnAxisLum_{chromaticity_fov}deg'
+        stats_summary[1, k] = percentLum_onaxis
+        k = k + 1
+        stats_summary[0, k] = f'Lum_Ratio>{lum_thresh}MaxLum_{chromaticity_fov}deg'
+        stats_summary[1, k] = percentLum_max
+        k = k + 1
+
+        #% color uniformity
+
+        tmp_chromaticity_mask = chromaticity_mask
+        tmpu_prime = u_prime_smoothed_masked[tmp_chromaticity_mask == 1]
+        tmpv_prime = v_prime_smoothed_masked[tmp_chromaticity_mask == 1]
+        tmpdeltau_prime = tmpu_prime - u_prime_smoothed_masked[row_ind_onaxis, col_ind_onaxis]
+        tmpdeltav_prime = tmpv_prime - v_prime_smoothed_masked[row_ind_onaxis, col_ind_onaxis]
+        tmpdeltauv_prime = np.sqrt(tmpdeltau_prime ** 2 + tmpdeltav_prime ** 2)
+        meanu_prime = np.mean(tmpu_prime)
+        meanv_prime = np.mean(tmpv_prime)
+        percentuv_95 = np.percentile(tmpdeltauv_prime, 95)
+        deltauv = np.percentile(tmpdeltauv_prime, 99.9)
+        # %save data to cell
+        stats_summary[0, k] = f"u'_mean_{chromaticity_fov}deg"
+        stats_summary[1, k] = meanu_prime
+        k = k + 1
+        stats_summary[0, k] = f"v'_mean_{chromaticity_fov}deg"
+        stats_summary[1, k] = meanv_prime
+        k = k + 1
+        stats_summary[0, k] = f"u'v'_delta_to_OnAxis_{chromaticity_fov}deg"
+        stats_summary[1, k] = deltauv
+        k = k + 1
+        stats_summary[0, k] = f"du'v' 95%{chromaticity_fov}deg"
+        stats_summary[1, k] = percentuv_95
+        k += 1
+
+        stats_summary = stats_summary[:, 0:k]
+
+        ## save images
+        # NasalFOV 35~40
+        # Temporal FOV 50~55
+        # Sky FOV 45~50
+        # Ground FOV 45~50
+        if self._save_plots:
+            disp_fov = 50
+            # deternp.mine module left or right
+            x_deg = 40
+            y_deg = 0
             col_ind = np.nonzero(np.abs(x_angle_arr - x_deg) == np.min(np.abs(x_angle_arr - x_deg)))[1][0]
             row_ind = np.nonzero(np.abs(y_angle_arr - y_deg) == np.min(np.abs(y_angle_arr - y_deg)))[1][0]
-            stats_summary[0, k] = 'Lum(x=' + str(x_angle_arr[0, col_ind]) + 'deg,y=' + str(
-                y_angle_arr[0, row_ind]) + 'deg)'
-            stats_summary[1, k] = XYZ[1][row_ind][col_ind]
-            k = k + 1
-            stats_summary[0, k] = 'u\'(x=' + str(x_angle_arr[0, col_ind]) + 'deg,y=' + str(
-                y_angle_arr[0, row_ind]) + 'deg)'
-            stats_summary[1, k] = u_prime_smoothed_masked[row_ind, col_ind]
-            k = k + 1
-            stats_summary[0, k] = 'v\'(x=' + str(x_angle_arr[0, col_ind]) + 'deg,y=' + str(
-                y_angle_arr[0, row_ind]) + 'deg)'
-            stats_summary[1, k] = v_prime_smoothed_masked[row_ind, col_ind]
-            k = k + 1
-            del col_ind, row_ind
-        if brightness_statistics:
-            # Max brightness
-            stats_summary[0, k] = 'Max Lum'
-            stats_summary[1, k] = max_Y_val
-            k = k + 1
-            stats_summary[0, k] = 'Max Lum u\''
-            stats_summary[1, k] = u_prime_smoothed_masked[max_Y_yloc_pix, max_Y_xloc_pix]
-            k = k + 1
-            stats_summary[0, k] = 'Max Lum v\''
-            stats_summary[1, k] = v_prime_smoothed_masked[max_Y_yloc_pix, max_Y_xloc_pix]
-            k = k + 1
-            stats_summary[0, k] = 'Max Lum x(deg)'
-            stats_summary[1, k] = max_Y_xloc_deg
-            k = k + 1
-            stats_summary[0, k] = 'Max Lum y(deg)'
-            stats_summary[1, k] = max_Y_yloc_deg
-            k = k + 1
+            if Y[row_ind, col_ind] / max_Y_val > 0.2:
+                Module = 'R'
+                x_deg_max = 50
+                x_deg_min = -35
+                col_ind_max = np.nonzero(np.abs(x_angle_arr - x_deg_max) == np.min(np.abs(x_angle_arr - x_deg_max)))[1][0]
+                col_ind_min = np.nonzero(np.abs(x_angle_arr - x_deg_min) == np.min(np.abs(x_angle_arr - x_deg_min)))[1][0]
+            else:
+                Module = 'L'
+                x_deg_max = 35
+                x_deg_min = -50
+                col_ind_max = np.nonzero(np.abs(x_angle_arr - x_deg_max) == np.min(np.abs(x_angle_arr - x_deg_max)))[1][0]
+                col_ind_min = np.nonzero(np.abs(x_angle_arr - x_deg_min) == np.min(np.abs(x_angle_arr - x_deg_min)))[1][0]
 
-            # Brightness uniformity
-            Y = XYZ[1]
-            for i in range(0, 3):
-                tmp_chromaticity_mask = chromaticity_mask[:, :, i]
-                tmp = Y[tmp_chromaticity_mask == 1]
-                meanLum = np.mean(tmp)
-                deltaLum = np.max(tmp) - np.min(tmp)
-                stdLum = np.std(tmp, ddof=1)
-                percentLum_onaxis = np.sum(tmp > self._lum_thresh * Y[row_ind_onaxis, col_ind_onaxis]) / len(tmp)
-                percentLum_max = np.sum(tmp > self._lum_thresh * max_Y_val) / len(tmp)
-                # save data to cell
-                stats_summary[0, k] = 'Lum_mean_' + str(self._chromaticity_fov[i]) + 'deg'
-                stats_summary[1, k] = meanLum
-                k = k + 1
-                stats_summary[0, k] = 'Lum_delta_' + str(self._chromaticity_fov[i]) + 'deg'
-                stats_summary[1, k] = deltaLum
-                k = k + 1
-                stats_summary[0, k] = 'Lum_SSR_' + str(self._chromaticity_fov[i]) + 'deg'
-                stats_summary[1, k] = stdLum
-                k = k + 1
-                stats_summary[0, k] = 'Lum_Ratio>' + str(self._lum_thresh) + 'OnAxisLum_' + str(
-                    self._chromaticity_fov[i]) + 'deg'
-                stats_summary[1, k] = percentLum_onaxis
-                k = k + 1
-                stats_summary[0, k] = 'Lum_Ratio>' + str(self._lum_thresh) + 'MaxLum_' + str(
-                    self._chromaticity_fov[i]) + 'deg'
-                stats_summary[1, k] = percentLum_max
-                k = k + 1
-                del tmp_chromaticity_mask
-            del Y
-        if color_uniformity:
-            # color uniformity
-            for i in range(0, 3):
-                tmp_chromaticity_mask = chromaticity_mask[:, :, i]
-                tmpu_prime = u_prime_smoothed_masked[tmp_chromaticity_mask == 1]
-                tmpv_prime = v_prime_smoothed_masked[tmp_chromaticity_mask == 1]
-                tmpdeltau_prime = tmpu_prime - u_prime_smoothed_masked[row_ind_onaxis, col_ind_onaxis]
-                tmpdeltav_prime = tmpv_prime - v_prime_smoothed_masked[row_ind_onaxis, col_ind_onaxis]
-                tmpdeltauv_prime = np.sqrt(tmpdeltau_prime ** 2 + tmpdeltav_prime ** 2)
-                meanu_prime = np.mean(tmpu_prime)
-                meanv_prime = np.mean(tmpv_prime)
-                percentuv = np.sum(tmpdeltauv_prime < self._color_thresh) / len(tmpdeltauv_prime)
-                deltauv = np.max(tmpdeltauv_prime)
-                # save data to cell
-                stats_summary[0, k] = 'u\'_mean_' + str(self._chromaticity_fov[i]) + 'deg'
-                stats_summary[1, k] = meanu_prime
-                k = k + 1
-                stats_summary[0, k] = 'v\'_mean_' + str(self._chromaticity_fov[i]) + 'deg'
-                stats_summary[1, k] = meanv_prime
-                k = k + 1
-                stats_summary[0, k] = 'u\'v\'_delta_to_OnAxis_' + str(self._chromaticity_fov[i]) + 'deg'
-                stats_summary[1, k] = deltauv
-                k = k + 1
-                stats_summary[0, k] = 'u\'v\'_delta<' + str(self._color_thresh) + '_Ratio_' + str(
-                    self._chromaticity_fov[i]) + 'deg'
-                stats_summary[1, k] = percentuv
-                k = k + 1
-                del tmpv_prime, tmpu_prime, tmp_chromaticity_mask
-        # del XYZ
+            y_deg_max = 45
+            y_deg_min = -45
+            row_ind_max = np.nonzero(np.abs(y_angle_arr - y_deg_max) == np.min(np.abs(y_angle_arr - y_deg_max)))[1][0]
+            row_ind_min = np.nonzero(np.abs(y_angle_arr - y_deg_min) == np.min(np.abs(y_angle_arr - y_deg_min)))[1][0]
+
+            # Create array of angle rings to display
+            angle_arr = np.linspace(0, 2 * np.pi, 361)
+            # for i in range(0,chromaticity_fov.shape[1]):
+            polar_ring_x = chromaticity_fov * np.sin(angle_arr)
+            polar_ring_y = chromaticity_fov * np.cos(angle_arr)
+
+            # Create array of angle ring to show area where chromaticity calculations
+            # are performed
+            chroma_ring_x = chromaticity_fov * np.sin(angle_arr)
+            chroma_ring_y = chromaticity_fov * np.cos(angle_arr)
+            # Create array of angle ring to show area where masking occurs
+            disp_fov_ring_x = disp_fov * np.sin(angle_arr)
+            disp_fov_ring_y = disp_fov * np.cos(angle_arr)
+            # plot brightness images
+            title_label_Yonly = 'Brightness - Smoothed Data'
+
+            subtitle_label_Yonly = 'Max: ' + str(np.around(max_Y_val, decimals=2)) + 'nits at x=' + str(
+                np.around(max_Y_xloc_deg, decimals=2)) + '°,y=' + str(np.around(max_Y_yloc_deg, decimals=2)) + '°'
+            clims_smooth = [0, np.max(XYZ[row_ind_min - 1:row_ind_max, col_ind_min - 1:col_ind_max, 1])]
+
+            plt.figure()
+            plt.subplot(2, 2, 1)
+            # colorbar
+            # colormap jet
+            # axis image
+            # axis equal
+            # x = x_angle_arr[0, :]
+            # y = y_angle_arr[0, :]
+            # dx = (x[1] - x[0]) / 2
+            # dy = (y[1] - y[0]) / 2
+            # x_ = [x[0] - dx] + [a + dx for a in x]  # x axis
+            # y_ = [y[0] - dy] + [a + dy for a in y]  # y axis
+            # xx, yy = np.meshgrid(x_, y_)
+            # plt.pcolor(xx, yy, Y, cmap='jet')
+            plt.imshow(Y, cmap='jet',
+                       extent=[np.min(x_angle_arr), np.max(x_angle_arr), np.max(y_angle_arr), np.min(y_angle_arr)])
+            plt.colorbar()
+
+            plt.title(f'{title_label_Yonly}\n{subtitle_label_Yonly}')
+            plt.xlabel('X angle (deg)')
+            plt.ylabel('Y angle (deg)')
+            plt.xlim([-disp_fov, disp_fov])
+            plt.ylim([disp_fov, -disp_fov])
+            # hold on
+            plt.plot([-1 * disp_fov, disp_fov], [0, 0], Color='w', linewidth=1)
+            plt.plot([0, 0], [-1 * disp_fov, disp_fov], Color='w', linewidth=1)
+            # for i in range(0, polar_ring_x.shape[0]):
+            plt.plot(polar_ring_x, polar_ring_y, color='w', linewidth=1)
+
+            plt.scatter(max_Y_xloc_deg, max_Y_yloc_deg, c='w', marker='+', linewidths=1)
+            # hold off
+            plt.subplot(2, 2, 2)
+            plt.plot(x_angle_arr[0, col_ind_min - 1:col_ind_max],
+                     XYZ[3001, col_ind_min - 1:col_ind_max, 2] / max_Y_val, linewidth=1)
+            # xticks([-disp_fov -chromaticity_fov 0 chromaticity_fov disp_fov])
+            plt.xlabel('X angle (deg)')
+            plt.ylabel('Normalized Brightness')
+            plt.title('Normalized Brightness - x')
+            # hold on
+            plt.plot([-1 * chromaticity_fov, -1 * chromaticity_fov], [0, 1], color='r', linestyle='--', linewidth=1)
+            plt.plot([chromaticity_fov, chromaticity_fov], [0, 1], color='r', linestyle='--', linewidth=1)
+
+            plt.plot([0, 0], [0, 1], color='r', linestyle='--', linewidth=1)
+            plt.plot([x_deg_min, x_deg_max], [0.8, 0.8], color='r', linestyle='--', linewidth=1)
+            # hold off
+            plt.subplot(2, 2, 3)
+            plt.plot(y_angle_arr[0, row_ind_min - 1:row_ind_max],
+                     XYZ[row_ind_min - 1:row_ind_max, 3001, 2] / max_Y_val, linewidth=1)
+            # xticks([-disp_fov -chromaticity_fov 0 chromaticity_fov disp_fov])
+            plt.xlabel('Y angle (deg)')
+            plt.ylabel('Normalized Brightness')
+            plt.title('Normalized Brightness - y')
+            plt.xlim([-disp_fov, disp_fov])
+
+            # hold on,
+            plt.plot([-1 * chromaticity_fov, -1 * chromaticity_fov], [0, 1], color='r', linestyle='--', linewidth=1)
+            plt.plot([chromaticity_fov, chromaticity_fov], [0, 1], color='r', linestyle='--', linewidth=1)
+            plt.plot([0, 0], [0, 1], color='r', linestyle='--', linewidth=1)
+            plt.plot([y_deg_min, y_deg_max], [0.8, 0.8], color='r', linestyle='--', linewidth=1)
+
+            # hold off
+            tmp_histo = XYZ[:, :, 1]
+            tmp_histo = tmp_histo * chromaticity_mask
+            nbins = np.int(np.round((np.max(tmp_histo) - np.min(tmp_histo)) / 5))
+            plt.subplot(2, 2, 4)
+            cc = tmp_histo[tmp_histo != 0]
+            weights = np.ones_like(cc) / float(len(cc))
+            rst = plt.hist(cc, density=True, range=(np.int(np.min(cc)), np.max(cc)), weights=weights,
+                          bins=nbins, histtype='bar', edgecolor='b', stacked=False)
+            plt.xlabel('Luminance (nits)')
+            plt.ylabel('Percentage')
+            plt.gca().yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(np.sum(rst[0]), decimals=0, symbol=None))
+            plt.gca().yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(np.sum(rst[0])/20))
+            # ytix = get(gca, 'YTick')
+            # set(gca, 'YTick',ytix, 'YTickLabel',ytix*100)
+            plt.title('Lum Histo 0-30° FOV')
+            plt.tight_layout()
+            if not os.path.exists(os.path.join(dirr, self._exp_dir)):
+                os.makedirs(os.path.join(dirr, self._exp_dir))
+            plt.savefig(os.path.join(dirr, self._exp_dir, fnamebase + '_plot_Brightness.png'))
+
+            # plot delta u'v' image
+            Delta_u_prime_smoothed_masked = (u_prime_smoothed_masked - u_prime_smoothed_masked[3001, 3001]) * XYZ_mask
+            Delta_v_prime_smoothed_masked = (v_prime_smoothed_masked - v_prime_smoothed_masked[3001, 3001]) * XYZ_mask
+            Delta_uv_prime_smoothed_masked = np.sqrt(
+                Delta_u_prime_smoothed_masked ** 2 + Delta_v_prime_smoothed_masked ** 2)
+            plt.figure()
+            plt.subplot(221)  # imagesc(x_angle_arr,y_angle_arr,Delta_uv_prime_smoothed_masked)
+            # caxis([0,0.02])colorbarcolormap jetaxis equal
+            plt.imshow(Delta_uv_prime_smoothed_masked, cmap='jet', vmin=0, vmax=0.02,
+                       extent=[np.min(x_angle_arr), np.max(x_angle_arr), np.max(y_angle_arr), np.min(y_angle_arr)])
+            plt.colorbar()
+            plt.xlabel('X angle (deg)')
+            plt.ylabel('Y angle (deg)')
+            plt.xlim([-disp_fov, disp_fov])
+            plt.ylim([disp_fov, -disp_fov])
+            plt.title("Δu'v'")
+            # hold on
+            plt.plot([-1 * disp_fov, disp_fov], [0, 0], color='w', linewidth=1)
+            plt.plot([0, 0], [-1 * disp_fov, disp_fov], color='w', linewidth=1)
+            plt.plot(polar_ring_x, polar_ring_y, color='w', linewidth=1)
+
+            plt.scatter(max_Y_xloc_deg, max_Y_yloc_deg, c='w', marker='+')
+            plt.subplot(222)
+            plt.plot(x_angle_arr[0, col_ind_min:col_ind_max], Delta_uv_prime_smoothed_masked[3001, col_ind_min:col_ind_max])
+            plt.xticks([-disp_fov, -chromaticity_fov, 0, chromaticity_fov, disp_fov])
+            plt.title("Δu'v' along x")
+            plt.xlim([-disp_fov, disp_fov])
+            plt.ylim([0, 0.02])
+            plt.xlabel('X angle (deg)')
+            plt.ylabel("Δu'v'")
+            plt.title("Δu'v' along x")
+            plt.xlim([-disp_fov, disp_fov])
+            # hold on,
+            plt.plot([-1 * chromaticity_fov, -1 * chromaticity_fov], [0, 1], color='r', linestyle='--', linewidth=1)
+            plt.plot([chromaticity_fov, chromaticity_fov], [0, 1], color='r', linestyle='--', linewidth=1)
+            plt.plot([y_deg_min, y_deg_max], [0.01, 0.01], color='r', linestyle='--', linewidth=1)
+            plt.plot([y_deg_min, y_deg_max], [0.005, 0.005], color='r', linestyle='--', linewidth=1)
+            # hold off
+            plt.subplot(2, 2, 3)
+            plt.plot(y_angle_arr[0, row_ind_min:row_ind_max], Delta_uv_prime_smoothed_masked[row_ind_min:row_ind_max, 3001])
+            plt.xlim([-disp_fov, disp_fov])
+            plt.ylim([0, 0.02])
+            # xticks([-disp_fov -chromaticity_fov 0 chromaticity_fov disp_fov])
+            plt.xlabel('Y angle (deg)')
+            plt.ylabel("Δu'v'")
+            plt.title("Δu'v' along y")
+            # hold on,
+            plt.plot([-1 * chromaticity_fov, -1 * chromaticity_fov], [0, 1], color='r', linestyle='--', linewidth=1)
+            plt.plot([chromaticity_fov, chromaticity_fov], [0, 1], color='r', linestyle='--', linewidth=1)
+            plt.plot([y_deg_min, y_deg_max], [0.01, 0.01], color='r', linestyle='--', linewidth=1)
+            plt.plot([y_deg_min, y_deg_max], [0.005, 0.005], color='r', linestyle='--', linewidth=1)
+            # hold off
+            tmp_histo = Delta_uv_prime_smoothed_masked
+            tmp_histo = tmp_histo * chromaticity_mask
+            nbins = np.int(np.round((np.max(tmp_histo) - np.min(tmp_histo)) / 0.0005))
+            plt.subplot(2, 2, 4)
+            cc = tmp_histo[tmp_histo != 0]
+            weights = np.ones_like(cc) / float(len(tmp_histo))
+            rst = plt.hist(cc, density=True, bins=nbins, histtype='bar', edgecolor='b', weights=weights,
+                           range=[np.int(np.min(cc)), np.max(cc)])
+            plt.gca().yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(np.sum(rst[0]), decimals=0, symbol=None))
+            plt.gca().yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(np.sum(rst[0]) / 20))
+            plt.gca().xaxis.get_major_formatter().set_powerlimits((0, 1))
+            plt.xlabel("Δu'v'")
+            plt.ylabel('Percentage')
+            # set(gca, 'YTick',ytix, 'YTickLabel',ytix*100)
+            plt.title("Δu'v' Histo 0-30° FOV")
+            plt.tight_layout()
+
+            plt.savefig(os.path.join(dirr, self._exp_dir, fnamebase + '_plot_duv.png'))
+
+            RGB = np.zeros(XYZ.shape)
+            RGB[:, :, 0] = 0.41847 * XYZ[:, :, 0] - 0.15866 * XYZ[:, :, 1] - 0.082835 * XYZ[:, :, 2]
+            RGB[:, :, 1] = -0.09169 * XYZ[:, :, 0] + 0.25243 * XYZ[:, :, 1] - 0.015708 * XYZ[:, :, 2]
+            RGB[:, :, 2] = 0.00092090 * XYZ[:, :, 0] - 0.0025498 * XYZ[:, :, 1] + 0.17860 * XYZ[:, :, 2]
+
+            # Mask and normalize RGB image for display
+            RGB = RGB * np.stack([cam_fov_mask] * 3, axis=2)
+            RGB = RGB / np.max(RGB)
+
+            plt.figure()
+            plt.imshow(RGB,
+                       extent=[np.min(x_angle_arr), np.max(x_angle_arr), np.max(y_angle_arr), np.min(y_angle_arr)])
+            plt.xlabel('X angle (deg)')
+            plt.ylabel('Y angle (deg)')
+            plt.xlim([-disp_fov, disp_fov])
+            plt.ylim([disp_fov, -disp_fov])
+            plt.title('RGB Image')
+            plt.tight_layout()
+            plt.savefig(os.path.join(dirr, self._exp_dir, fnamebase + '_RGB_color.png'))
+            del RGB, angle_arr, cc,
+            del Delta_v_prime_smoothed_masked, Delta_uv_prime_smoothed_masked, Delta_u_prime_smoothed_masked
+            del tmp_histo, weights
+
+        del tmp_chromaticity_mask, Y
         del XYZ, filename, x_angle_arr, y_angle_arr, file_names, col_deg_arr, row_deg_arr, radius_deg_arr
-        del chromaticity_mask, chromaticity_mask1, chromaticity_mask2, chromaticity_mask3,
+        del chromaticity_mask
         del cam_fov_mask, u_prime_smoothed, v_prime_smoothed, tmp_XYZ, XYZ_mask, u_prime_smoothed_masked,
-        del v_prime_smoothed_masked, masked_tristim, max_Y_xloc_deg, max_Y_yloc_deg,
-        del col_ind_onaxis, row_ind_onaxis, x_sample_arr, y_sample_arr
+        del v_prime_smoothed_masked, max_Y_xloc_deg, max_Y_yloc_deg,
+        del col_ind_onaxis, row_ind_onaxis,
+        del Lum_masked, Lum_masked_TargetTemp, c, image_in,
+        del mask, tmp, tmpdeltauv_prime, tmpdeltau_prime, tmpdeltav_prime, tmpu_prime, tmpv_prime,
+        del x_smoothed, x_smoothed_masked, x_smoothed_masked_TargetTemp,
+        del y_smoothed, y_smoothed_masked, y_smoothed_masked_TargetTemp,
 
-        return dict(zip(stats_summary[0, 0:k], stats_summary[1, 0:k]))
+
+        return dict(np.transpose(stats_summary))
 
     @staticmethod
-    def calc_gl_for_brightdot(np_luv):
-        x = 9 * np_luv[:, 1] / (6 * np_luv[:, 1] - 16 * np_luv[:, 2] + 12)
-        y = 4 * np_luv[:, 2] / (6 * np_luv[:, 1] - 16 * np_luv[:, 2] + 12)
-        Y_rgb_measure = np_luv[:, 0][1:]
-        x_w, y_w, Y_w = 0.3127, 0.329, np_luv[0, 0]
-        x_r, y_r = x[1], y[1]
-        x_g, y_g = x[2], y[2]
-        x_b, y_b = x[3], y[3]
+    def calc_gl_for_brightdot(W255_stats_summary, R255_stats_summary, G255_stats_summary, B255_stats_summary):
+        # % load temperature of whitedot pattern
+        ModuleTemp = 30
+        # % set color drift coefficients
+        TargetTemp = 47
+        dLum_W = -0.0155
+        dColor_x_W = -0.001094
+        dColor_y_W = -0.001043
+        dLum_R = -0.02253
+        dColor_x_R = 0.000121
+        dColor_y_R = -0.00047
+        dLum_G = -0.01266
+        dColor_x_G = 0.000733
+        dColor_y_G = -0.00103
+        dLum_B = -0.01019
+        dColor_x_B = -0.000012
+        dColor_y_B = -0.00016
+
+        x_w = 0.3127 + (TargetTemp - ModuleTemp) * dColor_x_W
+        y_w = 0.329 + (TargetTemp - ModuleTemp) * dColor_y_W
+        Temp_W = W255_stats_summary["Module Temperature"]
+        Temp_R = R255_stats_summary["Module Temperature"]
+        Temp_G = G255_stats_summary["Module Temperature"]
+        Temp_B = B255_stats_summary["Module Temperature"]
+
+        Y_w = W255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_W) * dLum_W)
+        Y_r = R255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_R) * dLum_R)
+        Y_g = G255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_G) * dLum_G)
+        Y_b = B255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_B) * dLum_B)
+
+        x_r = R255_stats_summary["OnAxis x"] + (ModuleTemp - Temp_R) * dColor_x_R
+        y_r = R255_stats_summary["OnAxis y"] + (ModuleTemp - Temp_R) * dColor_y_R
+        x_g = G255_stats_summary["OnAxis x"] + (ModuleTemp - Temp_G) * dColor_x_G
+        y_g = G255_stats_summary["OnAxis y"] + (ModuleTemp - Temp_G) * dColor_y_G
+        x_b = B255_stats_summary["OnAxis x"] + (ModuleTemp - Temp_B) * dColor_x_B
+        y_b = B255_stats_summary["OnAxis y"] + (ModuleTemp - Temp_B) * dColor_y_B
+        Y_rgb_measure = [Y_r, Y_g, Y_b]
+
         w255 = np.array([Y_w * x_w / y_w, Y_w, Y_w * (1 - x_w - y_w) / y_w])
         m = np.array([[x_r / y_r, x_g / y_g, x_b / y_b],
                       [1, 1, 1],
@@ -922,8 +1377,12 @@ class MotAlgorithmHelper(object):
         # Lum for Red, Green and Blue for D65
         Lum_after = Y_rgb / np.max(Y_scale)
         Gamma = 2.2
-        gray_levels = np.round(np.power(Lum_after / Lum_before, 1 / Gamma) * 255)
-        return [int(c) for c in gray_levels]
+        gray_levels = np.round(np.power(Lum_after / Lum_before, 1 / Gamma) * 255).astype(np.int)
+
+        return {'GL': gray_levels,
+                'x_w': x_w,
+                'y_w': y_w,
+                'ModuleTemp': ModuleTemp}
 
     @staticmethod
     def interp2(xx, yy, z, xi, yi):
@@ -977,8 +1436,9 @@ class MotAlgorithmHelper(object):
             XYZ.append(image_in)
         return XYZ
 
-    def white_dot_pattern_parametric_export(self, XYZ_W, GL, xfilename=r'WhiteDot_X_float.bin', export_csv=False, n_dots=15):
-        # ----- Begin code -----#
+    def white_dot_pattern_parametric_export(self, XYZ_W, GL, x_w, y_w,
+                                            module_temp=30, xfilename=r'WhiteDot_X_float.bin'):
+        ModuleTemp = module_temp
         cam_fov = 60
         mask_fov = 30
         row = 6001
@@ -986,8 +1446,9 @@ class MotAlgorithmHelper(object):
         pixel_spacing = 0.02  # Degrees per pixel
         kernel_width = 20  # Width of square smoothing kernel in pixels.
         kernel_shape = 'square'  # Use 'circle' or 'square' to change the smoothing kernel shape
-        x_w = 0.3127  # color x for D65
-        y_w = 0.3290  # color y for D65
+        # x_w = 0.3127  # color x for D65  version_1.0
+        # y_w = 0.3290  # color y for D65
+        n_dots = 21
         # XYZ_W = np.ones((3, 3, 3))
         Lum_W = XYZ_W[:, :, 1]
         Color_x_W = XYZ_W[:, :, 0] / (XYZ_W[:, :, 0] + XYZ_W[:, :, 1] + XYZ_W[:, :, 2])
@@ -996,11 +1457,19 @@ class MotAlgorithmHelper(object):
         # dColor_x_W = Color_x_W-Color_x_W(3001,3001)
         # dColor_y_W = Color_y_W-Color_y_W(3001,3001)
         ##
-        # Read in the WhiteDot image
+        ''' Read in the WhiteDot image version_1.0
+        # dirr = os.path.dirname(xfilename)
+        # fnamebase = os.path.basename(xfilename).lower().split('_x_float.bin')[0]
+        # filename = ['{0}_{1}_float.bin'.format(fnamebase, c) for c in ['X', 'Y', 'Z']]
+        '''
+        # file_path = tkinter.filedialog.askopenfilename(title='Select the bin file',
+        #                                                filetypes=[('bin', '*.bin'), ('All Files', '*')],
+        #                                                initialdir='K:\\RL_part\WhitePointCorrection',
+        #                                                initialfile='normal_W255_20210306_084517_nd_0_iris_5_X_float.bin')
+
         dirr = os.path.dirname(xfilename)
         fnamebase = os.path.basename(xfilename).lower().split('_x_float.bin')[0]
         filename = ['{0}_{1}_float.bin'.format(fnamebase, c) for c in ['X', 'Y', 'Z']]
-
         primary = ['X', 'Y', 'Z']
 
         x_angle_arr = np.linspace(-1 * cam_fov, cam_fov, col)
@@ -1010,15 +1479,18 @@ class MotAlgorithmHelper(object):
 
         kernel = kernel / np.sum(kernel)  # normalize
         XYZ = []
+        XYZ_smooth = []
         XYZ_t = [MotAlgorithmHelper.read_image_raw(os.path.join(dirr, c)) for c in filename]
         for image_in in XYZ_t:
             image_in = np.rot90(image_in.T, 3)
             image_in = np.flip(image_in, 0)
             # image_in = cv2.rotate(image_in, 0)
-
             XYZ.append(image_in)
-        del XYZ_t
+            image_in_smooth = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
+            XYZ_smooth.append(image_in_smooth)
         XYZ = np.stack(XYZ, axis=2)
+        XYZ_smooth = np.stack(XYZ_smooth, axis=2)
+        del XYZ_t
         Y = XYZ[:, :, 1]
 
         # Create array of angle rings to display
@@ -1113,7 +1585,6 @@ class MotAlgorithmHelper(object):
         Color_WP_x_output_corrected = []
         Color_WP_y_output_corrected = []
         dxdy_WP_output_corrected = []
-        R_output = []
 
         if Size[0] == n_dots ** 2:
             Lum = np.empty((n_dots ** 2,), dtype=np.object)
@@ -1123,19 +1594,23 @@ class MotAlgorithmHelper(object):
             Lum_corrected = np.empty(Lum.shape, dtype=np.object)
             Color_y_corrected = np.empty(Lum.shape, dtype=np.object)
 
-            for i in range(0, n_dots**2):
+            for i in range(0, n_dots ** 2):
                 d = 25
                 # np.trunc the index about center.
                 cx1 = int(np.trunc(centroid[i, 1] - d))
                 cx2 = int(np.trunc(centroid[i, 1] + d)) + 1
                 cy1 = int(np.trunc(centroid[i, 0] - d))
                 cy2 = int(np.trunc(centroid[i, 0] + d)) + 1
-                im = XYZ[cx1:cx2, cy1:cy2, :]
-
+                im = XYZ_smooth[cx1:cx2, cy1:cy2, :]
+                '''verson_1.0
                 X_center = cv2.filter2D(im[:, :, 0], -1, kernel, borderType=cv2.BORDER_CONSTANT)
                 Y_center = cv2.filter2D(im[:, :, 1], -1, kernel, borderType=cv2.BORDER_CONSTANT)
                 Z_center = cv2.filter2D(im[:, :, 2], -1, kernel, borderType=cv2.BORDER_CONSTANT)
-                #
+                '''
+                X_center = im[:, :, 0]
+                Y_center = im[:, :, 1]
+                Z_center = im[:, :, 2]
+
                 Lum[i] = Y_center[26, 26]
                 Color_x[i] = X_center[26, 26] / (X_center[26, 26] + Y_center[26, 26] + Z_center[26, 26])
                 Color_y[i] = Y_center[26, 26] / (X_center[26, 26] + Y_center[26, 26] + Z_center[26, 26])
@@ -1163,13 +1638,17 @@ class MotAlgorithmHelper(object):
             yq = np.arange(255 - (n_dots - 1) * 2, 256, 1)
             [Xq, Yq] = np.meshgrid(xq, xq)
             XX, YY = xx, yy
-            Lum2Dq = MotAlgorithmHelper.interp2(XX, YY, Lum2D, xq, yq)
+            Lum2Dq = self.interp2(XX, YY, Lum2D, xq, yq)
 
-            Color_x_2Dq = MotAlgorithmHelper.interp2(XX, YY, Color_x_2D, xq, yq)
-            Color_y_2Dq = MotAlgorithmHelper.interp2(XX, YY, Color_y_2D, xq, yq)
-            Lum2Dq_corrected = MotAlgorithmHelper.interp2(XX, YY, Lum2D_corrected, xq, yq)
-            Color_x_2Dq_corrected = MotAlgorithmHelper.interp2(XX, YY, Color_x_2D_corrected, xq, yq)
-            Color_y_2Dq_corrected = MotAlgorithmHelper.interp2(XX, YY, Color_y_2D_corrected, xq, yq)
+            Color_x_2Dq = self.interp2(XX, YY, Color_x_2D, xq, yq)
+            Color_y_2Dq = self.interp2(XX, YY, Color_y_2D, xq, yq)
+            Lum2Dq_corrected = self.interp2(XX, YY, Lum2D_corrected, xq, yq)
+            Color_x_2Dq_corrected = self.interp2(XX, YY, Color_x_2D_corrected, xq, yq)
+            Color_y_2Dq_corrected = self.interp2(XX, YY, Color_y_2D_corrected, xq, yq)
+            # version_3.0_add
+            Lum_255 = Lum2Dq_corrected[40, 40]
+            Color_x_255 = Color_x_2Dq_corrected[40, 40]
+            Color_y_255 = Color_y_2Dq_corrected[40, 40]
 
             dx = Color_x_2Dq - x_w
             dy = Color_y_2Dq - y_w
@@ -1177,12 +1656,57 @@ class MotAlgorithmHelper(object):
             dx_corrected = Color_x_2Dq_corrected - x_w
             dy_corrected = Color_y_2Dq_corrected - y_w
             dxdy_corrected = np.sqrt(dx_corrected ** 2 + dy_corrected ** 2)
+            # version_3.0_add
+            if GL[2] == 255:
+                Xlabel_name = 'R Light Level'
+                Ylabel_name = 'G Light Levle'
+            elif GL[1] == 255:
+                Xlabel_name = 'R Light Level'
+                Ylabel_name = 'B Light Levle'
+            else:
+                Xlabel_name = 'G Light Level'
+                Ylabel_name = 'B Light Levle'
+            if self._save_plots:
+                plt.figure()
+                plt.subplot(2, 2, 1)
+                plt.xlim([np.min(xx), np.max(xx)])
+                plt.ylim([np.max(yy), np.min(yy)])
+                plt.imshow(Lum2D_corrected.astype(np.float), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
+                plt.colorbar()
+                plt.xlabel(Xlabel_name)
+                plt.ylabel(Ylabel_name)
+                plt.title('Lum')
+                plt.subplot(2, 2, 2)
+                plt.xlim([np.min(xx), np.max(xx)])
+                plt.ylim([np.max(yy), np.min(yy)])
+                plt.imshow(Color_x_2D_corrected.astype(np.float), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
+                plt.colorbar(),
+                plt.xlabel(Xlabel_name)
+                plt.ylabel(Ylabel_name)
+                plt.title('Color x')
+                plt.subplot(2, 2, 3)
+                plt.xlim([np.min(xx), np.max(xx)])
+                plt.ylim([np.max(yy), np.min(yy)])
+                plt.imshow(Color_y_2D_corrected.astype(np.float), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
+                plt.colorbar()
+                plt.xlabel(Xlabel_name)
+                plt.ylabel(Ylabel_name)
+                plt.title('Color y')
+                plt.xlim([np.min(xx), np.max(xx)])
+                plt.ylim([np.max(yy), np.min(yy)])
+                plt.subplot(2, 2, 4)
+                plt.imshow(dxdy_corrected.astype(np.float), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
+                plt.colorbar()
+                plt.xlabel(Xlabel_name)
+                plt.ylabel(Ylabel_name)
+                plt.title('Color Δxy to target white')
+                plt.tight_layout()
+                if not os.path.exists(os.path.join(dirr, self._exp_dir)):
+                    os.makedirs(os.path.join(dirr, self._exp_dir))
+                plt.savefig(os.path.join(dirr, self._exp_dir, fnamebase + '_plot_dxy.png'))
 
             # GL = [100, 100, 100]
             if np.min(GL) < 255 - (n_dots - 1) * 2:
-                Lum_WP_output = np.nan
-                Color_WP_x_output = np.nan
-                Color_WP_y_output = np.nan
                 Lum_WP_output_corrected = np.nan
                 Color_WP_x_output_corrected = np.nan
                 Color_WP_y_output_corrected = np.nan
@@ -1199,181 +1723,548 @@ class MotAlgorithmHelper(object):
 
                 row = row - (255 - (n_dots - 1) * 2)
                 col = col - (255 - (n_dots - 1) * 2)
-                Lum_WP_output = Lum2Dq[row, col]
-                Color_WP_x_output = Color_x_2Dq[row, col]
-                Color_WP_y_output = Color_y_2Dq[row, col]
-                dxdy_WP_output = np.sqrt((Color_WP_x_output - x_w) ** 2 + (Color_WP_y_output - y_w) ** 2)
                 Lum_WP_output_corrected = Lum2Dq_corrected[row, col]
                 Color_WP_x_output_corrected = Color_x_2Dq_corrected[row, col]
                 Color_WP_y_output_corrected = Color_y_2Dq_corrected[row, col]
-                dxdy_WP_output_corrected = np.sqrt(
-                    (Color_WP_x_output_corrected - x_w) ** 2 + (Color_WP_y_output_corrected - y_w) ** 2)
-
-            R_output, G_output, B_output = np.empty((5,), np.object),  np.empty((5,), np.object),  np.empty((5,), np.object)
-            Lum_output = np.empty((5,), np.object)
-            Color_x_output = np.empty((5,), np.object)
-            Color_y_output = np.empty((5,), np.object)
-            dxdy_output_corrected = np.empty((5,), np.object)
-            dxdy_output = np.empty((5,), np.object)
-            Color_x_output = np.empty((5,), np.object)
 
             min_ext = lambda data: (np.min(data), np.argmin(data))
-            for i in range(0, 1):
-                min_val, idx = min_ext(dxdy)
+            min_val, idx = min_ext(dxdy_corrected)
 
-                row, col = MotAlgorithmHelper.ind2sub(dxdy.shape, idx)
-                row = row[0]
-                col = col[0]
-                if GL[2] == 255:
-                    R_output[i] = Xq[row, col]
-                    G_output[i] = Yq[row, col]
-                    B_output[i] = 255
-                elif GL[1] == 255:
-                    R_output[i] = Xq[row, col]
-                    G_output[i] = 255
-                    B_output[i] = Yq[row, col]
-                else:
-                    R_output[i] = 255
-                    G_output[i] = Xq[row, col]
-                    B_output[i] = Yq[row, col]
+            row, col = MotAlgorithmHelper.ind2sub(dxdy_corrected.shape, idx)
+            row = row[0]
+            col = col[0]
+            if GL[2] == 255:
+                R_output_corrected = Xq[row, col]
+                G_output_corrected = Yq[row, col]
+                B_output_corrected = 255
+            elif GL[1] == 255:
+                R_output_corrected = Xq[row, col]
+                G_output_corrected = 255
+                B_output_corrected = Yq[row, col]
+            else:
+                R_output_corrected = 255
+                G_output_corrected = Xq[row, col]
+                B_output_corrected = Yq[row, col]
 
-                Lum_output[i] = Lum2Dq[row, col]
-                Color_x_output[i] = Color_x_2Dq[row, col]
-                Color_y_output[i] = Color_y_2Dq[row, col]
-                dxdy_output[i] = dxdy[row, col]
-                dxdy[row, col] = 1
-
-            R_output_corrected = np.empty((5,), np.object)
-            G_output_corrected = np.empty((5,), np.object)
-            B_output_corrected = np.empty((5,), np.object)
-            Lum_output_corrected = np.empty((5,), np.object)
-            Color_x_output_corrected = np.empty((5,), np.object)
-            Color_y_output_corrected = np.empty((5,), np.object)
-
-            for i in range(0, 1):
-                min_val, idx = min_ext(dxdy_corrected)
-                row, col = MotAlgorithmHelper.ind2sub(dxdy_corrected.shape, idx)
-                row = row[0]
-                col = col[0]
-                if GL[2] == 255:
-                    R_output_corrected[i] = Xq[row, col]
-                    G_output_corrected[i] = Yq[row, col]
-                    B_output_corrected[i] = 255
-                elif GL[1] == 255:
-                    R_output_corrected[i] = Xq[row, col]
-                    G_output_corrected[i] = 255
-                    B_output_corrected[i] = Yq[row, col]
-                else:
-                    R_output_corrected[i] = 255
-                    G_output_corrected[i] = Xq[row, col]
-                    B_output_corrected[i] = Yq[row, col]
-
-                Lum_output_corrected[i] = Lum2Dq_corrected[row, col]
-                Color_x_output_corrected[i] = Color_x_2Dq_corrected[row, col]
-                Color_y_output_corrected[i] = Color_y_2Dq_corrected[row, col]
-                dxdy_output_corrected[i] = dxdy_corrected[row, col]
-                dxdy_corrected[row, col] = 1
+            # version3.0
+            Lum_output_corrected = Lum2Dq_corrected[row, col]
+            Color_x_output_corrected = Color_x_2Dq_corrected[row, col]
+            Color_y_output_corrected = Color_y_2Dq_corrected[row, col]
+            dxdy_output_corrected = dxdy_corrected[row, col]
+            del dxdy_output_corrected
 
         # Output Statistics
         k = 0
-        stats_summary = np.empty((2, 82), dtype=object)
+        stats_summary = np.empty((2, 100), dtype=object)
+        stats_summary[0, k] = 'dir'
+        stats_summary[1, k] = os.path.join(dirr, fnamebase)
+        k = k + 1
+        # Record temperature
+        stats_summary[0, k] = 'Module Temperature'
+        stats_summary[1, k] = ModuleTemp
+        k = k + 1
+        stats_summary[0, k] = 'Target color x'
+        stats_summary[1, k] = x_w
+        k = k + 1
+        stats_summary[0, k] = 'Target color y'
+        stats_summary[1, k] = y_w
+        k = k + 1
+        stats_summary[0, k] = 'WP255 Lum'
+        stats_summary[1, k] = Lum_255
+        k = k + 1
+        stats_summary[0, k] = 'WP255 x'
+        stats_summary[1, k] = Color_x_255
+        k = k + 1
+        stats_summary[0, k] = 'WP255 y'
+        stats_summary[1, k] = Color_y_255
+        k = k + 1
+        stats_summary[0, k] = 'WP R Quest Alg'
+        stats_summary[1, k] = GL[0]
+        k = k + 1
+        stats_summary[0, k] = 'WP G Quest Alg'
+        stats_summary[1, k] = GL[1]
+        k = k + 1
+        stats_summary[0, k] = 'WP B Quest Alg'
+        stats_summary[1, k] = GL[2]
+        k = k + 1
+        stats_summary[0, k] = 'WP Lum Quest Alg'
+        stats_summary[1, k] = Lum_WP_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP x  Quest Alg'
+        stats_summary[1, k] = Color_WP_x_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP y  Quest Alg'
+        stats_summary[1, k] = Color_WP_y_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP R Arcata Algorithm'
+        stats_summary[1, k] = R_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP G Arcata Algorithm'
+        stats_summary[1, k] = G_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP B Arcata Algorithm'
+        stats_summary[1, k] = B_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP Lum Arcata Algorithm'
+        stats_summary[1, k] = Lum_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP x Arcata Algorithm'
+        stats_summary[1, k] = Color_x_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP y Arcata Algorithm'
+        stats_summary[1, k] = Color_y_output_corrected
+        k = k + 1
+
+        del XYZ, XYZ_W,
+        del Lum_WP_output, Color_WP_x_output, Color_WP_y_output, dxdy_WP_output, Lum_WP_output_corrected,
+        del Color_WP_x_output_corrected, Color_WP_y_output_corrected, dxdy_WP_output_corrected,
+        del Color_x_2D_corrected, Color_y_2D_corrected, Lum2D_corrected, Lum_255, Color_x_255, Color_y_255,
+        del dxdy_corrected, dx_corrected, dy_corrected
+        return dict(np.transpose(stats_summary[:, 0:k]))
+
+    def polyfit_ex(self, x, y, deg):
+        c = None
+        try:
+            c = np.polyfit(x, y, deg)
+        except np.linalg.LinAlgError as e:
+            c = np.polyfit(x, y, deg)
+        return c
+
+    def rgbboresight_parametric_export(self, module_temp=30, xfilename=r'rgbboresight_x_float.bin'):
+        ##Load module temperature
+        ModuleTemp = module_temp
+        TargetTemp = 47
+        dLum_R = -0.02253
+        dColor_x_R = 0.000121
+        dColor_y_R = -0.00047
+        dLum_G = -0.01266
+        dColor_x_G = 0.000733
+        dColor_y_G = -0.00103
+        dLum_B = -0.01019
+        dColor_x_B = -0.000012
+        dColor_y_B = -0.00016
+        cam_fov = 60
+        mask_fov = 30
+        row = 6001
+        col = 6001
+        pixel_spacing = 0.02  # Degrees per pixel
+        kernel_width = 25  # Width of square smoothing kernel in pixels.
+        kernel_shape = 'square'  # Use 'circle' or 'square' to change the smoothing kernel shape
+
+        # Display center after autocollimator alignment. After alignment, the
+        # cross-pattern of autocollimator is located at (0deg,0deg) field
+        x_autocollimator = 0
+        y_autocollimator = 0
+
+        fig_ind = 0
+
+        dirr = os.path.dirname(xfilename)
+        fnamebase = os.path.basename(xfilename).lower().split('_x_float.bin')[0]
+        filename = ['{0}_{1}_float.bin'.format(fnamebase, c) for c in ['X', 'Y', 'Z']]
+
+        #   dir = 'K:\\RL_part\WhitePointCorrection'
+        #   filename = 'normal_W255_20210306_084517_nd_0_iris_5_X_float.bin'
+        # fnamebase = filename[0:np.size(filename) - 12]  # 有问题
+        # filename = ['{}{}'.format(fnamebase, c) for c in ['X_float.bin', 'Y_float.bin', 'Z_float.bin']]
+        primary = ['X', 'Y', 'Z']
+
+        x_angle_arr = np.linspace(-1 * cam_fov, cam_fov, col)
+        y_angle_arr = np.linspace(-1 * cam_fov, cam_fov, row)
+
+        kernel = np.ones((kernel_width, kernel_width))
+        kernel = kernel / np.sum(kernel)  # normalize
+
+        XYZ = []
+        XYZ_smooth = []
+        XYZ_t = [MotAlgorithmHelper.read_image_raw(os.path.join(dirr, c)) for c in filename]
+
+        for c in XYZ_t:
+            image_in = np.rot90(c.T, 3)
+            XYZ.append(image_in)
+            image_in_smooth = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
+            XYZ_smooth.append(image_in_smooth)
+        XYZ = np.stack(XYZ, axis=2)
+        XYZ_smooth = np.stack(XYZ_smooth, axis=2)
+        Y = XYZ[:, :, 1]
+        # Create array of angle rings to display
+        angle_arr = np.linspace(0, 2 * np.pi, 361)
+        disp_fov = cam_fov
+        # Create array of angle ring to show area where masking occurs
+        disp_fov_ring_x = disp_fov * np.sin(angle_arr)
+        disp_fov_ring_y = disp_fov * np.cos(angle_arr)
+        # Create viewing masks
+        col_deg_arr = np.tile(x_angle_arr, (row, 1))
+        row_deg_arr = np.tile(y_angle_arr.T, (col, 1)).T
+        # print(row_deg_arr.shape)
+        radius_deg_arr = (col_deg_arr ** 2 + row_deg_arr ** 2) ** (1 / 2)
+        mask = np.ones((row, col))
+        # mask(radius_deg_arr > mask_fov) = 0#有问题
+        mask[np.where(radius_deg_arr > mask_fov)] = 0
+
+        masked_tristim = XYZ[:, :, 1] * mask
+
+        Lumiance_thresh = 10
+        Length_thresh = 10
+        Img = cv2.inRange(masked_tristim, Lumiance_thresh, 255) // 255
+        Img = measure.label(Img, connectivity=2)
+        statsRG = measure.regionprops(Img)
+        scentersRG = []
+        sMajorAxisLengthRG = []
+        sMinorAxisLengthRG = []
+        statsRG = sorted(statsRG, key=lambda c: c['centroid'])
+        for i, stat in enumerate(statsRG):
+            if stat['MajorAxisLength'] >= Length_thresh:
+                scentersRG.append(list(stat['centroid']))
+                sMajorAxisLengthRG.append(stat['MajorAxisLength'])
+                sMinorAxisLengthRG.append(stat['MinorAxisLength'])
+
+        if self._verbose:
+            print('num stats {0} / {1}'.format(len(scentersRG), len(statsRG)))
+        num_dots = len(scentersRG)
+
+        a = np.nonzero(np.array(sMajorAxisLengthRG) < Length_thresh)
+        b = np.nonzero(np.array(sMinorAxisLengthRG) > 50)
+
+        centroidRG = np.zeros((num_dots, 2))
+        for i in range(0, num_dots):
+            mlen = sMajorAxisLengthRG[i]
+            d = np.floor(sMajorAxisLengthRG[i] / 2) + 1
+
+            scenter = scentersRG[i]
+            scentery = scentersRG[i][1]
+            scentera = np.int(np.floor(scentersRG[i][1] - d))
+            scenterb = np.int(np.floor(scentersRG[i][1] + d))
+            scenterc = np.int(np.floor(scentersRG[i][0] - d))
+            scenterd = np.int(np.floor(scentersRG[i][0] + d))
+            im = Y[scenterc:scenterd + 1, scentera:scenterb + 1]
+            [rows, cols] = im.shape
+            x = np.ones((rows, 1)) * np.arange(1, cols + 1)  # # Matrix with each pixel set to its x coordinate
+            y = np.arange(1, rows + 1).reshape(rows, -1) * np.ones((1, cols))  # # """" " "y  "
+            area = np.sum(im)
+
+            # hhhhh = np.float32(im)
+            # print('i = {0}, col = {1}   row = {2}, area = {3}'.format(i, rows, cols, area))
+
+            hx = np.sum(np.float32(im) * x)
+            hy = np.sum(np.float32(im) * y)
+
+            meanx = np.sum(np.float32(im) * x) / area - d - 1
+            meany = np.sum(np.float32(im) * y) / area - d - 1
+            centroidRG[i, 1] = int(scentersRG[i][0]) + meany
+            centroidRG[i, 0] = meanx + int(scentersRG[i][1])
+
+        masked_tristim = XYZ[:, :, 2] * mask
+        Lumiance_thresh = 30
+        Length_thresh = 50
+        Img = cv2.inRange(masked_tristim, Lumiance_thresh, 255) // 255
+        Img = measure.label(Img, connectivity=2)
+        statsB = measure.regionprops(Img)
+        scentersB = []
+        sMajorAxisLengthB = []
+        sMinorAxisLengthB = []
+
+        for i, stat in enumerate(statsB):
+            if stat['MajorAxisLength'] >= Length_thresh:
+                scentersB.append(list(stat['centroid']))
+                sMajorAxisLengthB.append(stat['MajorAxisLength'])
+                sMinorAxisLengthB.append(stat['MinorAxisLength'])
+
+        if self._verbose:
+            print('num stats {0} / {1}'.format(len(scentersB), len(statsB)))
+        num_dots = len(scentersB)
+
+        a = np.nonzero(np.array(sMajorAxisLengthB) < Length_thresh)
+        b = np.nonzero(np.array(sMinorAxisLengthB) > 50)
+
+        centroidB = np.zeros((num_dots, 2))
+        for i in range(0, num_dots):
+            mlen = sMajorAxisLengthB[i]
+            d = np.floor(sMajorAxisLengthB[i] / 2) + 1
+
+            scenter = scentersB[i]
+            scentery = scentersB[i][1]
+            scentera = int(np.floor(scentersB[i][1] - d))
+            scenterb = int(np.floor(scentersB[i][1] + d))
+            scenterc = int(np.floor(scentersB[i][0] - d))
+            scenterd = int(np.floor(scentersB[i][0] + d))
+            im = Y[scenterc:scenterd + 1, scentera:scenterb + 1]
+            [rows, cols] = im.shape
+            x = np.ones((rows, 1)) * np.arange(1, cols + 1)  # # Matrix with each pixel set to its x coordinate
+            y = np.arange(1, rows + 1).reshape(rows, -1) * np.ones((1, cols))  # # " " "  " "" " y"
+            area = np.sum(im)
+
+            # hhhhh = np.float32(im)
+            # print('i = {0}, col = {1}   row = {2}, area = {3}'.format(i, rows, cols, area))
+
+            hx = np.sum(np.float32(im) * x)
+            hy = np.sum(np.float32(im) * y)
+
+            meanx = np.sum(np.float32(im) * x) / area - d - 1
+            meany = np.sum(np.float32(im) * y) / area - d - 1
+            centroidB[i, 1] = int(scentersB[i][0]) + meany
+            centroidB[i, 0] = meanx + int(scentersB[i][1])
+
+        b = np.nonzero(np.array(sMinorAxisLengthRG) > 50)  # 有问题
+        centroidColor = centroidRG[b, :].reshape((-1, 2))
+        b = np.nonzero(np.array(sMinorAxisLengthB) > 50)
+        centroidColor = np.vstack((centroidColor, centroidB[b, :].reshape(-1, 2)))
+
+        Size = centroidColor.shape
+        RGB = np.empty(XYZ.shape)
+        RGB[:, :, 0] = 0.41847 * XYZ[:, :, 0] - 0.15866 * XYZ[:, :, 1] - 0.082835 * XYZ[:, :, 2]
+        RGB[:, :, 1] = -0.09169 * XYZ[:, :, 0] + 0.25243 * XYZ[:, :, 1] - 0.015708 * XYZ[:, :, 2]
+        RGB[:, :, 2] = 0.00092090 * XYZ[:, :, 0] - 0.0025498 * XYZ[:, :, 1] + 0.17860 * XYZ[:, :, 2]
+        RGB = RGB / np.max(RGB)
+        #     figure,imagesc(RGB)
+        RGB_smooth = np.empty(XYZ_smooth.shape)
+        RGB_smooth[:, :, 0] = 0.41847 * XYZ_smooth[:, :, 0] - 0.15866 * XYZ_smooth[:, :, 1] - 0.082835 * XYZ_smooth[:,
+                                                                                                         :, 2]
+        RGB_smooth[:, :, 1] = -0.09169 * XYZ_smooth[:, :, 0] + 0.25243 * XYZ_smooth[:, :, 1] - 0.015708 * XYZ_smooth[:,
+                                                                                                          :, 2]
+        RGB_smooth[:, :, 2] = 0.00092090 * XYZ_smooth[:, :, 0] - 0.0025498 * XYZ_smooth[:, :, 1] + 0.17860 * XYZ_smooth[
+                                                                                                             :, :, 2]
+        RGB_smooth = RGB_smooth / np.max(RGB_smooth)
+        #     figure,imagesc(RGB_smooth)
+
+        # Perform CIE and RGB color calculations and mask to disp_fov
+        little_x = mask * (XYZ[:, :, 0]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
+        little_x[np.isnan(little_x)] = 0
+        little_y = mask * (XYZ[:, :, 1]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
+        little_y[np.isnan(little_y)] = 0
+
+        little_x_smoothed = mask * (XYZ_smooth[:, :, 0]) / (
+                XYZ_smooth[:, :, 0] + XYZ_smooth[:, :, 1] + XYZ_smooth[:, :, 2])
+        little_x_smoothed[np.isnan(little_x_smoothed)] = 0
+        little_y_smoothed = mask * (XYZ_smooth[:, :, 1]) / (
+                XYZ_smooth[:, :, 0] + XYZ_smooth[:, :, 1] + XYZ_smooth[:, :, 2])
+        little_y_smoothed[np.isnan(little_y_smoothed)] = 0
+
+        # figure,subplot(1,2,1),imagesc(little_x)caxis([0.1,0.7])
+        # title('Color x')
+        # subplot(1,2,2),imagesc(little_y)caxis([0.1,0.7])
+        # title('Color y')
+        # figure,subplot(1,2,1),imagesc(little_x_smoothed)caxis([0.1,0.7])
+        # title('Color x smoothed')
+        # subplot(1,2,2),imagesc(little_y_smoothed)caxis([0.1,0.7])
+        # title('Color y smoothed')
+        Lxy = np.empty((centroidColor.shape[0], 5))
+        for i in range(0, Size[0]):
+            # fix the index about center.
+            y_coord = np.fix(centroidColor[i, 1]).astype(np.int)
+            x_coord = np.fix(centroidColor[i, 0]).astype(np.int)
+
+            Lxy[i, 0] = XYZ_smooth[y_coord, x_coord, 1]
+            Lxy[i, 1] = little_x_smoothed[y_coord, x_coord]
+            Lxy[i, 2] = little_y_smoothed[y_coord, x_coord]
+            Lxy[i, 3] = centroidColor[i, 0]
+            Lxy[i, 4] = centroidColor[i, 1]
+        lxyshape = Lxy.shape
+        LxyR = np.empty((0, lxyshape[1]))
+        LxyG = np.empty((0, lxyshape[1]))
+        LxyB = np.empty((0, lxyshape[1]))
+        nR = 0
+        nG = 0
+        nB = 0
+        for i in range(0, Size[0]):
+            if Lxy[i, 1] > 0.6:
+                LxyR = np.concatenate((LxyR, [Lxy[i, :]]))
+            if Lxy[i, 2] > 0.6:
+                LxyG = np.concatenate((LxyG, [Lxy[i, :]]))
+            if Lxy[i, 1] < 0.2 and Lxy[i, 2] < 0.1:
+                LxyB = np.concatenate((LxyB, [Lxy[i, :]]))
+
+        LxyR_mean = np.mean(LxyR, 0)
+        LxyG_mean = np.mean(LxyG, 0)
+        LxyB_mean = np.mean(LxyB, 0)
+
+        x_mean = np.mean(LxyG[:, 3])
+        y_mean = np.mean(LxyG[:, 4])
+
+        Image_center = np.array([x_mean, y_mean])
+        # Image_center=np.array([3011.5,2987.5])    #test
+        b = np.nonzero(np.array(sMinorAxisLengthRG) < 50)  # 有问题
+        centroidDisp = centroidRG[b, :].reshape((-1, 2))
+        y_points = np.nonzero(np.abs(centroidDisp[:, 0] - Image_center[0]) < 50)
+        x_points = np.nonzero(np.abs(centroidDisp[:, 1] - Image_center[1]) < 50)
+
+        x1 = centroidDisp[x_points, 0].reshape(-1) + 1
+        y1 = centroidDisp[x_points, 1].reshape(-1) + 1
+        c1 = self.polyfit_ex(x1.flatten(), y1.flatten(), 1)
+        k1 = np.rad2deg(np.arctan(c1[0]))
+
+        x2 = centroidDisp[y_points, 0].reshape(-1) + 1
+        y2 = centroidDisp[y_points, 1].reshape(-1) + 1
+        c2 = self.polyfit_ex(x2.flatten(), y2.flatten(), 1)
+        k2 = np.rad2deg(np.arctan(c2[0]))
+
+        # calculate display offsite
+        x_deg = x_autocollimator
+        y_deg = y_autocollimator
+        # col_ind and row_ind are the x and y pixel value of the cross-pattern
+        # from autocollimator in Eldim conoscope. After autocollimator alignment,
+        # these value should be the center pixel of the image, which should be
+        # (3001,3001) in Matlab, and (3000,3000) in Python
+        col_ind = np.array(np.nonzero(np.abs(x_angle_arr - x_deg) == np.min(np.abs(x_angle_arr - x_deg))))
+        row_ind = np.array(np.nonzero(np.abs(y_angle_arr - y_deg) == np.min(np.abs(y_angle_arr - y_deg))))
+        Display_center = np.empty(Image_center.shape)
+        Display_center[0] = 0.4563 * (Image_center[0] - col_ind[0])
+        Display_center[1] = 0.4563 * (Image_center[1] - row_ind[0])
+
+        d = 400
+        rt1 = np.int(np.fix(Image_center[1]) - d)
+        rt2 = np.int(np.fix(Image_center[1]) + d)
+        rt3 = np.int(np.fix(Image_center[0]) - d)
+        rt4 = np.int(np.fix(Image_center[0]) + d)
+
+        # figure,imagesc(I)
+
+        # plt.switch_backend('agg')
+        #
+        if self._save_plots:
+            I = RGB[rt1:(rt2+1), rt3:(rt4+1), :]
+            I[I <= 0] = 0
+            plt.figure()
+            plt.imshow(I, extent=[-d * pixel_spacing, d * pixel_spacing, d * pixel_spacing, -d * pixel_spacing])
+            for i in range(0, Lxy.shape[0]):
+                # different with M-Code.
+                # xt = np.fix(Lxy[i, 3] - Image_center[0]) - 25
+                # yt = np.fix(Lxy[i, 4] - Image_center[1])
+                xt = np.fix(Lxy[i, 3] - Image_center[0]) - 45
+                yt = np.fix(Lxy[i, 4] - Image_center[1]) + 25
+                txt = str(np.around(Lxy[i, 1], decimals=4)) + '\n' + str(np.around(Lxy[i, 2], decimals=4))
+                plt.text(xt * pixel_spacing, yt * pixel_spacing, txt, fontsize=8, color='white')
+            plt.xlim(-d * pixel_spacing, d * pixel_spacing)
+            plt.ylim(d * pixel_spacing, -d * pixel_spacing)
+            plt.xlabel('X / deg')
+            plt.ylabel('Y / deg')
+            if not os.path.exists(os.path.join(dirr, self._exp_dir)):
+                os.makedirs(os.path.join(dirr, self._exp_dir))
+            plt.savefig(os.path.join(dirr, self._exp_dir, f'{fnamebase}_RGB.png'))
+
+            plt.figure()
+            plt.plot(centroidRG[:, 0], centroidRG[:, 1], 'x')
+            plt.plot(np.array(scentersRG)[:, 1], np.array(scentersRG)[:, 0], '.')  # scentersRG should  be aligned.
+            plt.plot(Image_center[0]+1, Image_center[1]+1, 's')
+            plt.plot(x1, np.polyval(c1, x1), c='purple')
+            plt.plot(x2, np.polyval(c2, x2), c='green')
+            plt.xlabel('X / pixels')
+            plt.ylabel('Y / pixels')
+            plt.title('Center of Dots')
+            plt.legend(['Dots Centroid', 'Dots Center', 'Image Center', 'X fit', 'Y fit'])
+
+            plt.savefig(os.path.join(dirr, self._exp_dir, f'{fnamebase}_Boresight.png'))
+
+        R_Lum = LxyR_mean[0]
+        R_x = LxyR_mean[1]
+        R_y = LxyR_mean[2]
+        R_Lum_TargetTemp = R_Lum * (1 + (TargetTemp - ModuleTemp) * dLum_R)
+        R_x_TargetTemp = R_x + (TargetTemp - ModuleTemp) * dColor_x_R
+        R_y_TargetTemp = R_y + (TargetTemp - ModuleTemp) * dColor_y_R
+
+        G_Lum = LxyG_mean[0]
+        G_x = LxyG_mean[1]
+        G_y = LxyG_mean[2]
+        G_Lum_TargetTemp = G_Lum * (1 + (TargetTemp - ModuleTemp) * dLum_G)
+        G_x_TargetTemp = G_x + (TargetTemp - ModuleTemp) * dColor_x_G
+        G_y_TargetTemp = G_y + (TargetTemp - ModuleTemp) * dColor_y_G
+
+        B_Lum = LxyB_mean[0]
+        B_x = LxyB_mean[1]
+        B_y = LxyB_mean[2]
+        B_Lum_TargetTemp = B_Lum * (1 + (TargetTemp - ModuleTemp) * dLum_B)
+        B_x_TargetTemp = B_x + (TargetTemp - ModuleTemp) * dColor_x_B
+        B_y_TargetTemp = B_y + (TargetTemp - ModuleTemp) * dColor_y_B
+
+        # Output Statistics
+        k = 0
+        stats_summary = np.empty((2, 100), dtype=object)
         stats_summary[0, k] = 'dir'
         stats_summary[1, k] = os.path.join(dirr, fnamebase)
         k = k + 1
 
-        stats_summary[0, k] = 'WP0 R'
-        stats_summary[1, k] = GL[0]
+        stats_summary[0, k] = 'Module Temperature'
+        stats_summary[1, k] = ModuleTemp
         k = k + 1
-        stats_summary[0, k] = 'WP0 G'
-        stats_summary[1, k] = GL[1]
+        stats_summary[0, k] = 'R_Lum'
+        stats_summary[1, k] = R_Lum
         k = k + 1
-        stats_summary[0, k] = 'WP0 B'
-        stats_summary[1, k] = GL[2]
+        stats_summary[0, k] = 'R_x'
+        stats_summary[1, k] = R_x
         k = k + 1
-        stats_summary[0, k] = 'WP0 Lum'
-        stats_summary[1, k] = Lum_WP_output
+        stats_summary[0, k] = 'R_y'
+        stats_summary[1, k] = R_y
         k = k + 1
-        stats_summary[0, k] = 'WP0 x'
-        stats_summary[1, k] = Color_WP_x_output
+        stats_summary[0, k] = 'R_Lum at 47C'
+        stats_summary[1, k] = R_Lum_TargetTemp
         k = k + 1
-        stats_summary[0, k] = 'WP0 y'
-        stats_summary[1, k] = Color_WP_y_output
+        stats_summary[0, k] = 'R_x at 47C'
+        stats_summary[1, k] = R_x_TargetTemp
         k = k + 1
-        stats_summary[0, k] = 'WP0 dxy to d65'
-        stats_summary[1, k] = dxdy_WP_output
+        stats_summary[0, k] = 'R_y at 47C'
+        stats_summary[1, k] = R_y_TargetTemp
         k = k + 1
-        stats_summary[0, k] = 'WP0_corrected Lum'
-        stats_summary[1, k] = Lum_WP_output_corrected
+        stats_summary[0, k] = 'G_Lum'
+        stats_summary[1, k] = G_Lum
         k = k + 1
-        stats_summary[0, k] = 'WP0_corrected x'
-        stats_summary[1, k] = Color_WP_x_output_corrected
+        stats_summary[0, k] = 'G_x'
+        stats_summary[1, k] = G_x
         k = k + 1
-        stats_summary[0, k] = 'WP0_corrected y'
-        stats_summary[1, k] = Color_WP_y_output_corrected
+        stats_summary[0, k] = 'G_y'
+        stats_summary[1, k] = G_y
         k = k + 1
-        stats_summary[0, k] = 'WP0_corrected dxy to d65'
-        stats_summary[1, k] = dxdy_WP_output_corrected
+        stats_summary[0, k] = 'G_Lum at 47C'
+        stats_summary[1, k] = G_Lum_TargetTemp
+        k = k + 1
+        stats_summary[0, k] = 'G_x at 47C'
+        stats_summary[1, k] = G_x_TargetTemp
+        k = k + 1
+        stats_summary[0, k] = 'G_y at 47C'
+        stats_summary[1, k] = G_y_TargetTemp
+        k = k + 1
+        stats_summary[0, k] = 'B_Lum'
+        stats_summary[1, k] = B_Lum
+        k = k + 1
+        stats_summary[0, k] = 'B_x'
+        stats_summary[1, k] = B_x
+        k = k + 1
+        stats_summary[0, k] = 'B_y'
+        stats_summary[1, k] = B_y
         k = k + 1
 
-        for i in range(0, 1):
-            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' R'
-            stats_summary[1, k] = R_output[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' G'
-            stats_summary[1, k] = G_output[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' B'
-            stats_summary[1, k] = B_output[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' Lum'
-            stats_summary[1, k] = Lum_output[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' x'
-            stats_summary[1, k] = Color_x_output[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' y'
-            stats_summary[1, k] = Color_y_output[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_meas_' + str(i + 1) + ' dxy to d65'
-            stats_summary[1, k] = dxdy_output[i]
-            k = k + 1
+        stats_summary[0, k] = 'B_Lum at 47C'
+        stats_summary[1, k] = B_Lum_TargetTemp
+        k = k + 1
+        stats_summary[0, k] = 'B_x at 47C'
+        stats_summary[1, k] = B_x_TargetTemp
+        k = k + 1
+        stats_summary[0, k] = 'B_y at 47C'
+        stats_summary[1, k] = B_y_TargetTemp
+        k = k + 1
+        stats_summary[0, k] = 'DispCen_x_cono'
+        stats_summary[1, k] = Image_center[0] + 1
+        k = k + 1
+        stats_summary[0, k] = 'DispCen_y_cono'
+        stats_summary[1, k] = Image_center[1] + 1
+        k = k + 1
+        stats_summary[0, k] = 'DispCen_x_display'
+        stats_summary[1, k] = Display_center[0]
+        k = k + 1
+        stats_summary[0, k] = 'DispCen_y_display'
+        stats_summary[1, k] = Display_center[1]
+        k = k + 1
+        stats_summary[0, k] = 'Disp_Rotate_x'
+        stats_summary[1, k] = k1
+        k = k + 1
+        del XYZ, XYZ_smooth, Img, RGB, RGB_smooth
+        del B_Lum, B_Lum_TargetTemp, B_x_TargetTemp, B_x, B_y_TargetTemp, B_y
+        del Y, image_in, image_in_smooth, little_y, little_x, little_x_smoothed, little_y_smoothed
+        del mask, masked_tristim, radius_deg_arr, row_deg_arr, x_angle_arr, y_angle_arr
+        return dict(np.transpose(stats_summary[:, 0:k]))
 
-        for i in range(0, 1):
-            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' R'
-            stats_summary[1, k] = R_output_corrected[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' G'
-            stats_summary[1, k] = G_output_corrected[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' B'
-            stats_summary[1, k] = B_output_corrected[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' Lum'
-            stats_summary[1, k] = Lum_output_corrected[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' x'
-            stats_summary[1, k] = Color_x_output_corrected[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' y'
-            stats_summary[1, k] = Color_y_output_corrected[i]
-            k = k + 1
-            stats_summary[0, k] = 'WP_corrected_meas_' + str(i + 1) + ' dxy to d65'
-            stats_summary[1, k] = dxdy_output_corrected[i]
-            k = k + 1
-        if export_csv:
-            with open(os.path.join(os.path.expanduser('~/Desktop'), 'abcd.csv'), 'w',
-                      encoding='utf-8', newline='') as csv_file:
-                wr = csv.DictWriter(csv_file, fieldnames=stats_summary[0, :])
-                wr.writeheader()
-                wr.writerow(dict(zip(stats_summary[0, :], stats_summary[1, :])))
-        del XYZ, XYZ_W,
-        del Lum_WP_output, Color_WP_x_output, Color_WP_y_output, dxdy_WP_output, Lum_WP_output_corrected,
-        del Color_WP_x_output_corrected, Color_WP_y_output_corrected, dxdy_WP_output_corrected,
-        del R_output, G_output, B_output
-        return dict(zip(*stats_summary))
 
 def print_to_console(self, msg):
     pass
+
 
 if __name__ == "__main__":
     import sys
@@ -1396,44 +2287,48 @@ if __name__ == "__main__":
     yi = np.arange(0, 21)
     zi = MotAlgorithmHelper.interp2(x, y, z, xi, yi)
 
+    w_bin_re = '*_W255_*_X_float.bin'
+    r_bin_re = '*_R255_*_X_float.bin'
+    g_bin_re = '*_G255_*_X_float.bin'
+    b_bin_re = '*_B255_*_X_float.bin'
+    gd_bin_re = '*_GreenDistortion_*_Y_float.bin'
+    br_bin_re = '*_RGBBoresight_*_X_float.bin'
+    wd_bin_re = '*_WhiteDot_*_X_float.bin'
 
+    aa = MotAlgorithmHelper(is_verbose=False, save_plots=True)
+    raw_data_dir = r"c:\ShareData\Oculus_RawData\002_seacliff_mot-06_20210806-175810"
+    bins = tuple([glob.glob(os.path.join(raw_data_dir, c))
+                  for c in [w_bin_re, r_bin_re, g_bin_re, b_bin_re, gd_bin_re, br_bin_re, wd_bin_re]])
 
-    fn = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw\WhitePointCorrection'
-    summarys = []
-    with open(os.path.join(fn, 'aaa.csv'), encoding='utf-8') as text:
-        rows = csv.reader(text, delimiter=',', )
-        for row in rows:
-            summarys.append(row)
-    _exported_parametric = dict(zip(summarys[0], summarys[1]))
-    ref_patterns = ['W255', 'R255', 'G255', 'B255']
-    ref_luv = []
-    for pattern in ref_patterns:
-        items = [f" normal_{pattern}_{c}_0.0deg_0.0deg" for c in ["Lum", "u'", "v'"]]
-        ref_luv.append(tuple([float(_exported_parametric[c]) for c in items]))
+    w_bin, r_bin, g_bin, b_bin, gd_bin, br_bin, wd_bin = tuple([c[0] if len(c) > 0 else None for c in bins])
 
-    gl = MotAlgorithmHelper.calc_gl_for_brightdot(np.array(ref_luv))
+    w255_result = aa.color_pattern_parametric_export_W255(
+        xfilename=os.path.join(raw_data_dir, w_bin), ModuleLR='R')
+    r255_result = aa.color_pattern_parametric_export_RGB('r',
+                                                         xfilename=os.path.join(raw_data_dir, r_bin))
+    g255_result = aa.color_pattern_parametric_export_RGB('g',
+                                                         xfilename=os.path.join(raw_data_dir, g_bin))
+    b255_result = aa.color_pattern_parametric_export_RGB('b',
+                                                         xfilename=os.path.join(raw_data_dir, b_bin))
+    boresight_result = aa.rgbboresight_parametric_export(
+        xfilename=os.path.join(raw_data_dir, br_bin))
 
-    x_bin = 'normal_W255_20210306_084517_nd_0_iris_5_X_float.bin'
-    aa = MotAlgorithmHelper()
-    XYZ = aa.white_dot_pattern_w255_read(os.path.join(fn, x_bin))
+    distortion_result = aa.distortion_centroid_parametric_export(
+        filename=os.path.join(raw_data_dir, gd_bin))
+
+    XYZ = aa.white_dot_pattern_w255_read(os.path.join(raw_data_dir, w_bin))
     XYZ_W = np.stack(XYZ, axis=2)
-    # x_bin = 'normal_WhiteDot7_20210306_084914_nd_0_iris_5_X_float.bin'
-    x_bin = 'normal_WhiteDotV2_20201218_031726_nd_0_iris_5_X_float.bin'
-    exp = aa.white_dot_pattern_parametric_export(XYZ_W, gl, os.path.join(fn, x_bin), export_csv=True, n_dots=21)
-    pass
 
-    # station_config.load_station('seacliff_mot')
-    # station_config.print_to_console = types.MethodType(print_to_console, station_config)
-    # station_config._verbose = True
-    # the_equipment = seacliffmotEquipment(station_config, station_config)
-    # print(the_equipment.version())
-    # print(the_equipment.get_config())
-    #
-    # config = {"capturePath": "C:\\oculus\\factory_test_omi\\factory_test_stations\\factory-test_logs\\raw\\AA_seacliff_mot-01_20200612-100304"}
-    # print(the_equipment.set_config(config))
-    # print(the_equipment.open())
-    # the_equipment.measure_and_export(station_config.TESTTYPE)
-    # print(the_equipment.reset())
-    # print(the_equipment.close())
-    #
-    # the_equipment.kill()
+    gl_whitedot = aa.calc_gl_for_brightdot(w255_result, r255_result, g255_result, b255_result)
+    whitedot_result = aa.white_dot_pattern_parametric_export(XYZ_W,
+                                                 gl_whitedot['GL'], gl_whitedot['x_w'], gl_whitedot['y_w'],
+                                                 gl_whitedot['ModuleTemp'], os.path.join(raw_data_dir, wd_bin))
+    raw_data = [w255_result, r255_result, g255_result, b255_result, boresight_result, distortion_result, whitedot_result]
+    if not os.path.exists(os.path.join(raw_data_dir, 'exp')):
+        os.makedirs(os.path.join(raw_data_dir, 'exp'))
+    with open(os.path.join(raw_data_dir, 'exp', f'export.txt'), 'w', newline='') as f:
+        for idx, raw in enumerate(raw_data):
+            f.write('+'*10 + '\n')
+            data = [f'{k}, {v}' for k, v in raw.items()]
+            f.write('\n'.join(data))
+            f.write('\n' + '-'*10 + '\n'*3)

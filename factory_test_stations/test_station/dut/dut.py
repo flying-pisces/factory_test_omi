@@ -119,7 +119,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                                                   rtscts=False,
                                                   xonxoff=False,
                                                   dsrdtr=False,
-                                                  timeout=1,
+                                                  timeout=0.3,
                                                   writeTimeout=None,
                                                   interCharTimeout=None)
                 if self._verbose:
@@ -131,8 +131,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def screen_on(self, ignore_err=False):
         if not self.is_screen_poweron:
-            self._power_off()
-            time.sleep(0.5)
+            # self._power_off()
+            # time.sleep(0.5)
             retries = 1
             recvobj = None
             while retries <= 5 and not self.is_screen_poweron:
@@ -347,8 +347,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def nvm_speed_mode(self, mode='normal'):
         '''
-        $C.SET.B7MODE,0x0302 //ä½Žé€Ÿæ¨¡å¼
-        $C.SET.B7MODE,0x030b //é«˜é€Ÿæ¨¡å¼
+        $C.SET.B7MODE,0x0302 //µÍËÙÄ£Ê½
+        $C.SET.B7MODE,0x030b //¸ßËÙÄ£Ê½
         @param mode:
         @type high_mode:
         @return:
@@ -528,7 +528,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
     def _setColor(self, color=(255, 255, 255)):
         command = '{0},0x{1[0]:02X},0x{1[1]:02X},0x{1[2]:02X}'.format(self._station_config.COMMAND_DISP_SETCOLOR, color)
         self._write_serial_cmd(command)
-        time.sleep(0.02)
+        # time.sleep(0.02)
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_SETCOLOR, response)
 
@@ -631,8 +631,8 @@ if __name__ == "__main__" :
 
     station_config.COMMAND_DISP_POWERON_DLY = 2
     station_config.COMMAND_DISP_RESET_DLY = 1
-    station_config.COMMAND_DISP_SHOWIMG_DLY = 0.5
-    station_config.COMMAND_DISP_POWEROFF_DLY = 0.2
+    station_config.COMMAND_DISP_SHOWIMG_DLY = 0.05
+    station_config.COMMAND_DISP_POWEROFF_DLY = 0
 
     import sys
     import types
