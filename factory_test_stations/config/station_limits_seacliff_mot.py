@@ -87,21 +87,33 @@ STATION_LIMITS_ARRAYS = [
     ["normal_W255_Temporal Lum(30deg)", None, None, 20026],
     ["normal_W255_Temporal x(30deg)", None, None, 20027],
     ["normal_W255_Temporal y(30deg)", None, None, 20028],
-    ["normal_W255_Max Lum", None, None, 20029],
-    ["normal_W255_Max Lum x", None, None, 20030],
-    ["normal_W255_Max Lum y", None, None, 20031],
-    ["normal_W255_Max Lum x(deg)", None, None, 20032],
-    ["normal_W255_Max Lum y(deg)", None, None, 20033],
-    ["normal_W255_Lum_mean_30deg", None, None, 20034],
-    ["normal_W255_Lum_delta_30deg", None, None, 20035],
-    ["normal_W255_Lum 5%30deg", None, None, 20036],
-    ["normal_W255_Lum 95%30deg", None, None, 20037],
-    ["normal_W255_Lum_Ratio>0.7OnAxisLum_30deg", None, None, 20038],
-    ["normal_W255_Lum_Ratio>0.7MaxLum_30deg", None, None, 20039],
-    ["normal_W255_u'_mean_30deg", None, None, 20040],
-    ["normal_W255_v'_mean_30deg", None, None, 20041],
-    ["normal_W255_u'v'_delta_to_OnAxis_30deg", None, None, 20042],
-    ["normal_W255_du'v' 95%30deg", None, None, 20043],
+    ["normal_W255_Sky_Nasal Lum(30deg)", None, None, 20029],
+    ["normal_W255_Sky_Nasal x(30deg)", None, None, 20030],
+    ["normal_W255_Sky_Nasal y(30deg)", None, None, 20031],
+    ["normal_W255_Sky_Temporal Lum(30deg)", None, None, 20032],
+    ["normal_W255_Sky_Temporal x(30deg)", None, None, 20033],
+    ["normal_W255_Sky_Temporal y(30deg)", None, None, 20034],
+    ["normal_W255_Ground_Nasal Lum(30deg)", None, None, 20035],
+    ["normal_W255_Ground_Nasal x(30deg)", None, None, 20036],
+    ["normal_W255_Ground_Nasal y(30deg)", None, None, 20037],
+    ["normal_W255_Ground_Temporal Lum(30deg)", None, None, 20038],
+    ["normal_W255_Ground_Temporal x(30deg)", None, None, 20039],
+    ["normal_W255_Ground_Temporal y(30deg)", None, None, 20040],
+    ["normal_W255_Max Lum", None, None, 20041],
+    ["normal_W255_Max Lum x", None, None, 20042],
+    ["normal_W255_Max Lum y", None, None, 20043],
+    ["normal_W255_Max Lum x(deg)", None, None, 20044],
+    ["normal_W255_Max Lum y(deg)", None, None, 20045],
+    ["normal_W255_Lum_mean_30deg", None, None, 20046],
+    ["normal_W255_Lum_delta_30deg", None, None, 20047],
+    ["normal_W255_Lum 5%30deg", None, None, 20048],
+    ["normal_W255_Lum 95%30deg", None, None, 20049],
+    ["normal_W255_Lum_Ratio>0.7OnAxisLum_30deg", None, None, 20050],
+    ["normal_W255_Lum_Ratio>0.7MaxLum_30deg", None, None, 20051],
+    ["normal_W255_u'_mean_30deg", None, None, 20052],
+    ["normal_W255_v'_mean_30deg", None, None, 20053],
+    ["normal_W255_u'v'_delta_to_OnAxis_30deg", None, None, 20054],
+    ["normal_W255_du'v' 95%30deg", None, None, 20055],
 
     ["normal_R255_ExposureTime_X", None, None, 21000],
     ["normal_R255_ExposureTime_Xz", None, None, 21001],
@@ -286,7 +298,7 @@ if __name__ == '__main__':
 
     Exposure_Times = ['X', 'Xz', 'Ya', 'Yb', 'Z']
 
-    W255_Items = "Module Temperature,OnAxis Lum,OnAxis x,OnAxis y,OnAxis Lum at 47C,OnAxis x at 47C,OnAxis y at 47C,Sky Lum(30deg),Sky x(30deg),Sky y(30deg),Ground Lum(30deg),Ground x(30deg),Ground y(30deg),Nasal Lum(30deg),Nasal x(30deg),Nasal y(30deg),Temporal Lum(30deg),Temporal x(30deg),Temporal y(30deg),Max Lum,Max Lum x,Max Lum y,Max Lum x(deg),Max Lum y(deg),Lum_mean_30deg,Lum_delta_30deg,Lum 5%30deg,Lum 95%30deg,Lum_Ratio>0.7OnAxisLum_30deg,Lum_Ratio>0.7MaxLum_30deg,u'_mean_30deg,v'_mean_30deg,u'v'_delta_to_OnAxis_30deg,du'v' 95%30deg"
+    W255_Items = "Module Temperature,OnAxis Lum,OnAxis x,OnAxis y,OnAixs Lum at 47C,OnAxis x at 47C,OnAxis y at 47C,Sky Lum(30deg),Sky x(30deg),Sky y(30deg),Ground Lum(30deg),Ground x(30deg),Ground y(30deg),Nasal Lum(30deg),Nasal x(30deg),Nasal y(30deg),Temporal Lum(30deg),Temporal x(30deg),Temporal y(30deg),Sky_Nasal Lum(30deg),Sky_Nasal x(30deg),Sky_Nasal y(30deg),Sky_Temporal Lum(30deg),Sky_Temporal x(30deg),Sky_Temporal y(30deg),Ground_Nasal Lum(30deg),Ground_Nasal x(30deg),Ground_Nasal y(30deg),Ground_Temporal Lum(30deg),Ground_Temporal x(30deg),Ground_Temporal y(30deg),Max Lum,Max Lum x,Max Lum y,Max Lum x(deg),Max Lum y(deg),Lum_mean_30deg,Lum_delta_30deg,Lum 5%30deg,Lum 95%30deg,Lum_Ratio>0.7OnAxisLum_30deg,Lum_Ratio>0.7MaxLum_30deg,u'_mean_30deg,v'_mean_30deg,u'v'_delta_to_OnAxis_30deg,du'v' 95%30deg"
     R255_Items = "Module Temperature,OnAxis Lum,OnAxis x,OnAxis y,OnAxis Lum at 47C,OnAxis x at 47C,OnAxis y at 47C"
     G255_Items = "Module Temperature,OnAxis Lum,OnAxis x,OnAxis y,OnAxis Lum at 47C,OnAxis x at 47C,OnAxis y at 47C"
     B255_Items = "Module Temperature,OnAxis Lum,OnAxis x,OnAxis y,OnAxis Lum at 47C,OnAxis x at 47C,OnAxis y at 47C"

@@ -1009,6 +1009,81 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = f'Temporal y({chromaticity_fov}deg)'
         stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
         k = k + 1
+
+        # Sky Nasal luminance and color
+        if ModuleLR == 'L':
+            x_deg = chromaticity_fov * 1.414 / 2
+            y_deg = -chromaticity_fov * 1.414 / 2
+        else:
+            x_deg = -chromaticity_fov * 1.414 / 2
+            y_deg = -chromaticity_fov * 1.414 / 2
+
+        col_ind = np.nonzero(abs(x_angle_arr - x_deg) == np.min(min(abs(x_angle_arr - x_deg))))[1][-1]
+        row_ind = np.nonzero(abs(y_angle_arr - y_deg) == np.min(min(abs(y_angle_arr - y_deg))))[1][-1]
+        stats_summary[0, k] = f'Sky_Nasal Lum({chromaticity_fov}deg)'
+        stats_summary[1, k] = Lum_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Sky_Nasal x({chromaticity_fov}deg)'
+        stats_summary[1, k] = x_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Sky_Nasal y({chromaticity_fov}deg)'
+        stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        # Sky Temporal luminance and color
+        if ModuleLR == 'L':
+            x_deg = -chromaticity_fov * 1.414 / 2
+            y_deg = -chromaticity_fov * 1.414 / 2
+        else:
+            x_deg = chromaticity_fov * 1.414 / 2
+            y_deg = -chromaticity_fov * 1.414 / 2
+        col_ind = np.nonzero(abs(x_angle_arr - x_deg) == np.min(min(abs(x_angle_arr - x_deg))))[1][-1]
+        row_ind = np.nonzero(abs(y_angle_arr - y_deg) == np.min(min(abs(y_angle_arr - y_deg))))[1][-1]
+        stats_summary[0, k] = f'Sky_Temporal Lum({chromaticity_fov}deg)'
+        stats_summary[1, k] = Lum_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Sky_Temporal x({chromaticity_fov}deg)'
+        stats_summary[1, k] = x_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Sky_Temporal y({chromaticity_fov}deg)'
+        stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        # Ground Nasal luminance and color
+        if ModuleLR == 'L':
+            x_deg = chromaticity_fov * 1.414 / 2
+            y_deg = chromaticity_fov * 1.414 / 2
+        else:
+            x_deg = -chromaticity_fov * 1.414 / 2
+            y_deg = chromaticity_fov * 1.414 / 2
+        col_ind = np.nonzero(abs(x_angle_arr - x_deg) == np.min(min(abs(x_angle_arr - x_deg))))[1][-1]
+        row_ind = np.nonzero(abs(y_angle_arr - y_deg) == np.min(min(abs(y_angle_arr - y_deg))))[1][-1]
+        stats_summary[0, k] = f'Ground_Nasal Lum({chromaticity_fov}deg)'
+        stats_summary[1, k] = Lum_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Ground_Nasal x({chromaticity_fov}deg)'
+        stats_summary[1, k] = x_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Ground_Nasal y({chromaticity_fov}deg)'
+        stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        # % Ground Temporal luminance and color
+        if ModuleLR == 'L':
+            x_deg = -chromaticity_fov * 1.414 / 2
+            y_deg = chromaticity_fov * 1.414 / 2
+        else:
+            x_deg = chromaticity_fov * 1.414 / 2
+            y_deg = chromaticity_fov * 1.414 / 2
+        col_ind = np.nonzero(abs(x_angle_arr - x_deg) == np.min(min(abs(x_angle_arr - x_deg))))[1][-1]
+        row_ind = np.nonzero(abs(y_angle_arr - y_deg) == np.min(min(abs(y_angle_arr - y_deg))))[1][-1]
+        stats_summary[0, k] = f'Ground_Temporal Lum({chromaticity_fov}deg)'
+        stats_summary[1, k] = Lum_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Ground_Temporal x({chromaticity_fov}deg)'
+        stats_summary[1, k] = x_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        stats_summary[0, k] = f'Ground_Temporal y({chromaticity_fov}deg)'
+        stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
+        k = k + 1
+        # %%
         del col_ind, row_ind
 
         # % Max brightness
@@ -1134,8 +1209,7 @@ class MotAlgorithmHelper(object):
             # plot brightness images
             title_label_Yonly = 'Brightness - Smoothed Data'
 
-            subtitle_label_Yonly = 'Max: ' + str(np.around(max_Y_val, decimals=2)) + 'nits at x=' + str(
-                np.around(max_Y_xloc_deg, decimals=2)) + '°,y=' + str(np.around(max_Y_yloc_deg, decimals=2)) + '°'
+            subtitle_label_Yonly = f'Max: {max_Y_val:.2f}nits at x={max_Y_xloc_deg:.2f}°,y={max_Y_yloc_deg:.2f}°'
             clims_smooth = [0, np.max(XYZ[row_ind_min - 1:row_ind_max, col_ind_min - 1:col_ind_max, 1])]
 
             plt.figure()
@@ -1152,6 +1226,7 @@ class MotAlgorithmHelper(object):
             # y_ = [y[0] - dy] + [a + dy for a in y]  # y axis
             # xx, yy = np.meshgrid(x_, y_)
             # plt.pcolor(xx, yy, Y, cmap='jet')
+            plt.gca().set_aspect('equal', adjustable='box')
             plt.imshow(Y, cmap='jet',
                        extent=[np.min(x_angle_arr), np.max(x_angle_arr), np.max(y_angle_arr), np.min(y_angle_arr)])
             plt.colorbar()
@@ -1159,20 +1234,21 @@ class MotAlgorithmHelper(object):
             plt.title(f'{title_label_Yonly}\n{subtitle_label_Yonly}')
             plt.xlabel('X angle (deg)')
             plt.ylabel('Y angle (deg)')
-            plt.xlim([-disp_fov, disp_fov])
-            plt.ylim([disp_fov, -disp_fov])
             # hold on
             plt.plot([-1 * disp_fov, disp_fov], [0, 0], Color='w', linewidth=1)
             plt.plot([0, 0], [-1 * disp_fov, disp_fov], Color='w', linewidth=1)
             # for i in range(0, polar_ring_x.shape[0]):
             plt.plot(polar_ring_x, polar_ring_y, color='w', linewidth=1)
 
-            plt.scatter(max_Y_xloc_deg, max_Y_yloc_deg, c='w', marker='+', linewidths=1)
+            plt.plot(max_Y_xloc_deg, max_Y_yloc_deg, c='w', marker='+')
+
+            plt.xlim([-disp_fov, disp_fov])
+            plt.ylim([disp_fov, -disp_fov])
             # hold off
             plt.subplot(2, 2, 2)
             plt.plot(x_angle_arr[0, col_ind_min - 1:col_ind_max],
-                     XYZ[3001, col_ind_min - 1:col_ind_max, 2] / max_Y_val, linewidth=1)
-            # xticks([-disp_fov -chromaticity_fov 0 chromaticity_fov disp_fov])
+                     XYZ[3001, col_ind_min - 1:col_ind_max, 1] / max_Y_val, linewidth=1)
+            plt.xticks([-disp_fov, -chromaticity_fov, 0, chromaticity_fov, disp_fov])
             plt.xlabel('X angle (deg)')
             plt.ylabel('Normalized Brightness')
             plt.title('Normalized Brightness - x')
@@ -1185,8 +1261,8 @@ class MotAlgorithmHelper(object):
             # hold off
             plt.subplot(2, 2, 3)
             plt.plot(y_angle_arr[0, row_ind_min - 1:row_ind_max],
-                     XYZ[row_ind_min - 1:row_ind_max, 3001, 2] / max_Y_val, linewidth=1)
-            # xticks([-disp_fov -chromaticity_fov 0 chromaticity_fov disp_fov])
+                     XYZ[row_ind_min - 1:row_ind_max, 3001, 1] / max_Y_val, linewidth=1)
+            plt.xticks([-disp_fov, -chromaticity_fov, 0, chromaticity_fov, disp_fov])
             plt.xlabel('Y angle (deg)')
             plt.ylabel('Normalized Brightness')
             plt.title('Normalized Brightness - y')
@@ -1240,7 +1316,7 @@ class MotAlgorithmHelper(object):
             plt.plot([0, 0], [-1 * disp_fov, disp_fov], color='w', linewidth=1)
             plt.plot(polar_ring_x, polar_ring_y, color='w', linewidth=1)
 
-            plt.scatter(max_Y_xloc_deg, max_Y_yloc_deg, c='w', marker='+')
+            plt.plot(max_Y_xloc_deg, max_Y_yloc_deg, c='w', marker='+')
             plt.subplot(222)
             plt.plot(x_angle_arr[0, col_ind_min:col_ind_max], Delta_uv_prime_smoothed_masked[3001, col_ind_min:col_ind_max])
             plt.xticks([-disp_fov, -chromaticity_fov, 0, chromaticity_fov, disp_fov])
@@ -2131,7 +2207,7 @@ class MotAlgorithmHelper(object):
                 # yt = np.fix(Lxy[i, 4] - Image_center[1])
                 xt = np.fix(Lxy[i, 3] - Image_center[0]) - 45
                 yt = np.fix(Lxy[i, 4] - Image_center[1]) + 25
-                txt = str(np.around(Lxy[i, 1], decimals=4)) + '\n' + str(np.around(Lxy[i, 2], decimals=4))
+                txt = f'{Lxy[i, 1]:.4f}\n{Lxy[i, 2]:.4f}'
                 plt.text(xt * pixel_spacing, yt * pixel_spacing, txt, fontsize=8, color='white')
             plt.xlim(-d * pixel_spacing, d * pixel_spacing)
             plt.ylim(d * pixel_spacing, -d * pixel_spacing)
@@ -2143,10 +2219,11 @@ class MotAlgorithmHelper(object):
 
             plt.figure()
             plt.plot(centroidRG[:, 0], centroidRG[:, 1], 'x')
-            plt.plot(np.array(scentersRG)[:, 1], np.array(scentersRG)[:, 0], '.')  # scentersRG should  be aligned.
-            plt.plot(Image_center[0]+1, Image_center[1]+1, 's')
-            plt.plot(x1, np.polyval(c1, x1), c='purple')
-            plt.plot(x2, np.polyval(c2, x2), c='green')
+            # scentersRG should  be aligned.
+            plt.plot(np.array(scentersRG)[:, 1] + 1, np.array(scentersRG)[:, 0] + 1, '.')
+            plt.plot(Image_center[0] + 1, Image_center[1] + 1, 's')
+            plt.plot(x1, np.polyval(c1, x1), linewidth=2)
+            plt.plot(x2, np.polyval(c2, x2), linewidth=2)
             plt.xlabel('X / pixels')
             plt.ylabel('Y / pixels')
             plt.title('Center of Dots')
