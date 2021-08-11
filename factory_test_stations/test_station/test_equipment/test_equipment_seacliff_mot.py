@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import hardware_station_common.test_station.test_equipment
 import json
 import os
@@ -473,7 +474,8 @@ class MotAlgorithmHelper(object):
             image_in = cv2.rotate(image_in, 0)
         return image_in
 
-    def distortion_centroid_parametric_export(self, filename=r'/normal_GreenDistortion_X_float.bin'):
+    def distortion_centroid_parametric_export(self, filename=r'/normal_GreenDistortion_X_float.bin', module_temp=30):
+        ModuleTemp = module_temp
         mask_fov = 30
         x_autocollimator = 0
         y_autocollimator = 0
@@ -523,7 +525,7 @@ class MotAlgorithmHelper(object):
         aa_image[1:, 1:] = label_image
         label_image = aa_image
 
-        bb_image = np.zeros((self._row + 1, self._col + 1), dtype=np.float)
+        bb_image = np.zeros((self._row + 1, self._col + 1), dtype=np.float32)
         bb_image[1:, 1:] = CXYZ
         CXYZ = bb_image
 
@@ -627,6 +629,9 @@ class MotAlgorithmHelper(object):
         # k = k + 1
         # stats_summary[0, k] = 'Number Of Dots'
         # stats_summary[1, k] = num_dots
+        k = k + 1
+        stats_summary[0, k] = 'Module Temperature'
+        stats_summary[1, k] = ModuleTemp
         k = k + 1
         stats_summary[0, k] = 'DispCen_x_cono'
         stats_summary[1, k] = image_center[0]
@@ -1404,9 +1409,10 @@ class MotAlgorithmHelper(object):
         return dict(np.transpose(stats_summary))
 
     @staticmethod
-    def calc_gl_for_brightdot(W255_stats_summary, R255_stats_summary, G255_stats_summary, B255_stats_summary):
+    def calc_gl_for_brightdot(W255_stats_summary, R255_stats_summary, G255_stats_summary, B255_stats_summary,
+                              module_temp=30):
         # % load temperature of whitedot pattern
-        ModuleTemp = 30
+        ModuleTemp = module_temp
         # % set color drift coefficients
         TargetTemp = 47
         dLum_W = -0.0155
@@ -1747,7 +1753,7 @@ class MotAlgorithmHelper(object):
                 plt.subplot(2, 2, 1)
                 plt.xlim([np.min(xx), np.max(xx)])
                 plt.ylim([np.max(yy), np.min(yy)])
-                plt.imshow(Lum2D_corrected.astype(np.float), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
+                plt.imshow(Lum2D_corrected.astype(np.float32), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
                 plt.colorbar()
                 plt.xlabel(Xlabel_name)
                 plt.ylabel(Ylabel_name)
@@ -1755,7 +1761,7 @@ class MotAlgorithmHelper(object):
                 plt.subplot(2, 2, 2)
                 plt.xlim([np.min(xx), np.max(xx)])
                 plt.ylim([np.max(yy), np.min(yy)])
-                plt.imshow(Color_x_2D_corrected.astype(np.float), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
+                plt.imshow(Color_x_2D_corrected.astype(np.float32), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
                 plt.colorbar(),
                 plt.xlabel(Xlabel_name)
                 plt.ylabel(Ylabel_name)
@@ -1763,7 +1769,7 @@ class MotAlgorithmHelper(object):
                 plt.subplot(2, 2, 3)
                 plt.xlim([np.min(xx), np.max(xx)])
                 plt.ylim([np.max(yy), np.min(yy)])
-                plt.imshow(Color_y_2D_corrected.astype(np.float), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
+                plt.imshow(Color_y_2D_corrected.astype(np.float32), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
                 plt.colorbar()
                 plt.xlabel(Xlabel_name)
                 plt.ylabel(Ylabel_name)
@@ -1771,7 +1777,7 @@ class MotAlgorithmHelper(object):
                 plt.xlim([np.min(xx), np.max(xx)])
                 plt.ylim([np.max(yy), np.min(yy)])
                 plt.subplot(2, 2, 4)
-                plt.imshow(dxdy_corrected.astype(np.float), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
+                plt.imshow(dxdy_corrected.astype(np.float32), extent=[np.min(xx), np.max(xx), np.max(yy), np.min(yy)])
                 plt.colorbar()
                 plt.xlabel(Xlabel_name)
                 plt.ylabel(Ylabel_name)
@@ -2373,33 +2379,42 @@ if __name__ == "__main__":
     wd_bin_re = '*_WhiteDot_*_X_float.bin'
 
     aa = MotAlgorithmHelper(is_verbose=False, save_plots=True)
-    raw_data_dir = r"c:\ShareData\Oculus_RawData\002_seacliff_mot-06_20210806-175810"
+    raw_data_dir = r"c:\ShareData\Oculus_RawData\003_seacliff_mot-06_20210811-093524"
     bins = tuple([glob.glob(os.path.join(raw_data_dir, c))
                   for c in [w_bin_re, r_bin_re, g_bin_re, b_bin_re, gd_bin_re, br_bin_re, wd_bin_re]])
 
     w_bin, r_bin, g_bin, b_bin, gd_bin, br_bin, wd_bin = tuple([c[0] if len(c) > 0 else None for c in bins])
+    m_temp = {
+        'W255':  30.9,
+        'R255': 31.3,
+        'G255': 31.9,
+        'B255': 32.4,
+        'RGBBoresight': 32.7,
+        'GreenDistortion': 33.0,
+        'WhiteDot': 33.2,
+    }
 
     w255_result = aa.color_pattern_parametric_export_W255(
-        xfilename=os.path.join(raw_data_dir, w_bin), ModuleLR='R')
-    r255_result = aa.color_pattern_parametric_export_RGB('r',
+        xfilename=os.path.join(raw_data_dir, w_bin), ModuleLR='R', module_temp=m_temp['W255'])
+    r255_result = aa.color_pattern_parametric_export_RGB('r', module_temp=m_temp['R255'],
                                                          xfilename=os.path.join(raw_data_dir, r_bin))
-    g255_result = aa.color_pattern_parametric_export_RGB('g',
+    g255_result = aa.color_pattern_parametric_export_RGB('g', module_temp=m_temp['G255'],
                                                          xfilename=os.path.join(raw_data_dir, g_bin))
-    b255_result = aa.color_pattern_parametric_export_RGB('b',
+    b255_result = aa.color_pattern_parametric_export_RGB('b', module_temp=m_temp['B255'],
                                                          xfilename=os.path.join(raw_data_dir, b_bin))
-    boresight_result = aa.rgbboresight_parametric_export(
+    boresight_result = aa.rgbboresight_parametric_export(module_temp=m_temp['RGBBoresight'],
         xfilename=os.path.join(raw_data_dir, br_bin))
 
     distortion_result = aa.distortion_centroid_parametric_export(
-        filename=os.path.join(raw_data_dir, gd_bin))
+        filename=os.path.join(raw_data_dir, gd_bin), module_temp=m_temp['GreenDistortion'])
 
     XYZ = aa.white_dot_pattern_w255_read(os.path.join(raw_data_dir, w_bin))
     XYZ_W = np.stack(XYZ, axis=2)
 
-    gl_whitedot = aa.calc_gl_for_brightdot(w255_result, r255_result, g255_result, b255_result)
+    gl_whitedot = aa.calc_gl_for_brightdot(w255_result, r255_result, g255_result, b255_result, module_temp=m_temp['WhiteDot'])
     whitedot_result = aa.white_dot_pattern_parametric_export(XYZ_W,
-                                                 gl_whitedot['GL'], gl_whitedot['x_w'], gl_whitedot['y_w'],
-                                                 gl_whitedot['ModuleTemp'], os.path.join(raw_data_dir, wd_bin))
+                        gl_whitedot['GL'], gl_whitedot['x_w'], gl_whitedot['y_w'],
+                        xfilename=os.path.join(raw_data_dir, wd_bin), module_temp=m_temp['WhiteDot'])
     raw_data = [w255_result, r255_result, g255_result, b255_result, boresight_result, distortion_result, whitedot_result]
     if not os.path.exists(os.path.join(raw_data_dir, 'exp')):
         os.makedirs(os.path.join(raw_data_dir, 'exp'))

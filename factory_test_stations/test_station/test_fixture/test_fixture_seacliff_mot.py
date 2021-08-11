@@ -588,7 +588,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         }
         self._write_serial(cmd.get(parts))
         delimiter = r'Get(?:DUT)?Temperature:([+-]?[0-9]*(?:\.[0-9]*)?)'
-        response = self._read_response(rev_pattern=delimiter)
+        response = self._read_response(rev_pattern=delimiter,
+                                       timeout=self._station_config.FIXTURE_QUERY_TEMP_TIMEOUT)
         response = [self._re_space_sub.sub('', c) for c in response]
         deters = self._parse_response(delimiter, response)
         return float(deters[1])

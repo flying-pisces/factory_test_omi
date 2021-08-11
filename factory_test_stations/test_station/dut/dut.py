@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import os
 import time
 import re
@@ -347,8 +348,8 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def nvm_speed_mode(self, mode='normal'):
         '''
-        $C.SET.B7MODE,0x0302 //µÍËÙÄ£Ê½
-        $C.SET.B7MODE,0x030b //¸ßËÙÄ£Ê½
+        $C.SET.B7MODE,0x0302 //ä½é€Ÿæ¨¡å¼
+        $C.SET.B7MODE,0x030b //é«˜é€Ÿæ¨¡å¼
         @param mode:
         @type high_mode:
         @return:

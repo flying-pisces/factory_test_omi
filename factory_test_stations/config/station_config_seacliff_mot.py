@@ -173,6 +173,7 @@ FIXTRUE_PARTICLE_ADDR_START = 30
 FIXTRUE_PARTICLE_ADDR_STATUS = 30
 PARTICLE_COUNTER_APC = True  # use apc-r210
 FIXTRUE_PARTICLE_START_DLY = 0
+FIXTURE_QUERY_TEMP_TIMEOUT = 20
 
 # Fixture Status Enum Values
 PTB_POSITION_STATUS = ["Testing Position", "Reset Position", "Outside Position", "Other Position"]
@@ -276,7 +277,7 @@ ANALYSIS_GRP_NORMAL_PATTERN = {'W255': 'w',
     'B255': 'b', 
     'RGBBoresight': 'br',
     }
-ANALYSIS_GRP_COLOR_PATTERN_EX = [('WhiteDot', 'W255'), ('WhiteDotV2', 'W255')]
+ANALYSIS_GRP_COLOR_PATTERN_EX = {'WhiteDot': 'W255', 'WhiteDotV2': 'W255'}
 
 # ANALYSIS_GRP_DISTORTION_PRIMARY = ['X', 'Y', 'Z']
 ANALYSIS_GRP_DISTORTION_PRIMARY = ['Y']

@@ -241,7 +241,7 @@ class seacliffmotStation(test_station.TestStation):
         self._pool = mp.Pool(2)
         self._pool_alg_dic = {}
         self._exported_parametric = {}
-        self._gl_W255 = None
+        self._gl_W255 = {}
         self._temperature_dic = {}
         try:
             self._operator_interface.print_to_console(
@@ -355,16 +355,28 @@ class seacliffmotStation(test_station.TestStation):
                 self._operator_interface.wait(0, '\n')
                 ref_patterns = ['W255', 'R255', 'G255', 'B255']
                 exp_data = tuple([self._exported_parametric[f'{pos_name}_{c}'] for c in ref_patterns])
-                self._gl_W255 = test_equipment_seacliff_mot.MotAlgorithmHelper.calc_gl_for_brightdot(*exp_data)
-                self._operator_interface.print_to_console(f"\ncalc gray level from W/R/G/B --> {self._gl_W255['GL']}\n")
+
                 patterns_in_testing = []
                 for pattern_name, n_dots, pattern_group in item_condition_a_patterns:
+                    dut_temp = 30
+                    if is_query_temp:
+                        self._operator_interface.print_to_console(f'query temperature for {pos_name}_{pattern_name}\n')
+                        dut_temp = self._fixture.query_temp(test_fixture_seacliff_mot.QueryTempParts.UUTNearBy)
+                    self._temperature_dic[f'{pos_name}_{pattern_name}'] = dut_temp
+                    test_log.set_measured_value_by_name_ex(f'UUT_TEMPERATURE_{pos_name}_{pattern_name}', dut_temp)
+                    ref_pattern_name = self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX[pattern_name]
+                    self._gl_W255[f'{pos_name}_{pattern_name}'] = \
+                        test_equipment_seacliff_mot.MotAlgorithmHelper.calc_gl_for_brightdot(*exp_data,
+                             module_temp=self._temperature_dic[f'{pos_name}_{pattern_name}'])
+                    self._operator_interface.print_to_console(
+                        f"\ncalc gray level from W/R/G/B --> {self._gl_W255[f'{pos_name}_{pattern_name}']['GL']}\n")
+
                     rel_pattern_name = None
-                    if self._gl_W255['GL'][2] == 255:
+                    if self._gl_W255[f'{pos_name}_{pattern_name}']['GL'][2] == 255:
                         rel_pattern_name = pattern_group[0]
-                    elif self._gl_W255['GL'][1] == 255:
+                    elif self._gl_W255[f'{pos_name}_{pattern_name}']['GL'][1] == 255:
                         rel_pattern_name = pattern_group[1]
-                    elif self._gl_W255['GL'][0] == 255:
+                    elif self._gl_W255[f'{pos_name}_{pattern_name}']['GL'][0] == 255:
                         rel_pattern_name = pattern_group[2]
 
                     pattern_info = self.get_test_item_pattern(rel_pattern_name)
@@ -384,12 +396,6 @@ class seacliffmotStation(test_station.TestStation):
 
                     measure_item_name = 'Test_Pattern_{0}_{1}'.format(pos_name, pattern_name)
                     test_log.set_measured_value_by_name_ex(measure_item_name, rel_pattern_name)
-                    dut_temp = -1
-                    if is_query_temp:
-                        self._operator_interface.print_to_console(f'query temperature for {pos_name}_{pattern_name}\n')
-                        dut_temp = self._fixture.query_temp(test_fixture_seacliff_mot.QueryTempParts.UUTNearBy)
-                    self._temperature_dic[f'{pos_name}_{pattern_name}'] = dut_temp
-                    test_log.set_measured_value_by_name_ex(f'UUT_TEMPERATURE_{pos_name}_{pattern_name}', dut_temp)
 
                     raw_success_save = self.capture_images_for_pattern(
                         pos_name, capture_path, rel_pattern_name, pattern_name)
@@ -436,7 +442,7 @@ class seacliffmotStation(test_station.TestStation):
             self.distortion_centroid_parametric_export_ex(pos_name, pattern_name, capture_path, test_log)
         elif pattern_name in self._station_config.ANALYSIS_GRP_NORMAL_PATTERN.keys():
             self.normal_pattern_parametric_export_ex(pos_name, pattern_name, capture_path, test_log)
-        elif pattern_name in [c[0] for c in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX]:
+        elif pattern_name in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX.keys():
             self.grade_a_patterns_parametric_export_ex(pos_name, pattern_name, capture_path, test_log)
 
     def capture_images_for_pattern(self, pos_name, capture_path, pattern_name, exp_pattern_name):
@@ -690,8 +696,9 @@ class seacliffmotStation(test_station.TestStation):
             pri_key = opt['pri_key']
             fil = opt['fil']
             save_plots = opt['save_plots']
+            module_temp = opt['ModuleTemp']
             mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(save_plots=save_plots)
-            distortion_exports = mot_alg.distortion_centroid_parametric_export(fil)
+            distortion_exports = mot_alg.distortion_centroid_parametric_export(fil, module_temp=module_temp)
         except:
             pass
         return pos_name, pattern_name, pri_key, distortion_exports
@@ -739,7 +746,8 @@ class seacliffmotStation(test_station.TestStation):
                         opt = {
                             'pri_key': pri_k,
                             'fil': pri_v,
-                            'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG
+                            'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG,
+                            'ModuleTemp': self._temperature_dic[f'{pos_name}_{pattern_name}'],
                         }
                         self._pool.apply_async(
                             seacliffmotStation.distortion_centroid_parametric_export_ex_parallel, (
@@ -856,12 +864,12 @@ class seacliffmotStation(test_station.TestStation):
                 continue
 
             for pattern_name, n_dots, __ in item_patterns:
-                grps = [c for c in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX if c[0] == pattern_name]
-                if len(grps) <= 0 or pattern_name != ana_pattern:
+                if pattern_name not in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX\
+                        or pattern_name != ana_pattern:
                     continue
-                grp = grps[0]
+                ref_pattern = self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX[pattern_name]
                 file_ref = seacliffmotStation.get_filenames_in_folder(
-                    capture_path, rf'{pos_name}_{grp[1]}_.*_X_float\.bin')
+                    capture_path, rf'{pos_name}_{ref_pattern}_.*_X_float\.bin')
                 file_x, file_y, file_z = self.extract_basic_info_for_pattern(capture_path, pattern_name, pos_name,
                                                                              test_log)
                 if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x) and len(file_ref) > 0:
@@ -884,7 +892,7 @@ class seacliffmotStation(test_station.TestStation):
                                'filename': file_x[0],
                                'refname': file_ref[0],
                                'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG}
-                        opt.update(self._gl_W255.copy())
+                        opt.update(self._gl_W255[f'{pos_name}_{pattern_name}'].copy())
 
                         self._pool.apply_async(
                             seacliffmotStation.grade_a_pattern_parametric_export_ex_parallel,
