@@ -148,7 +148,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.2.0'
+        self._sw_version = '1.2.1'
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -285,6 +285,12 @@ class seacliffmotStation(test_station.TestStation):
                             if os.path.isdir(c)
                             and os.path.relpath(c, self._station_config.RAW_IMAGE_LOG_DIR)
                             .upper().startswith(serial_number.upper())]
+                if os.path.exists(os.path.join(capture_path, 'measure_env.json')):
+                    with open(os.path.join(capture_path, 'measure_env.json'), 'r') as json_f:
+                        data = json.load(json_f)
+                        self._temperature_dic = data['Temperature']
+                else:
+                    self._operator_interface.print_to_console(f'set default temperature for all patterns.\n')
                 if len(uut_dirs) > 0:
                     capture_path = uut_dirs[-1]
             if not os.path.exists(capture_path):
@@ -332,7 +338,9 @@ class seacliffmotStation(test_station.TestStation):
                                                                       .format(pattern_name, latest_pattern_value_bak))
                             continue
 
-                    dut_temp = 30
+                    dut_temp = self._temperature_dic.get(f'{pos_name}_{pattern_name}')
+                    if dut_temp is None:
+                        dut_temp = 30
                     if is_query_temp:
                         self._operator_interface.print_to_console(f'query temperature for {pos_name}_{pattern_name}\n')
                         dut_temp = self._fixture.query_temp(test_fixture_seacliff_mot.QueryTempParts.UUTNearBy)
@@ -358,7 +366,9 @@ class seacliffmotStation(test_station.TestStation):
 
                 patterns_in_testing = []
                 for pattern_name, n_dots, pattern_group in item_condition_a_patterns:
-                    dut_temp = 30
+                    dut_temp = self._temperature_dic.get(f'{pos_name}_{pattern_name}')
+                    if dut_temp is None:
+                        dut_temp = 30
                     if is_query_temp:
                         self._operator_interface.print_to_console(f'query temperature for {pos_name}_{pattern_name}\n')
                         dut_temp = self._fixture.query_temp(test_fixture_seacliff_mot.QueryTempParts.UUTNearBy)
@@ -630,6 +640,9 @@ class seacliffmotStation(test_station.TestStation):
         @param test_log: test_station.test_log.test_log
         @return:
         """
+        if not os.path.exists(os.path.join(capture_path, 'measure_env.json')):
+            with open(os.path.join(capture_path, 'measure_env.json'), 'w') as json_f:
+                json.dump({'Temperature': self._temperature_dic}, json_f, ensure_ascii=True, indent=4)
         if not (self._station_config.AUTO_CVT_BGR_IMAGE_FROM_XYZ or self._station_config.AUTO_SAVE_2_TXT):
             return
         data_items_XYZ = {}
@@ -697,7 +710,8 @@ class seacliffmotStation(test_station.TestStation):
             fil = opt['fil']
             save_plots = opt['save_plots']
             module_temp = opt['ModuleTemp']
-            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(save_plots=save_plots)
+            coeff = opt['coeff']
+            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(coeff, save_plots=save_plots)
             distortion_exports = mot_alg.distortion_centroid_parametric_export(fil, module_temp=module_temp)
         except:
             pass
@@ -748,6 +762,7 @@ class seacliffmotStation(test_station.TestStation):
                             'fil': pri_v,
                             'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG,
                             'ModuleTemp': self._temperature_dic[f'{pos_name}_{pattern_name}'],
+                            'coeff': self._station_config.COLORMATRIX_COEFF,
                         }
                         self._pool.apply_async(
                             seacliffmotStation.distortion_centroid_parametric_export_ex_parallel, (
@@ -765,7 +780,8 @@ class seacliffmotStation(test_station.TestStation):
             alg_optional = opt['alg']
             fil = opt['filename']
             save_plots = opt['save_plots']
-            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(save_plots=save_plots)
+            coeff = opt['coeff']
+            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(coeff, save_plots=save_plots)
             if alg_optional == 'w':
                 dut_temp = opt['temperature']
                 module_LR = opt['moduleLR']
@@ -821,6 +837,7 @@ class seacliffmotStation(test_station.TestStation):
                         'temperature': dut_temp,
                         'moduleLR': self._module_left_or_right,
                         'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG,
+                        'coeff': self._station_config.COLORMATRIX_COEFF,
                     }
                     self._pool.apply_async(
                         seacliffmotStation.normal_pattern_parametric_export_ex_parallel,
@@ -836,23 +853,22 @@ class seacliffmotStation(test_station.TestStation):
     def grade_a_pattern_parametric_export_ex_parallel(pos_name, pattern_name, opt):
         # print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
         white_dot_exports = None
-        XYZ = []
         XYZ_W = []
         try:
             n_dots = opt['nDots']
             fil = opt['filename']
             fil_ref = opt['refname']
             save_plots = opt['save_plots']
-            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(save_plots=save_plots)
-            XYZ = mot_alg.white_dot_pattern_w255_read(fil_ref, multi_process=False)
-            XYZ_W = np.stack(XYZ, axis=2)
+            coeff = opt['coeff']
+            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(coeff, save_plots=save_plots)
+            XYZ_W = mot_alg.white_dot_pattern_w255_read(fil_ref, multi_process=False)
             white_dot_exports = mot_alg.white_dot_pattern_parametric_export(XYZ_W,
                         opt['GL'], opt['x_w'], opt['y_w'],
                         opt['ModuleTemp'], fil)
         except Exception as e:
             pass
         finally:
-            del XYZ, XYZ_W
+            del XYZ_W
         return pos_name, pattern_name, white_dot_exports
 
     def grade_a_patterns_parametric_export_ex(self, ana_pos_item, ana_pattern, capture_path, test_log):
@@ -891,7 +907,8 @@ class seacliffmotStation(test_station.TestStation):
                                'nDots': n_dots,
                                'filename': file_x[0],
                                'refname': file_ref[0],
-                               'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG}
+                               'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG,
+                               'coeff': self._station_config.COLORMATRIX_COEFF}
                         opt.update(self._gl_W255[f'{pos_name}_{pattern_name}'].copy())
 
                         self._pool.apply_async(

@@ -437,13 +437,15 @@ class MotAlgorithmHelper(object):
     kernel_b = np.sum(_kernel)
     _kernel = _kernel / kernel_b  # normalize
 
-    def __init__(self, is_verbose=False, save_plots=True):
+    def __init__(self, coeff, is_verbose=False, save_plots=True):
         self._verbose = is_verbose
         self._save_plots = save_plots
         self._cam_fov = 60
         self._row = 6001
         self._col = 6001
         self._exp_dir = 'exp'
+        self._ColorMatrix_ = np.array(coeff)
+
         np.seterr(invalid='ignore', divide='ignore')
 
     @classmethod
@@ -734,6 +736,9 @@ class MotAlgorithmHelper(object):
             XYZ.append(image_in)
 
         XYZ = np.stack(XYZ, axis=2)
+        XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
+        XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
+        XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
         ## Save parametric data
         # Create viewing masks
         col_deg_arr = np.tile(x_angle_arr, (row, 1))
@@ -857,6 +862,10 @@ class MotAlgorithmHelper(object):
             XYZ.append(image_in)
         del XYZ_t
         XYZ = np.stack(XYZ, axis=2)
+
+        XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
+        XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
+        XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
 
         ## Save parametric data
         # Create viewing masks
@@ -1516,6 +1525,11 @@ class MotAlgorithmHelper(object):
             # image_in = cv2.rotate(image_in, 0)  # Implement flip for viewing to match DUT orientation
             image_in = cv2.filter2D(image_in, -1, MotAlgorithmHelper._kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ.append(image_in)
+        XYZ = np.stack(XYZ, axis=2)
+        XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
+        XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
+        XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
+        del XYZ_1D, XYZ_1D_ColorCorrected, image_in
         return XYZ
 
     def white_dot_pattern_parametric_export(self, XYZ_W, GL, x_w, y_w,
@@ -1571,7 +1585,12 @@ class MotAlgorithmHelper(object):
             image_in_smooth = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ_smooth.append(image_in_smooth)
         XYZ = np.stack(XYZ, axis=2)
+
         XYZ_smooth = np.stack(XYZ_smooth, axis=2)
+        XYZ_1D = np.reshape(XYZ_smooth, (self._row * self._col, 3))
+        XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
+        XYZ_smooth = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
+
         del XYZ_t
         Y = XYZ[:, :, 1]
 
@@ -1967,6 +1986,10 @@ class MotAlgorithmHelper(object):
             XYZ_smooth.append(image_in_smooth)
         XYZ = np.stack(XYZ, axis=2)
         XYZ_smooth = np.stack(XYZ_smooth, axis=2)
+        XYZ_1D = np.reshape(XYZ_smooth, (self._row * self._col, 3))
+        XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
+        XYZ_smooth = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
+
         Y = XYZ[:, :, 1]
         # Create array of angle rings to display
         angle_arr = np.linspace(0, 2 * np.pi, 361)
@@ -2377,8 +2400,8 @@ if __name__ == "__main__":
     gd_bin_re = '*_GreenDistortion_*_Y_float.bin'
     br_bin_re = '*_RGBBoresight_*_X_float.bin'
     wd_bin_re = '*_WhiteDot_*_X_float.bin'
-
-    aa = MotAlgorithmHelper(is_verbose=False, save_plots=True)
+    COLORMATRIX_COEFF = [[0.9941, -0.0076, -0.0066], [0.0009, 0.9614, -0.0025], [-0.0021, 0.0020, 0.9723]]
+    aa = MotAlgorithmHelper(COLORMATRIX_COEFF, is_verbose=False, save_plots=True)
     raw_data_dir = r"c:\ShareData\Oculus_RawData\003_seacliff_mot-06_20210811-093524"
     bins = tuple([glob.glob(os.path.join(raw_data_dir, c))
                   for c in [w_bin_re, r_bin_re, g_bin_re, b_bin_re, gd_bin_re, br_bin_re, wd_bin_re]])
@@ -2390,8 +2413,16 @@ if __name__ == "__main__":
         'G255': 31.9,
         'B255': 32.4,
         'RGBBoresight': 32.7,
-        'GreenDistortion': 33.0,
         'WhiteDot': 33.2,
+    }
+
+    m_temp = {
+        'W255': 30,
+        'R255': 30,
+        'G255': 30,
+        'B255': 30,
+        'RGBBoresight': 30,
+        'WhiteDot': 30,
     }
 
     w255_result = aa.color_pattern_parametric_export_W255(
@@ -2405,17 +2436,15 @@ if __name__ == "__main__":
     boresight_result = aa.rgbboresight_parametric_export(module_temp=m_temp['RGBBoresight'],
         xfilename=os.path.join(raw_data_dir, br_bin))
 
-    distortion_result = aa.distortion_centroid_parametric_export(
-        filename=os.path.join(raw_data_dir, gd_bin), module_temp=m_temp['GreenDistortion'])
+    # distortion_result = aa.distortion_centroid_parametric_export(
+    #     filename=os.path.join(raw_data_dir, gd_bin), module_temp=m_temp['GreenDistortion'])
 
-    XYZ = aa.white_dot_pattern_w255_read(os.path.join(raw_data_dir, w_bin))
-    XYZ_W = np.stack(XYZ, axis=2)
-
+    XYZ_W = aa.white_dot_pattern_w255_read(os.path.join(raw_data_dir, w_bin))
     gl_whitedot = aa.calc_gl_for_brightdot(w255_result, r255_result, g255_result, b255_result, module_temp=m_temp['WhiteDot'])
     whitedot_result = aa.white_dot_pattern_parametric_export(XYZ_W,
                         gl_whitedot['GL'], gl_whitedot['x_w'], gl_whitedot['y_w'],
                         xfilename=os.path.join(raw_data_dir, wd_bin), module_temp=m_temp['WhiteDot'])
-    raw_data = [w255_result, r255_result, g255_result, b255_result, boresight_result, distortion_result, whitedot_result]
+    raw_data = [w255_result, r255_result, g255_result, b255_result, boresight_result, whitedot_result]
     if not os.path.exists(os.path.join(raw_data_dir, 'exp')):
         os.makedirs(os.path.join(raw_data_dir, 'exp'))
     with open(os.path.join(raw_data_dir, 'exp', f'export.txt'), 'w', newline='') as f:

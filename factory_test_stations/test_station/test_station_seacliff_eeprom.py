@@ -68,9 +68,31 @@ class EEPROMUserInputDialog(gui_utils.Dialog):
         self._b255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="B255_y", value="0",
                                            validate={"validator": "real", "min": 0, "max": 1})
 
+        self._tempW = Pmw.EntryField(master, labelpos=tk.W, label_text="Temp. W", value="30",
+                                      validate={"validator": "real", "min": 30, "max": 60})
+        self._tempR = Pmw.EntryField(master, labelpos=tk.W, label_text="Temp. R", value="30",
+                                     validate={"validator": "real", "min": 30, "max": 60})
+        self._tempG = Pmw.EntryField(master, labelpos=tk.W, label_text="Temp. G", value="30",
+                                     validate={"validator": "real", "min": 30, "max": 60})
+        self._tempB = Pmw.EntryField(master, labelpos=tk.W, label_text="Temp. B", value="30",
+                                     validate={"validator": "real", "min": 30, "max": 60})
+        self._tempWD = Pmw.EntryField(master, labelpos=tk.W, label_text="Temp. New W", value="30",
+                                     validate={"validator": "real", "min": 30, "max": 60})
+
+        self._gl_R = Pmw.EntryField(master, labelpos=tk.W, label_text="GL R", value="0",
+                                       validate={"validator": "real", "min": 0, "max": 256})
+        self._gl_G = Pmw.EntryField(master, labelpos=tk.W, label_text="GL G", value="0",
+                                    validate={"validator": "real", "min": 0, "max": 256})
+        self._gl_B = Pmw.EntryField(master, labelpos=tk.W, label_text="GL B", value="0",
+                                    validate={"validator": "real", "min": 0, "max": 256})
+        self._blank1 = Pmw.Label(master, text='')
+        self._blank2 = Pmw.Label(master, text='')
+        self._blank3 = Pmw.Label(master, text='')
+
         items = [self._boresight_x, self._boresight_y, self._boresight_r, self._w255_lv, self._w255_x, self._w255_y,
                  self._r255_lv, self._r255_x, self._r255_y, self._g255_lv, self._g255_x, self._g255_y,
-                 self._b255_lv, self._b255_x, self._b255_y]
+                 self._b255_lv, self._b255_x, self._b255_y, self._tempW, self._tempG, self._tempB, self._tempWD,
+                 self._gl_R, self._gl_G, self._gl_B]
         for idx, widget in enumerate(items):
             row = idx // 3
             col = idx % 3
@@ -88,12 +110,24 @@ class EEPROMUserInputDialog(gui_utils.Dialog):
             r255 = [float(c.getvalue()) for c in [self._r255_lv, self._r255_x, self._r255_y]]
             g255 = [float(c.getvalue()) for c in [self._g255_lv, self._g255_x, self._g255_y]]
             b255 = [float(c.getvalue()) for c in [self._b255_lv, self._b255_x, self._b255_y]]
+
+            temps = [float(c.getvalue()) for c in [self._tempW, self._tempR, self._tempG]]
+            wd_gl = [float(c.getvalue()) for c in [self._gl_R, self._gl_G, self._gl_B]]
+
             self._value_dic = {
                 'display_boresight_x': boresight_x, 'display_boresight_y': boresight_y,  'rotation': boresight_r,
                 'lv_W255': w255[0], 'x_W255': w255[1], 'y_W255': w255[2],
                 'lv_R255': r255[0], 'x_R255': r255[1], 'y_R255': r255[2],
                 'lv_G255': g255[0], 'x_G255': g255[1], 'y_G255': g255[2],
                 'lv_B255': b255[0], 'x_B255': b255[1], 'y_B255': b255[2],
+                'TemperatureW': temps[0],
+                'TemperatureR': temps[1],
+                'TemperatureG': temps[2],
+                'TemperatureB': temps[3],
+                'TemperatureWD': temps[4],
+                'WhitePointGLR':  wd_gl[0],
+                'WhitePointGLG':  wd_gl[1],
+                'WhitePointGLB':  wd_gl[2],
             }
             return True
         except Exception as e:
@@ -217,6 +251,16 @@ class seacliffeepromStation(test_station.TestStation):
 
             'x_B255': (31, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
             'y_B255': (33, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+
+            'TemperatureW': (35, 'S4.3', lambda tmp: 0 if tmp < 0 else (56 if tmp >= 56 else None)),
+            'TemperatureR': (36, 'S4.3', lambda tmp: 0 if tmp < 0 else (56 if tmp >= 56 else None)),
+            'TemperatureG': (37, 'S4.3', lambda tmp: 0 if tmp < 0 else (56 if tmp >= 56 else None)),
+            'TemperatureB': (38, 'S4.3', lambda tmp: 0 if tmp < 0 else (56 if tmp >= 56 else None)),
+            'TemperatureWD': (39, 'S4.3', lambda tmp: 0 if tmp < 0 else (56 if tmp >= 56 else None)),
+
+            'WhitePointGLR': (40, 'U8.0', lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else None)),
+            'WhitePointGLG': (41, 'U8.0', lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else None)),
+            'WhitePointGLB': (42, 'U8.0', lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else None)),
         })
 
     def initialize(self):
@@ -440,40 +484,11 @@ class seacliffeepromStation(test_station.TestStation):
                         flag = mapping[1]
                         var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag)
 
-                    var_data['CS'] = raw_data[29]
-                    msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[30:32]])
+                    var_data['CS'] = raw_data[43]
+                    msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[44:47]])
                     var_data['VALIDATION'] = msg
                 self._operator_interface.print_to_console('RD_DATA:\n')
                 self._operator_interface.print_to_console(f"<-- {','.join(raw_data)}\n")
-                # mark: convert raw data before flush to dict.
-                # for key, mapping in self._eeprom_map_group.items():
-                #     memory_idx = mapping[0] - 6
-                #     flag = mapping[1]
-                #     var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag)
-                #
-                # var_data['CS'] = raw_data[29]
-                #
-                # msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[30:32]])
-                # var_data['VALIDATION'] = msg
-                # # mark: save them to database.
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_X', var_data.get('display_boresight_x'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_BORESIGHT_Y', var_data.get('display_boresight_y'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_ROTATION', var_data.get('rotation'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_W255', var_data.get('lv_W255'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_W255', var_data.get('x_W255'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_W255', var_data.get('y_W255'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_R255', var_data.get('lv_R255'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_R255', var_data.get('x_R255'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_R255', var_data.get('y_R255'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_G255', var_data.get('lv_G255'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_G255', var_data.get('x_G255'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_G255', var_data.get('y_G255'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_LV_B255', var_data.get('lv_B255'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_X_B255', var_data.get('x_B255'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_BAK_Y_B255', var_data.get('y_B255'))
-                #
-                # test_log.set_measured_value_by_name_ex('CURRENT_CS', var_data.get('CS'))
-                # test_log.set_measured_value_by_name_ex('CURRENT_VALIDATION_FIELD', var_data.get('VALIDATION'))
 
                 raw_data_cpy = raw_data.copy()  # place holder for all the bytes.
                 var_data = dict(calib_data)  # type: dict
@@ -491,11 +506,11 @@ class seacliffeepromStation(test_station.TestStation):
                     # encode the tar_val
                     raw_data_cpy[memory_idx: (memory_idx+memory_len)] = self.cvt_to_hex(tar_val, flag)
 
-                raw_data_cpy[29:30] = self.uchar_checksum(raw_data_cpy[0:29])
+                raw_data_cpy[37:38] = self.uchar_checksum(raw_data_cpy[0:37])
                 validate_field_result = 0
                 for ind, val in enumerate(items_chk_result):
                     validate_field_result |= 0 if val else (0x01 << (15-ind))
-                raw_data_cpy[30:32] = [f'0x{c:02X}' for c in
+                raw_data_cpy[38:40] = [f'0x{c:02X}' for c in
                                        validate_field_result.to_bytes(2, byteorder='big', signed=False)]
 
                 # TODO: config all the data to array.
@@ -569,8 +584,18 @@ class seacliffeepromStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex('CFG_X_B255', var_data.get('x_B255'))
                 test_log.set_measured_value_by_name_ex('CFG_Y_B255', var_data.get('y_B255'))
 
-                test_log.set_measured_value_by_name_ex('CFG_CS', raw_data_cpy[29])
-                msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data_cpy[30:32]])
+                test_log.set_measured_value_by_name_ex('CFG_TemperatureW', var_data.get('TemperatureW'))
+                test_log.set_measured_value_by_name_ex('CFG_TemperatureR', var_data.get('TemperatureR'))
+                test_log.set_measured_value_by_name_ex('CFG_TemperatureG', var_data.get('TemperatureG'))
+                test_log.set_measured_value_by_name_ex('CFG_TemperatureB', var_data.get('TemperatureB'))
+                test_log.set_measured_value_by_name_ex('CFG_TemperatureWD', var_data.get('TemperatureWD'))
+
+                test_log.set_measured_value_by_name_ex('CFG_WhitePointGLR', var_data.get('WhitePointGLR'))
+                test_log.set_measured_value_by_name_ex('CFG_WhitePointGLG', var_data.get('WhitePointGLG'))
+                test_log.set_measured_value_by_name_ex('CFG_WhitePointGLB', var_data.get('WhitePointGLB'))
+
+                test_log.set_measured_value_by_name_ex('CFG_CS', raw_data_cpy[37])
+                msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data_cpy[38:40]])
                 test_log.set_measured_value_by_name_ex('CFG_VALIDATION_FIELD', msg)
 
                 # self._operator_interface.print_to_console('screen off ...\n')

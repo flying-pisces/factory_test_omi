@@ -152,6 +152,15 @@ CALIB_REQ_DATA = {
     'lv_B255': 6.2487288,
     'x_B255': 0.15439368793739008,
     'y_B255': 0.04709624165493779,
+
+    'TemperatureW': 37,
+    'TemperatureR': 38,
+    'TemperatureG': 39,
+    'TemperatureB': 40,
+    'TemperatureWD': 41,
+    'WhitePointGLR': 255,
+    'WhitePointGLG': 244,
+    'WhitePointGLB': 240,
 }
 
 ##################################
