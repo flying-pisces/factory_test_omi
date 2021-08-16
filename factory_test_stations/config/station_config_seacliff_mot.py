@@ -213,7 +213,7 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 0
 
-VERSION_REVISION_EQUIPMENT = 69
+VERSION_REVISION_EQUIPMENT = 57
 FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 
 # set sensor_temperature
@@ -236,7 +236,7 @@ CAM_INIT_CONFIG = {
     "RoiXLeft": 0,
     "RoiXRight": 6001,
     "RoiYTop": 0,
-    "RoiYBottom": 6001
+    "RoiYBottom": 6001,
 }
 
 SEQ_CAP_INIT_CONFIG = {
@@ -296,17 +296,17 @@ ANALYSIS_GRP_DISTORTION_PRIMARY = ['Y']
 #                                   pattern named with right, should be render to left-module.
 
 TEST_ITEM_PATTERNS = [
-    {'name': 'W255', 'pattern': (255, 255, 255), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'W255', 'pattern': 22, 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
     {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'W000', 'pattern': (0, 0, 0), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'W000', 'pattern': 23, 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'RGB', 'pattern': 0, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'R255', 'pattern': (255, 0, 0), 'setup': (7, 0, 3), 'exposure': (144900, 980852, 468134, 980852, 980852)},
-    {'name': 'G255', 'pattern': (0, 255, 0), 'setup': (7, 0, 3), 'exposure': (300935, 980852, 345533, 178334, 980852)},
-    {'name': 'B255', 'pattern': (0, 0, 255), 'setup': (7, 0, 3), 'exposure': (980852, 156050, 980852, 980852, 167184)},
+    {'name': 'R255', 'pattern': 24, 'setup': (7, 0, 3), 'exposure': (144900, 980852, 468134, 980852, 980852)},
+    {'name': 'G255', 'pattern': 25, 'setup': (7, 0, 3), 'exposure': (300935, 980852, 345533, 178334, 980852)},
+    {'name': 'B255', 'pattern': 26, 'setup': (7, 0, 3), 'exposure': (980852, 156050, 980852, 980852, 167184)},
     {'name': 'GreenContrast', 'pattern': (2, 1), 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'WhiteContrast', 'pattern': (4, 3), 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'GreenSharpness', 'pattern': 5, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'GreenDistortion', 'pattern': (7, 6), 'setup': (7, 0, 3), 'exposure': (378967, 980852, 434700, 222917, 980852), 'oi_mode': 2},
+    {'name': 'GreenDistortion', 'pattern': (7, 6), 'setup': (7, 0, 3), 'exposure': (378967, 980852, 434700, 222917, 980852)},  #, 'oi_mode': 2},
     {'name': 'WhiteDot7', 'pattern': (8, 9), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
     {'name': 'WhiteDot8', 'pattern': (10, 11), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
     {'name': 'WhiteDot9', 'pattern': (12, 13), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
