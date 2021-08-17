@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.2.0
+2021-8-18 elton<elton.tian@mygyroup.com>
+-1. update test items based MOT V1.2.x
+
+========================================================
 Version 1.1.4
 2021-3-18 elton<elton.tian@mygyroup.com>
 -1. keep the unit unable to power on in not testing mode.
@@ -85,7 +90,7 @@ DUT_NVRAM_WRITE_TIMEOUT = 10
 NVM_WRITE_PROTECT = True
 NVM_EEC_READ = True
 NVM_WRITE_SLOW_MOD = True
-DUT_CHK_MODULE_INPLACE = True
+DUT_CHK_MODULE_INPLACE = False
 
 MIN_SPACE_REQUIRED = [('C:', 500)]
 
@@ -130,7 +135,7 @@ DISP_CHECKER_COUNT = 2
 
 NVM_WRITE_COUNT_MAX = 6
 # calibration required data.
-USER_INPUT_CALIB_DATA = False
+USER_INPUT_CALIB_DATA = True
 
 CALIB_REQ_DATA = {
     'display_boresight_x': 0.3180896059721896,

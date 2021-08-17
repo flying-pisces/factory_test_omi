@@ -50,8 +50,18 @@ STATION_LIMITS_ARRAYS = [
     ["CFG_X_B255", None, None, 2014],
     ["CFG_Y_B255", None, None, 2015],
 
-    ["CFG_CS", None, None, 2016],
-    ["CFG_VALIDATION_FIELD", None, None, 2017],
+    ["CFG_TemperatureW", None, None, 2016],
+    ["CFG_TemperatureR", None, None, 2017],
+    ["CFG_TemperatureG", None, None, 2018],
+    ["CFG_TemperatureB", None, None, 2019],
+    ["CFG_TemperatureWD", None, None, 2020],
+
+    ["CFG_WhitePointGLR", None, None, 2021],
+    ["CFG_WhitePointGLG", None, None, 2022],
+    ["CFG_WhitePointGLB", None, None, 2023],
+
+    ["CFG_CS", None, None, 2024],
+    ["CFG_VALIDATION_FIELD", None, None, 2025],
 
     ['POST_DATA_CHECK', True, True, 3001],
 

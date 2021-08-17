@@ -85,14 +85,11 @@ class EEPROMUserInputDialog(gui_utils.Dialog):
                                     validate={"validator": "real", "min": 0, "max": 256})
         self._gl_B = Pmw.EntryField(master, labelpos=tk.W, label_text="GL B", value="0",
                                     validate={"validator": "real", "min": 0, "max": 256})
-        self._blank1 = Pmw.Label(master, text='')
-        self._blank2 = Pmw.Label(master, text='')
-        self._blank3 = Pmw.Label(master, text='')
 
         items = [self._boresight_x, self._boresight_y, self._boresight_r, self._w255_lv, self._w255_x, self._w255_y,
                  self._r255_lv, self._r255_x, self._r255_y, self._g255_lv, self._g255_x, self._g255_y,
-                 self._b255_lv, self._b255_x, self._b255_y, self._tempW, self._tempG, self._tempB, self._tempWD,
-                 self._gl_R, self._gl_G, self._gl_B]
+                 self._b255_lv, self._b255_x, self._b255_y,
+                 self._tempW, self._tempR, self._tempG, self._tempB, self._tempWD, self._gl_R, self._gl_G, self._gl_B]
         for idx, widget in enumerate(items):
             row = idx // 3
             col = idx % 3
@@ -111,7 +108,7 @@ class EEPROMUserInputDialog(gui_utils.Dialog):
             g255 = [float(c.getvalue()) for c in [self._g255_lv, self._g255_x, self._g255_y]]
             b255 = [float(c.getvalue()) for c in [self._b255_lv, self._b255_x, self._b255_y]]
 
-            temps = [float(c.getvalue()) for c in [self._tempW, self._tempR, self._tempG]]
+            temps = [float(c.getvalue()) for c in [self._tempW, self._tempR, self._tempG, self._tempB, self._tempWD]]
             wd_gl = [float(c.getvalue()) for c in [self._gl_R, self._gl_G, self._gl_B]]
 
             self._value_dic = {
@@ -220,47 +217,94 @@ class seacliffeepromStation(test_station.TestStation):
         self._equip = test_equipment_seacliff_eeprom.seacliffeepromEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.1.4'
+        self._sw_version = '1.2.0'
         self._cvt_flag = {
             'S7.8': (2, True, 7, 8),
             'S1.6': (1, True, 1, 6),
             'U8.0': (1, False, 8, 0),
             'U0.16': (2, False, 0, 16),
             'U8.8': (2, False, 8, 8),
+            'S4.3': (1, True, 4, 3),
         }
         self._nvm_data_len = 45
         self._max_retries = 5
         self._eeprom_map_group = collections.OrderedDict({
-            'display_boresight_x': (6, 'S7.8', lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else None)),
-            'display_boresight_y': (8, 'S7.8', lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else None)),
-            'rotation': (10, 'S1.6', lambda tmp: -2 if tmp <= -2 else (2 if tmp >= 2 else None)),
+            'display_boresight_x': (6, 'S7.8',
+                                    lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else tmp),
+                                    lambda tmp: -128 <= tmp <= 128),
+            'display_boresight_y': (8, 'S7.8',
+                                    lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else tmp),
+                                    lambda tmp: -128 <= tmp <= 128),
+            'rotation': (10, 'S1.6',
+                         lambda tmp: -2 if tmp <= -2 else (2 if tmp >= 2 else tmp),
+                         lambda tmp: -2 <= tmp <= 2),
 
-            'lv_W255': (11, 'U8.8', lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else None)),
-            'x_W255': (13, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
-            'y_W255': (15, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+            'lv_W255': (11, 'U8.8',
+                        lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else tmp),
+                        lambda tmp: 0 <= tmp <= 256),
+            'x_W255': (13, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+            'y_W255': (15, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
 
-            'lv_R255': (17, 'U8.8', lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else None)),
-            'lv_G255': (19, 'U8.8', lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else None)),
-            'lv_B255': (21, 'U8.8', lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else None)),
+            'lv_R255': (17, 'U8.8',
+                        lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else tmp),
+                        lambda tmp: 0 <= tmp <= 256),
+            'lv_G255': (19, 'U8.8',
+                        lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else tmp),
+                        lambda tmp: 0 <= tmp <= 256),
+            'lv_B255': (21, 'U8.8',
+                        lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else tmp),
+                        lambda tmp: 0 <= tmp <= 256),
 
-            'x_R255': (23, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
-            'y_R255': (25, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+            'x_R255': (23, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+            'y_R255': (25, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
 
-            'x_G255': (27, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
-            'y_G255': (29, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+            'x_G255': (27, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+            'y_G255': (29, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
 
-            'x_B255': (31, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
-            'y_B255': (33, 'U0.16', lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else None)),
+            'x_B255': (31, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+            'y_B255': (33, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
 
-            'TemperatureW': (35, 'S4.3', lambda tmp: 0 if tmp < 0 else (56 if tmp >= 56 else None)),
-            'TemperatureR': (36, 'S4.3', lambda tmp: 0 if tmp < 0 else (56 if tmp >= 56 else None)),
-            'TemperatureG': (37, 'S4.3', lambda tmp: 0 if tmp < 0 else (56 if tmp >= 56 else None)),
-            'TemperatureB': (38, 'S4.3', lambda tmp: 0 if tmp < 0 else (56 if tmp >= 56 else None)),
-            'TemperatureWD': (39, 'S4.3', lambda tmp: 0 if tmp < 0 else (56 if tmp >= 56 else None)),
+            'TemperatureW': (35, 'S4.3',
+                             lambda tmp: 14 if tmp <= 14 else (56 if tmp >= 56 else tmp),
+                             lambda tmp: 14 <= tmp <= 56, 30),
+            'TemperatureR': (36, 'S4.3',
+                             lambda tmp: 14 if tmp <= 14 else (56 if tmp >= 56 else tmp),
+                             lambda tmp: 14 <= tmp <= 56, 30),
+            'TemperatureG': (37, 'S4.3',
+                             lambda tmp: 14 if tmp <= 14 else (56 if tmp >= 56 else tmp),
+                             lambda tmp: 14 <= tmp <= 56, 30),
+            'TemperatureB': (38, 'S4.3',
+                             lambda tmp: 14 if tmp <= 14 else (56 if tmp >= 56 else tmp),
+                             lambda tmp: 14 <= tmp <= 56, 30),
+            'TemperatureWD': (39, 'S4.3',
+                              lambda tmp: 14 if tmp <= 14 else (56 if tmp >= 56 else tmp),
+                              lambda tmp: 14 <= tmp <= 56, 30),
 
-            'WhitePointGLR': (40, 'U8.0', lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else None)),
-            'WhitePointGLG': (41, 'U8.0', lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else None)),
-            'WhitePointGLB': (42, 'U8.0', lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else None)),
+            'WhitePointGLR': (40, 'U8.0',
+                              lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else tmp),
+                              lambda tmp: 0 <= tmp <= 255),
+            'WhitePointGLG': (41, 'U8.0',
+                              lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else tmp),
+                              lambda tmp: 0 <= tmp <= 255),
+            'WhitePointGLB': (42, 'U8.0',
+                              lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else tmp),
+                              lambda tmp: 0 <= tmp <= 255),
         })
 
     def initialize(self):
@@ -285,12 +329,14 @@ class seacliffeepromStation(test_station.TestStation):
         self._fixture.close()
 
     # <editor-fold desc="Data Convert">
-    def cvt_to_hex(self, value, flag):
+    def cvt_to_hex(self, value, flag, base_val=None):
         """
         @type value: float
         @type flag: str
         """
         data_len, sign_or_not, integ, deci = self._cvt_flag[flag]
+        if base_val != None:
+            value = value - base_val
         decimal, integral = math.modf(value)
         fraction = int(abs(decimal) * (1 << deci))
         integral = int(abs(integral))
@@ -298,7 +344,7 @@ class seacliffeepromStation(test_station.TestStation):
         data = (sign_bit << (integ + deci)) | (integral << deci) | fraction
         return [f'0x{c:02X}' for c in data.to_bytes(data_len, 'big')]
 
-    def cvt_from_hex(self, data_array, first_ind, flag):
+    def cvt_from_hex(self, data_array, first_ind, flag, base_val=None):
         """
         @type data_array: []
         @type first_ind: int
@@ -323,6 +369,8 @@ class seacliffeepromStation(test_station.TestStation):
         sign = (a_value >> (deci + integ) & sign_bit_mask) if sign_or_not else 0
 
         value_without_sign = (integral + fraction / (1 << deci))
+        if base_val != None:
+            value_without_sign += base_val
         return -1.0 * value_without_sign if sign else value_without_sign
 
     def uchar_checksum(self, data_array):
@@ -395,7 +443,7 @@ class seacliffeepromStation(test_station.TestStation):
         try:
             the_unit.initialize()
             recv_obj = the_unit.screen_on(ignore_err=True)
-            if recv_obj is True:
+            if recv_obj is True or self._station_config.DUT_SIM:
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', 0)
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_RES', True)
             elif isinstance(recv_obj, tuple):
@@ -482,7 +530,10 @@ class seacliffeepromStation(test_station.TestStation):
                     for key, mapping in self._eeprom_map_group.items():
                         memory_idx = mapping[0] - 6
                         flag = mapping[1]
-                        var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag)
+                        b_val = None
+                        if len(mapping) >= 5:
+                            b_val = mapping[4]
+                        var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag, base_val=b_val)
 
                     var_data['CS'] = raw_data[43]
                     msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[44:47]])
@@ -499,19 +550,21 @@ class seacliffeepromStation(test_station.TestStation):
                     flag = mapping[1]
                     memory_len = self._cvt_flag[flag][0]
                     tar_val = var_data[key]
-                    val = mapping[2](tar_val)
-                    if val is not None:  # indicate the value is out of range
-                        tar_val = val
-                    items_chk_result.append(val is None)
+                    set_val = mapping[2](tar_val)
+
+                    items_chk_result.append(mapping[3](tar_val))
+                    b_val = None
+                    if len(mapping) >= 5:
+                        b_val = mapping[4]
                     # encode the tar_val
-                    raw_data_cpy[memory_idx: (memory_idx+memory_len)] = self.cvt_to_hex(tar_val, flag)
+                    raw_data_cpy[memory_idx: (memory_idx+memory_len)] = self.cvt_to_hex(set_val, flag, base_val=b_val)
 
                 raw_data_cpy[37:38] = self.uchar_checksum(raw_data_cpy[0:37])
                 validate_field_result = 0
                 for ind, val in enumerate(items_chk_result):
-                    validate_field_result |= 0 if val else (0x01 << (15-ind))
-                raw_data_cpy[38:40] = [f'0x{c:02X}' for c in
-                                       validate_field_result.to_bytes(2, byteorder='big', signed=False)]
+                    validate_field_result |= 0 if val else (0x01 << (23-ind))
+                raw_data_cpy[38:41] = [f'0x{c:02X}' for c in
+                                       validate_field_result.to_bytes(3, byteorder='big', signed=False)]
 
                 # TODO: config all the data to array.
                 print('Write configuration...........\n')
@@ -595,7 +648,7 @@ class seacliffeepromStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex('CFG_WhitePointGLB', var_data.get('WhitePointGLB'))
 
                 test_log.set_measured_value_by_name_ex('CFG_CS', raw_data_cpy[37])
-                msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data_cpy[38:40]])
+                msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data_cpy[38:41]])
                 test_log.set_measured_value_by_name_ex('CFG_VALIDATION_FIELD', msg)
 
                 # self._operator_interface.print_to_console('screen off ...\n')
