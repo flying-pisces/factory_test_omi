@@ -294,7 +294,7 @@ ANALYSIS_GRP_DISTORTION_PRIMARY = ['Y']
 #                          Green_Distortion_Grid_Left, Green_Distortion_Grid_Right !!!
 # Follow instruction from Evan(fb), pattern named with left, should be render to right-module.
 #                                   pattern named with right, should be render to left-module.
-
+# Sunny
 TEST_ITEM_PATTERNS = [
     {'name': 'W255', 'pattern': 22, 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
     {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (7, 0, 3), 'exposure': '5000'},
@@ -314,6 +314,27 @@ TEST_ITEM_PATTERNS = [
     {'name': 'WhiteDot11', 'pattern': (16, 17), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
     {'name': 'WhiteDot12', 'pattern': (18, 19), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
     {'name': 'RGBBoresight', 'pattern': (20, 21), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+]
+# Genius
+TEST_ITEM_PATTERNS = [
+    {'name': 'W255', 'pattern': 22, 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
+    {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'W000', 'pattern': 23, 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'RGB', 'pattern': 0, 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'R255', 'pattern': 24, 'setup': (7, 0, 3), 'exposure': (122601, 980852, 401251, 980852, 980852)},
+    {'name': 'G255', 'pattern': 25, 'setup': (7, 0, 3), 'exposure': (278651, 980852, 278651, 167184, 980852)},
+    {'name': 'B255', 'pattern': 26, 'setup': (7, 0, 3), 'exposure': (980852, 122601, 980852, 980852, 122601)},
+    {'name': 'GreenContrast', 'pattern': (2, 1), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'WhiteContrast', 'pattern': (4, 3), 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'GreenSharpness', 'pattern': 5, 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'GreenDistortion', 'pattern': (7, 6), 'setup': (7, 0, 3), 'exposure': (378967, 980852, 434700, 222917, 980852)},  #, 'oi_mode': 2},
+    {'name': 'WhiteDot7', 'pattern': (8, 9), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
+    {'name': 'WhiteDot8', 'pattern': (10, 11), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
+    {'name': 'WhiteDot9', 'pattern': (12, 13), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
+    {'name': 'WhiteDot10', 'pattern': (14, 15), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
+    {'name': 'WhiteDot11', 'pattern': (16, 17), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
+    {'name': 'WhiteDot12', 'pattern': (18, 19), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
+    {'name': 'RGBBoresight', 'pattern': (20, 21), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
 ]
 
 TEST_ITEM_POS = [
