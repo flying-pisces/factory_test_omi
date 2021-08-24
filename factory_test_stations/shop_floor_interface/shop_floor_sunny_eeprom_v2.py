@@ -241,63 +241,37 @@ class ShopFloor_sunny(object):
                 os.makedirs(CALIB_REQ_DATA_FILENAME)
             os.chmod(CALIB_REQ_DATA_FILENAME, os.stat(CALIB_REQ_DATA_FILENAME).st_mode | stat.S_IRWXU)
 
-            exp_mes_items = ["normal_RGBBoresight_DispCen_x_display",
-                             "normal_RGBBoresight_DispCen_y_display",
-                             "normal_RGBBoresight_Disp_Rotate_x",
-                             "normal_W255_OnAxis Lum",
-                             "normal_R255_OnAxis Lum",
-                             "normal_G255_OnAxis Lum",
-                             "normal_B255_OnAxis Lum",
-                             "normal_W255_OnAxis x",
-                             "normal_W255_OnAxis y",
-                             "normal_R255_OnAxis x",
-                             "normal_R255_OnAxis y",
-                             "normal_G255_OnAxis x",
-                             "normal_G255_OnAxis y",
-                             "normal_B255_OnAxis x",
-                             "normal_B255_OnAxis y",
+            exp_mes_items = {"normal_RGBBoresight_DispCen_x_display": "normal_RGBBoresight_DispCen_x_display",
+                             "normal_RGBBoresight_DispCen_y_display": "normal_RGBBoresight_DispCen_y_display",
+                             "normal_RGBBoresight_Disp_Rotate_x": "normal_RGBBoresight_Disp_Rotate_x",
+                             "normal_W255_OnAxis Lum": "normal_W255_OnAxis Lum",
+                             "normal_R255_OnAxis Lum": "normal_R255_OnAxis Lum",
+                             "normal_G255_OnAxis Lum": "normal_G255_OnAxis Lum",
+                             "normal_B255_OnAxis Lum": "normal_B255_OnAxis Lum",
+                             "normal_W255_OnAxis x": "normal_W255_OnAxis x",
+                             "normal_W255_OnAxis y": "normal_W255_OnAxis y",
+                             "normal_R255_OnAxis x": "normal_R255_OnAxis x",
+                             "normal_R255_OnAxis y": "normal_R255_OnAxis y",
+                             "normal_G255_OnAxis x": "normal_G255_OnAxis x",
+                             "normal_G255_OnAxis y": "normal_G255_OnAxis y",
+                             "normal_B255_OnAxis x": "normal_B255_OnAxis x",
+                             "normal_B255_OnAxis y": "normal_B255_OnAxis y",
 
-                             "normal_W255_Module Temperature",
-                             "normal_R255_Module Temperature",
-                             "normal_G255_Module Temperature",
-                             "normal_B255_Module Temperature",
-                             "normal_WhiteDot_Module Temperature",
+                             "normal_W255_Module Temperature": "normal_W255_Module Temperature",
+                             "normal_R255_Module Temperature": "normal_R255_Module Temperature",
+                             "normal_G255_Module Temperature": "normal_G255_Module Temperature",
+                             "normal_B255_Module Temperature": "normal_B255_Module Temperature",
+                             "normal_WhiteDot_Module Temperature": "normal_WhiteDot_Module Temperature",
 
-                             "normal_WhiteDot_WP R Arcata Algorithm",
-                             "normal_WhiteDot_WP G Arcata Algorithm",
-                             "normal_WhiteDot_WP B Arcata Algorithm",
-                             ]
+                             "normal_WhiteDot_WP R Arcata Algorithm": "normal_WhiteDot_WP R Arcata Algorithm",
+                             "normal_WhiteDot_WP G Arcata Algorithm": "normal_WhiteDot_WP G Arcata Algorithm",
+                             "normal_WhiteDot_WP B Arcata Algorithm": "normal_WhiteDot_WP B Arcata Algorithm",
+                             }
 
-            mes_inlot_dic = [
-                'display_boresight_x',
-                'display_boresight_y',
-                'rotation',
-                'lv_W255',
-                'x_W255',
-                'y_W255',
-                'lv_R255',
-                'x_R255',
-                'y_R255',
-                'lv_G255',
-                'x_G255',
-                'y_G255',
-                'lv_B255',
-                'x_B255',
-                'y_B255',
-                'TemperatureW',
-                'TemperatureR',
-                'TemperatureG',
-                'TemperatureB',
-                'TemperatureWD',
-                'WhitePointGLR',
-                'WhitePointGLG',
-                'WhitePointGLB',
-            ]
-            calc_x = lambda u, v: (9 * u / (6 * u - 16 * v + 12))
-            calc_y = lambda u, v: (4 * v / (6 * u - 16 * v + 12))
-
-            if set(exp_mes_items).issubset(dic.keys()):
+            if set(exp_mes_items.keys()).issubset(dic.keys()):
                 try:
+                    for k, v in exp_mes_items.items():
+                        dic[v] = exp_mes_items[k]
                     dic['display_boresight_x'] = float(dic['normal_RGBBoresight_DispCen_x_display'])
                     dic['display_boresight_y'] = float(dic['normal_RGBBoresight_DispCen_y_display'])
                     dic['rotation'] = float(dic['normal_RGBBoresight_Disp_Rotate_x'])
