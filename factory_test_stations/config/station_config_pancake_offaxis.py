@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 2.1.2
+2021-8-24 author<elton.tian@myzygroup.com>
+-1. Fix multi summary file for same limit file.
+
+========================================================
 Version 2.1.1
 2021-8-16 author<elton.tian@myzygroup.com>
 -1. Add spec for summary log.
