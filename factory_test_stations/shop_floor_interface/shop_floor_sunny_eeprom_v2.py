@@ -271,7 +271,7 @@ class ShopFloor_sunny(object):
             if set(exp_mes_items.keys()).issubset(dic.keys()):
                 try:
                     for k, v in exp_mes_items.items():
-                        dic[v] = exp_mes_items[k]
+                        dic[v] = dic[k]
                     dic['display_boresight_x'] = float(dic['normal_RGBBoresight_DispCen_x_display'])
                     dic['display_boresight_y'] = float(dic['normal_RGBBoresight_DispCen_y_display'])
                     dic['rotation'] = float(dic['normal_RGBBoresight_Disp_Rotate_x'])

@@ -1,5 +1,5 @@
 __author__ = 'elton.tian'
-__version__ = '0.0.6'
+__version__ = '2.0.0'
 """
 Change List:
 0.0.1:  Init Version, 
@@ -8,6 +8,7 @@ Change List:
 0.0.4:  Relase thread for upload automatically when closing.
 0.0.5:  if not all the item tested, set MultiErrCode to 99999 .
 0.0.6:  all test items upload to mes.
+2.0.0:  new test items based MOT 1.2.x
 """
 
 # !/usr/bin/env python
@@ -84,6 +85,8 @@ class ShopFloor_genius(object):
             'OVERALL_ERRORCODE': '',
             'ELAPSED_SECONDS': 'ELAPSED_SECONDS',
             'SW_VERSION': 'SW_VERSION',
+            'DUT_POWER_ON_INFO': 'DUT_POWER_ON_INFO',
+            'DUT_POWER_ON_RES': 'DUT_POWER_ON_RES',
             'JUDGED_BY_CAM': 'JUDGED_BY_CAM',
             'PRE_WRITE_COUNTS': 'PRE_WRITE_COUNTS',
             'CFG_BORESIGHT_X': 'CFG_BORESIGHT_X',
@@ -101,32 +104,46 @@ class ShopFloor_genius(object):
             'CFG_LV_B255': 'CFG_LV_B255',
             'CFG_X_B255': 'CFG_X_B255',
             'CFG_Y_B255': 'CFG_Y_B255',
+            'CFG_TEMPERATUREW': 'CFG_TemperatureW',
+            'CFG_TEMPERATURER': 'CFG_TemperatureR',
+            'CFG_TEMPERATUREG': 'CFG_TemperatureG',
+            'CFG_TEMPERATUREB': 'CFG_TemperatureB',
+            'CFG_TEMPERATUREWD': 'CFG_TemperatureWD',
+            'CFG_WHITEPOINTGLR': 'CFG_WhitePointGLR',
+            'CFG_WHITEPOINTGLG': 'CFG_WhitePointGLG',
+            'CFG_WHITEPOINTGLB': 'CFG_WhitePointGLB',
             'CFG_CS': 'CFG_CS',
             'CFG_VALIDATION_FIELD': 'CFG_VALIDATION_FIELD',
-            'POST_DATA_CHECK': 'POST_DATA_CHECK',
             'POST_WRITE_COUNTS': 'POST_WRITE_COUNTS',
             'WRITE_COUNTS_CHECK': 'WRITE_COUNTS_CHECK',
+            'POST_DATA_CHECK': 'POST_DATA_CHECK',
         }
-        self._mes_mot_dic = {
-            'MODEL_NAME': '',
-            'UUT_SERIAL_NUMBER': 'UUT_Serial_Number',
-            'STATION_ID': 'Station_ID',
-            'NORMAL_GRDIST_Y_DISPCEN_X_DISP': 'normal_GreenDistortion_Y_DispCen_x_display',
-            'NORMAL_GRDIST_Y_DISPCEN_Y_DISP': 'normal_GreenDistortion_Y_DispCen_y_display',
-            'NORMAL_GRDIST_Y_DISP_ROTATE_X': 'normal_GreenDistortion_Y_Disp_Rotate_x',
-            'NORMAL_W255_LUM_0DEG_0DEG': 'normal_W255_Lum_0.0deg_0.0deg',
-            'NORMAL_W255_U_0DEG_0DEG': "normal_W255_u'_0.0deg_0.0deg",
-            'NORMAL_W255_V_0DEG_0DEG': "normal_W255_v'_0.0deg_0.0deg",
-            'NORMAL_R255_LUM_0DEG_0DEG': 'normal_R255_Lum_0.0deg_0.0deg',
-            'NORMAL_G255_LUM_0DEG_0DEG': 'normal_G255_Lum_0.0deg_0.0deg',
-            'NORMAL_B255_LUM_0DEG_0DEG': 'normal_B255_Lum_0.0deg_0.0deg',
-            'NORMAL_R255_U_0DEG_0DEG': "normal_R255_u'_0.0deg_0.0deg",
-            'NORMAL_R255_V_0DEG_0DEG': "normal_R255_v'_0.0deg_0.0deg",
-            'NORMAL_G255_U_0DEG_0DEG': "normal_G255_u'_0.0deg_0.0deg",
-            'NORMAL_G255_V_0DEG_0DEG': "normal_G255_v'_0.0deg_0.0deg",
-            'NORMAL_B255_U_0DEG_0DEG': "normal_B255_u'_0.0deg_0.0deg",
-            'NORMAL_B255_V_0DEG_0DEG': "normal_B255_v'_0.0deg_0.0deg",
-        }
+        self._mes_mot_dic = {"NM_RGBBORESIGHT_DISPCEN_X_DISP": "normal_RGBBoresight_DispCen_x_display",
+                             "NM_RGBBORESIGHT_DISPCEN_Y_DISP": "normal_RGBBoresight_DispCen_y_display",
+                             "NM_RGBBORESIGHT_DISP_ROTATE_X": "normal_RGBBoresight_Disp_Rotate_x",
+                             "NORMAL_W255_ONAXIS_LUM": "normal_W255_OnAxis Lum",
+                             "NORMAL_W255_ONAXIS_X": "normal_W255_OnAxis x",
+                             "NORMAL_W255_ONAXIS_Y": "normal_W255_OnAxis y",
+                             "NORMAL_R255_ONAXIS_LUM": "normal_R255_OnAxis Lum",
+                             "NORMAL_R255_ONAXIS_X": "normal_R255_OnAxis x",
+                             "NORMAL_R255_ONAXIS_Y": "normal_R255_OnAxis y",
+                             "NORMAL_G255_ONAXIS_LUM": "normal_G255_OnAxis Lum",
+                             "NORMAL_G255_ONAXIS_X": "normal_G255_OnAxis x",
+                             "NORMAL_G255_ONAXIS_Y": "normal_G255_OnAxis y",
+                             "NORMAL_B255_ONAXIS_LUM": "normal_B255_OnAxis Lum",
+                             "NORMAL_B255_ONAXIS_X": "normal_B255_OnAxis x",
+                             "NORMAL_B255_ONAXIS_Y": "normal_B255_OnAxis y",
+
+                             "NORMAL_W255_MODULE_TEMPERATURE": "normal_W255_Module Temperature",
+                             "NORMAL_R255_MODULE_TEMPERATURE": "normal_R255_Module Temperature",
+                             "NORMAL_G255_MODULE_TEMPERATURE": "normal_G255_Module Temperature",
+                             "NORMAL_B255_MODULE_TEMPERATURE": "normal_B255_Module Temperature",
+                             "NORMAL_WHITEDOT_MODULE_TEMPER": "normal_WhiteDot_Module Temperature",
+
+                             "NORMAL_WHITEDOT_WP_R_ARC_ALG": "normal_WhiteDot_WP R Arcata Algorithm",
+                             "NORMAL_WHITEDOT_WP_G_ARC_ALG": "normal_WhiteDot_WP G Arcata Algorithm",
+                             "NORMAL_WHITEDOT_WP_B_ARC_ALG": "normal_WhiteDot_WP B Arcata Algorithm",
+                             }
         # </editor-fold>
 
     def save_results(self, uut_sn, log_items):
@@ -164,51 +181,22 @@ class ShopFloor_genius(object):
         for log in res.LOG.diffgram[0].DocumentElement[0].Log:
             dd = dict(log)
             for k, v in self._mes_mot_dic.items():
-                if v is None or v == '' or dd.get(k) is None:
+                if dd.get(k) is None:
                     continue
-                res_tbl_items[v] = dd.get(k)[0]
+                res_tbl_items[k] = dd.get(k)[0]
         return res_tbl_items
 
-    @staticmethod
-    def insert_mot_data_in_json(serial, dic):
+    def insert_mot_data_in_json(self, uut_sn, dic):
         res = False
         try:
             if not os.path.exists(CALIB_REQ_DATA_FILENAME):
                 os.makedirs(CALIB_REQ_DATA_FILENAME)
             os.chmod(CALIB_REQ_DATA_FILENAME, os.stat(CALIB_REQ_DATA_FILENAME).st_mode | stat.S_IRWXU)
 
-            exp_mes_items = {"NM_RGBBORESIGHT_DISPCEN_X_DISP": "normal_RGBBoresight_DispCen_x_display",
-                             "NM_RGBBORESIGHT_DISPCEN_Y_DISP": "normal_RGBBoresight_DispCen_y_display",
-                             "NM_RGBBORESIGHT_DISP_ROTATE_X": "normal_RGBBoresight_Disp_Rotate_x",
-                             "NORMAL_W255_ONAXIS_LUM": "normal_W255_OnAxis Lum",
-                             "NORMAL_W255_ONAXIS_X": "normal_W255_OnAxis x",
-                             "NORMAL_W255_ONAXIS_Y": "normal_W255_OnAxis y",
-                             "NORMAL_R255_ONAXIS_LUM": "normal_R255_OnAxis Lum",
-                             "NORMAL_R255_ONAXIS_X": "normal_R255_OnAxis x",
-                             "NORMAL_R255_ONAXIS_Y": "normal_R255_OnAxis y",
-                             "NORMAL_G255_ONAXIS_LUM": "normal_G255_OnAxis Lum",
-                             "NORMAL_G255_ONAXIS_X": "normal_G255_OnAxis x",
-                             "NORMAL_G255_ONAXIS_Y": "normal_G255_OnAxis y",
-                             "NORMAL_B255_ONAXIS_LUM": "normal_B255_OnAxis Lum",
-                             "NORMAL_B255_ONAXIS_X": "normal_B255_OnAxis x",
-                             "NORMAL_B255_ONAXIS_Y": "normal_B255_OnAxis y",
-
-                             "NORMAL_W255_MODULE_TEMPERATURE": "normal_W255_Module Temperature",
-                             "NORMAL_R255_MODULE_TEMPERATURE": "normal_R255_Module Temperature",
-                             "NORMAL_G255_MODULE_TEMPERATURE": "normal_G255_Module Temperature",
-                             "NORMAL_B255_MODULE_TEMPERATURE": "normal_B255_Module Temperature",
-                             "NORMAL_WHITEDOT_MODULE_TEMPER": "normal_WhiteDot_Module Temperature",
-
-                             "NORMAL_WHITEDOT_WP_R_ARC_ALG": "normal_WhiteDot_WP R Arcata Algorithm",
-                             "NORMAL_WHITEDOT_WP_G_ARC_ALG": "normal_WhiteDot_WP G Arcata Algorithm",
-                             "NORMAL_WHITEDOT_WP_B_ARC_ALG": "normal_WhiteDot_WP B Arcata Algorithm",
-                             }
-
-            if set(exp_mes_items.keys()).issubset(dic.keys()):
+            if set(self._mes_mot_dic.keys()).issubset(dic.keys()):
                 try:
-                    for k, v in exp_mes_items.items():
-                        dic[v] = exp_mes_items[k]
-
+                    for k, v in self._mes_mot_dic.items():
+                        dic[v] = dic[k]
                     dic['display_boresight_x'] = float(dic['normal_RGBBoresight_DispCen_x_display'])
                     dic['display_boresight_y'] = float(dic['normal_RGBBoresight_DispCen_y_display'])
                     dic['rotation'] = float(dic['normal_RGBBoresight_Disp_Rotate_x'])
@@ -241,7 +229,7 @@ class ShopFloor_genius(object):
                     res = True
                 except Exception as e:
                     logging.error('Fail to parse data from MES.'.format(str(e)))
-            calib_data_json_fn = os.path.join(CALIB_REQ_DATA_FILENAME, f'eeprom_session_miz_{serial}.json')
+            calib_data_json_fn = os.path.join(CALIB_REQ_DATA_FILENAME, f'eeprom_session_miz_{uut_sn}.json')
             with open(calib_data_json_fn, 'w') as json_file:
                 json.dump(dic, json_file, indent=6)
         except Exception as e:
@@ -531,6 +519,8 @@ if __name__ == '__main__':
     serial_numbers = ['P1-666666666', 'P1-999999999',  'P1-123456789', 'P1-234567890', 'P1-345678900']
 
     serial_numbers.extend([f'1PRPEKE2L4098{idx}' for idx in range(0, 10)])
+
+    serial_numbers = ['P1-123456789', 'P1-345678900']
 
     for serial_number in serial_numbers:
         logging.info('----------------------------{0}'.format(serial_number))

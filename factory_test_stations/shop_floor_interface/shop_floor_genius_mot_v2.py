@@ -1,5 +1,5 @@
 __author__ = 'elton.tian'
-__version__ = '0.0.4'
+__version__ = '2.0.0'
 """
 Change List:
 0.0.1:  Init Version, 
@@ -9,6 +9,7 @@ Change List:
         Relase thread for upload automatically when closing.
 0.0.5:  if not all the item tested, set MultiErrCode to 99999 .
 0.0.6:  all test items upload to mes.
+2.0.0： new schema for MOT V1.2.1
 """
 
 # !/usr/bin/env python
@@ -557,8 +558,10 @@ if __name__ == '__main__':
     logging.info('----------------------------')
     logging.debug('+' * 20)
     log_dir = r'c:\oculus\factory_test_omi\factory_test_stations\factory-test_logs'
-    fn_name = r''
-    serial_numbers = ['P1-123456789', 'P1-234567890', 'P1-234567890', 'P1-999999999']
+    fn_name = r'P1-123456789_seacliff_mot-04_20210824-104746_P.log'
+    # serial_numbers = ['P1-123456789', 'P1-234567890', 'P1-234567890', 'P1-999999999', 'M210814102250']
+    serial_numbers = ['P1-123456789', 'P1-234567890',]
     for serial_number in serial_numbers:
-        logging.info('----------------------------{0}'.format(serial_number))
-        ok_to_test(serial_number)
+        res = ok_to_test(serial_number)
+        da = save_results_from_logs(os.path.join(log_dir, fn_name), log_upload_after_test=True)
+        logging.info('----------------------------{0}__{1}_{2}'.format(serial_number, res, da))
