@@ -238,12 +238,14 @@ class seacliffmotStation(test_station.TestStation):
         self._overall_errorcode = ''
         latest_pattern_value_bak = None
         cpu_count = mp.cpu_count()
-        self._pool = mp.Pool(2)
+        cpu_count_used = self._station_config.TEST_CPU_COUNT
+        self._pool = mp.Pool(cpu_count_used)
         self._pool_alg_dic = {}
         self._exported_parametric = {}
         self._gl_W255 = {}
         self._temperature_dic = {}
         try:
+            self._operator_interface.print_to_console(f"Initialize Test condition.={cpu_count_used}/{cpu_count}.. \n")
             self._operator_interface.print_to_console(
                 "\n*********** Fixture at %s to load DUT %s ***************\n"
                 % (self._station_config.FIXTURE_COMPORT, self._station_config.DUT_COMPORT))
