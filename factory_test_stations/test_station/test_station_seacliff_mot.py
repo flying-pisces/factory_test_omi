@@ -434,17 +434,18 @@ class seacliffmotStation(test_station.TestStation):
             self._pool.close()
             self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')
             self._operator_interface.print_to_console('Please wait...')
+            try:
+                self._the_unit.close()
+                self._fixture.unload()
+            except:
+                pass
             while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
                 self._operator_interface.wait(1, '.')
             self._operator_interface.wait(0, '\n')
             self._operator_interface.print_to_console('\nfinish to process\n')
             self._pool.join()
             self._pool = None
-            try:
-                self._the_unit.close()
-                self._fixture.unload()
-            except:
-                self._the_unit = None
+            self._the_unit = None
         del self._pool_alg_dic
         self._operator_interface.print_to_console(f'Finish------------{serial_number}-------\n')
         return self.close_test(test_log)
