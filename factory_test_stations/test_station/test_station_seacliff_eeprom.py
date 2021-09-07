@@ -535,8 +535,8 @@ class seacliffeepromStation(test_station.TestStation):
                             b_val = mapping[4]
                         var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag, base_val=b_val)
 
-                    var_data['CS'] = raw_data[43]
-                    msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[44:47]])
+                    var_data['CS'] = raw_data[(43-6)]
+                    msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[(44-6):(47-6)]])
                     var_data['VALIDATION'] = msg
                 self._operator_interface.print_to_console('RD_DATA:\n')
                 self._operator_interface.print_to_console(f"<-- {','.join(raw_data)}\n")
