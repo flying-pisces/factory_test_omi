@@ -1308,6 +1308,7 @@ class MotAlgorithmHelper(object):
             if not os.path.exists(os.path.join(dirr, self._exp_dir)):
                 os.makedirs(os.path.join(dirr, self._exp_dir))
             plt.savefig(os.path.join(dirr, self._exp_dir, fnamebase + '_plot_Brightness.png'))
+            plt.clf()
 
             # plot delta u'v' image
             Delta_u_prime_smoothed_masked = (u_prime_smoothed_masked - u_prime_smoothed_masked[3001, 3001]) * XYZ_mask
@@ -1379,6 +1380,7 @@ class MotAlgorithmHelper(object):
             plt.tight_layout()
 
             plt.savefig(os.path.join(dirr, self._exp_dir, fnamebase + '_plot_duv.png'))
+            plt.clf()
 
             RGB = np.zeros(XYZ.shape)
             RGB[:, :, 0] = 0.41847 * XYZ[:, :, 0] - 0.15866 * XYZ[:, :, 1] - 0.082835 * XYZ[:, :, 2]
@@ -1399,6 +1401,7 @@ class MotAlgorithmHelper(object):
             plt.title('RGB Image')
             plt.tight_layout()
             plt.savefig(os.path.join(dirr, self._exp_dir, fnamebase + '_RGB_color.png'))
+            plt.clf()
             del RGB, angle_arr, cc,
             del Delta_v_prime_smoothed_masked, Delta_uv_prime_smoothed_masked, Delta_u_prime_smoothed_masked
             del tmp_histo, weights
@@ -1805,6 +1808,7 @@ class MotAlgorithmHelper(object):
                 if not os.path.exists(os.path.join(dirr, self._exp_dir)):
                     os.makedirs(os.path.join(dirr, self._exp_dir))
                 plt.savefig(os.path.join(dirr, self._exp_dir, fnamebase + '_plot_dxy.png'))
+                plt.clf()
 
             # GL = [100, 100, 100]
             if np.min(GL) < 255 - (n_dots - 1) * 2:
@@ -2245,6 +2249,7 @@ class MotAlgorithmHelper(object):
             if not os.path.exists(os.path.join(dirr, self._exp_dir)):
                 os.makedirs(os.path.join(dirr, self._exp_dir))
             plt.savefig(os.path.join(dirr, self._exp_dir, f'{fnamebase}_RGB.png'))
+            plt.clf()
 
             plt.figure()
             plt.plot(centroidRG[:, 0], centroidRG[:, 1], 'x')
@@ -2259,6 +2264,7 @@ class MotAlgorithmHelper(object):
             plt.legend(['Dots Centroid', 'Dots Center', 'Image Center', 'X fit', 'Y fit'])
 
             plt.savefig(os.path.join(dirr, self._exp_dir, f'{fnamebase}_Boresight.png'))
+            plt.clf()
 
         R_Lum = LxyR_mean[0]
         R_x = LxyR_mean[1]
@@ -2401,7 +2407,7 @@ if __name__ == "__main__":
     br_bin_re = '*_RGBBoresight_*_X_float.bin'
     wd_bin_re = '*_WhiteDot_*_X_float.bin'
     COLORMATRIX_COEFF = [[0.9941, -0.0076, -0.0066], [0.0009, 0.9614, -0.0025], [-0.0021, 0.0020, 0.9723]]
-    aa = MotAlgorithmHelper(COLORMATRIX_COEFF, is_verbose=False, save_plots=True)
+    aa = MotAlgorithmHelper(COLORMATRIX_COEFF, is_verbose=False, save_plots=False)
     raw_data_dir = r"c:\ShareData\Oculus_RawData\003_seacliff_mot-06_20210811-093524"
     bins = tuple([glob.glob(os.path.join(raw_data_dir, c))
                   for c in [w_bin_re, r_bin_re, g_bin_re, b_bin_re, gd_bin_re, br_bin_re, wd_bin_re]])
@@ -2424,26 +2430,34 @@ if __name__ == "__main__":
         'RGBBoresight': 30,
         'WhiteDot': 30,
     }
-
+    start_time = time.time()
+    end_time = []
     w255_result = aa.color_pattern_parametric_export_W255(
         xfilename=os.path.join(raw_data_dir, w_bin), ModuleLR='R', module_temp=m_temp['W255'])
+    end_time.append(time.time())
     r255_result = aa.color_pattern_parametric_export_RGB('r', module_temp=m_temp['R255'],
                                                          xfilename=os.path.join(raw_data_dir, r_bin))
+    end_time.append(time.time())
     g255_result = aa.color_pattern_parametric_export_RGB('g', module_temp=m_temp['G255'],
                                                          xfilename=os.path.join(raw_data_dir, g_bin))
+    end_time.append(time.time())
     b255_result = aa.color_pattern_parametric_export_RGB('b', module_temp=m_temp['B255'],
                                                          xfilename=os.path.join(raw_data_dir, b_bin))
+    end_time.append(time.time())
     boresight_result = aa.rgbboresight_parametric_export(module_temp=m_temp['RGBBoresight'],
         xfilename=os.path.join(raw_data_dir, br_bin))
+    end_time.append(time.time())
 
     # distortion_result = aa.distortion_centroid_parametric_export(
     #     filename=os.path.join(raw_data_dir, gd_bin), module_temp=m_temp['GreenDistortion'])
 
     XYZ_W = aa.white_dot_pattern_w255_read(os.path.join(raw_data_dir, w_bin))
+    end_time.append(time.time())
     gl_whitedot = aa.calc_gl_for_brightdot(w255_result, r255_result, g255_result, b255_result, module_temp=m_temp['WhiteDot'])
     whitedot_result = aa.white_dot_pattern_parametric_export(XYZ_W,
                         gl_whitedot['GL'], gl_whitedot['x_w'], gl_whitedot['y_w'],
                         xfilename=os.path.join(raw_data_dir, wd_bin), module_temp=m_temp['WhiteDot'])
+    end_time.append(time.time())
     raw_data = [w255_result, r255_result, g255_result, b255_result, boresight_result, whitedot_result]
     if not os.path.exists(os.path.join(raw_data_dir, 'exp')):
         os.makedirs(os.path.join(raw_data_dir, 'exp'))
@@ -2453,3 +2467,5 @@ if __name__ == "__main__":
             data = [f'{k}, {v}' for k, v in raw.items()]
             f.write('\n'.join(data))
             f.write('\n' + '-'*10 + '\n'*3)
+    for idx, tm in enumerate(end_time):
+        print(f'IDX: {idx}, Elapse: {(tm-start_time)}')

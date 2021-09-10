@@ -257,6 +257,7 @@ class seacliffmotStation(test_station.TestStation):
 
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+            test_log.set_measured_value_by_name_ex('SPEC_VERSION', self._station_config.SPEC_VERSION)
 
             test_log.set_measured_value_by_name_ex('Carrier_ProbeConnectStatus', self._probe_con_status)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
