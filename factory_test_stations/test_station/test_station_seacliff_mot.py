@@ -15,6 +15,8 @@ import sys
 import cv2
 import multiprocessing as mp
 import json
+import collections
+import math
 
 
 def chk_and_set_measured_value_by_name(test_log, item, value):
@@ -30,6 +32,208 @@ def chk_and_set_measured_value_by_name(test_log, item, value):
 
 class seacliffmotStationError(Exception):
     pass
+
+
+class EEPStationAssistant(object):
+    def __init__(self):
+        self._cvt_flag = {
+            'S7.8': (2, True, 7, 8),
+            'S1.6': (1, True, 1, 6),
+            'U8.0': (1, False, 8, 0),
+            'U0.16': (2, False, 0, 16),
+            'U8.8': (2, False, 8, 8),
+            'S4.3': (1, True, 4, 3),
+        }
+        self._nvm_data_len = 45
+        self._dr_offset = 6
+        self._eeprom_map_group = collections.OrderedDict({
+            'display_boresight_x': (6, 'S7.8',
+                                    lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else tmp),
+                                    lambda tmp: -128 <= tmp <= 128),
+            'display_boresight_y': (8, 'S7.8',
+                                    lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else tmp),
+                                    lambda tmp: -128 <= tmp <= 128),
+            'rotation': (10, 'S1.6',
+                         lambda tmp: -2 if tmp <= -2 else (2 if tmp >= 2 else tmp),
+                         lambda tmp: -2 <= tmp <= 2),
+
+            'lv_W255': (11, 'U8.8',
+                        lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else tmp),
+                        lambda tmp: 0 <= tmp <= 256),
+            'x_W255': (13, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+            'y_W255': (15, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+
+            'lv_R255': (17, 'U8.8',
+                        lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else tmp),
+                        lambda tmp: 0 <= tmp <= 256),
+            'lv_G255': (19, 'U8.8',
+                        lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else tmp),
+                        lambda tmp: 0 <= tmp <= 256),
+            'lv_B255': (21, 'U8.8',
+                        lambda tmp: 0 if tmp < 0 else (256 if tmp >= 256 else tmp),
+                        lambda tmp: 0 <= tmp <= 256),
+
+            'x_R255': (23, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+            'y_R255': (25, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+
+            'x_G255': (27, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+            'y_G255': (29, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+
+            'x_B255': (31, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+            'y_B255': (33, 'U0.16',
+                       lambda tmp: 0 if tmp < 0 else (1 if tmp >= 1 else tmp),
+                       lambda tmp: 0 <= tmp <= 1),
+
+            'TemperatureW': (35, 'S4.3',
+                             lambda tmp: 14 if tmp <= 14 else (56 if tmp >= 56 else tmp),
+                             lambda tmp: 14 <= tmp <= 56, 30),
+            'TemperatureR': (36, 'S4.3',
+                             lambda tmp: 14 if tmp <= 14 else (56 if tmp >= 56 else tmp),
+                             lambda tmp: 14 <= tmp <= 56, 30),
+            'TemperatureG': (37, 'S4.3',
+                             lambda tmp: 14 if tmp <= 14 else (56 if tmp >= 56 else tmp),
+                             lambda tmp: 14 <= tmp <= 56, 30),
+            'TemperatureB': (38, 'S4.3',
+                             lambda tmp: 14 if tmp <= 14 else (56 if tmp >= 56 else tmp),
+                             lambda tmp: 14 <= tmp <= 56, 30),
+            'TemperatureWD': (39, 'S4.3',
+                              lambda tmp: 14 if tmp <= 14 else (56 if tmp >= 56 else tmp),
+                              lambda tmp: 14 <= tmp <= 56, 30),
+
+            'WhitePointGLR': (40, 'U8.0',
+                              lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else tmp),
+                              lambda tmp: 0 <= tmp <= 255),
+            'WhitePointGLG': (41, 'U8.0',
+                              lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else tmp),
+                              lambda tmp: 0 <= tmp <= 255),
+            'WhitePointGLB': (42, 'U8.0',
+                              lambda tmp: 0 if tmp < 0 else (255 if tmp >= 255 else tmp),
+                              lambda tmp: 0 <= tmp <= 255),
+        })
+
+    # <editor-fold desc="Data Convert">
+    def cvt_to_hex(self, value, flag, base_val=None):
+        """
+        @type value: float
+        @type flag: str
+        """
+        data_len, sign_or_not, integ, deci = self._cvt_flag[flag]
+        if base_val != None:
+            value = value - base_val
+        decimal, integral = math.modf(value)
+        fraction = int(abs(decimal) * (1 << deci))
+        integral = int(abs(integral))
+        sign_bit = 1 if sign_or_not and (value < 0) else 0
+        data = (sign_bit << (integ + deci)) | (integral << deci) | fraction
+        return [f'0x{c:02X}' for c in data.to_bytes(data_len, 'big')]
+
+    def cvt_from_hex(self, data_array, first_ind, flag, base_val=None):
+        """
+        @type data_array: []
+        @type first_ind: int
+        @type flag: str
+        """
+        data_len, sign_or_not, integ, deci = self._cvt_flag[flag]
+        darray = [int(c, 16) for c in data_array[first_ind:(first_ind + data_len)]]
+        a_value = int.from_bytes(darray, 'big', signed=False)
+
+        def bit_mask(bit_len):
+            mask = 0x01 if bit_len != 0 else 0
+            for c in range(0, bit_len - 1):
+                mask |= (mask << 1)
+            return mask
+
+        sign_bit_mask = bit_mask(integ + deci + 1)
+        fraction_mask = bit_mask(deci)
+        integral_mask = bit_mask(integ)
+
+        fraction = a_value & fraction_mask
+        integral = (a_value >> deci) & integral_mask
+        sign = (a_value >> (deci + integ) & sign_bit_mask) if sign_or_not else 0
+
+        value_without_sign = (integral + fraction / (1 << deci))
+        if base_val != None:
+            value_without_sign += base_val
+        return -1.0 * value_without_sign if sign else value_without_sign
+
+    def uchar_checksum(self, data_array):
+        """
+        char_checksum The checksum is calculated in bytes. Each byte is translated as an unsigned integer
+        @param data_array: data_array
+        :return:
+        """
+        length = len(data_array)
+        checksum = 0
+        for i in range(0, length):
+            checksum += int(data_array[i], 16)
+            checksum &= 0xFF  # truncate to 1 byte
+
+        return [f'0x{checksum:02X}', ]
+
+        # </editor-fold>
+
+    def uchar_checksum_chk(self, data_array):
+        if (not data_array) or len(data_array) < self._nvm_data_len:
+            return False
+        cs = self.uchar_checksum(data_array[0:43 - self._dr_offset])
+        return int(cs[0], 16) == int(data_array[43 - self._dr_offset], 16)
+
+    def decode_raw_data(self, raw_data):
+        """
+
+        @type raw_data: list
+        """
+        var_data = {}
+        for key, mapping in self._eeprom_map_group.items():
+            memory_idx = mapping[0] - self._dr_offset
+            flag = mapping[1]
+            b_val = None
+            if len(mapping) >= 5:
+                b_val = mapping[4]
+            var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag, base_val=b_val)
+        var_data['CS'] = raw_data[43 - self._dr_offset]
+        msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[(44 - self._dr_offset):(47 - self._dr_offset)]])
+        var_data['VALIDATION'] = msg
+        return var_data
+
+    def encode_parameter_items(self, raw_data, var_data):
+        raw_data_cpy = raw_data.copy()
+        items_chk_result = []
+        for key, mapping in self._eeprom_map_group.items():
+            memory_idx = mapping[0] - self._dr_offset
+            flag = mapping[1]
+            memory_len = self._cvt_flag[flag][0]
+            tar_val = var_data[key]
+            set_val = mapping[2](tar_val)
+
+            items_chk_result.append(mapping[3](tar_val))
+            b_val = None
+            if len(mapping) >= 5:
+                b_val = mapping[4]
+            # encode the tar_val
+            raw_data_cpy[memory_idx: (memory_idx + memory_len)] = self.cvt_to_hex(set_val, flag, base_val=b_val)
+
+        raw_data_cpy[(43 - self._dr_offset):(44 - self._dr_offset)] = self.uchar_checksum(raw_data_cpy[0:(43 - self._dr_offset)])
+        validate_field_result = 0
+        for ind, val in enumerate(items_chk_result):
+            validate_field_result |= 0 if val else (0x01 << (23 - ind))
+        raw_data_cpy[(44 - self._dr_offset):(47 - self._dr_offset)] = [f'0x{c:02X}' for c in
+                      validate_field_result.to_bytes(3, byteorder='big', signed=False)]
+        return raw_data_cpy
 
 
 class seacliffmotStation(test_station.TestStation):
@@ -148,7 +352,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.2.1'
+        self._sw_version = '1.2.2'
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -157,6 +361,7 @@ class seacliffmotStation(test_station.TestStation):
         self._is_alignment_success = False
         self._module_left_or_right = None
         self._probe_con_status = False
+        self._eepStationAssistant = EEPStationAssistant()
 
     def initialize(self):
         try:
@@ -197,9 +402,17 @@ class seacliffmotStation(test_station.TestStation):
             pass
 
     def get_test_item_pattern(self, name):
+        pattern_info = None
         for c in self._station_config.TEST_ITEM_PATTERNS:
             if c.get('name') and c['name'] == name:
-                return c
+                pattern_info = c
+        if not self._station_config.DUT_SIM and name in self._station_config.TEST_ITEM_PATTERNS_VERIFIED.keys():
+            if len(self._eep_data) <= 0:
+                pattern_info = None
+            else:
+                pattern_info['pattern'] = tuple([int(self._eep_data[c])
+                                                 for c in self._station_config.TEST_ITEM_PATTERNS_VERIFIED[name]])
+        return pattern_info
 
     @staticmethod
     def get_filenames_in_folder(parent_dir, pattern):
@@ -244,6 +457,7 @@ class seacliffmotStation(test_station.TestStation):
         self._exported_parametric = {}
         self._gl_W255 = {}
         self._temperature_dic = {}
+        self._eep_data = {}
         try:
             self._operator_interface.print_to_console(f"Initialize Test condition.={cpu_count_used}/{cpu_count}.. \n")
             self._operator_interface.print_to_console(
@@ -277,6 +491,28 @@ class seacliffmotStation(test_station.TestStation):
                 raise seacliffmotStationError('fail to power screen on normally.')
             if not self._is_alignment_success:
                 raise seacliffmotStationError('Fail to alignment.\n')
+
+            if len(self._station_config.TEST_ITEM_PATTERNS_VERIFIED) > 0:
+                self._operator_interface.print_to_console(f'Try to read data from MODULE.\n')
+                self._the_unit.nvm_speed_mode(mode='low')
+                eep_success = False
+                try:
+                    raw_data = self._the_unit.nvm_read_data()[2:]
+                    if self._eepStationAssistant.uchar_checksum_chk(raw_data):
+                        self._eep_data = self._eepStationAssistant.decode_raw_data(raw_data=raw_data)
+                        for k, v in self._station_config.TEST_ITEM_PATTERNS_VERIFIED.items():
+                            verified_tuple = [(c, int(self._eep_data[c])) for c in v]
+                            [test_log.set_measured_value_by_name_ex(f'UUT_{k}_{c}', v) for c, v in verified_tuple]
+                        eep_success = True
+                except Exception as e:
+                    self._operator_interface.print_to_console(f'Fail to read initialized data, exp: {str(e)}')
+                self._the_unit.nvm_speed_mode(mode='normal')
+                self._the_unit.screen_off()
+                self._the_unit.screen_on()
+
+                test_log.set_measured_value_by_name_ex('UUT_READ_EEP_DATA', eep_success)
+                self._operator_interface.print_to_console(f'set module to normal mode.\n')
+
             equip_version = self._equipment.version()
             if isinstance(equip_version, dict):
                 test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version.get('Lib_Version'))
@@ -316,6 +552,7 @@ class seacliffmotStation(test_station.TestStation):
                 item_condition_a_patterns = pos_item.get('condition_A_patterns')
                 if item_patterns is None and item_condition_a_patterns is None:
                     continue
+
                 if current_test_position != pos_name:
                     self._operator_interface.print_to_console('mov dut to pos = {0}\n'.format(pos_name))
                     self._fixture.mov_abs_xy_wrt_alignment(pos_val[0], pos_val[1])
@@ -359,16 +596,8 @@ class seacliffmotStation(test_station.TestStation):
                     # current_obj = self._station_config.copy()
                     self.do_pattern_parametric_export(pos_name, pattern_name, capture_path, test_log)
 
-                self._operator_interface.print_to_console('Wait init pattern to complete.\n')
-                self._operator_interface.print_to_console('Please wait...')
-                while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
-                    self._operator_interface.wait(1, '.')
-                self._operator_interface.wait(0, '\n')
-                ref_patterns = ['W255', 'R255', 'G255', 'B255']
-                exp_data = tuple([self._exported_parametric[f'{pos_name}_{c}'] for c in ref_patterns])
-
                 patterns_in_testing = []
-                for pattern_name, n_dots, pattern_group in item_condition_a_patterns:
+                for pattern_name, pre_condition, pattern_group in item_condition_a_patterns:
                     dut_temp = self._temperature_dic.get(f'{pos_name}_{pattern_name}')
                     if dut_temp is None:
                         dut_temp = 30
@@ -377,20 +606,33 @@ class seacliffmotStation(test_station.TestStation):
                         dut_temp = self._fixture.query_temp(test_fixture_seacliff_mot.QueryTempParts.UUTNearBy)
                     self._temperature_dic[f'{pos_name}_{pattern_name}'] = dut_temp
                     test_log.set_measured_value_by_name_ex(f'UUT_TEMPERATURE_{pos_name}_{pattern_name}', dut_temp)
-                    ref_pattern_name = self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX[pattern_name]
-                    self._gl_W255[f'{pos_name}_{pattern_name}'] = \
-                        test_equipment_seacliff_mot.MotAlgorithmHelper.calc_gl_for_brightdot(*exp_data,
-                             module_temp=self._temperature_dic[f'{pos_name}_{pattern_name}'])
-                    self._operator_interface.print_to_console(
-                        f"\ncalc gray level from W/R/G/B --> {self._gl_W255[f'{pos_name}_{pattern_name}']['GL']}\n")
+                    if pre_condition:
+                        self._operator_interface.print_to_console(f'Wait condition: [{pre_condition}] to complete.\n')
+                        self._operator_interface.print_to_console('Please wait...')
+                        pre_condition_pool_keys = [f'{pos_name}_{c}' for c in pos_item.get(pre_condition)]
+                        while len([pn for pn, pv in self._pool_alg_dic.items()
+                                   if (pn in pre_condition_pool_keys) and not pv]) > 0:
+                            self._operator_interface.wait(1, '.')
+                        self._operator_interface.wait(0, '\n')
+                        self._operator_interface.print_to_console(f'pattern group [{pre_condition}] finished.\n')
 
-                    rel_pattern_name = None
-                    if self._gl_W255[f'{pos_name}_{pattern_name}']['GL'][2] == 255:
-                        rel_pattern_name = pattern_group[0]
-                    elif self._gl_W255[f'{pos_name}_{pattern_name}']['GL'][1] == 255:
-                        rel_pattern_name = pattern_group[1]
-                    elif self._gl_W255[f'{pos_name}_{pattern_name}']['GL'][0] == 255:
-                        rel_pattern_name = pattern_group[2]
+                    rel_pattern_name = pattern_name
+                    if pattern_name in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX.keys():
+                        ref_patterns = ['W255', 'R255', 'G255', 'B255']
+                        exp_data = tuple([self._exported_parametric[f'{pos_name}_{c}'] for c in ref_patterns])
+                        self._gl_W255[f'{pos_name}_{pattern_name}'] = \
+                            test_equipment_seacliff_mot.MotAlgorithmHelper.calc_gl_for_brightdot(*exp_data,
+                                 module_temp=self._temperature_dic[f'{pos_name}_{pattern_name}'])
+                        self._operator_interface.print_to_console(
+                            f"\ncalc gray level from W/R/G/B --> {self._gl_W255[f'{pos_name}_{pattern_name}']['GL']}\n")
+
+                        rel_pattern_name = None
+                        if self._gl_W255[f'{pos_name}_{pattern_name}']['GL'][2] == 255:
+                            rel_pattern_name = pattern_group[0]
+                        elif self._gl_W255[f'{pos_name}_{pattern_name}']['GL'][1] == 255:
+                            rel_pattern_name = pattern_group[1]
+                        elif self._gl_W255[f'{pos_name}_{pattern_name}']['GL'][0] == 255:
+                            rel_pattern_name = pattern_group[2]
 
                     pattern_info = self.get_test_item_pattern(rel_pattern_name)
                     if not pattern_info:
@@ -548,6 +790,7 @@ class seacliffmotStation(test_station.TestStation):
             self._fixture.power_on_button_status(True)
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._the_unit.initialize()
+            self._the_unit.nvm_speed_mode(mode='normal')
             self._operator_interface.print_to_console("Initialize DUT... \n")
             while timeout_for_dual > 0:
                 if ready or self._is_cancel_test_by_op:
@@ -859,7 +1102,6 @@ class seacliffmotStation(test_station.TestStation):
         white_dot_exports = None
         XYZ_W = []
         try:
-            n_dots = opt['nDots']
             fil = opt['filename']
             fil_ref = opt['refname']
             save_plots = opt['save_plots']
@@ -883,7 +1125,7 @@ class seacliffmotStation(test_station.TestStation):
             if (ana_pos_item != pos_name) or (item_patterns is None):
                 continue
 
-            for pattern_name, n_dots, __ in item_patterns:
+            for pattern_name, __, __ in item_patterns:
                 if pattern_name not in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX\
                         or pattern_name != ana_pattern:
                     continue
@@ -908,7 +1150,6 @@ class seacliffmotStation(test_station.TestStation):
                             self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
                         opt = {'ModuleTemp': self._temperature_dic[f'{pos_name}_{pattern_name}'],
-                               'nDots': n_dots,
                                'filename': file_x[0],
                                'refname': file_ref[0],
                                'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG,
@@ -957,3 +1198,5 @@ class seacliffmotStation(test_station.TestStation):
         file_z = seacliffmotStation.get_filenames_in_folder(capture_path,
                                                             r'{0}_.*_Z_float\.bin'.format(pre_file_name))
         return file_x, file_y, file_z
+
+

@@ -1,6 +1,13 @@
 """
 Release Note:
 ========================================================
+Version 1.2.2
+2021-9-18 elton<elton.tian@myzygroup>
+-1. add support for READ EEP DATA @GTK.
+-2. algorithm V3.3 for MOT.
+-3. optimize speed for MOT.
+
+========================================================
 Version 1.2.1
 2021-8-16 elton<elton.tian@myzygroup>
 -1. algorithm V3.2 for MOT.
@@ -66,7 +73,7 @@ Version 1.1.0
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 SEQUENCE_RELATIVEPATH = r'C:\oculus\run\seacliff_mot_run\test_station\test_equipment\algorithm'
-CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment_eldim'
+CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment_57'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_mot_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
@@ -87,7 +94,7 @@ FIXTURE_PARTICLE_COMPORT = "COM1" #
 FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = "COM1" #
 DUT_ETH_PROXY = True
-DUT_ETH_PROXY_ADDR = ('192.168.1.10', 6000)
+DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
 
 AUTO_CFG_COMPORTS = False
 FIXTURE_PARTICLE_COMPORT_FILTER = 'VID:PID=0403:6001'
@@ -111,6 +118,13 @@ COMMAND_DISP_2832WRITE = "t.2832_MIPI_WRITE"
 COMMAND_DISP_VSYNC = "REFRESHRATE"
 COMMAND_DISP_GET_COLOR = "GetColor"
 COMMAND_MEASURE_BLU = "Measure,BLU"
+
+COMMAND_NVM_WRITE_CNT = 'NVMWCNT'
+COMMAND_NVM_READ = 'NVMRead'
+COMMAND_NVM_WRITE = 'NVMWrite'
+COMMAND_SPEED_MODE = 'SET.B7MODE'
+COMMAND_GETB5ECC = 'Get.B5ECC'
+COMMAND_GET_MODULE_INPLACE = 'GET.MODULE.INPLACE'
 
 COMMAND_DISP_POWERON_DLY = 0.5
 COMMAND_DISP_RESET_DLY = 1
@@ -214,6 +228,7 @@ SAVE_IMAGES = [False, False, False, False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True, True, True]
 COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
 DUT_DISPLAYSLEEPTIME = 0
+DUT_NVRAM_WRITE_TIMEOUT = 10
 
 VERSION_REVISION_EQUIPMENT = 57
 FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
@@ -284,8 +299,9 @@ ANALYSIS_GRP_NORMAL_PATTERN = {'W255': 'w',
     'G255': 'g', 
     'B255': 'b', 
     'RGBBoresight': 'br',
+    'PW255': 'w',
     }
-ANALYSIS_GRP_COLOR_PATTERN_EX = {'WhiteDot': 'W255', 'WhiteDotV2': 'W255'}
+ANALYSIS_GRP_COLOR_PATTERN_EX = {'WhiteDot': 'W255'}
 
 # ANALYSIS_GRP_DISTORTION_PRIMARY = ['X', 'Y', 'Z']
 ANALYSIS_GRP_DISTORTION_PRIMARY = ['Y']
@@ -299,6 +315,7 @@ ANALYSIS_GRP_DISTORTION_PRIMARY = ['Y']
 #                                   pattern named with right, should be render to left-module.
 # Sunny
 TEST_ITEM_PATTERNS = [
+    {'name': 'PW255', 'pattern': 22, 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
     {'name': 'W255', 'pattern': 22, 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
     {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'W000', 'pattern': 23, 'setup': (7, 0, 3), 'exposure': '5000'},
@@ -319,7 +336,8 @@ TEST_ITEM_PATTERNS = [
     {'name': 'RGBBoresight', 'pattern': (20, 21), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
 ]
 # Genius
-TEST_ITEM_PATTERNS = [
+TEST_ITEM_PATTERNS1 = [
+    {'name': 'PW255', 'pattern': 22, 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
     {'name': 'W255', 'pattern': 22, 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
     {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'W000', 'pattern': 23, 'setup': (7, 0, 3), 'exposure': '5000'},
@@ -330,7 +348,7 @@ TEST_ITEM_PATTERNS = [
     {'name': 'GreenContrast', 'pattern': (2, 1), 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'WhiteContrast', 'pattern': (4, 3), 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'GreenSharpness', 'pattern': 5, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'GreenDistortion', 'pattern': (7, 6), 'setup': (7, 0, 3), 'exposure': (378967, 980852, 434700, 222917, 980852)},  #, 'oi_mode': 2},
+    {'name': 'GreenDistortion', 'pattern': (7, 6), 'setup': (7, 0, 3), 'exposure': (378967, 980852, 434700, 222917, 980852), 'oi_mode': 2},
     {'name': 'WhiteDot7', 'pattern': (8, 9), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
     {'name': 'WhiteDot8', 'pattern': (10, 11), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
     {'name': 'WhiteDot9', 'pattern': (12, 13), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
@@ -340,11 +358,15 @@ TEST_ITEM_PATTERNS = [
     {'name': 'RGBBoresight', 'pattern': (20, 21), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
 ]
 
+TEST_ITEM_PATTERNS_VERIFIED = {'PW255': ('WhitePointGLR', 'WhitePointGLG', 'WhitePointGLB')}
+
 TEST_ITEM_POS = [
     {'name': 'normal', 'pos': (0, 0, 15000),
-     'pattern': ['W255', 'R255', 'G255', 'B255', 'RGBBoresight'],
-     'condition_A_patterns':[
-                             ('WhiteDot', 21, ['WhiteDot10', 'WhiteDot11', 'WhiteDot12'])]
+     'pattern': ['W255', 'R255', 'G255', 'B255'],
+     'condition_A_patterns':[('RGBBoresight', None, []),
+                             ('WhiteDot', 'pattern', ['WhiteDot10', 'WhiteDot11', 'WhiteDot12']),
+                             ('PW255', None, []),
+                             ]
      },
     # {'name': 'normal', 'pos': (0, 0, 15000),
     #  'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
@@ -379,7 +401,8 @@ DATA_STATUS_DEGS = [10, 20, 30]
 # sunny
 # COLORMATRIX_COEFF = [[0.9941, -0.0076, -0.0066], [0.0009, 0.9614, -0.0025], [-0.0021, 0.0020, 0.9723]]
 # genius
-COLORMATRIX_COEFF = [[0.9459, 0.0134, 0.0081], [-0.0205, 0.9731, 0.0031], [-0.0001, 0.0007, 1.0062]]
+# COLORMATRIX_COEFF = [[0.9459, 0.0134, 0.0081], [-0.0205, 0.9731, 0.0031], [-0.0001, 0.0007, 1.0062]]
+COLORMATRIX_COEFF = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
 ##################################
 # IT and work order
