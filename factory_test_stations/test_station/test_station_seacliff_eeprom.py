@@ -218,6 +218,7 @@ class seacliffeepromStation(test_station.TestStation):
         self._overall_errorcode = ''
         self._first_failed_test_result = None
         self._sw_version = '1.2.0'
+        self._ddic_version = '0x11'
         self._cvt_flag = {
             'S7.8': (2, True, 7, 8),
             'S1.6': (1, True, 1, 6),
@@ -226,7 +227,7 @@ class seacliffeepromStation(test_station.TestStation):
             'U8.8': (2, False, 8, 8),
             'S4.3': (1, True, 4, 3),
         }
-        self._nvm_data_len = 45
+        self._nvm_data_len = 70
         self._max_retries = 5
         self._eeprom_map_group = collections.OrderedDict({
             'display_boresight_x': (6, 'S7.8',
@@ -523,7 +524,7 @@ class seacliffeepromStation(test_station.TestStation):
                 raw_data = ['0x00'] * self._nvm_data_len
                 if not self._station_config.DUT_SIM:
                     try:
-                        raw_data = the_unit.nvm_read_data()[2:]
+                        raw_data = the_unit.nvm_read_data(data_len=self._nvm_data_len)[2:]
                     except Exception as e:
                         self._operator_interface.print_to_console(f'Fail to read initialized data, exp: {str(e)}')
                         raw_data = ['0x00'] * self._nvm_data_len
@@ -535,9 +536,10 @@ class seacliffeepromStation(test_station.TestStation):
                             b_val = mapping[4]
                         var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag, base_val=b_val)
 
-                    var_data['CS'] = raw_data[(43-6)]
-                    msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[(44-6):(47-6)]])
+                    var_data['CS'] = raw_data[43-6]
+                    msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[44-6:47-6]])
                     var_data['VALIDATION'] = msg
+                    var_data['DDIC_VERSION'] = raw_data[75-6]
                 self._operator_interface.print_to_console('RD_DATA:\n')
                 self._operator_interface.print_to_console(f"<-- {','.join(raw_data)}\n")
 
@@ -565,6 +567,7 @@ class seacliffeepromStation(test_station.TestStation):
                     validate_field_result |= 0 if val else (0x01 << (23-ind))
                 raw_data_cpy[38:41] = [f'0x{c:02X}' for c in
                                        validate_field_result.to_bytes(3, byteorder='big', signed=False)]
+                raw_data_cpy[75-6] = self._ddic_version
 
                 # TODO: config all the data to array.
                 print('Write configuration...........\n')
@@ -676,7 +679,7 @@ class seacliffeepromStation(test_station.TestStation):
                 while read_tries <= self._max_retries and not post_data_check:
                     if not self._station_config.DUT_SIM:
                         try:
-                            data_from_nvram = the_unit.nvm_read_data()[2:]
+                            data_from_nvram = the_unit.nvm_read_data(data_len=self._nvm_data_len)[2:]
                             data_from_nvram_cap = [c.upper() for c in data_from_nvram]
                             if data_from_nvram_cap == raw_data_cpy_cap:
                                 post_data_check = True

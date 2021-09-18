@@ -322,7 +322,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
             raise DUTError('Fail to nvm write data = {0}'.format(recv_obj))
         return recv_obj
 
-    def nvm_read_data(self, data_len=45):
+    def nvm_read_data(self, data_len=70):
         """
 
         @type data_len: int
