@@ -217,7 +217,7 @@ class seacliffeepromStation(test_station.TestStation):
         self._equip = test_equipment_seacliff_eeprom.seacliffeepromEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.2.0'
+        self._sw_version = '1.2.1'
         self._ddic_version = '0x11'
         self._cvt_flag = {
             'S7.8': (2, True, 7, 8),

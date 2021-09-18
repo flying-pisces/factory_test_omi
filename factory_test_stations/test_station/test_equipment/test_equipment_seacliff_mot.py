@@ -1440,8 +1440,8 @@ class MotAlgorithmHelper(object):
         dColor_x_B = -0.000012
         dColor_y_B = -0.00016
 
-        x_w = 0.3127 + (TargetTemp - ModuleTemp) * dColor_x_W
-        y_w = 0.329 + (TargetTemp - ModuleTemp) * dColor_y_W
+        x_w = 0.3127 - (TargetTemp - ModuleTemp) * dColor_x_W
+        y_w = 0.329 - (TargetTemp - ModuleTemp) * dColor_y_W
         Temp_W = W255_stats_summary["Module Temperature"]
         Temp_R = R255_stats_summary["Module Temperature"]
         Temp_G = G255_stats_summary["Module Temperature"]
@@ -1535,23 +1535,27 @@ class MotAlgorithmHelper(object):
         del XYZ_1D, XYZ_1D_ColorCorrected, image_in
         return XYZ
 
-    def white_dot_pattern_parametric_export(self, XYZ_W, GL, x_w, y_w,
+    def white_dot_pattern_parametric_export(self, XYZ_W, GL, x_w, y_w, temp_w,
                                             module_temp=30, xfilename=r'WhiteDot_X_float.bin'):
         ModuleTemp = module_temp
+        Temp_W = temp_w
         cam_fov = 60
         mask_fov = 30
         row = 6001
         col = 6001
         pixel_spacing = 0.02  # Degrees per pixel
-        kernel_width = 20  # Width of square smoothing kernel in pixels.
+        kernel_width = 14 # Width of square smoothing kernel in pixels.
         kernel_shape = 'square'  # Use 'circle' or 'square' to change the smoothing kernel shape
         # x_w = 0.3127  # color x for D65  version_1.0
         # y_w = 0.3290  # color y for D65
         n_dots = 21
         # XYZ_W = np.ones((3, 3, 3))
-        Lum_W = XYZ_W[:, :, 1]
-        Color_x_W = XYZ_W[:, :, 0] / (XYZ_W[:, :, 0] + XYZ_W[:, :, 1] + XYZ_W[:, :, 2])
-        Color_y_W = XYZ_W[:, :, 1] / (XYZ_W[:, :, 0] + XYZ_W[:, :, 1] + XYZ_W[:, :, 2])
+        dLum_W = -0.0155
+        dColor_x_W = -0.001094
+        dColor_y_W = -0.001043
+        Lum_W = XYZ_W[:, :, 1] * (1 + (ModuleTemp - Temp_W)*dLum_W)
+        Color_x_W = XYZ_W[:, :, 0] / (XYZ_W[:, :, 0] + XYZ_W[:, :, 1] + XYZ_W[:, :, 2]) + (ModuleTemp-Temp_W)*dColor_x_W
+        Color_y_W = XYZ_W[:, :, 1] / (XYZ_W[:, :, 0] + XYZ_W[:, :, 1] + XYZ_W[:, :, 2]) + (ModuleTemp-Temp_W)*dColor_y_W
         # LumRatio_W = Lum_W(3001,3001)./Lum_W
         # dColor_x_W = Color_x_W-Color_x_W(3001,3001)
         # dColor_y_W = Color_y_W-Color_y_W(3001,3001)
@@ -1753,6 +1757,10 @@ class MotAlgorithmHelper(object):
             Lum_255 = Lum2Dq_corrected[40, 40]
             Color_x_255 = Color_x_2Dq_corrected[40, 40]
             Color_y_255 = Color_y_2Dq_corrected[40, 40]
+
+            Lum2Dq_corrected = Lum2Dq_corrected*Lum_W[3000, 3000]/Lum_255
+            Color_x_2Dq_corrected = Color_x_2Dq_corrected+Color_x_W[3000, 3000]-Color_x_255
+            Color_y_2Dq_corrected = Color_y_2Dq_corrected+Color_y_W[3000, 3000]-Color_y_255
 
             dx = Color_x_2Dq - x_w
             dy = Color_y_2Dq - y_w
@@ -2403,32 +2411,23 @@ if __name__ == "__main__":
     r_bin_re = '*_R255_*_X_float.bin'
     g_bin_re = '*_G255_*_X_float.bin'
     b_bin_re = '*_B255_*_X_float.bin'
-    gd_bin_re = '*_GreenDistortion_*_Y_float.bin'
     br_bin_re = '*_RGBBoresight_*_X_float.bin'
     wd_bin_re = '*_WhiteDot_*_X_float.bin'
     COLORMATRIX_COEFF = [[0.9941, -0.0076, -0.0066], [0.0009, 0.9614, -0.0025], [-0.0021, 0.0020, 0.9723]]
-    aa = MotAlgorithmHelper(COLORMATRIX_COEFF, is_verbose=False, save_plots=False)
+    aa = MotAlgorithmHelper(COLORMATRIX_COEFF, is_verbose=False, save_plots=True)
     raw_data_dir = r"c:\ShareData\Oculus_RawData\003_seacliff_mot-06_20210811-093524"
     bins = tuple([glob.glob(os.path.join(raw_data_dir, c))
-                  for c in [w_bin_re, r_bin_re, g_bin_re, b_bin_re, gd_bin_re, br_bin_re, wd_bin_re]])
+                  for c in [w_bin_re, r_bin_re, g_bin_re, b_bin_re, br_bin_re, wd_bin_re]])
 
-    w_bin, r_bin, g_bin, b_bin, gd_bin, br_bin, wd_bin = tuple([c[0] if len(c) > 0 else None for c in bins])
-    m_temp = {
-        'W255':  30.9,
-        'R255': 31.3,
-        'G255': 31.9,
-        'B255': 32.4,
-        'RGBBoresight': 32.7,
-        'WhiteDot': 33.2,
-    }
+    w_bin, r_bin, g_bin, b_bin, br_bin, wd_bin = tuple([c[0] if len(c) > 0 else None for c in bins])
 
     m_temp = {
-        'W255': 30,
-        'R255': 30,
-        'G255': 30,
-        'B255': 30,
-        'RGBBoresight': 30,
-        'WhiteDot': 30,
+        'W255': 28.9,
+        'R255': 29.2,
+        'G255': 29.4,
+        'B255': 29.8,
+        'RGBBoresight': 29.9,
+        'WhiteDot': 30.3,
     }
     start_time = time.time()
     end_time = []
@@ -2448,6 +2447,9 @@ if __name__ == "__main__":
         xfilename=os.path.join(raw_data_dir, br_bin))
     end_time.append(time.time())
 
+    # np.save('data.npy', [w255_result, r255_result, g255_result, b255_result, boresight_result])
+    # w255_result, r255_result, g255_result, b255_result, boresight_result = np.load('data.npy', allow_pickle=True)
+
     # distortion_result = aa.distortion_centroid_parametric_export(
     #     filename=os.path.join(raw_data_dir, gd_bin), module_temp=m_temp['GreenDistortion'])
 
@@ -2455,8 +2457,9 @@ if __name__ == "__main__":
     end_time.append(time.time())
     gl_whitedot = aa.calc_gl_for_brightdot(w255_result, r255_result, g255_result, b255_result, module_temp=m_temp['WhiteDot'])
     whitedot_result = aa.white_dot_pattern_parametric_export(XYZ_W,
-                        gl_whitedot['GL'], gl_whitedot['x_w'], gl_whitedot['y_w'],
-                        xfilename=os.path.join(raw_data_dir, wd_bin), module_temp=m_temp['WhiteDot'])
+                        gl_whitedot['GL'], gl_whitedot['x_w'], gl_whitedot['y_w'], temp_w=m_temp['W255'],
+                        module_temp=m_temp['WhiteDot'],
+                        xfilename=os.path.join(raw_data_dir, wd_bin))
     end_time.append(time.time())
     raw_data = [w255_result, r255_result, g255_result, b255_result, boresight_result, whitedot_result]
     if not os.path.exists(os.path.join(raw_data_dir, 'exp')):

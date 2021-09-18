@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.2.1
+2021-9-18 elton<elton.tian@mygyroup.com>
+-1. update test items based MOT V1.2.2 + DICC VERSION
+
+========================================================
 Version 1.2.0
 2021-8-18 elton<elton.tian@mygyroup.com>
 -1. update test items based MOT V1.2.x
@@ -86,7 +91,7 @@ COMMAND_DISP_SHOWIMG_DLY = 0.01
 COMMAND_DISP_POWEROFF_DLY = 0
 
 DUT_DISPLAYSLEEPTIME = 0
-DUT_NVRAM_WRITE_TIMEOUT = 10
+DUT_NVRAM_WRITE_TIMEOUT = 30
 NVM_WRITE_PROTECT = True
 NVM_EEC_READ = True
 NVM_WRITE_SLOW_MOD = True

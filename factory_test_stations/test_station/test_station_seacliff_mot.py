@@ -44,7 +44,7 @@ class EEPStationAssistant(object):
             'U8.8': (2, False, 8, 8),
             'S4.3': (1, True, 4, 3),
         }
-        self._nvm_data_len = 45
+        self._nvm_data_len = 70
         self._dr_offset = 6
         self._eeprom_map_group = collections.OrderedDict({
             'display_boresight_x': (6, 'S7.8',
@@ -619,6 +619,7 @@ class seacliffmotStation(test_station.TestStation):
                     rel_pattern_name = pattern_name
                     if pattern_name in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX.keys():
                         ref_patterns = ['W255', 'R255', 'G255', 'B255']
+                        ref_pattern = self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX[pattern_name]
                         exp_data = tuple([self._exported_parametric[f'{pos_name}_{c}'] for c in ref_patterns])
                         self._gl_W255[f'{pos_name}_{pattern_name}'] = \
                             test_equipment_seacliff_mot.MotAlgorithmHelper.calc_gl_for_brightdot(*exp_data,
@@ -1106,11 +1107,12 @@ class seacliffmotStation(test_station.TestStation):
             fil_ref = opt['refname']
             save_plots = opt['save_plots']
             coeff = opt['coeff']
+
             mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(coeff, save_plots=save_plots)
             XYZ_W = mot_alg.white_dot_pattern_w255_read(fil_ref, multi_process=False)
             white_dot_exports = mot_alg.white_dot_pattern_parametric_export(XYZ_W,
-                        opt['GL'], opt['x_w'], opt['y_w'],
-                        opt['ModuleTemp'], fil)
+                        opt['GL'], opt['x_w'], opt['y_w'], temp_w=opt['Temp_W'],
+                        module_temp=opt['ModuleTemp'], xfilename=fil)
         except Exception as e:
             pass
         finally:
@@ -1150,6 +1152,7 @@ class seacliffmotStation(test_station.TestStation):
                             self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
                         opt = {'ModuleTemp': self._temperature_dic[f'{pos_name}_{pattern_name}'],
+                               'Temp_W': self._temperature_dic[f'{pos_name}_{ref_pattern}'],
                                'filename': file_x[0],
                                'refname': file_ref[0],
                                'save_plots': self._station_config.AUTO_SAVE_PROCESSED_PNG,

@@ -235,7 +235,7 @@ FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 
 # set sensor_temperature
 TEST_SENSOR_TEMPERATURE = 25.0
-TEST_CPU_COUNT = 3
+TEST_CPU_COUNT = 5
 
 # config
 CAM_INIT_CONFIG = {
@@ -255,6 +255,7 @@ CAM_INIT_CONFIG = {
     "RoiXRight": 6001,
     "RoiYTop": 0,
     "RoiYBottom": 6001,
+    'cxpLinkConfig': 0,
 }
 
 SEQ_CAP_INIT_CONFIG = {
