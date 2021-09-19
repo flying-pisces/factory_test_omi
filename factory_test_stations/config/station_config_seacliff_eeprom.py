@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.2.2
+2021-9-21 elton<elton.tian@mygyroup.com>
+-1. add prompt information when detecting the wrong config.
+
+========================================================
 Version 1.2.1
 2021-9-18 elton<elton.tian@mygyroup.com>
 -1. update test items based MOT V1.2.2 + DICC VERSION
@@ -51,12 +56,12 @@ Version 1.1.0
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_eeprom_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
-CALIB_REQ_DATA_FILENAME = r'c:\oculus\run\seacliff_eeprom\session_data'
+CALIB_REQ_DATA_FILENAME = r'C:\oculus\run\seacliff_eeprom\session_data'
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = '\dPR0[\w]{10}'  # Peak panel SN
+SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
+SERIAL_NUMBER_MODEL_NUMBER = '^[\w]{13,14}$'
 
 ##################################
 # Fixture parameters
@@ -92,7 +97,7 @@ COMMAND_DISP_POWEROFF_DLY = 0
 
 DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 30
-NVM_WRITE_PROTECT = True
+NVM_WRITE_PROTECT = False
 NVM_EEC_READ = True
 NVM_WRITE_SLOW_MOD = True
 DUT_CHK_MODULE_INPLACE = False
@@ -100,7 +105,7 @@ DUT_CHK_MODULE_INPLACE = False
 MIN_SPACE_REQUIRED = [('C:', 500)]
 
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\config\MER-132-43U3C(FQ0200080140).txt'
-CAMERA_VERIFY_ENABLE = False
+CAMERA_VERIFY_ENABLE = True
 CAMERA_EXPOSURE = 400000
 CAMERA_GAIN = 1.0
 
@@ -139,8 +144,8 @@ DISP_CHECKER_LOCATION = (25, 5)
 DISP_CHECKER_COUNT = 2
 
 NVM_WRITE_COUNT_MAX = 6
-# calibration required data.
-USER_INPUT_CALIB_DATA = True
+# calibration required data. 1:  User input values, 2: Get data from json-file.
+USER_INPUT_CALIB_DATA = 2
 
 CALIB_REQ_DATA = {
     'display_boresight_x': 0.3180896059721896,
@@ -188,8 +193,8 @@ USE_WORKORDER_ENTRY = True
 # visa instruments.  Hint: use Agilent VISA tools to make aliases!
 # (e.g. "DMM" vs "USB0::2391::1543::MY47007422::0::INSTR")
 ######## To be config per station type 
-IS_VERBOSE = False
-IS_PRINT_TO_LOG = False
+IS_VERBOSE = True
+IS_PRINT_TO_LOG = True
 
 # UI_MODE
 OPTIMIZE_UI_MODE = True

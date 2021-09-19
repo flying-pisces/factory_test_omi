@@ -217,7 +217,7 @@ class seacliffeepromStation(test_station.TestStation):
         self._equip = test_equipment_seacliff_eeprom.seacliffeepromEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.2.1'
+        self._sw_version = '1.2.2'
         self._ddic_version = '0x11'
         self._cvt_flag = {
             'S7.8': (2, True, 7, 8),
@@ -317,9 +317,18 @@ class seacliffeepromStation(test_station.TestStation):
             msg = "find ports DUT = {0}. \n" \
                 .format(self._station_config.DUT_COMPORT)
             self._operator_interface.print_to_console(msg)
-
+            if (not self._station_config.DUT_SIM
+                    and not self._station_config.EQUIPMENT_SIM
+                    and not self._station_config.FIXTURE_SIM):
+                if (self._station_config.NVM_WRITE_PROTECT
+                        or self._station_config.CALIB_REQ_DATA not in [0x01, 0x02]
+                        or not self._station_config.CAMERA_VERIFY_ENABLE):
+                    self._operator_interface.operator_input('warn', 'Parameters should be configured correctly', 'warning')
             self._fixture.initialize()
             self._equip.initialize()
+
+            if os.path.exists(self._station_config.CALIB_REQ_DATA_FILENAME):
+                shutil.rmtree(self._station_config.CALIB_REQ_DATA_FILENAME)
         except:
             self._operator_interface.operator_input(None, 'Fail to initialize test_station. ', 'error')
             raise
@@ -409,9 +418,9 @@ class seacliffeepromStation(test_station.TestStation):
         write_in_slow_mod = False
         if hasattr(self._station_config, 'NVM_WRITE_SLOW_MOD') and self._station_config.NVM_WRITE_SLOW_MOD:
             write_in_slow_mod = True
-        calib_data = self._station_config.CALIB_REQ_DATA
+        calib_data = None  # self._station_config.CALIB_REQ_DATA
         try:
-            if self._station_config.USER_INPUT_CALIB_DATA in [0x01, True]:
+            if self._station_config.USER_INPUT_CALIB_DATA == 0x01:
                 dlg = EEPROMUserInputDialog(self._station_config, self._operator_interface,
                                             'EEPROM Parameter for SN:{0}'.format(serial_number))
                 while dlg.is_looping:
@@ -716,7 +725,5 @@ class seacliffeepromStation(test_station.TestStation):
         return self._overall_result, self._first_failed_test_result
 
     def is_ready(self):
-        if os.path.exists(self._station_config.CALIB_REQ_DATA_FILENAME):
-            shutil.rmtree(self._station_config.CALIB_REQ_DATA_FILENAME)
         self._fixture.is_ready()
 
