@@ -497,6 +497,8 @@ class seacliffmotStation(test_station.TestStation):
                 self._the_unit.nvm_speed_mode(mode='low')
                 eep_success = False
                 try:
+                    write_status = self._the_unit.nvm_read_statistics()
+                    self._operator_interface.print_to_console(f"Write status --- {str(write_status)}\n")
                     raw_data = self._the_unit.nvm_read_data()[2:]
                     self._operator_interface.print_to_console(f"RAW <-- {','.join(raw_data)}\n")
                     if self._eepStationAssistant.uchar_checksum_chk(raw_data):
