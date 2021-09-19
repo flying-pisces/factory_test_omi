@@ -498,6 +498,7 @@ class seacliffmotStation(test_station.TestStation):
                 eep_success = False
                 try:
                     raw_data = self._the_unit.nvm_read_data()[2:]
+                    self._operator_interface.print_to_console(f"RAW <-- {','.join(raw_data)}\n")
                     if self._eepStationAssistant.uchar_checksum_chk(raw_data):
                         self._eep_data = self._eepStationAssistant.decode_raw_data(raw_data=raw_data)
                         for k, v in self._station_config.TEST_ITEM_PATTERNS_VERIFIED.items():
