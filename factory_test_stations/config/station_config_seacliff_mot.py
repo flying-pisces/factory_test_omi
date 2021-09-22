@@ -99,6 +99,7 @@ DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
 AUTO_CFG_COMPORTS = False
 FIXTURE_PARTICLE_COMPORT_FILTER = 'VID:PID=0403:6001'
 
+SW_VERSION_SUFFIX = 'G'
 SPEC_VERSION = '0000'
 
 COMMAND_DISP_HELP = "$c.help"
@@ -219,7 +220,7 @@ DISTANCE_BETWEEN_CAMERA_AND_DATUM = 21950+18000
 SORTED_EXPORT_LOG = False
 IS_PRINT_TO_LOG = False
 IS_VERBOSE = False # some path bug, temp set False and work on True later
-CFG_PATH = r'../Cfg'
+CFG_PATH = r'..\Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]

@@ -352,7 +352,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.2.2'
+        self._sw_version = f"1.2.2{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -1027,6 +1027,7 @@ class seacliffmotStation(test_station.TestStation):
     @staticmethod
     def normal_pattern_parametric_export_ex_parallel(pos_name, pattern_name, opt):
         parametric_exports = None
+        err_msg = None
         try:
             alg_optional = opt['alg']
             fil = opt['filename']
@@ -1046,8 +1047,8 @@ class seacliffmotStation(test_station.TestStation):
             elif alg_optional in ['gd']:
                 parametric_exports = mot_alg.distortion_centroid_parametric_export(fil)
         except Exception as e:
-            pass
-        return pos_name, pattern_name, parametric_exports
+            err_msg = f'normal_pattern_parametric_export_ex_parallel E: {str(e)} Arg: {pattern_name} OPT: {opt}'
+        return pos_name, pattern_name, parametric_exports, err_msg
 
     def normal_pattern_parametric_export_ex(self, ana_pos_item, ana_pattern, capture_path, test_log):
         self._operator_interface.print_to_console(f'Try to analysis data for {ana_pos_item} --> {ana_pattern}\n')
@@ -1072,14 +1073,14 @@ class seacliffmotStation(test_station.TestStation):
                         'start to export {0}, {1}\n'.format(pos_name, ana_pattern))
 
                     def color_pattern_parametric_export_ex_parallel_callback(res):
-                        pos_name_i, pattern_name_i, color_exports = res
+                        pos_name_i, pattern_name_i, color_exports, err_msg = res
                         if color_exports is not None:
                             self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = color_exports
                             for export_key, export_value in color_exports.items():
                                 measure_item_name = '{0}_{1}_{2}'.format(
                                     pos_name_i, pattern_name_i, export_key)
                                 test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
-                        self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}')
+                        self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}, err_msg: {err_msg}')
                         self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
                     dut_temp = self._temperature_dic[f'{pos_name}_{ana_pattern}']
                     opt = {
@@ -1104,6 +1105,7 @@ class seacliffmotStation(test_station.TestStation):
     def grade_a_pattern_parametric_export_ex_parallel(pos_name, pattern_name, opt):
         # print(f'Try to do parametric_export_ex_parallel _ {pos_name}: {pattern_name}')
         white_dot_exports = None
+        err_msg = None
         XYZ_W = []
         try:
             fil = opt['filename']
@@ -1117,10 +1119,10 @@ class seacliffmotStation(test_station.TestStation):
                         opt['GL'], opt['x_w'], opt['y_w'], temp_w=opt['Temp_W'],
                         module_temp=opt['ModuleTemp'], xfilename=fil)
         except Exception as e:
-            pass
+            err_msg = f'grade_a_pattern_parametric_export_ex_parallel E: {str(e)} Arg: {pattern_name} OPT: {opt}'
         finally:
             del XYZ_W
-        return pos_name, pattern_name, white_dot_exports
+        return pos_name, pattern_name, white_dot_exports, err_msg
 
     def grade_a_patterns_parametric_export_ex(self, ana_pos_item, ana_pattern, capture_path, test_log):
         self._operator_interface.print_to_console(f'Try to analysis data for {ana_pos_item} --> {ana_pattern}\n')
@@ -1131,7 +1133,7 @@ class seacliffmotStation(test_station.TestStation):
                 continue
 
             for pattern_name, __, __ in item_patterns:
-                if pattern_name not in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX\
+                if pattern_name not in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX.keys()\
                         or pattern_name != ana_pattern:
                     continue
                 ref_pattern = self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX[pattern_name]
@@ -1145,14 +1147,14 @@ class seacliffmotStation(test_station.TestStation):
                             'start to export {0}, {1}\n'.format(pos_name, pattern_name))
 
                         def grade_a_parametric_export_ex_parallel_callback(res):
-                            pos_name_i, pattern_name_i, white_dot_exports = res
+                            pos_name_i, pattern_name_i, white_dot_exports, err_msg = res
                             if white_dot_exports is not None:
                                 self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = white_dot_exports
                                 for export_key, export_value in white_dot_exports.items():
                                     measure_item_name = '{0}_{1}_{2}'.format(
                                         pos_name_i, pattern_name_i, export_key)
                                     test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
-                            self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}')
+                            self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}, err_msg: {err_msg}')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
                         opt = {'ModuleTemp': self._temperature_dic[f'{pos_name}_{pattern_name}'],
                                'Temp_W': self._temperature_dic[f'{pos_name}_{ref_pattern}'],
