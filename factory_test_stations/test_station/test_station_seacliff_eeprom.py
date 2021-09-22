@@ -309,6 +309,14 @@ class seacliffeepromStation(test_station.TestStation):
         })
 
     def initialize(self):
+        if (self._station_config.DUT_SIM
+                or self._station_config.EQUIPMENT_SIM
+                or self._station_config.FIXTURE_SIM
+                or self._station_config.NVM_WRITE_PROTECT
+                or self._station_config.USER_INPUT_CALIB_DATA not in [0x02]
+                or not self._station_config.CAMERA_VERIFY_ENABLE):
+            self._operator_interface.operator_input('warn', 'Parameters should be configured correctly', 'warning')
+            raise
         try:
             self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
             if self._station_config.AUTO_CFG_COMPORTS:
@@ -317,13 +325,6 @@ class seacliffeepromStation(test_station.TestStation):
             msg = "find ports DUT = {0}. \n" \
                 .format(self._station_config.DUT_COMPORT)
             self._operator_interface.print_to_console(msg)
-            if (not self._station_config.DUT_SIM
-                    and not self._station_config.EQUIPMENT_SIM
-                    and not self._station_config.FIXTURE_SIM):
-                if (self._station_config.NVM_WRITE_PROTECT
-                        or self._station_config.CALIB_REQ_DATA not in [0x01, 0x02]
-                        or not self._station_config.CAMERA_VERIFY_ENABLE):
-                    self._operator_interface.operator_input('warn', 'Parameters should be configured correctly', 'warning')
             self._fixture.initialize()
             self._equip.initialize()
 

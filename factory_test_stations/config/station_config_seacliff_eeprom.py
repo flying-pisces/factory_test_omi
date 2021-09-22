@@ -105,7 +105,7 @@ DUT_CHK_MODULE_INPLACE = False
 MIN_SPACE_REQUIRED = [('C:', 500)]
 
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\config\MER-132-43U3C(FQ0200080140).txt'
-CAMERA_VERIFY_ENABLE = True
+CAMERA_VERIFY_ENABLE = False
 CAMERA_EXPOSURE = 400000
 CAMERA_GAIN = 1.0
 
@@ -145,7 +145,7 @@ DISP_CHECKER_COUNT = 2
 
 NVM_WRITE_COUNT_MAX = 6
 # calibration required data. 1:  User input values, 2: Get data from json-file.
-USER_INPUT_CALIB_DATA = 2
+USER_INPUT_CALIB_DATA = 0x02
 
 CALIB_REQ_DATA = {
     'display_boresight_x': 0.3180896059721896,
