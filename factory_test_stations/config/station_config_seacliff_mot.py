@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.2.3
+2021-9-24 elton<elton.tian@myzygroup>
+-1. add json-file reading for MOT while reading the data from DDIC.
+
+========================================================
 Version 1.2.2
 2021-9-18 elton<elton.tian@myzygroup>
 -1. add support for READ EEP DATA @GTK.

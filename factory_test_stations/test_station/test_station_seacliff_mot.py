@@ -352,7 +352,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.2.2{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.2.3{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -362,6 +362,7 @@ class seacliffmotStation(test_station.TestStation):
         self._module_left_or_right = None
         self._probe_con_status = False
         self._eepStationAssistant = EEPStationAssistant()
+        self._eep_data_from_npy = {}
 
     def initialize(self):
         try:
@@ -374,6 +375,11 @@ class seacliffmotStation(test_station.TestStation):
                 .format(self._station_config.FIXTURE_COMPORT,
                         self._station_config.DUT_COMPORT, self._station_config.FIXTURE_PARTICLE_COMPORT)
             self._operator_interface.print_to_console(msg)
+            eep_data_json_file = os.path.join(self._station_config.SEQUENCE_RELATIVEPATH, 'eep_p1_all.json')
+            if os.path.exists(eep_data_json_file):
+                with open(eep_data_json_file, 'r') as jf:
+                    yyds = np.array(json.load(jf))
+                    self._eep_data_from_npy = dict(zip(yyds[:, 0], yyds[:, 1:]))
 
             self._fixture.initialize()
             self._equipment.initialize()
@@ -500,9 +506,15 @@ class seacliffmotStation(test_station.TestStation):
                     write_status = self._the_unit.nvm_read_statistics()
                     self._operator_interface.print_to_console(f"Write status --- {str(write_status)}\n")
                     raw_data = self._the_unit.nvm_read_data()[2:]
-                    self._operator_interface.print_to_console(f"RAW <-- {','.join(raw_data)}\n")
-                    if self._eepStationAssistant.uchar_checksum_chk(raw_data):
+                    if serial_number in self._eep_data_from_npy.keys():
+                        self._operator_interface.print_to_console(f"Get EEP data for {serial_number} from npy.")
+                        self._eep_data['WhitePointGLR'] = self._eep_data_from_npy[serial_number][0]
+                        self._eep_data['WhitePointGLG'] = self._eep_data_from_npy[serial_number][1]
+                        self._eep_data['WhitePointGLB'] = self._eep_data_from_npy[serial_number][2]
+                    elif self._eepStationAssistant.uchar_checksum_chk(raw_data) and int(raw_data[-1], 16) >= 0x11:
+                        self._operator_interface.print_to_console(f"RAW <-- {','.join(raw_data)}\n")
                         self._eep_data = self._eepStationAssistant.decode_raw_data(raw_data=raw_data)
+                    if len(self._eep_data) > 0:
                         for k, v in self._station_config.TEST_ITEM_PATTERNS_VERIFIED.items():
                             verified_tuple = [(c, int(self._eep_data[c])) for c in v]
                             [test_log.set_measured_value_by_name_ex(f'UUT_{k}_{c}', v) for c, v in verified_tuple]
@@ -673,6 +685,7 @@ class seacliffmotStation(test_station.TestStation):
             self._equipment.reset()
             self._equipment.close()
             self._operator_interface.print_to_console('open taprisiot automatically.\n')
+            self._operator_interface.operator_input('Taprisiot Error, Retest Please !!!', str(e), msg_type='error')
             self._equipment.open()
         except seacliffmotStationError as e:
             self._operator_interface.operator_input(None, str(e), msg_type='error')
