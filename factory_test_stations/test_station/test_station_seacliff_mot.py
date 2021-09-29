@@ -363,6 +363,7 @@ class seacliffmotStation(test_station.TestStation):
         self._probe_con_status = False
         self._eepStationAssistant = EEPStationAssistant()
         self._eep_data_from_npy = {}
+        self._multi_lock = mp.Lock()
 
     def initialize(self):
         try:
@@ -690,7 +691,7 @@ class seacliffmotStation(test_station.TestStation):
         except seacliffmotStationError as e:
             self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console(str(e))
-        except Exception as e:
+        except (Exception, BaseException) as e:
             self._operator_interface.print_to_console(f'Error: {str(e)} \n')
             raise 
         finally:
@@ -1014,15 +1015,20 @@ class seacliffmotStation(test_station.TestStation):
                             'start to export {0}, {1}-{2}\n'.format(pos_name, pattern_name, pri_k))
 
                         def distortion_centroid_parametric_export_ex_parallel_callback(res):
-                            pos_name_i, pattern_name_i, pri_k_i, distortion_exports = res
-                            if distortion_exports is not None:
-                                self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = distortion_exports
-                                for export_key, export_value in distortion_exports.items():
-                                    measure_item_name = '{0}_{1}_{2}_{3}'.format(
-                                        pos_name_i, pattern_name_i, pri_k_i, export_key)
-                                    test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
-                            self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}')
-                            self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
+                            self._multi_lock.acquire()
+                            try:
+                                pos_name_i, pattern_name_i, pri_k_i, distortion_exports = res
+                                if isinstance(distortion_exports, dict):
+                                    self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = distortion_exports
+                                    for export_key, export_value in distortion_exports.items():
+                                        measure_item_name = '{0}_{1}_{2}_{3}'.format(
+                                            pos_name_i, pattern_name_i, pri_k_i, export_key)
+                                        test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
+                                self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}')
+                                self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
+                            except Exception as e2:
+                                self._operator_interface.print_to_console(f'err: distortion_callback {str(e2)}.\n')
+                            self._multi_lock.release()
 
                         opt = {
                             'pri_key': pri_k,
@@ -1089,15 +1095,20 @@ class seacliffmotStation(test_station.TestStation):
                         'start to export {0}, {1}\n'.format(pos_name, ana_pattern))
 
                     def color_pattern_parametric_export_ex_parallel_callback(res):
-                        pos_name_i, pattern_name_i, color_exports, err_msg = res
-                        if color_exports is not None:
-                            self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = color_exports
-                            for export_key, export_value in color_exports.items():
-                                measure_item_name = '{0}_{1}_{2}'.format(
-                                    pos_name_i, pattern_name_i, export_key)
-                                test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
-                        self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}, err_msg: {err_msg}')
-                        self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
+                        self._multi_lock.acquire()
+                        try:
+                            pos_name_i, pattern_name_i, color_exports, err_msg = res
+                            if isinstance(color_exports, dict):
+                                self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = color_exports
+                                for export_key, export_value in color_exports.items():
+                                    measure_item_name = '{0}_{1}_{2}'.format(
+                                        pos_name_i, pattern_name_i, export_key)
+                                    test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
+                            self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}, err_msg: {err_msg}')
+                            self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
+                        except Exception as e2:
+                            self._operator_interface.print_to_console(f'err: color_pattern_callback {str(e2)}.\n')
+                        self._multi_lock.release()
                     dut_temp = self._temperature_dic[f'{pos_name}_{ana_pattern}']
                     opt = {
                         'alg': alg_optional,
@@ -1115,7 +1126,7 @@ class seacliffmotStation(test_station.TestStation):
 
                 except Exception as e:
                     self._operator_interface.print_to_console(
-                        'Fail to export data for pattern: {0}_{1}, {2}\n'.format(pos_name, ana_pattern, e.args))
+                        f'Fail to export data for pattern: {pos_name}_{ana_pattern}, {str(e)}\n')
 
     @staticmethod
     def grade_a_pattern_parametric_export_ex_parallel(pos_name, pattern_name, opt):
@@ -1163,15 +1174,20 @@ class seacliffmotStation(test_station.TestStation):
                             'start to export {0}, {1}\n'.format(pos_name, pattern_name))
 
                         def grade_a_parametric_export_ex_parallel_callback(res):
-                            pos_name_i, pattern_name_i, white_dot_exports, err_msg = res
-                            if white_dot_exports is not None:
-                                self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = white_dot_exports
-                                for export_key, export_value in white_dot_exports.items():
-                                    measure_item_name = '{0}_{1}_{2}'.format(
-                                        pos_name_i, pattern_name_i, export_key)
-                                    test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
-                            self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}, err_msg: {err_msg}')
-                            self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
+                            self._multi_lock.acquire()
+                            try:
+                                pos_name_i, pattern_name_i, white_dot_exports, err_msg = res
+                                if isinstance(white_dot_exports, dict):
+                                    self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = white_dot_exports
+                                    for export_key, export_value in white_dot_exports.items():
+                                        measure_item_name = '{0}_{1}_{2}'.format(
+                                            pos_name_i, pattern_name_i, export_key)
+                                        test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
+                                self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}, err_msg: {err_msg}')
+                                self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
+                            except Exception as e2:
+                                self._operator_interface.print_to_console(f'err: grade_a_callback {str(e2)}.\n')
+                            self._multi_lock.release()
                         opt = {'ModuleTemp': self._temperature_dic[f'{pos_name}_{pattern_name}'],
                                'Temp_W': self._temperature_dic[f'{pos_name}_{ref_pattern}'],
                                'filename': file_x[0],

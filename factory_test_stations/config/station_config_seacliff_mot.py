@@ -4,6 +4,7 @@ Release Note:
 Version 1.2.3
 2021-9-24 elton<elton.tian@myzygroup>
 -1. add json-file reading for MOT while reading the data from DDIC.
+-2. add SPEC_VERSION in limit.
 
 ========================================================
 Version 1.2.2
