@@ -690,6 +690,9 @@ class seacliffmotStation(test_station.TestStation):
         except seacliffmotStationError as e:
             self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console(str(e))
+        except Exception as e:
+            self._operator_interface.print_to_console(f'Error: {str(e)} \n')
+            raise 
         finally:
             self._pool.close()
             self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')
