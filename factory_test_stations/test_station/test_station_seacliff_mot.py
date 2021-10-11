@@ -1,5 +1,6 @@
 from typing import Callable
 import hardware_station_common.test_station.test_station as test_station
+import psutil
 import test_station.test_fixture.test_fixture_seacliff_mot as test_fixture_seacliff_mot
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 import test_station.test_equipment.test_equipment_seacliff_mot as test_equipment_seacliff_mot
@@ -236,6 +237,11 @@ class EEPStationAssistant(object):
         return raw_data_cpy
 
 
+def limit_cpu():
+    p = psutil.Process(os.getpid())
+    p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+
+
 class seacliffmotStation(test_station.TestStation):
 
     _fixture: test_fixture_seacliff_mot.seacliffmotFixture
@@ -459,7 +465,7 @@ class seacliffmotStation(test_station.TestStation):
         latest_pattern_value_bak = None
         cpu_count = mp.cpu_count()
         cpu_count_used = self._station_config.TEST_CPU_COUNT
-        self._pool = mp.Pool(cpu_count_used)
+        self._pool = mp.Pool(cpu_count_used, limit_cpu)
         self._pool_alg_dic = {}
         self._exported_parametric = {}
         self._gl_W255 = {}
@@ -692,8 +698,10 @@ class seacliffmotStation(test_station.TestStation):
             self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console(str(e))
         except (Exception, BaseException) as e:
-            self._operator_interface.print_to_console(f'Error: {str(e)} \n')
-            raise 
+            self._operator_interface.operator_input(None, f'Error: {str(e)} \n', msg_type='error')
+            raise
+        except:
+            self._operator_interface.operator_input(None, f'Please connect with myzy firstly.', msg_type='error')
         finally:
             self._pool.close()
             self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')

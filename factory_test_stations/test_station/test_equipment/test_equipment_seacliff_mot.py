@@ -496,6 +496,7 @@ class MotAlgorithmHelper(object):
 
         XYZ = image_in
         CXYZ = image_in
+        del image_in
         angle_arr = np.linspace(0, 2 * np.pi, 361)
 
         disp_fov = self._cam_fov
@@ -513,6 +514,7 @@ class MotAlgorithmHelper(object):
 
         masked_tristim = XYZ * mask
         max_XYZ_val = np.max(masked_tristim)
+        del radius_deg_arr, mask
 
         Lumiance_thresh = 10
         axis_length_thresh = 10
@@ -522,6 +524,7 @@ class MotAlgorithmHelper(object):
         # label_image = np.uint8(np.where(XYZ > Lumiance_thresh,255,0))
         # XYZ = cv2.blur(XYZ,(3,3))
         label_image = cv2.inRange(masked_tristim, 10, 255) // 255
+        del masked_tristim
 
         aa_image = np.zeros((self._row + 1, self._col + 1), dtype=np.int)
         aa_image[1:, 1:] = label_image
@@ -531,8 +534,11 @@ class MotAlgorithmHelper(object):
         bb_image[1:, 1:] = CXYZ
         CXYZ = bb_image
 
+        del aa_image, bb_image
+
         label_image = measure.label(label_image, connectivity=2)
         stats = measure.regionprops(label_image)
+        del label_image
         if self._verbose:
             print('stas', stats[0]['Centroid'])
         scenters = []
@@ -616,6 +622,7 @@ class MotAlgorithmHelper(object):
         # (3001,3001) in Matlab, and (3000,3000) in Python
         col_ind = np.nonzero(np.abs(x_angle_arr - x_deg) == np.min(np.abs(x_angle_arr - x_deg)))[1][0]
         row_ind = np.nonzero(np.abs(y_angle_arr - y_deg) == np.min(np.abs(y_angle_arr - y_deg)))[1][0]
+        del x_angle_arr, y_angle_arr, x_points, y_points,
         display_center = [None, None]
         display_center[0] = 0.4563 * (image_center[0] - (col_ind + 1))
         display_center[1] = 0.4563 * (image_center[1] - (row_ind + 1))
@@ -653,10 +660,10 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'Disp_Rotate_y'
         stats_summary[1, k] = k2
         k = k + 1
-        # del XYZ, CXYZ
-        del XYZ, CXYZ, x_angle_arr, y_angle_arr, image_in, col_deg_arr, row_deg_arr, radius_deg_arr, mask
-        del masked_tristim, label_image, stats, bb, centroid, x_points, y_points, image_center
 
+        del XYZ, CXYZ, col_deg_arr, row_deg_arr
+        del stats, bb, centroid, image_center
+        del scenters, sMajorAxisLength, sMinorAxisLength
         return dict(np.transpose(stats_summary[:, 0:k]))
 
     @staticmethod
@@ -670,7 +677,6 @@ class MotAlgorithmHelper(object):
         return image_in
 
     def color_pattern_parametric_export_RGB(self, primary='r', module_temp=30, xfilename=r'R255_X_float.bin'):
-
         # ----- Adjustable Parameters for Output -----#
         # startdirr = 'C:\Users\xiaobotian\Desktop\FMOT\MOT data\20200704 MOT data\C3-LH0007_SEACLIFF_MOT-01_20200703-235556\19043959\20200703_235715_nd_0_iris_5_X_float.bin'
         ModuleTemp = module_temp
@@ -734,11 +740,13 @@ class MotAlgorithmHelper(object):
 
             image_in = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ.append(image_in)
+            del image_in, I
 
         XYZ = np.stack(XYZ, axis=2)
         XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
         XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
         XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
+        del XYZ_1D, XYZ_1D_ColorCorrected,
         ## Save parametric data
         # Create viewing masks
         col_deg_arr = np.tile(x_angle_arr, (row, 1))
@@ -751,6 +759,7 @@ class MotAlgorithmHelper(object):
 
         cam_fov_mask = np.ones((row, col))
         cam_fov_mask[radius_deg_arr > cam_fov] = 0
+        del radius_deg_arr, chromaticity_mask, cam_fov_mask
 
         # Perform CIE and RGB color calculations and mask to disp_fov
         # y are ued for absolute color value, color u' and v' are used for
@@ -784,6 +793,7 @@ class MotAlgorithmHelper(object):
 
         # Output Statistics
         # dirr='chenyuyi'
+        del mask, x_smoothed, y_smoothed, tmp_XYZ, XYZ_mask, XYZ, col_deg_arr, row_deg_arr
         k = 0
 
         x_deg = 0
@@ -820,10 +830,9 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'OnAxis y at 47C'
         stats_summary[1, k] = y_smoothed_masked_TargetTemp[row_ind, col_ind]
         k += 1
-        del Lum_masked, Lum_masked_TargetTemp, XYZ, cam_fov_mask, chromaticity_mask, col_deg_arr
-        del colsOfMaxes, image_in, mask, radius_deg_arr, row_deg_arr, rowsOfMaxes, tmp_XYZ
-        del x_angle_arr, x_smoothed_masked, x_smoothed_masked_TargetTemp,
-        del y_smoothed_masked_TargetTemp, y_smoothed, y_smoothed_masked,
+        del Lum_masked, Lum_masked_TargetTemp,
+        del colsOfMaxes, rowsOfMaxes, y_angle_arr, x_angle_arr
+        del x_smoothed_masked, x_smoothed_masked_TargetTemp, y_smoothed_masked_TargetTemp, y_smoothed_masked
         return dict(np.transpose(stats_summary[:, 0:k]))
 
     def color_pattern_parametric_export_W255(self, ModuleLR='L', module_temp=30, xfilename=r'W255_X_float.bin'):
@@ -860,12 +869,14 @@ class MotAlgorithmHelper(object):
             image_in = np.flip(image_in, 0)
             image_in = cv2.filter2D(image_in, -1, MotAlgorithmHelper._kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ.append(image_in)
+            del image_in
         del XYZ_t
         XYZ = np.stack(XYZ, axis=2)
 
         XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
         XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
         XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
+        del XYZ_1D, XYZ_1D_ColorCorrected
 
         ## Save parametric data
         # Create viewing masks
@@ -879,6 +890,7 @@ class MotAlgorithmHelper(object):
         chromaticity_mask[radius_deg_arr > chromaticity_fov] = 0
         cam_fov_mask = np.ones((self._row, self._col))
         cam_fov_mask[radius_deg_arr > self._cam_fov] = 0
+        del col_deg_arr, row_deg_arr, radius_deg_arr
 
         # Perform CIE and RGB color calculations and mask to disp_fov
         # y are ued for absolute color value, color u' and v' are used for
@@ -918,6 +930,7 @@ class MotAlgorithmHelper(object):
         max_Y_yloc_deg = y_angle_arr[0, rowsOfMaxes]
         max_Y_xloc_pix = colsOfMaxes
         max_Y_yloc_pix = rowsOfMaxes
+        del x_smoothed, y_smoothed, u_prime_smoothed, v_prime_smoothed, mask
 
         # Output Statistics
         k = 0
@@ -1407,16 +1420,15 @@ class MotAlgorithmHelper(object):
             del tmp_histo, weights
 
         del tmp_chromaticity_mask, Y
-        del XYZ, filename, x_angle_arr, y_angle_arr, file_names, col_deg_arr, row_deg_arr, radius_deg_arr
+        del XYZ, filename, x_angle_arr, y_angle_arr
         del chromaticity_mask
-        del cam_fov_mask, u_prime_smoothed, v_prime_smoothed, tmp_XYZ, XYZ_mask, u_prime_smoothed_masked,
+        del cam_fov_mask, tmp_XYZ, XYZ_mask, u_prime_smoothed_masked,
         del v_prime_smoothed_masked, max_Y_xloc_deg, max_Y_yloc_deg,
         del col_ind_onaxis, row_ind_onaxis,
-        del Lum_masked, Lum_masked_TargetTemp, c, image_in,
-        del mask, tmp, tmpdeltauv_prime, tmpdeltau_prime, tmpdeltav_prime, tmpu_prime, tmpv_prime,
-        del x_smoothed, x_smoothed_masked, x_smoothed_masked_TargetTemp,
-        del y_smoothed, y_smoothed_masked, y_smoothed_masked_TargetTemp,
-
+        del Lum_masked, Lum_masked_TargetTemp, c,
+        del tmp, tmpdeltauv_prime, tmpdeltau_prime, tmpdeltav_prime, tmpu_prime, tmpv_prime,
+        del x_smoothed_masked, x_smoothed_masked_TargetTemp,
+        del y_smoothed_masked, y_smoothed_masked_TargetTemp,
 
         return dict(np.transpose(stats_summary))
 
@@ -1532,7 +1544,7 @@ class MotAlgorithmHelper(object):
         XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
         XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
         XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
-        del XYZ_1D, XYZ_1D_ColorCorrected, image_in
+        del XYZ_1D, XYZ_1D_ColorCorrected, image_in, XYZ_t
         return XYZ
 
     def white_dot_pattern_parametric_export(self, XYZ_W, GL, x_w, y_w, temp_w,
@@ -1591,6 +1603,8 @@ class MotAlgorithmHelper(object):
             XYZ.append(image_in)
             image_in_smooth = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ_smooth.append(image_in_smooth)
+            del image_in_smooth
+        del XYZ_t
         XYZ = np.stack(XYZ, axis=2)
 
         XYZ_smooth = np.stack(XYZ_smooth, axis=2)
@@ -1598,8 +1612,8 @@ class MotAlgorithmHelper(object):
         XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
         XYZ_smooth = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
 
-        del XYZ_t
         Y = XYZ[:, :, 1]
+        del XYZ_1D, XYZ, XYZ_1D_ColorCorrected
 
         # Create array of angle rings to display
         angle_arr = np.linspace(0, 2 * np.pi, 361)
@@ -1680,6 +1694,7 @@ class MotAlgorithmHelper(object):
             Centroid2[i * n_dots:(i + 1) * n_dots, :] = Centroid_temp  # 有问题
 
         centroid = Centroid2
+        del Centroid2
 
         # figure,plot(centroid(:,1),centroid(:,2),'.')
         # plt.figure(1)
@@ -1864,7 +1879,8 @@ class MotAlgorithmHelper(object):
             Color_x_output_corrected = Color_x_2Dq_corrected[row, col]
             Color_y_output_corrected = Color_y_2Dq_corrected[row, col]
             dxdy_output_corrected = dxdy_corrected[row, col]
-            del dxdy_output_corrected
+            del dxdy_output_corrected, Lum, Color_x, Color_y, Color_x_corrected, Color_y_corrected, Lum_corrected
+            del Lum2D, Color_x_2D, Color_y_2D, Color_x_2D_corrected, Color_y_2D_corrected, Lum2D_corrected,
 
         # Output Statistics
         k = 0
@@ -1928,11 +1944,12 @@ class MotAlgorithmHelper(object):
         stats_summary[1, k] = Color_y_output_corrected
         k = k + 1
 
-        del XYZ, XYZ_W,
+        del XYZ_W,
         del Lum_WP_output, Color_WP_x_output, Color_WP_y_output, dxdy_WP_output, Lum_WP_output_corrected,
         del Color_WP_x_output_corrected, Color_WP_y_output_corrected, dxdy_WP_output_corrected,
-        del Color_x_2D_corrected, Color_y_2D_corrected, Lum2D_corrected, Lum_255, Color_x_255, Color_y_255,
+        del Lum_255, Color_x_255, Color_y_255,
         del dxdy_corrected, dx_corrected, dy_corrected
+        del XYZ_smooth, angle_arr, mask, masked_tristim, Img,
         return dict(np.transpose(stats_summary[:, 0:k]))
 
     def polyfit_ex(self, x, y, deg):
@@ -1996,12 +2013,14 @@ class MotAlgorithmHelper(object):
             XYZ.append(image_in)
             image_in_smooth = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ_smooth.append(image_in_smooth)
+            del image_in_smooth, image_in
+
         XYZ = np.stack(XYZ, axis=2)
         XYZ_smooth = np.stack(XYZ_smooth, axis=2)
         XYZ_1D = np.reshape(XYZ_smooth, (self._row * self._col, 3))
         XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
         XYZ_smooth = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
-
+        del XYZ_t, XYZ_1D, XYZ_1D_ColorCorrected,
         Y = XYZ[:, :, 1]
         # Create array of angle rings to display
         angle_arr = np.linspace(0, 2 * np.pi, 361)
@@ -2121,7 +2140,7 @@ class MotAlgorithmHelper(object):
             centroidB[i, 1] = int(scentersB[i][0]) + meany
             centroidB[i, 0] = meanx + int(scentersB[i][1])
 
-        b = np.nonzero(np.array(sMinorAxisLengthRG) > 50)  # 有问题
+        b = np.nonzero(np.array(sMinorAxisLengthRG) > 50)
         centroidColor = centroidRG[b, :].reshape((-1, 2))
         b = np.nonzero(np.array(sMinorAxisLengthB) > 50)
         centroidColor = np.vstack((centroidColor, centroidB[b, :].reshape(-1, 2)))
@@ -2273,6 +2292,7 @@ class MotAlgorithmHelper(object):
 
             plt.savefig(os.path.join(dirr, self._exp_dir, f'{fnamebase}_Boresight.png'))
             plt.clf()
+            del I
 
         R_Lum = LxyR_mean[0]
         R_x = LxyR_mean[1]
@@ -2377,7 +2397,7 @@ class MotAlgorithmHelper(object):
         k = k + 1
         del XYZ, XYZ_smooth, Img, RGB, RGB_smooth
         del B_Lum, B_Lum_TargetTemp, B_x_TargetTemp, B_x, B_y_TargetTemp, B_y
-        del Y, image_in, image_in_smooth, little_y, little_x, little_x_smoothed, little_y_smoothed
+        del Y, little_y, little_x, little_x_smoothed, little_y_smoothed
         del mask, masked_tristim, radius_deg_arr, row_deg_arr, x_angle_arr, y_angle_arr
         return dict(np.transpose(stats_summary[:, 0:k]))
 
