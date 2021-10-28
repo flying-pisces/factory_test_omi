@@ -484,14 +484,17 @@ class seacliffmotStation(test_station.TestStation):
 
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+            equip_version = self._equipment.version()
+            if isinstance(equip_version, dict):
+                test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version.get('Lib_Version'))
             test_log.set_measured_value_by_name_ex('SPEC_VERSION', self._station_config.SPEC_VERSION)
 
+            test_log.set_measured_value_by_name_ex("DUT_ModuleType", self._module_left_or_right)
             test_log.set_measured_value_by_name_ex('Carrier_ProbeConnectStatus', self._probe_con_status)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
             test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
             test_log.set_measured_value_by_name_ex("DUT_AlignmentSuccess", self._is_alignment_success)
-            test_log.set_measured_value_by_name_ex("DUT_ModuleType", self._module_left_or_right)
 
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
@@ -535,9 +538,6 @@ class seacliffmotStation(test_station.TestStation):
                 test_log.set_measured_value_by_name_ex('UUT_READ_EEP_DATA', eep_success)
                 self._operator_interface.print_to_console(f'set module to normal mode.\n')
 
-            equip_version = self._equipment.version()
-            if isinstance(equip_version, dict):
-                test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version.get('Lib_Version'))
             # capture path accorded with test_log.
             uni_file_name = re.sub('_x.log', '', test_log.get_filename())
             capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
@@ -557,7 +557,9 @@ class seacliffmotStation(test_station.TestStation):
             if not os.path.exists(capture_path):
                 test_station.utils.os_utils.mkdir_p(capture_path)
                 os.chmod(capture_path, 0o777)
-            config = dict(self._station_config.CAM_INIT_CONFIG)
+            config = self._equipment.get_config()
+            user_config = dict(self._station_config.CAM_INIT_CONFIG)
+            config.update(dict([(k, v) for k, v in user_config.items() if k in config.keys()]))
 
             config["capturePath"] = capture_path
             config['cfgPath'] = os.path.join(self._station_config.CONOSCOPE_DLL_PATH, self._station_config.CFG_PATH)
@@ -687,13 +689,23 @@ class seacliffmotStation(test_station.TestStation):
             self.data_export(serial_number, capture_path, test_log)
             del config, patterns_in_testing
         except test_equipment_seacliff_mot.seacliffmotEquipmentError as e:
-            self._operator_interface.print_to_console(str(e))
-            self._operator_interface.print_to_console('Reset taprisiot automatically by command.\n')
-            self._equipment.reset()
-            self._equipment.close()
-            self._operator_interface.print_to_console('open taprisiot automatically.\n')
-            self._operator_interface.operator_input('Taprisiot Error, Retest Please !!!', str(e), msg_type='error')
-            self._equipment.open()
+            try:
+                self._operator_interface.print_to_console(str(e))
+                self._operator_interface.print_to_console('Reset taprisiot automatically by command.\n')
+                self._equipment.reset()
+                self._equipment.close()
+                self._operator_interface.print_to_console('open taprisiot automatically.\n')
+                self._equipment.open()
+            except BaseException as e2:
+                self._operator_interface.print_to_console(f'Taprisiot Error E2: {str(e2)}\n')
+            finally:
+                self._operator_interface.print_to_console(f'Taprisiot Error: {str(e)}\n')
+                self._operator_interface.operator_input('Taprisiot Error, Restart Software !!!', str(e), msg_type='error')
+            os._exit(1)
+        except test_fixture_seacliff_mot.seacliffmotFixtureError as e:
+            self._operator_interface.print_to_console(f'Fixture Error: {str(e)}\n')
+            self._operator_interface.operator_input('Fixture Error, Restart Software !!!', str(e), msg_type='error')
+            os._exit(1)
         except seacliffmotStationError as e:
             self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console(str(e))
@@ -703,9 +715,19 @@ class seacliffmotStation(test_station.TestStation):
         except:
             self._operator_interface.operator_input(None, f'Please connect with myzy firstly.', msg_type='error')
         finally:
-            self._pool.close()
-            self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')
-            self._operator_interface.print_to_console('Please wait...')
+            try:
+                self._pool.close()
+                self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')
+                self._operator_interface.print_to_console('Please wait...')
+                self._the_unit.close()
+                self._fixture.unload()
+            except:
+                pass
+            try:
+                self._the_unit.close()
+                self._fixture.unload()
+            except:
+                pass
             try:
                 self._the_unit.close()
                 self._fixture.unload()
@@ -732,7 +754,8 @@ class seacliffmotStation(test_station.TestStation):
 
     def capture_images_for_pattern(self, pos_name, capture_path, pattern_name, exp_pattern_name):
         pre_file_name = '{0}_{1}_'.format(pos_name, exp_pattern_name)
-        config = {'fileNamePrepend': pre_file_name}
+        config = self._equipment.get_config()
+        config.update({'fileNamePrepend': pre_file_name})
         self._operator_interface.print_to_console("set current config = {0}\n".format(config))
         self._equipment.set_config(config)
         pattern: dict
@@ -863,7 +886,7 @@ class seacliffmotStation(test_station.TestStation):
                         # power the dut on normally.
                         if power_on_trigger:
                             self._the_unit.screen_off()
-                            self._the_unit.reboot()  # Reboot
+                            # self._the_unit.reboot()  # Reboot
                         self._the_unit.screen_on()
                         power_on_trigger = True
                         # check the color sensor

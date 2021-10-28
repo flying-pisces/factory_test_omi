@@ -14,9 +14,10 @@ from skimage import measure
 import cv2
 import multiprocessing as mp
 import hardware_station_common.utils.thread_utils as thread_utils
-from skimage import measure
+from skimage.measure import regionprops, label
 import os
 import scipy
+# from scipy.interpolate import interp2d
 import matplotlib.pyplot as plt
 import matplotlib
 import csv
@@ -536,8 +537,8 @@ class MotAlgorithmHelper(object):
 
         del aa_image, bb_image
 
-        label_image = measure.label(label_image, connectivity=2)
-        stats = measure.regionprops(label_image)
+        label_image = label(label_image, connectivity=2)
+        stats = regionprops(label_image)
         del label_image
         if self._verbose:
             print('stas', stats[0]['Centroid'])
@@ -731,8 +732,8 @@ class MotAlgorithmHelper(object):
         kernel_b = np.sum(kernel)
         kernel = kernel / kernel_b  # normalize
         XYZ = []
-        for i in range(0, 3):
-            with open(os.path.join(dirr, filename[i]), 'rb') as fin:
+        for f_name in filename:
+            with open(os.path.join(dirr, f_name), 'rb') as fin:
                 I = np.frombuffer(fin.read(), dtype=np.float32)
             image_in = np.reshape(I, (col, row)).T
             image_in = np.rot90(image_in, 3)
@@ -771,7 +772,7 @@ class MotAlgorithmHelper(object):
         y_smoothed[np.isnan(y_smoothed)] = 0
         y_smoothed = y_smoothed + Color_y_offsite
 
-        tmp_XYZ = XYZ[:, :, 1] * mask
+        tmp_XYZ = mask * XYZ[:, :, 1]
         XYZ_mask = np.zeros((row, col))
         XYZ_mask[tmp_XYZ > noise_thresh * np.max(tmp_XYZ)] = 1
 
@@ -781,7 +782,7 @@ class MotAlgorithmHelper(object):
         y_smoothed_masked_TargetTemp = y_smoothed_masked + (TargetTemp - ModuleTemp) * dColor_y
 
         # np.nonzero max value location for brightness
-        Lum_masked = XYZ[:, :, 1] * mask
+        Lum_masked = mask * XYZ[:, :, 1]
         Lum_masked_TargetTemp = Lum_masked * (1 + (TargetTemp - ModuleTemp) * dLum)
         max_Y_val = np.max(Lum_masked[:])
         [rowsOfMaxes, colsOfMaxes] = np.nonzero(np.array(Lum_masked) == np.array(max_Y_val))
@@ -920,7 +921,7 @@ class MotAlgorithmHelper(object):
         y_smoothed_masked_TargetTemp = y_smoothed_masked + (TargetTemp - ModuleTemp) * dColor_y
 
         # Find max value location for brightness
-        Lum_masked = XYZ[:, :, 1] * mask
+        Lum_masked = mask * XYZ[:, :, 1]
         Lum_masked_TargetTemp = Lum_masked * (1 + (TargetTemp - ModuleTemp) * dLum)
         max_Y_val = np.max(Lum_masked)
         [rowsOfMaxes, colsOfMaxes] = np.nonzero(Lum_masked == max_Y_val)
@@ -1135,7 +1136,7 @@ class MotAlgorithmHelper(object):
         tmp_chromaticity_mask = chromaticity_mask
         tmp = Y[tmp_chromaticity_mask == 1]
         meanLum = np.mean(tmp)
-        deltaLum = max(tmp) - min(tmp)
+        deltaLum = np.max(tmp) - np.min(tmp)
         stdLum = np.std(tmp, ddof=1)
         percentLum_5 = np.percentile(tmp, 5)
         percentLum_95 = np.percentile(tmp, 95)
@@ -1425,7 +1426,7 @@ class MotAlgorithmHelper(object):
         del cam_fov_mask, tmp_XYZ, XYZ_mask, u_prime_smoothed_masked,
         del v_prime_smoothed_masked, max_Y_xloc_deg, max_Y_yloc_deg,
         del col_ind_onaxis, row_ind_onaxis,
-        del Lum_masked, Lum_masked_TargetTemp, c,
+        del Lum_masked, Lum_masked_TargetTemp
         del tmp, tmpdeltauv_prime, tmpdeltau_prime, tmpdeltav_prime, tmpu_prime, tmpv_prime,
         del x_smoothed_masked, x_smoothed_masked_TargetTemp,
         del y_smoothed_masked, y_smoothed_masked_TargetTemp,
@@ -1640,8 +1641,8 @@ class MotAlgorithmHelper(object):
         Length_thresh = 10
         Img = cv2.inRange(masked_tristim, 10, 255) // 255
         # figure,imagesc(x_angle_arr,y_angle_arr,Img)
-        Img = measure.label(Img, connectivity=2)
-        stats = measure.regionprops(Img)
+        Img = label(Img, connectivity=2)
+        stats = regionprops(Img)
         scenters = []
         sMajorAxisLength = []
         sMinorAxisLength = []
@@ -2042,8 +2043,8 @@ class MotAlgorithmHelper(object):
         Lumiance_thresh = 10
         Length_thresh = 10
         Img = cv2.inRange(masked_tristim, Lumiance_thresh, 255) // 255
-        Img = measure.label(Img, connectivity=2)
-        statsRG = measure.regionprops(Img)
+        Img = label(Img, connectivity=2)
+        statsRG = regionprops(Img)
         scentersRG = []
         sMajorAxisLengthRG = []
         sMinorAxisLengthRG = []
@@ -2093,8 +2094,8 @@ class MotAlgorithmHelper(object):
         Lumiance_thresh = 30
         Length_thresh = 50
         Img = cv2.inRange(masked_tristim, Lumiance_thresh, 255) // 255
-        Img = measure.label(Img, connectivity=2)
-        statsB = measure.regionprops(Img)
+        Img = label(Img, connectivity=2)
+        statsB = regionprops(Img)
         scentersB = []
         sMajorAxisLengthB = []
         sMinorAxisLengthB = []
@@ -2484,7 +2485,7 @@ if __name__ == "__main__":
     raw_data = [w255_result, r255_result, g255_result, b255_result, boresight_result, whitedot_result]
     if not os.path.exists(os.path.join(raw_data_dir, 'exp')):
         os.makedirs(os.path.join(raw_data_dir, 'exp'))
-    with open(os.path.join(raw_data_dir, 'exp', f'export.txt'), 'w', newline='') as f:
+    with open(os.path.join(raw_data_dir, 'exp', f'export.txt'), 'a', newline='') as f:
         for idx, raw in enumerate(raw_data):
             f.write('+'*10 + '\n')
             data = [f'{k}, {v}' for k, v in raw.items()]

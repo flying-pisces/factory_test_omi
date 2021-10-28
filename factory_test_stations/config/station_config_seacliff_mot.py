@@ -218,7 +218,15 @@ FIXTURE_USB_ON_TIME = 1
 #################################
 # Fixture related parameters
 # DISTANCE_BETWEEN_CAMERA_AND_DATUM = 26041
-# genius: 17750+18000, sunny: 18530+18000, gtk: 21450+18000, us: 21950+18000
+# genius: 17750+18000, sunny: 18530+18000, gtk: 21450+18000, genius-2: 21950+18000
+DISTANCE_BETWEEN_CAMERA_AND_DATUM_dict = {
+    'seacliff_mot-03': 18530+18000,
+    'seacliff_mot-04': 17750+18000,
+    'seacliff_mot-05': 21450+18000,
+    'seacliff_mot-06': 21950+18000,
+    'seacliff_mot-07': 23020+14000,
+}
+
 DISTANCE_BETWEEN_CAMERA_AND_DATUM = 21950+18000
 
 ##################################
@@ -237,7 +245,7 @@ COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255
 DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 10
 
-VERSION_REVISION_EQUIPMENT = 57
+VERSION_REVISION_EQUIPMENT = '57'
 FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 
 # set sensor_temperature
@@ -271,11 +279,6 @@ SEQ_CAP_INIT_CONFIG = {
     # "eNd": setup_cfg[1],  # Conoscope.Nd.Nd_1.value,
     # "eIris": setup_cfg[2],  # Conoscope.Iris.aperture_4mm.value,
     "nbAcquisition": 1,
-    'bUseRoi': False,
-    'RoiXLeft': 0,
-    'RoiXRight': 6001,
-    'RoiYTop': 0,
-    'RoiYBottom': 6001,
     "bAutoExposure": False,
     "bUseExpoFile": True,
     'bSaveCapture': False,

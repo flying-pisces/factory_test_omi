@@ -10,7 +10,7 @@ import os
 
 class Conoscope:
     DLL_PATH = '.'
-    VERSION_REVISION = 57
+    VERSION_REVISION = 72
 
     class Filter(Enum):
         BK7 = 0
@@ -82,6 +82,10 @@ class Conoscope:
         Bin = 0
         BinJpg = 1
 
+    class CxpLinkConfig(Enum):
+        CXP6_X2 = 0
+        CXP6_X4 = 1
+
     class ComposeOuputImage(Enum):
         ComposeOuputImage_XYZ = 0
         ComposeOuputImage_X = 1
@@ -125,14 +129,15 @@ class Conoscope:
             ("RoiXLeft", ctypes.c_int),
             ("RoiXRight", ctypes.c_int),
             ("RoiYTop", ctypes.c_int),
-            ("RoiYBottom", ctypes.c_int)]
+            ("RoiYBottom", ctypes.c_int),
+            ("cxpLinkConfig", ctypes.c_int)]
 
     class ConoscopeDebugSettings(ctypes.Structure):
         _fields_ = [
             ("debugMode", ctypes.c_bool),
             ("emulatedCamera", ctypes.c_bool),
             ("dummyRawImagePath", ctypes.c_char_p),
-            ("emulatedWheel", ctypes.c_bool), ]
+            ("emulatedWheel", ctypes.c_bool),]
 
     class SetupConfig(ctypes.Structure):
         _fields_ = [
@@ -188,11 +193,6 @@ class Conoscope:
             ("bAutoExposure", ctypes.c_bool),
             ("bUseExpoFile", ctypes.c_bool),
             ("bSaveCapture", ctypes.c_bool),
-            ("bUseRoi", ctypes.c_bool),
-            ("RoiXLeft", ctypes.c_int),
-            ("RoiXRight", ctypes.c_int),
-            ("RoiYTop", ctypes.c_int),
-            ("RoiYBottom", ctypes.c_int),
             ("eOuputImage", ctypes.c_int)]
 
     class CaptureSequenceStatus(ctypes.Structure):
@@ -411,9 +411,9 @@ class Conoscope:
             if libVersionKey in version:
                 versionNumber = version[libVersionKey].split('.')
 
-                versionMajorLib = int(versionNumber[0])
-                versionMinorLib = int(versionNumber[1])
-                versionRevisionLib = int(versionNumber[2])
+                versionMajorLib = versionNumber[0]
+                versionMinorLib = versionNumber[1]
+                versionRevisionLib = versionNumber[2]
 
                 if Conoscope.VERSION_REVISION != versionRevisionLib:
                     errorMessage = "Error: invalid revision {0}.{1}.{2} != {3}".format(
@@ -495,8 +495,7 @@ class Conoscope:
         returnVal = Conoscope.__Result(ret)
 
         # update return value with setup status
-        returnVal["eTemperatureMonitoringState"] = Conoscope.TemperatureMonitoringState(
-            setupStatus.eTemperatureMonitoringState)
+        returnVal["eTemperatureMonitoringState"] = Conoscope.TemperatureMonitoringState(setupStatus.eTemperatureMonitoringState)
         returnVal["sensorTemperature"] = setupStatus.sensorTemperature
         returnVal["eWheelState"] = Conoscope.WheelState(setupStatus.eWheelStatus)
         returnVal["eFilter"] = Conoscope.Filter(setupStatus.eFilter)
