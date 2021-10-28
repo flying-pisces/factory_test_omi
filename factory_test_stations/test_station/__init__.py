@@ -10,3 +10,4 @@
 # from test_station_pancake_eeprom import *
 # from test_station_pancake_muni import *
 
+# from test_station_seacliff_vid import *
