@@ -1,6 +1,14 @@
 """
 Release Note:
 ========================================================
+Version 1.2.4
+2021-10-28 elton<elton.tian@myzygroup>
+-1. Conoscope V72
+-2. Memory optimize
+-3. Quit application while error.
+-4. Fix errorcode issue when fail to do alignment 
+
+========================================================
 Version 1.2.3
 2021-9-24 elton<elton.tian@myzygroup>
 -1. add json-file reading for MOT while reading the data from DDIC.
