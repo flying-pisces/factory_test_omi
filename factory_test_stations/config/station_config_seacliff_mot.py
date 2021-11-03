@@ -7,6 +7,7 @@ Version 1.2.4
 -2. Memory optimize
 -3. Quit application while error.
 -4. Fix errorcode issue when fail to do alignment 
+-5. throw exception while temperature is over range.
 
 ========================================================
 Version 1.2.3

@@ -587,6 +587,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                                        timeout=self._station_config.FIXTURE_QUERY_TEMP_TIMEOUT)
         response = [self._re_space_sub.sub('', c) for c in response]
         deters = self._parse_response(delimiter, response)
+        if not (10 <= float(deters[1]) <= 60):
+            raise seacliffmotFixtureError(f'temperature {deters[1]} is over range [10, 60], does not make sense.')
         return float(deters[1])
 
     def load(self):
