@@ -1,19 +1,171 @@
 import hardware_station_common.test_station.test_equipment
+import os
+import json
+import clr
+import numpy as np
+import sys
+import pprint
+from datetime import datetime
+import logging
+import ctypes
+import traceback
 
 
-class seacliffvidEquipment(hardware_station_common.test_station.test_equipment.TestEquipment):
+class seacliffVidEquipmentError(Exception):
+    pass
+
+
+class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.TestEquipment):
     """
         class for seacliff vid Equipment
             this is for doing all the specific things necessary to interface with equipment
     """
     def __init__(self, station_config, operator_interface):
         hardware_station_common.test_station.test_equipment.TestEquipment.__init__(self, station_config, operator_interface)
+        self.name = "Raytrix R25"
+        self._verbose = station_config.IS_VERBOSE
+        self._station_config = station_config
+        self._error_message = self.name + "is out of work"
+        self._read_error = False
+        self._version = None
+        self._camera_sn = None
+        self._k_errcode = 'ErrorCode'
+        self._k_message = 'Message'
+        dll_path = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_DYNAMIC_LIB)
+        self._rxLib = ctypes.cdll.LoadLibrary(dll_path)
+
+        # Define the input and output parameter for the functions of the raytrix lib
+        self._rxLib.InitLFSystem.restype = ctypes.c_char_p
+        self._rxLib.ClearLFSystem.restype = ctypes.c_char_p
+        self._rxLib.BindConnectedCamera.restype = ctypes.c_char_p
+        self._rxLib.LoadCameraConfig.restype = ctypes.c_char_p
+        self._rxLib.LoadCameraConfig.argtypes = ctypes.c_char_p,
+        self._rxLib.GetCameraSerialNumber.restype = ctypes.c_char_p
+        self._rxLib.TriggerCamera.restype = ctypes.c_char_p
+        self._rxLib.ComputeImage.restype = ctypes.c_char_p
+        self._rxLib.SaveImage.restype = ctypes.c_char_p
+        self._rxLib.SaveImage.argtypes = ctypes.c_char_p,
+        self._rxLib.SetComputeParameters.restype = ctypes.c_char_p
+        self._rxLib.SetComputeParameters.argtypes = ctypes.c_char_p,
+        self._rxLib.BindRayFile.restype = ctypes.c_char_p
+        self._rxLib.BindRayFile.argtypes = ctypes.c_char_p,
+        self._rxLib.SaveRay.restype = ctypes.c_char_p
+        self._rxLib.SaveRay.argtypes = ctypes.c_char_p,
+
+    @property
+    def camera_sn(self):
+        return self._camera_sn
+
+    def _init_lf_system(self):
+        return self._parse_result(self._rxLib.InitLFSystem())
+
+    def _clear_lf_system(self):
+        return self._parse_result(self._rxLib.ClearLFSystem())
+
+    def _bind_connected_camera(self):
+        return self._parse_result(self._rxLib.BindConnectedCamera())
+
+    def _load_camera_config(self, config_file_name):
+        return self._parse_result(self._rxLib.LoadCameraConfig(config_file_name.encode()))
+
+    def _get_camera_sn(self):
+        return self._parse_result(self._rxLib.GetCameraSerialNumber())
+
+    def _trigger_camera(self):
+        return self._parse_result(self._rxLib.TriggerCamera())
+
+    def _compute_image(self, cmd):
+        return self._parse_result(self._rxLib.ComputeImage(cmd))
+
+    def _save_image(self, filename):
+        return self._parse_result(self._rxLib.SaveImage(filename.encode()))
+
+    def _set_compute_parameters(self, filename):
+        return self._parse_result(self._rxLib.SetComputeParameters(filename.encode()))
+
+    def _bind_ray_file(self, filename):
+        return self._parse_result(self._rxLib.BindRayFile(filename.encode()))
+
+    def _save_ray(self, filename):
+        return self._parse_result(self._rxLib.SaveRay(filename.encode()))
+
+    def _parse_result(self, res_msg):
+        resjson = None
+        if self._verbose:
+            logging.info(f"rxLib response message:{res_msg}")
+        try:
+            resjson = json.loads(res_msg.decode())
+        except:
+            pass
+        error = None
+        if isinstance(resjson, dict):
+            error = int(resjson.get(self._k_errcode))
+        if error is None or int(error) != 0:
+            raise seacliffVidEquipmentError(f'API <--- {res_msg}')
+        return error, resjson
 
     def is_ready(self):
         pass
 
     def initialize(self):
-        self._operator_interface.print_to_console("Initializing seacliff vid Equipment\n")
+        self._operator_interface.print_to_console("Initializing seacliff Vid Equipment.\n")
+        self._camera_sn = None
+        if self._station_config.EQUIPMENT_SIM:
+            self._camera_sn = 'SIM'
+        else:
+            res, __ = self._parse_result(self._rxLib.InitLFSystem())
+            res, __ = self._parse_result(self._rxLib.BindConnectedCamera())
+            res, sn_msg = self._parse_result(self._rxLib.GetCameraSerialNumber())
+            self._camera_sn = sn_msg.get(self._k_message)
+            if not self._camera_sn:
+                raise seacliffVidEquipmentError('Fail to initialise Equipment.')
+
+    def open(self):
+        # Load configuration from json-file.
+        # self._rxLib.SetComputeParameters(self._station_config.CAMERA_RX_SET)
+        pass
 
     def close(self):
-        self._operator_interface.print_to_console("Closing seacliff vid Equipment\n")
+        self._operator_interface.print_to_console("Closing seacliff Vid Equipment.\n")
+        self._rxLib.ClearLFSystem()
+
+    def do_measure_and_export(self, pattern_name, data_save_dir):
+        cfg_filename = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_CONFIG)
+        self._rxLib.LoadCameraConfig(cfg_filename.encode(encoding='utf-8'))
+        self._rxLib.TriggerCamera()
+        rxset = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_RX_SET)
+        self._set_compute_parameters(rxset)
+        self._compute_image(85)
+        target_filename = os.path.join(
+            data_save_dir, rf'{pattern_name}_Depth3D_ViewObjectOrthographic_To_Reference_AfterSettings.tiff')
+        self._save_image(target_filename)
+        raw_db_pth = os.path.join(data_save_dir, f'{pattern_name}.ray')
+        self._rxLib.SaveRay(raw_db_pth.encode())
+
+
+def print_to_console(self, msg):
+    pass
+
+
+if __name__ == '__main__':
+    import sys
+    import types
+
+    sys.path.append(r'..\..')
+    import station_config
+
+    station_config.load_station('seacliff_vid')
+    station_config.print_to_console = types.MethodType(print_to_console, station_config)
+    equip = seacliffVidEquipment(station_config, station_config)
+    equip.initialize()
+
+    cfg_filename = os.path.join(station_config.ROOT_DIR, station_config.CAMERA_CONFIG)
+    equip._load_camera_config(cfg_filename)
+    equip._trigger_camera()
+    equip._clear_lf_system()
+
+    # equip.do_measure_and_export('W255')
+
+    # equip.close()
+
+    pass
