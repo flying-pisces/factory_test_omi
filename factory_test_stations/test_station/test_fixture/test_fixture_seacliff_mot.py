@@ -240,12 +240,13 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
     def _read_response(self, timeout=10, ignore_non_error=True, rev_pattern=None):
         msg = ''
         tim = time.time()
-        while (not re.search(self._end_delimiter, msg, re.IGNORECASE)
-               and (time.time() - tim < timeout)
-               and ((rev_pattern is None) or not re.search(rev_pattern, msg, re.IGNORECASE))):
+        while time.time() - tim < timeout:
             line_in = self._serial_port.readline()
             if line_in != b'':
                 msg = msg + line_in.decode()
+            if (re.search(self._end_delimiter, msg, re.IGNORECASE) and
+                    ((rev_pattern is None) or re.search(rev_pattern, msg, re.IGNORECASE))):
+                break
         response = msg.strip().splitlines()
         if self._verbose:
             if len(response) > 1:
