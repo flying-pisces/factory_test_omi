@@ -8,6 +8,7 @@ Version 1.2.4
 -3. Quit application while error.
 -4. Fix errorcode issue when fail to do alignment 
 -5. throw exception while temperature is over range.
+-6. Algorithm updated to EVT1_1
 
 ========================================================
 Version 1.2.3
