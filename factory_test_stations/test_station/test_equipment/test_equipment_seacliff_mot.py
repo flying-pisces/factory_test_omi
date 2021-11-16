@@ -1919,13 +1919,13 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'WP255 y'
         stats_summary[1, k] = Color_y_255
         k = k + 1
-        stats_summary[0, k] = 'WP R Quest Alg'
+        stats_summary[0, k] = 'WP R Quest Algo'
         stats_summary[1, k] = GL[0]
         k = k + 1
-        stats_summary[0, k] = 'WP G Quest Alg'
+        stats_summary[0, k] = 'WP G Quest Algo'
         stats_summary[1, k] = GL[1]
         k = k + 1
-        stats_summary[0, k] = 'WP B Quest Alg'
+        stats_summary[0, k] = 'WP B Quest Algo'
         stats_summary[1, k] = GL[2]
         k = k + 1
         stats_summary[0, k] = 'WP Lum Quest Algo'
