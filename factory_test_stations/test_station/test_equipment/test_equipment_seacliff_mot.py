@@ -841,9 +841,9 @@ class MotAlgorithmHelper(object):
         # luminance and color drift per degree
         ModuleTemp = module_temp
         TargetTemp = 47
-        dLum = -0.0155
-        dColor_x = -0.001094
-        dColor_y = -0.001043
+        dLum = -0.01135
+        dColor_x = -0.00051
+        dColor_y = -0.00058
         # Color offsite is used for MOT correlation
         Color_x_offsite = 0
         Color_y_offsite = 0
@@ -1011,20 +1011,20 @@ class MotAlgorithmHelper(object):
         row_ind = np.nonzero(abs(y_angle_arr - y_deg) == np.min(min(abs(y_angle_arr - y_deg))))[1][0]
         stats_summary[0, k] = f'Nasal Lum({chromaticity_fov}deg)'
         stats_summary[1, k] = Lum_masked[row_ind, col_ind]
-        k = k + 1;
+        k = k + 1
         stats_summary[0, k] = f'Nasal x({chromaticity_fov}deg)'
         stats_summary[1, k] = x_smoothed_masked[row_ind, col_ind]
-        k = k + 1;
+        k = k + 1
         stats_summary[0, k] = f'Nasal y({chromaticity_fov}deg)'
         stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
-        k = k + 1;
+        k = k + 1
         # % Temporal luminance and color
         if ModuleLR == 'L':
-            x_deg = -chromaticity_fov;
-            y_deg = 0;
+            x_deg = -chromaticity_fov
+            y_deg = 0
         else:
-            x_deg = chromaticity_fov;
-            y_deg = 0;
+            x_deg = chromaticity_fov
+            y_deg = 0
 
         col_ind = np.nonzero(abs(x_angle_arr - x_deg) == np.min(min(abs(x_angle_arr - x_deg))))[1][0]
         row_ind = np.nonzero(abs(y_angle_arr - y_deg) == np.min(min(abs(y_angle_arr - y_deg))))[1][0]
@@ -1434,43 +1434,49 @@ class MotAlgorithmHelper(object):
         return dict(np.transpose(stats_summary))
 
     @staticmethod
-    def calc_gl_for_brightdot(W255_stats_summary, R255_stats_summary, G255_stats_summary, B255_stats_summary,
-                              module_temp=30):
+    def calc_gl_for_brightdot(W255_stats_summary, WRGBBoresight_stats_summary, module_temp=30):
         # % load temperature of whitedot pattern
         ModuleTemp = module_temp
         # % set color drift coefficients
         TargetTemp = 47
-        dLum_W = -0.0155
-        dColor_x_W = -0.001094
-        dColor_y_W = -0.001043
-        dLum_R = -0.02253
-        dColor_x_R = 0.000121
-        dColor_y_R = -0.00047
-        dLum_G = -0.01266
-        dColor_x_G = 0.000733
-        dColor_y_G = -0.00103
-        dLum_B = -0.01019
-        dColor_x_B = -0.000012
-        dColor_y_B = -0.00016
+        #1115
+        dLum_W = -0.01135
+        dColor_x_W = -0.00051
+        dColor_y_W = -0.00058
+        dLum_R = -0.01601
+        dColor_x_R = 0
+        dColor_y_R = -0.00033
+        dLum_G = -0.00977
+        dColor_x_G = 0.00061
+        dColor_y_G = -0.00074
+        dLum_B = -0.00873
+        dColor_x_B = 0
+        dColor_y_B = 0
 
         x_w = 0.3127 - (TargetTemp - ModuleTemp) * dColor_x_W
         y_w = 0.329 - (TargetTemp - ModuleTemp) * dColor_y_W
-        Temp_W = W255_stats_summary["Module Temperature"]
-        Temp_R = R255_stats_summary["Module Temperature"]
-        Temp_G = G255_stats_summary["Module Temperature"]
-        Temp_B = B255_stats_summary["Module Temperature"]
+        #1115
+        Temp_W = WRGBBoresight_stats_summary["Module Temperature"]
+        Temp_R = WRGBBoresight_stats_summary["Module Temperature"]
+        Temp_G = WRGBBoresight_stats_summary["Module Temperature"]
+        Temp_B = WRGBBoresight_stats_summary["Module Temperature"]
+
+        # Temp_W = W255_stats_summary["Module Temperature"]
+        # Temp_R = R255_stats_summary["Module Temperature"]
+        # Temp_G = G255_stats_summary["Module Temperature"]
+        # Temp_B = B255_stats_summary["Module Temperature"]
 
         Y_w = W255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_W) * dLum_W)
-        Y_r = R255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_R) * dLum_R)
-        Y_g = G255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_G) * dLum_G)
-        Y_b = B255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_B) * dLum_B)
+        Y_r = WRGBBoresight_stats_summary["R_Lum_corrected"] * (1 + (ModuleTemp - Temp_R) * dLum_R)
+        Y_g = WRGBBoresight_stats_summary["G_Lum_corrected"] * (1 + (ModuleTemp - Temp_G) * dLum_G)
+        Y_b = WRGBBoresight_stats_summary["B_Lum_corrected"] * (1 + (ModuleTemp - Temp_B) * dLum_B)
 
-        x_r = R255_stats_summary["OnAxis x"] + (ModuleTemp - Temp_R) * dColor_x_R
-        y_r = R255_stats_summary["OnAxis y"] + (ModuleTemp - Temp_R) * dColor_y_R
-        x_g = G255_stats_summary["OnAxis x"] + (ModuleTemp - Temp_G) * dColor_x_G
-        y_g = G255_stats_summary["OnAxis y"] + (ModuleTemp - Temp_G) * dColor_y_G
-        x_b = B255_stats_summary["OnAxis x"] + (ModuleTemp - Temp_B) * dColor_x_B
-        y_b = B255_stats_summary["OnAxis y"] + (ModuleTemp - Temp_B) * dColor_y_B
+        x_r = WRGBBoresight_stats_summary["R_x_corrected"] + (ModuleTemp - Temp_R) * dColor_x_R
+        y_r = WRGBBoresight_stats_summary["R_y_corrected"] + (ModuleTemp - Temp_R) * dColor_y_R
+        x_g = WRGBBoresight_stats_summary["G_x_corrected"] + (ModuleTemp - Temp_G) * dColor_x_G
+        y_g = WRGBBoresight_stats_summary["G_y_corrected"] + (ModuleTemp - Temp_G) * dColor_y_G
+        x_b = WRGBBoresight_stats_summary["B_x_corrected"] + (ModuleTemp - Temp_B) * dColor_x_B
+        y_b = WRGBBoresight_stats_summary["B_y_corrected"] + (ModuleTemp - Temp_B) * dColor_y_B
         Y_rgb_measure = [Y_r, Y_g, Y_b]
 
         w255 = np.array([Y_w * x_w / y_w, Y_w, Y_w * (1 - x_w - y_w) / y_w])
@@ -1563,9 +1569,9 @@ class MotAlgorithmHelper(object):
         # y_w = 0.3290  # color y for D65
         n_dots = 21
         # XYZ_W = np.ones((3, 3, 3))
-        dLum_W = -0.0155
-        dColor_x_W = -0.001094
-        dColor_y_W = -0.001043
+        dLum_W = -0.01135
+        dColor_x_W = -0.00051
+        dColor_y_W = -0.00058
         Lum_W = XYZ_W[:, :, 1] * (1 + (ModuleTemp - Temp_W)*dLum_W)
         Color_x_W = XYZ_W[:, :, 0] / (XYZ_W[:, :, 0] + XYZ_W[:, :, 1] + XYZ_W[:, :, 2]) + (ModuleTemp-Temp_W)*dColor_x_W
         Color_y_W = XYZ_W[:, :, 1] / (XYZ_W[:, :, 0] + XYZ_W[:, :, 1] + XYZ_W[:, :, 2]) + (ModuleTemp-Temp_W)*dColor_y_W
@@ -1880,6 +1886,11 @@ class MotAlgorithmHelper(object):
             Color_x_output_corrected = Color_x_2Dq_corrected[row, col]
             Color_y_output_corrected = Color_y_2Dq_corrected[row, col]
             dxdy_output_corrected = dxdy_corrected[row, col]
+
+            RGB_output2DDIC = [R_output_corrected, G_output_corrected, B_output_corrected]
+            if R_output_corrected == 215 or G_output_corrected == 215 or B_output_corrected == 215:
+                RGB_output2DDIC = GL
+
             del dxdy_output_corrected, Lum, Color_x, Color_y, Color_x_corrected, Color_y_corrected, Lum_corrected
             del Lum2D, Color_x_2D, Color_y_2D, Color_x_2D_corrected, Color_y_2D_corrected, Lum2D_corrected,
 
@@ -1917,32 +1928,41 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'WP B Quest Alg'
         stats_summary[1, k] = GL[2]
         k = k + 1
-        stats_summary[0, k] = 'WP Lum Quest Alg'
+        stats_summary[0, k] = 'WP Lum Quest Algo'
         stats_summary[1, k] = Lum_WP_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP x  Quest Alg'
+        stats_summary[0, k] = 'WP x  Quest Algo'
         stats_summary[1, k] = Color_WP_x_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP y  Quest Alg'
+        stats_summary[0, k] = 'WP y  Quest Algo'
         stats_summary[1, k] = Color_WP_y_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP R Arcata Algorithm'
+        stats_summary[0, k] = 'WP R Seacliff Algo'
         stats_summary[1, k] = R_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP G Arcata Algorithm'
+        stats_summary[0, k] = 'WP G Seacliff Algo'
         stats_summary[1, k] = G_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP B Arcata Algorithm'
+        stats_summary[0, k] = 'WP B Seacliff Algo'
         stats_summary[1, k] = B_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP Lum Arcata Algorithm'
+        stats_summary[0, k] = 'WP Lum Seacliff Algo'
         stats_summary[1, k] = Lum_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP x Arcata Algorithm'
+        stats_summary[0, k] = 'WP x Seacliff Algo'
         stats_summary[1, k] = Color_x_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP y Arcata Algorithm'
+        stats_summary[0, k] = 'WP y Seacliff Algo'
         stats_summary[1, k] = Color_y_output_corrected
+        k = k + 1
+        stats_summary[0, k] = 'WP R to DDIC'
+        stats_summary[1, k] = RGB_output2DDIC[0]
+        k = k + 1
+        stats_summary[0, k] = 'WP G to DDIC'
+        stats_summary[1, k] = RGB_output2DDIC[1]
+        k = k + 1
+        stats_summary[0, k] = 'WP B to DDIC'
+        stats_summary[1, k] = RGB_output2DDIC[2]
         k = k + 1
 
         del XYZ_W,
@@ -1965,15 +1985,25 @@ class MotAlgorithmHelper(object):
         ##Load module temperature
         ModuleTemp = module_temp
         TargetTemp = 47
-        dLum_R = -0.02253
-        dColor_x_R = 0.000121
-        dColor_y_R = -0.00047
-        dLum_G = -0.01266
-        dColor_x_G = 0.000733
-        dColor_y_G = -0.00103
-        dLum_B = -0.01019
-        dColor_x_B = -0.000012
-        dColor_y_B = -0.00016
+        dLum_R = -0.01601
+        dColor_x_R = 0
+        dColor_y_R = -0.00033
+        dLum_G = -0.00977
+        dColor_x_G = 0.00061
+        dColor_y_G = -0.00074
+        dLum_B = -0.00873
+        dColor_x_B = 0
+        dColor_y_B = 0
+        #1115 add.correction coefficients for R, G, B luminance and color offsite
+        Ratio_R = 0.8980
+        dColorx_R_offsite = -0.0099
+        dColory_R_offsite = 0.0013
+        Ratio_G = 0.9027
+        dColorx_G_offsite = -0.0041
+        dColory_G_offsite = -0.0022
+        Ratio_B = 0.9693
+        dColorx_B_offsite = 0.0034
+        dColory_B_offsite = 0.0021
         cam_fov = 60
         mask_fov = 30
         row = 6001
@@ -2298,23 +2328,35 @@ class MotAlgorithmHelper(object):
         R_Lum = LxyR_mean[0]
         R_x = LxyR_mean[1]
         R_y = LxyR_mean[2]
-        R_Lum_TargetTemp = R_Lum * (1 + (TargetTemp - ModuleTemp) * dLum_R)
-        R_x_TargetTemp = R_x + (TargetTemp - ModuleTemp) * dColor_x_R
-        R_y_TargetTemp = R_y + (TargetTemp - ModuleTemp) * dColor_y_R
+        #1115 add
+        R_Lum_corrected = R_Lum / Ratio_R
+        R_x_corrected = R_x - dColorx_R_offsite
+        R_y_corrected = R_y - dColory_R_offsite
+        R_Lum_TargetTemp = R_Lum_corrected*(1+(TargetTemp-ModuleTemp)*dLum_R)
+        R_x_TargetTemp = R_x_corrected+(TargetTemp-ModuleTemp)*dColor_x_R
+        R_y_TargetTemp = R_y_corrected+(TargetTemp-ModuleTemp)*dColor_y_R
 
         G_Lum = LxyG_mean[0]
         G_x = LxyG_mean[1]
         G_y = LxyG_mean[2]
-        G_Lum_TargetTemp = G_Lum * (1 + (TargetTemp - ModuleTemp) * dLum_G)
-        G_x_TargetTemp = G_x + (TargetTemp - ModuleTemp) * dColor_x_G
-        G_y_TargetTemp = G_y + (TargetTemp - ModuleTemp) * dColor_y_G
+        #1115 add
+        G_Lum_corrected = G_Lum / Ratio_G
+        G_x_corrected = G_x - dColorx_G_offsite
+        G_y_corrected = G_y - dColory_G_offsite
+        G_Lum_TargetTemp = G_Lum_corrected*(1+(TargetTemp-ModuleTemp)*dLum_G)
+        G_x_TargetTemp = G_x_corrected+(TargetTemp-ModuleTemp)*dColor_x_G
+        G_y_TargetTemp = G_y_corrected+(TargetTemp-ModuleTemp)*dColor_y_G
 
         B_Lum = LxyB_mean[0]
         B_x = LxyB_mean[1]
         B_y = LxyB_mean[2]
-        B_Lum_TargetTemp = B_Lum * (1 + (TargetTemp - ModuleTemp) * dLum_B)
-        B_x_TargetTemp = B_x + (TargetTemp - ModuleTemp) * dColor_x_B
-        B_y_TargetTemp = B_y + (TargetTemp - ModuleTemp) * dColor_y_B
+        #1115 add
+        B_Lum_corrected = B_Lum / Ratio_B
+        B_x_corrected = B_x - dColorx_B_offsite
+        B_y_corrected = B_y - dColory_B_offsite
+        B_Lum_TargetTemp = B_Lum_corrected*(1+(TargetTemp-ModuleTemp)*dLum_B)
+        B_x_TargetTemp = B_x_corrected+(TargetTemp-ModuleTemp)*dColor_x_B
+        B_y_TargetTemp = B_y_corrected+(TargetTemp-ModuleTemp)*dColor_y_B
 
         # Output Statistics
         k = 0
@@ -2334,6 +2376,16 @@ class MotAlgorithmHelper(object):
         k = k + 1
         stats_summary[0, k] = 'R_y'
         stats_summary[1, k] = R_y
+        #1115 add
+        k = k + 1
+        stats_summary[0, k] = 'R_Lum_corrected'
+        stats_summary[1, k] = R_Lum_corrected
+        k = k + 1
+        stats_summary[0, k] = 'R_x_corrected'
+        stats_summary[1, k] = R_x_corrected
+        k = k + 1
+        stats_summary[0, k] = 'R_y_corrected'
+        stats_summary[1, k] = R_y_corrected
         k = k + 1
         stats_summary[0, k] = 'R_Lum at 47C'
         stats_summary[1, k] = R_Lum_TargetTemp
@@ -2353,6 +2405,15 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'G_y'
         stats_summary[1, k] = G_y
         k = k + 1
+        stats_summary[0, k] = 'G_Lum_corrected'
+        stats_summary[1, k] = G_Lum_corrected
+        k = k + 1
+        stats_summary[0, k] = 'G_x_corrected'
+        stats_summary[1, k] = G_x_corrected
+        k = k + 1
+        stats_summary[0, k] = 'G_y_corrected'
+        stats_summary[1, k] = G_y_corrected
+        k = k + 1
         stats_summary[0, k] = 'G_Lum at 47C'
         stats_summary[1, k] = G_Lum_TargetTemp
         k = k + 1
@@ -2371,7 +2432,16 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'B_y'
         stats_summary[1, k] = B_y
         k = k + 1
-
+        #1115 Add
+        stats_summary[0, k] = 'B_Lum_corrected'
+        stats_summary[1, k] = B_Lum_corrected
+        k = k + 1
+        stats_summary[0, k] = 'B_x_corrected'
+        stats_summary[1, k] = B_x_corrected
+        k = k + 1
+        stats_summary[0, k] = 'B_y_corrected'
+        stats_summary[1, k] = B_y_corrected
+        k = k + 1
         stats_summary[0, k] = 'B_Lum at 47C'
         stats_summary[1, k] = B_Lum_TargetTemp
         k = k + 1
@@ -2455,15 +2525,15 @@ if __name__ == "__main__":
     w255_result = aa.color_pattern_parametric_export_W255(
         xfilename=os.path.join(raw_data_dir, w_bin), ModuleLR='R', module_temp=m_temp['W255'])
     end_time.append(time.time())
-    r255_result = aa.color_pattern_parametric_export_RGB('r', module_temp=m_temp['R255'],
-                                                         xfilename=os.path.join(raw_data_dir, r_bin))
-    end_time.append(time.time())
-    g255_result = aa.color_pattern_parametric_export_RGB('g', module_temp=m_temp['G255'],
-                                                         xfilename=os.path.join(raw_data_dir, g_bin))
-    end_time.append(time.time())
-    b255_result = aa.color_pattern_parametric_export_RGB('b', module_temp=m_temp['B255'],
-                                                         xfilename=os.path.join(raw_data_dir, b_bin))
-    end_time.append(time.time())
+    # r255_result = aa.color_pattern_parametric_export_RGB('r', module_temp=m_temp['R255'],
+    #                                                      xfilename=os.path.join(raw_data_dir, r_bin))
+    # end_time.append(time.time())
+    # g255_result = aa.color_pattern_parametric_export_RGB('g', module_temp=m_temp['G255'],
+    #                                                      xfilename=os.path.join(raw_data_dir, g_bin))
+    # end_time.append(time.time())
+    # b255_result = aa.color_pattern_parametric_export_RGB('b', module_temp=m_temp['B255'],
+    #                                                      xfilename=os.path.join(raw_data_dir, b_bin))
+    # end_time.append(time.time())
     boresight_result = aa.rgbboresight_parametric_export(module_temp=m_temp['RGBBoresight'],
         xfilename=os.path.join(raw_data_dir, br_bin))
     end_time.append(time.time())
@@ -2476,13 +2546,13 @@ if __name__ == "__main__":
 
     XYZ_W = aa.white_dot_pattern_w255_read(os.path.join(raw_data_dir, w_bin))
     end_time.append(time.time())
-    gl_whitedot = aa.calc_gl_for_brightdot(w255_result, r255_result, g255_result, b255_result, module_temp=m_temp['WhiteDot'])
+    gl_whitedot = aa.calc_gl_for_brightdot(w255_result, boresight_result, module_temp=m_temp['WhiteDot'])
     whitedot_result = aa.white_dot_pattern_parametric_export(XYZ_W,
                         gl_whitedot['GL'], gl_whitedot['x_w'], gl_whitedot['y_w'], temp_w=m_temp['W255'],
                         module_temp=m_temp['WhiteDot'],
                         xfilename=os.path.join(raw_data_dir, wd_bin))
     end_time.append(time.time())
-    raw_data = [w255_result, r255_result, g255_result, b255_result, boresight_result, whitedot_result]
+    raw_data = [w255_result, boresight_result, whitedot_result]
     if not os.path.exists(os.path.join(raw_data_dir, 'exp')):
         os.makedirs(os.path.join(raw_data_dir, 'exp'))
     with open(os.path.join(raw_data_dir, 'exp', f'export.txt'), 'a', newline='') as f:

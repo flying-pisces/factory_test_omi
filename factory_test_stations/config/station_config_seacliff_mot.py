@@ -382,10 +382,9 @@ TEST_ITEM_PATTERNS_VERIFIED = {'PW255': ('WhitePointGLR', 'WhitePointGLG', 'Whit
 
 TEST_ITEM_POS = [
     {'name': 'normal', 'pos': (0, 0, 15000),
-     'pattern': ['W255', 'R255', 'G255', 'B255'],
-     'condition_A_patterns':[('RGBBoresight', None, []),
-                             ('WhiteDot', 'pattern', ['WhiteDot10', 'WhiteDot11', 'WhiteDot12']),
-                             ('PW255', None, []),
+     'pattern': ['W255', 'RGBBoresight'],
+     'condition_A_patterns':[('WhiteDot', 'pattern', ['WhiteDot10', 'WhiteDot11', 'WhiteDot12']),
+                             # ('PW255', None, []),
                              ]
      },
     # {'name': 'normal', 'pos': (0, 0, 15000),

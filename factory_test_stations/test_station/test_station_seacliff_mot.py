@@ -546,14 +546,14 @@ class seacliffmotStation(test_station.TestStation):
                             if os.path.isdir(c)
                             and os.path.relpath(c, self._station_config.RAW_IMAGE_LOG_DIR)
                             .upper().startswith(serial_number.upper())]
+                if len(uut_dirs) > 0:
+                    capture_path = uut_dirs[-1]
                 if os.path.exists(os.path.join(capture_path, 'measure_env.json')):
                     with open(os.path.join(capture_path, 'measure_env.json'), 'r') as json_f:
                         data = json.load(json_f)
                         self._temperature_dic = data['Temperature']
                 else:
                     self._operator_interface.print_to_console(f'set default temperature for all patterns.\n')
-                if len(uut_dirs) > 0:
-                    capture_path = uut_dirs[-1]
             if not os.path.exists(capture_path):
                 test_station.utils.os_utils.mkdir_p(capture_path)
                 os.chmod(capture_path, 0o777)
@@ -642,7 +642,7 @@ class seacliffmotStation(test_station.TestStation):
 
                     rel_pattern_name = pattern_name
                     if pattern_name in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX.keys():
-                        ref_patterns = ['W255', 'R255', 'G255', 'B255']
+                        ref_patterns = ['W255', 'RGBBoresight']
                         ref_pattern = self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX[pattern_name]
                         exp_data = tuple([self._exported_parametric[f'{pos_name}_{c}'] for c in ref_patterns])
                         self._gl_W255[f'{pos_name}_{pattern_name}'] = \
