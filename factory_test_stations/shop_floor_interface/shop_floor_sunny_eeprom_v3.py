@@ -25,7 +25,7 @@ import stat
 # import hardware_station_common.test_station.test_log
 # MES_CHK_OFFLINE: dict
 # MES_CTRL_PWD = 'MES123'
-MES_IN_LOT_CTRL = True  # required by Haha. 1/11/2021
+MES_IN_LOT_CTRL = False  # required by Haha. 1/11/2021
 
 SF_LOADER_URL = 'http://10.99.10.126:8100/api/MesTransferBind/'
 SF_MESDATA_URL = 'http://10.99.10.126:8100/api/MesData/'
@@ -55,16 +55,17 @@ SF_ACTIONS_STATIONS = {
 # MES_CHK_OFFLINE = {}
 
 # mot
-MACHINE_TYPE = 'MOT'
-STATION_ID = 'seacliff_mot-03'
+# MACHINE_TYPE = 'MOT'
+# STATION_ID = 'seacliff_mot-03'
+# MAC_ID_FILER = 'DUT'
+# MES_CHK_OFFLINE = {}
+
+# eeprom
+MACHINE_TYPE = 'Eep'
+STATION_ID = 'seacliff_eeprom-02'
 MAC_ID_FILER = 'DUT'
 MES_CHK_OFFLINE = {}
 
-# eeprom
-# MACHINE_TYPE = 'Eep'
-# STATION_ID = 'seacliff_eeprom-02'
-# MAC_ID_FILER = 'DUT'
-# MES_CHK_OFFLINE = {}
 
 
 class ShopFloorError(Exception):
@@ -367,24 +368,25 @@ def ok_to_test(serial):
     _ex_shop_floor._test_times[serial] = 0
     # return True
 
-    if (not MES_IN_LOT_CTRL) or MES_CHK_OFFLINE.get('mes_chk_offline'):
-        return True, msg
     ok_to_test_res = False
     try:
         mac_interfaces = get_mac_id(if_name_filter=MAC_ID_FILER)
         if len(mac_interfaces) <= 0:
             raise ShopFloorError(f'获取机台MAC地址异常 {MAC_ID_FILER}')
         _ex_shop_floor._mac_id = mac_interfaces[0].get('mac')
-        validate_res = _ex_shop_floor.load_dut(serial)
-        if validate_res is None or isinstance(validate_res, str):
-            raise ShopFloorError(f'Fail to OK_TO_TEST, Return {validate_res}')
-        if validate_res['Status']:
-            ShopFloor_sunny.logger.info('MES上料完成' + '=' * 30)
-            _ex_shop_floor._test_times[serial] = validate_res['Result']['ctimes']
-            ok_to_test_res = True
+        if MES_IN_LOT_CTRL:
+            validate_res = _ex_shop_floor.load_dut(serial)
+            if validate_res is None or isinstance(validate_res, str):
+                raise ShopFloorError(f'Fail to OK_TO_TEST, Return {validate_res}')
+            if validate_res['Status']:
+                ShopFloor_sunny.logger.info('MES上料完成' + '=' * 30)
+                _ex_shop_floor._test_times[serial] = validate_res['Result']['ctimes']
+                ok_to_test_res = True
+            else:
+                ShopFloor_sunny.logger.info('Fail to OK_TO_TEST {0}'.format(validate_res['Message']))
+                msg = 'Fail to OK_TO_TEST {0}'.format(validate_res['Message'])
         else:
-            ShopFloor_sunny.logger.info('Fail to OK_TO_TEST {0}'.format(validate_res['Message']))
-            msg = 'Fail to OK_TO_TEST {0}'.format(validate_res['Message'])
+            ok_to_test_res = True
 
         # <editor-fold desc='Just for Eeprom'>
         if MACHINE_TYPE == 'Eep' and ok_to_test_res:
@@ -522,7 +524,7 @@ def initialize(station_config):
     logger.debug('-----------Shop Floor Interface === MES ------------------------Initialised.')
     # MES_CHK_OFFLINE = {}
     _ex_shop_floor = ShopFloor_sunny(MACHINE_TYPE, STATION_ID)  # type: ShopFloor_sunny
-    MES_CHK_OFFLINE['mes_chk_offline'] = False if not hasattr(station_config, 'FACEBOOK_IT_ENABLED') else station_config.FACEBOOK_IT_ENABLED
+    MES_CHK_OFFLINE['mes_chk_offline'] = False
 
 
 if __name__ == '__main__':
@@ -535,11 +537,11 @@ if __name__ == '__main__':
     # from hardware_station_common.test_station.test_log import TestRecord
     logging.info('----------------------------')
     logging.debug('+' * 20)
-    serial_number = '3B09B13CBC0006'
+    serial_number = '3B09B13CBC0005'
     initialize(None)
     logging.info('----------------------------{0}'.format(serial_number))
     if ok_to_test(serial_number)[0]:
-        save_results_from_logs(r'C:\oculus\debug\3B09B13CBC0006_seacliff_bluni-001_20210818-191906_F.log')
+        save_results_from_logs(r'C:\oculus\run\shop_floor_interface\3B09B13CBC0005_seacliff_eeprom-02_20211118-192212_P.log')
         pass
     else:
         print('Fail to OK_TO_TEST.')

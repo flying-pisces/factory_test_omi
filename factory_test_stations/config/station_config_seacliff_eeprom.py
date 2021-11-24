@@ -1,6 +1,12 @@
 """
 Release Note:
 ========================================================
+Version 1.2.3
+2021-11-24 elton<elton.tian@mygyroup.com>
+-1. update test items based MOT V1.2.4
+-2. update DDIC version to 0x12
+
+========================================================
 Version 1.2.2
 2021-9-21 elton<elton.tian@mygyroup.com>
 -1. add prompt information when detecting the wrong config.

@@ -457,7 +457,7 @@ class seacliffeepromStation(test_station.TestStation):
             if recv_obj is True or self._station_config.DUT_SIM:
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', 0)
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_RES', True)
-            elif isinstance(recv_obj, tuple):
+            elif isinstance(recv_obj, list):
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', recv_obj[1])
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_RES', False)
                 raise seacliffeepromError(f'Unable to power on DUT. {str(recv_obj)}')
@@ -512,6 +512,8 @@ class seacliffeepromStation(test_station.TestStation):
             if self._station_config.FIXTURE_SIM or (not self._station_config.CAMERA_VERIFY_ENABLE):
                 judge_by_camera = True
             test_log.set_measured_value_by_name_ex('JUDGED_BY_CAM', judge_by_camera)
+            if not judge_by_camera:
+                raise seacliffeepromError(f'Unable to determine the status. {judge_by_camera}')
             if write_in_slow_mod:
                 the_unit.nvm_speed_mode(mode='low')
             self._operator_interface.print_to_console('read write count for nvram ...\n')
