@@ -157,68 +157,8 @@ class seacliffeepromError(Exception):
     pass
 
 
-class seacliffeepromStation(test_station.TestStation):
-    """
-        pancakeeeprom Station
-    """
-    def write(self, msg):
-        """
-        @type msg: str
-        @return:
-        """
-        if msg.endswith('\n'):
-            msg += os.linesep
-        self._operator_interface.print_to_console(msg)
-
-    def auto_find_com_ports(self):
-        import serial.tools.list_ports
-        import serial
-        self._operator_interface.print_to_console("auto config com ports...\n")
-        self._station_config.DUT_COMPORT = None
-        com_ports = list(serial.tools.list_ports.comports())
-
-        for com in com_ports:
-            hit_success = False
-            if self._station_config.DUT_COMPORT is None:
-                a_serial = None
-                try:
-                    a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1, bytesize=8,
-                                             timeout=1, xonxoff=0, rtscts=0)
-                    if a_serial is not None:
-                        a_serial.flush()
-                        a_serial.write('$c.VERSION,mcu\r\n'.encode())
-                        ver_mcu = a_serial.readline()
-                        if '$P.VERSION' in ver_mcu.decode(encoding='utf-8').upper():
-                            a_serial.flush()
-                            a_serial.write('$c.DUT.POWEROFF\r\n'.encode())
-                            pw_msg = a_serial.readline()
-                            if pw_msg != b'':
-                                print('Ver_MCU: {0}, POWER_OFF: {1}'.format(ver_mcu, pw_msg.decode()))
-                            self._station_config.DUT_COMPORT = com.device
-                            hit_success = True
-                except Exception as e:
-                    pass
-                finally:
-                    if a_serial is not None:
-                        a_serial.close()
-
-            if hit_success:
-                continue
-
-
-    def __init__(self, station_config, operator_interface):
-        test_station.TestStation.__init__(self, station_config, operator_interface)
-        if (hasattr(self._station_config, 'IS_PRINT_TO_LOG')
-                and self._station_config.IS_PRINT_TO_LOG):
-            sys.stdout = self
-            sys.stderr = self
-            sys.stdin = None
-        self._fixture = test_fixture_eeprom.seacliffeepromFixture(station_config, operator_interface)
-        self._equip = test_equipment_seacliff_eeprom.seacliffeepromEquipment(station_config, operator_interface)
-        self._overall_errorcode = ''
-        self._first_failed_test_result = None
-        self._sw_version = '1.2.2'
-        self._ddic_version = '0x11'
+class EEPStationAssistant(object):
+    def __init__(self):
         self._cvt_flag = {
             'S7.8': (2, True, 7, 8),
             'S1.6': (1, True, 1, 6),
@@ -227,8 +167,9 @@ class seacliffeepromStation(test_station.TestStation):
             'U8.8': (2, False, 8, 8),
             'S4.3': (1, True, 4, 3),
         }
+        self._ddic_version = '0x12'
         self._nvm_data_len = 70
-        self._max_retries = 5
+        self._dr_offset = 6
         self._eeprom_map_group = collections.OrderedDict({
             'display_boresight_x': (6, 'S7.8',
                                     lambda tmp: -128 if tmp <= -128 else (128 if tmp >= 128 else tmp),
@@ -308,36 +249,9 @@ class seacliffeepromStation(test_station.TestStation):
                               lambda tmp: 0 <= tmp <= 255),
         })
 
-    def initialize(self):
-        if (self._station_config.DUT_SIM
-                or self._station_config.EQUIPMENT_SIM
-                or self._station_config.FIXTURE_SIM
-                or self._station_config.NVM_WRITE_PROTECT
-                or self._station_config.USER_INPUT_CALIB_DATA not in [0x02]
-                or not self._station_config.CAMERA_VERIFY_ENABLE):
-            self._operator_interface.operator_input('warn', 'Parameters should be configured correctly', 'warning')
-            raise
-        try:
-            self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
-            if self._station_config.AUTO_CFG_COMPORTS:
-                self.auto_find_com_ports()
-
-            msg = "find ports DUT = {0}. \n" \
-                .format(self._station_config.DUT_COMPORT)
-            self._operator_interface.print_to_console(msg)
-            self._fixture.initialize()
-            self._equip.initialize()
-
-            if os.path.exists(self._station_config.CALIB_REQ_DATA_FILENAME):
-                shutil.rmtree(self._station_config.CALIB_REQ_DATA_FILENAME)
-        except:
-            self._operator_interface.operator_input(None, 'Fail to initialize test_station. ', 'error')
-            raise
-
-    def close(self):
-        self._operator_interface.print_to_console("Close...\n")
-        self._operator_interface.print_to_console("there, I'm shutting the station down..\n")
-        self._fixture.close()
+    @property
+    def nvm_data_len(self):
+        return self._nvm_data_len
 
     # <editor-fold desc="Data Convert">
     def cvt_to_hex(self, value, flag, base_val=None):
@@ -380,9 +294,10 @@ class seacliffeepromStation(test_station.TestStation):
         sign = (a_value >> (deci + integ) & sign_bit_mask) if sign_or_not else 0
 
         value_without_sign = (integral + fraction / (1 << deci))
-        if base_val != None:
-            value_without_sign += base_val
-        return -1.0 * value_without_sign if sign else value_without_sign
+        value_with_sign = -1.0 * value_without_sign if sign else value_without_sign
+        if base_val is not None:
+            value_with_sign = value_with_sign + base_val
+        return value_with_sign
 
     def uchar_checksum(self, data_array):
         """
@@ -398,7 +313,154 @@ class seacliffeepromStation(test_station.TestStation):
 
         return [f'0x{checksum:02X}', ]
 
-    # </editor-fold>
+        # </editor-fold>
+
+    def uchar_checksum_chk(self, data_array):
+        if (not data_array) or len(data_array) < self._nvm_data_len:
+            return False
+        cs = self.uchar_checksum(data_array[0:43 - self._dr_offset])
+        return int(cs[0], 16) == int(data_array[43 - self._dr_offset], 16)
+
+    def decode_raw_data(self, raw_data):
+        """
+
+        @type raw_data: list
+        """
+        var_data = {}
+        for key, mapping in self._eeprom_map_group.items():
+            memory_idx = mapping[0] - self._dr_offset
+            flag = mapping[1]
+            b_val = None
+            if len(mapping) >= 5:
+                b_val = mapping[4]
+            var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag, base_val=b_val)
+        var_data['CS'] = raw_data[43 - self._dr_offset]
+        msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[(44 - self._dr_offset):(47 - self._dr_offset)]])
+        var_data['VALIDATION'] = msg
+        var_data['DDIC_VERSION'] = raw_data[75 - self._dr_offset]
+        return var_data
+
+    def encode_parameter_items(self, raw_data, var_data):
+        raw_data_cpy = raw_data.copy()
+        items_chk_result = []
+        for key, mapping in self._eeprom_map_group.items():
+            memory_idx = mapping[0] - self._dr_offset
+            flag = mapping[1]
+            memory_len = self._cvt_flag[flag][0]
+            tar_val = var_data[key]
+            set_val = mapping[2](tar_val)
+
+            items_chk_result.append(mapping[3](tar_val))
+            b_val = None
+            if len(mapping) >= 5:
+                b_val = mapping[4]
+            # encode the tar_val
+            raw_data_cpy[memory_idx: (memory_idx + memory_len)] = self.cvt_to_hex(set_val, flag, base_val=b_val)
+
+        raw_data_cpy[(43 - self._dr_offset):(44 - self._dr_offset)] = self.uchar_checksum(raw_data_cpy[0:(43 - self._dr_offset)])
+        validate_field_result = 0
+        for ind, val in enumerate(items_chk_result):
+            validate_field_result |= 0 if val else (0x01 << (23 - ind))
+        raw_data_cpy[(44 - self._dr_offset):(47 - self._dr_offset)] = [f'0x{c:02X}' for c in
+                      validate_field_result.to_bytes(3, byteorder='big', signed=False)]
+        raw_data_cpy[75 - self._dr_offset] = self._ddic_version
+        return raw_data_cpy
+
+
+class seacliffeepromStation(test_station.TestStation):
+    """
+        pancakeeeprom Station
+    """
+    def write(self, msg):
+        """
+        @type msg: str
+        @return:
+        """
+        if msg.endswith('\n'):
+            msg += os.linesep
+        self._operator_interface.print_to_console(msg)
+
+    def auto_find_com_ports(self):
+        import serial.tools.list_ports
+        import serial
+        self._operator_interface.print_to_console("auto config com ports...\n")
+        self._station_config.DUT_COMPORT = None
+        com_ports = list(serial.tools.list_ports.comports())
+
+        for com in com_ports:
+            hit_success = False
+            if self._station_config.DUT_COMPORT is None:
+                a_serial = None
+                try:
+                    a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1, bytesize=8,
+                                             timeout=1, xonxoff=0, rtscts=0)
+                    if a_serial is not None:
+                        a_serial.flush()
+                        a_serial.write('$c.VERSION,mcu\r\n'.encode())
+                        ver_mcu = a_serial.readline()
+                        if '$P.VERSION' in ver_mcu.decode(encoding='utf-8').upper():
+                            a_serial.flush()
+                            a_serial.write('$c.DUT.POWEROFF\r\n'.encode())
+                            pw_msg = a_serial.readline()
+                            if pw_msg != b'':
+                                print('Ver_MCU: {0}, POWER_OFF: {1}'.format(ver_mcu, pw_msg.decode()))
+                            self._station_config.DUT_COMPORT = com.device
+                            hit_success = True
+                except Exception as e:
+                    pass
+                finally:
+                    if a_serial is not None:
+                        a_serial.close()
+
+            if hit_success:
+                continue
+
+
+    def __init__(self, station_config, operator_interface):
+        test_station.TestStation.__init__(self, station_config, operator_interface)
+        if (hasattr(self._station_config, 'IS_PRINT_TO_LOG')
+                and self._station_config.IS_PRINT_TO_LOG):
+            sys.stdout = self
+            sys.stderr = self
+            sys.stdin = None
+        self._fixture = test_fixture_eeprom.seacliffeepromFixture(station_config, operator_interface)
+        self._equip = test_equipment_seacliff_eeprom.seacliffeepromEquipment(station_config, operator_interface)
+        self._overall_errorcode = ''
+        self._first_failed_test_result = None
+        self._sw_version = '1.2.3'
+        self._eep_assistant = EEPStationAssistant()
+        self._max_retries = 5
+
+    def initialize(self):
+        if (self._station_config.DUT_SIM
+                or self._station_config.EQUIPMENT_SIM
+                or self._station_config.FIXTURE_SIM
+                or self._station_config.NVM_WRITE_PROTECT
+                or self._station_config.USER_INPUT_CALIB_DATA not in [0x02]
+                or not self._station_config.CAMERA_VERIFY_ENABLE):
+            self._operator_interface.operator_input('warn', 'Parameters should be configured correctly', 'warning')
+            raise
+        try:
+            self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
+            if self._station_config.AUTO_CFG_COMPORTS:
+                self.auto_find_com_ports()
+
+            msg = "find ports DUT = {0}. \n" \
+                .format(self._station_config.DUT_COMPORT)
+            self._operator_interface.print_to_console(msg)
+            self._fixture.initialize()
+            self._equip.initialize()
+
+            if os.path.exists(self._station_config.CALIB_REQ_DATA_FILENAME):
+                shutil.rmtree(self._station_config.CALIB_REQ_DATA_FILENAME)
+        except:
+            self._operator_interface.operator_input(None, 'Fail to initialize test_station. ', 'error')
+            raise
+
+    def close(self):
+        self._operator_interface.print_to_console("Close...\n")
+        self._operator_interface.print_to_console("there, I'm shutting the station down..\n")
+        self._fixture.close()
 
     def _do_test(self, serial_number, test_log):
         msg0 = 'info --> write protect: {0}, emulator_dut: {1}, emulator_equip: {2}, emulator_fixture: {3},' \
@@ -420,6 +482,7 @@ class seacliffeepromStation(test_station.TestStation):
         if hasattr(self._station_config, 'NVM_WRITE_SLOW_MOD') and self._station_config.NVM_WRITE_SLOW_MOD:
             write_in_slow_mod = True
         calib_data = None  # self._station_config.CALIB_REQ_DATA
+        var_check_data = None
         try:
             if self._station_config.USER_INPUT_CALIB_DATA == 0x01:
                 dlg = EEPROMUserInputDialog(self._station_config, self._operator_interface,
@@ -434,7 +497,7 @@ class seacliffeepromStation(test_station.TestStation):
                 if os.path.exists(calib_data_json_fn):
                     with open(f'{calib_data_json_fn}', 'r') as json_file:
                         calib_data = json.load(json_file)
-                        eep_keys = set(self._eeprom_map_group.keys())
+                        eep_keys = set(self._eep_assistant._eeprom_map_group.keys())
                         if not eep_keys.issubset(calib_data.keys()):
                             msg = f'unable to parse all the items from input items.\n'
                             self._operator_interface.print_to_console(f'{eep_keys}\n')
@@ -457,7 +520,7 @@ class seacliffeepromStation(test_station.TestStation):
             if recv_obj is True or self._station_config.DUT_SIM:
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', 0)
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_RES', True)
-            elif isinstance(recv_obj, tuple):
+            elif isinstance(recv_obj, list):
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', recv_obj[1])
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_RES', False)
                 raise seacliffeepromError(f'Unable to power on DUT. {str(recv_obj)}')
@@ -512,6 +575,8 @@ class seacliffeepromStation(test_station.TestStation):
             if self._station_config.FIXTURE_SIM or (not self._station_config.CAMERA_VERIFY_ENABLE):
                 judge_by_camera = True
             test_log.set_measured_value_by_name_ex('JUDGED_BY_CAM', judge_by_camera)
+            if not judge_by_camera:
+                raise seacliffeepromError(f'Unable to determine the status. {judge_by_camera}')
             if write_in_slow_mod:
                 the_unit.nvm_speed_mode(mode='low')
             self._operator_interface.print_to_console('read write count for nvram ...\n')
@@ -531,53 +596,19 @@ class seacliffeepromStation(test_station.TestStation):
 
                 var_data = dict(calib_data)  # type: dict
 
-                raw_data = ['0x00'] * self._nvm_data_len
+                raw_data = ['0x00'] * self._eep_assistant.nvm_data_len
                 if not self._station_config.DUT_SIM:
                     try:
-                        raw_data = the_unit.nvm_read_data(data_len=self._nvm_data_len)[2:]
+                        raw_data = the_unit.nvm_read_data(data_len=self._eep_assistant.nvm_data_len)[2:]
                     except Exception as e:
                         self._operator_interface.print_to_console(f'Fail to read initialized data, exp: {str(e)}')
-                        raw_data = ['0x00'] * self._nvm_data_len
-                    for key, mapping in self._eeprom_map_group.items():
-                        memory_idx = mapping[0] - 6
-                        flag = mapping[1]
-                        b_val = None
-                        if len(mapping) >= 5:
-                            b_val = mapping[4]
-                        var_data[key] = self.cvt_from_hex(raw_data, memory_idx, flag, base_val=b_val)
-
-                    var_data['CS'] = raw_data[43-6]
-                    msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[44-6:47-6]])
-                    var_data['VALIDATION'] = msg
-                    var_data['DDIC_VERSION'] = raw_data[75-6]
+                        raw_data = ['0x00'] * self._eep_assistant.nvm_data_len
                 self._operator_interface.print_to_console('RD_DATA:\n')
                 self._operator_interface.print_to_console(f"<-- {','.join(raw_data)}\n")
 
                 raw_data_cpy = raw_data.copy()  # place holder for all the bytes.
                 var_data = dict(calib_data)  # type: dict
-
-                items_chk_result = []
-                for key, mapping in self._eeprom_map_group.items():
-                    memory_idx = mapping[0] - 6
-                    flag = mapping[1]
-                    memory_len = self._cvt_flag[flag][0]
-                    tar_val = var_data[key]
-                    set_val = mapping[2](tar_val)
-
-                    items_chk_result.append(mapping[3](tar_val))
-                    b_val = None
-                    if len(mapping) >= 5:
-                        b_val = mapping[4]
-                    # encode the tar_val
-                    raw_data_cpy[memory_idx: (memory_idx+memory_len)] = self.cvt_to_hex(set_val, flag, base_val=b_val)
-
-                raw_data_cpy[37:38] = self.uchar_checksum(raw_data_cpy[0:37])
-                validate_field_result = 0
-                for ind, val in enumerate(items_chk_result):
-                    validate_field_result |= 0 if val else (0x01 << (23-ind))
-                raw_data_cpy[38:41] = [f'0x{c:02X}' for c in
-                                       validate_field_result.to_bytes(3, byteorder='big', signed=False)]
-                raw_data_cpy[75-6] = self._ddic_version
+                raw_data_cpy = self._eep_assistant.encode_parameter_items(raw_data_cpy, var_data=var_data)
 
                 # TODO: config all the data to array.
                 print('Write configuration...........\n')
@@ -631,6 +662,7 @@ class seacliffeepromStation(test_station.TestStation):
                         configuration_success_by_count += 1
                 else:
                     post_data_check = True
+                    var_check_data = raw_data.copy()
                     self._operator_interface.print_to_console(f'write configuration protected ...MemCmp: {same_mem}\n')
                     # time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
 
@@ -692,6 +724,7 @@ class seacliffeepromStation(test_station.TestStation):
                             data_from_nvram = the_unit.nvm_read_data(data_len=self._nvm_data_len)[2:]
                             data_from_nvram_cap = [c.upper() for c in data_from_nvram]
                             if data_from_nvram_cap == raw_data_cpy_cap:
+                                var_check_data = data_from_nvram_cap
                                 post_data_check = True
                         except Exception as e2:
                             self._operator_interface.print_to_console(f'msg for read data: {str(e2)}\n')
@@ -700,7 +733,15 @@ class seacliffeepromStation(test_station.TestStation):
                         dummy_msg = ','.join(data_from_nvram)
                     self._operator_interface.print_to_console(f"RD_DATA {read_tries}:  {dummy_msg}.\n")
                     read_tries += 1
-
+                # save decoded data.
+                if post_data_check and var_check_data:
+                    var_check_data_json = self._eep_assistant.decode_raw_data(raw_data=var_check_data)
+                    if not os.path.exists(self._station_config.RAW_IMAGE_LOG_DIR):
+                        hardware_station_common.utils.os_utils.mkdir_p(self._station_config.RAW_IMAGE_LOG_DIR)
+                    post_data_json_fn = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR,
+                                                     f'eeprom_session_miz_{serial_number}_confirm_data.json')
+                    with open(os.path.join(post_data_json_fn), 'w') as post_json_file:
+                        json.dump(var_check_data_json, post_json_file, indent=6)
                 test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', post_data_check)
 
                 del data_from_nvram, raw_data_cpy, raw_data_cpy_cap, data_from_nvram_cap

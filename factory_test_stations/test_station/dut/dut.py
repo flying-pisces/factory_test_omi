@@ -147,10 +147,10 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                         print(f'Fail to power on DUT. Retries = {retries}, REV={recvobj}')
                 retries += 1
             if not self.is_screen_poweron:
-                if ignore_err and recvobj is not None:
+                if ignore_err:
                     return recvobj
                 else:
-                    raise DUTError(f"Exit power_off because rev err msg. retries = {retries}, Msg = {recvobj}")
+                    raise DUTError(f"Exit power_on because rev err msg. retries = {retries}, Msg = {recvobj}")
             return True
 
     def screen_off(self):
@@ -598,7 +598,7 @@ class projectDut(object):
             pass
         if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image', 'nvm_read_statistics',
                     'nvm_write_data', '_get_color_ext', 'render_image', 'nvm_read_data', 'nvm_speed_mode',
-                    'get_module_inplace']:
+                    'get_module_inplace', 'nvm_get_ecc']:
             return not_find
 
 if __name__ == "__main__" :

@@ -45,6 +45,7 @@ class EEPStationAssistant(object):
             'U8.8': (2, False, 8, 8),
             'S4.3': (1, True, 4, 3),
         }
+        self._ddic_version = '0x12'
         self._nvm_data_len = 70
         self._dr_offset = 6
         self._eeprom_map_group = collections.OrderedDict({
@@ -126,6 +127,10 @@ class EEPStationAssistant(object):
                               lambda tmp: 0 <= tmp <= 255),
         })
 
+    @property
+    def nvm_data_len(self):
+        return self._nvm_data_len
+
     # <editor-fold desc="Data Convert">
     def cvt_to_hex(self, value, flag, base_val=None):
         """
@@ -167,9 +172,10 @@ class EEPStationAssistant(object):
         sign = (a_value >> (deci + integ) & sign_bit_mask) if sign_or_not else 0
 
         value_without_sign = (integral + fraction / (1 << deci))
-        if base_val != None:
-            value_without_sign += base_val
-        return -1.0 * value_without_sign if sign else value_without_sign
+        value_with_sign = -1.0 * value_without_sign if sign else value_without_sign
+        if base_val is not None:
+            value_with_sign = value_with_sign + base_val
+        return value_with_sign
 
     def uchar_checksum(self, data_array):
         """
@@ -209,6 +215,7 @@ class EEPStationAssistant(object):
         var_data['CS'] = raw_data[43 - self._dr_offset]
         msg = '-'.join([f'{int(c1, 16):02X}' for c1 in raw_data[(44 - self._dr_offset):(47 - self._dr_offset)]])
         var_data['VALIDATION'] = msg
+        var_data['DDIC_VERSION'] = raw_data[75 - self._dr_offset]
         return var_data
 
     def encode_parameter_items(self, raw_data, var_data):
@@ -234,6 +241,7 @@ class EEPStationAssistant(object):
             validate_field_result |= 0 if val else (0x01 << (23 - ind))
         raw_data_cpy[(44 - self._dr_offset):(47 - self._dr_offset)] = [f'0x{c:02X}' for c in
                       validate_field_result.to_bytes(3, byteorder='big', signed=False)]
+        raw_data_cpy[75 - self._dr_offset] = self._ddic_version
         return raw_data_cpy
 
 
