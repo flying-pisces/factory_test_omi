@@ -510,7 +510,7 @@ def initialize(station_config):
     DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
     log_fn = time.strftime('%Y_%m_%d', time.localtime(time.time()))
     formatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
-    log_dir = os.path.join(os.path.curdir, '../shop_floor_interface')
+    log_dir = os.path.join(os.path.curdir, '../shop_floor_interface/logs')
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
         os.chmod(log_dir, 0o777)
@@ -536,11 +536,11 @@ if __name__ == '__main__':
     # from hardware_station_common.test_station.test_log import TestRecord
     logging.info('----------------------------')
     logging.debug('+' * 20)
-    serial_number = '3B09B13CBC0005'
+    serial_number = '3B09B13CBJ000F'
     initialize(None)
     logging.info('----------------------------{0}'.format(serial_number))
     if ok_to_test(serial_number)[0]:
-        save_results_from_logs(r'C:\oculus\run\shop_floor_interface\3B09B13CBC0005_seacliff_eeprom-02_20211118-192212_P.log')
+        save_results_from_logs(r'C:\oculus\run\shop_floor_interface\3B09B13CBJ000F_seacliff_mot-07_20211122-141855_P.log')
         pass
     else:
         print('Fail to OK_TO_TEST.')

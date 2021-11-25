@@ -390,6 +390,7 @@ def ok_to_test(serial):
 
         # <editor-fold desc='Just for Eeprom'>
         if MACHINE_TYPE == 'Eep' and ok_to_test_res:
+            ok_to_test_res = False
             # 获取Mot中的数据
             get_mot_data_res = _ex_shop_floor.get_mot_data(serial)
             if get_mot_data_res is None or isinstance(get_mot_data_res, str):
@@ -406,6 +407,7 @@ def ok_to_test(serial):
                 ok_to_test_res_json_data = _ex_shop_floor.insert_mot_data_in_json(serial, res)
                 if ok_to_test_res_json_data is True:
                     ShopFloor_sunny.logger.info('截取所需内容并以dict形式保存在本地（json文件）完成' + '=' * 30)
+                    ok_to_test_res = True
                 else:
                     ok_to_test_res = False
                     msg = '<--- 从MOT获取的数据保存失败: {0}'.format(ok_to_test_res_json_data)
@@ -511,7 +513,7 @@ def initialize(station_config):
     DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
     log_fn = time.strftime('%Y_%m_%d', time.localtime(time.time()))
     formatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
-    log_dir = os.path.join(os.path.curdir, '../shop_floor_interface')
+    log_dir = os.path.join(os.path.curdir, '../shop_floor_interface/LOGS')
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
         os.chmod(log_dir, 0o777)

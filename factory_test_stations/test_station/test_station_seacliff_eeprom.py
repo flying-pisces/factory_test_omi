@@ -721,7 +721,7 @@ class seacliffeepromStation(test_station.TestStation):
                 while read_tries <= self._max_retries and not post_data_check:
                     if not self._station_config.DUT_SIM:
                         try:
-                            data_from_nvram = the_unit.nvm_read_data(data_len=self._nvm_data_len)[2:]
+                            data_from_nvram = the_unit.nvm_read_data(data_len=self._eep_assistant.nvm_data_len)[2:]
                             data_from_nvram_cap = [c.upper() for c in data_from_nvram]
                             if data_from_nvram_cap == raw_data_cpy_cap:
                                 var_check_data = data_from_nvram_cap

@@ -103,16 +103,15 @@ COMMAND_DISP_SHOWIMG_DLY = 0.01
 COMMAND_DISP_POWEROFF_DLY = 0
 
 DUT_DISPLAYSLEEPTIME = 0
-DUT_NVRAM_WRITE_TIMEOUT = 30
+DUT_NVRAM_WRITE_TIMEOUT = 10
 NVM_WRITE_PROTECT = False
 NVM_EEC_READ = True
 NVM_WRITE_SLOW_MOD = True
 DUT_CHK_MODULE_INPLACE = False
 
 MIN_SPACE_REQUIRED = [('C:', 500)]
-
-CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\config\MER-132-43U3C(FQ0200080140).txt'
-CAMERA_VERIFY_ENABLE = False
+CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\MER-132-43U3C(FQ0200080140).txt'
+CAMERA_VERIFY_ENABLE = True
 CAMERA_EXPOSURE = 400000
 CAMERA_GAIN = 1.0
 
@@ -205,14 +204,14 @@ IS_PRINT_TO_LOG = True
 
 # UI_MODE
 OPTIMIZE_UI_MODE = True
-SHOW_CONSOLE = True
+SHOW_CONSOLE = False
 
 #####
 ### Facebook_IT Enable boolean
-FACEBOOK_IT_ENABLED = False
+FACEBOOK_IT_ENABLED = True
 
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
-DUT_SIM = True
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False

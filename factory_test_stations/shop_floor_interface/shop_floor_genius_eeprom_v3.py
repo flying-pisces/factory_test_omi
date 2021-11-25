@@ -5,12 +5,12 @@ Change List:
 0.0.1:  Init Version, 
 0.0.2:  Add option for InLot.
 0.0.3:  Adjust to support UTC.
-0.0.4:  Support for MOT
-        Relase thread for upload automatically when closing.
+0.0.4:  Relase thread for upload automatically when closing.
 0.0.5:  if not all the item tested, set MultiErrCode to 99999 .
 0.0.6:  all test items upload to mes.
-2.0.0： new schema for MOT V1.2.1
-3.0.0： new schema for MOT V1.2.4
+2.0.0:  new test items based MOT 1.2.x
+3.0.0:  new test items based on MOT 1.2.4
+
 """
 
 # !/usr/bin/env python
@@ -32,9 +32,13 @@ import glob
 import tkinter.simpledialog
 import tkinter as tk
 import datetime
+import stat
 import psutil
 
-
+MACHINE_TYPE = 'EEPROM_WRITING'
+STATION_ID = 'seacliff_eeprom-01'
+MAC_ID_FILER = '本地'
+HostProgressName = 'seacliff_eeprom_run.exe'
 MES_IT_MAIL_NOTIFICATION = True
 
 MES_RECV_MAIL_LIST = ['Rays.wang@gseo.com', ]
@@ -49,21 +53,20 @@ MES_CC_MAIL_LIST = ['Allen.Chiang@gseo.com', 'gladys.lin@gseo.com', ]
 MES_CTRL_PWD = 'MES123'
 MES_IN_LOT_CTRL = True  # required by Rays. 12/21/2020
 
+SF_EEPROM_DIRS = r'c:\oculus\run\seacliff_eeprom\session_data'
 SHOP_FLOOR_BAK_DIR = r'c:\shop_floor_to_be_uploaded'
 SHOP_FLOOR_FAIL_TO_UPLOAD = r'c:\shop_floor_fails'
 SW_VERSION_MISMATCH_LOGS_DIR = r'c:\shop_floor_fails\version_mismatch_logs'
-MACHINE_TYPE = 'MODULE_OPTICAL_TEST'
-STATION_ID = 'seacliff_mot-04'
-MAC_ID_FILER = '本地'
-HostProgressName = 'seacliff_mot_run.exe'
 SHOP_FLOOR_BAK_DIR_FILTER = f'*_{STATION_ID}_*.log'
 # URL should end with ?WSDL
 SF_URL = 'http://192.168.100.96:8012/InLotWS/Service/P5385InLotWS.asmx?WSDL'
 SF_LOADER_URL = 'http://192.168.100.96:8012/LoaderWS/Service/SummaryLoader.asmx?WSDL'
 SF_MAIL_URL = 'http://192.168.100.96:8011/MailWS/GseoWS.asmx?WSDL'
 MES_CHK_OFFLINE = {}
+_ex_shop_floor = None
+CALIB_REQ_DATA_FILENAME = r'c:\oculus\run\seacliff_eeprom\session_data'
 
-SW_VERSION = '1.2.4'
+SW_VERSION = '1.2.3'
 
 class ShopFloorError(Exception):
     pass
@@ -82,161 +85,70 @@ class ShopFloor_genius(object):
             'MODEL_NAME': '',
             'UUT_SERIAL_NUMBER': 'UUT_Serial_Number',
             'STATION_ID': 'Station_ID',
-            'STARTTIME': 'Start_Time',
-            'ENDTIME': 'End_Time',
-            'OVERALLRESULT': 'Overall_Result',
-            'OVERALLERRORCODE': '',
-
-            "ELAPSED_SECONDS": "elapsed_seconds",
-            "SW_VERSION": "SW_VERSION",
-            "EQUIP_VERSION": "EQUIP_VERSION",
-            "SPEC_VERSION": "SPEC_VERSION",
-            "DUT_MODULETYPE": "DUT_ModuleType",
-            "CARRIER_PROBECONNECTSTATUS": "Carrier_ProbeConnectStatus",
-            "DUT_SCREENONRETRIES": "DUT_ScreenOnRetries",
-            "DUT_SCREENONSTATUS": "DUT_ScreenOnStatus",
-            "DUT_CANCELBYOPERATOR": "DUT_CancelByOperator",
-            "ENV_PARTICLECOUNTER": "ENV_ParticleCounter",
-            "ENV_AMBIENTTEMP": "ENV_AmbientTemp",
-            "DUT_ALIGNMENTSUCCESS": "DUT_AlignmentSuccess",
-            "TEST_RAW_IMG_SAV_SU_NOR_W255": "Test_RAW_IMAGE_SAVE_SUCCESS_normal_W255",
-            "TEST_RAW_IMG_SAV_SU_NOR_RGBBHT": "Test_RAW_IMAGE_SAVE_SUCCESS_normal_RGBBoresight",
-            "TEST_RAW_IMG_SAV_SU_NOR_WHTDOT": "Test_RAW_IMAGE_SAVE_SUCCESS_normal_WhiteDot",
-            "UUT_TEMP_NOR_W255": "UUT_TEMPERATURE_normal_W255",
-            "UUT_TEMP_NOR_RGBBHT": "UUT_TEMPERATURE_normal_RGBBoresight",
-            "UUT_TEMP_NOR_WHTDOT": "UUT_TEMPERATURE_normal_WhiteDot",
-            "NOR_W255_EXPTIME_X": "normal_W255_ExposureTime_X",
-            "NOR_W255_EXPTIME_XZ": "normal_W255_ExposureTime_Xz",
-            "NOR_W255_EXPTIME_YA": "normal_W255_ExposureTime_Ya",
-            "NOR_W255_EXPTIME_YB": "normal_W255_ExposureTime_Yb",
-            "NOR_W255_EXPTIME_Z": "normal_W255_ExposureTime_Z",
-            "NOR_W255_SATLEVEL_X": "normal_W255_SaturationLevel_X",
-            "NOR_W255_SATLEVEL_XZ": "normal_W255_SaturationLevel_Xz",
-            "NOR_W255_SATLEVEL_YA": "normal_W255_SaturationLevel_Ya",
-            "NOR_W255_SATLEVEL_YB": "normal_W255_SaturationLevel_Yb",
-            "NOR_W255_SATLEVEL_Z": "normal_W255_SaturationLevel_Z",
-            "NOR_W255_MODULE_TEMPERATURE": "normal_W255_Module Temperature",
-            "NOR_W255_ONAXIS_LUM": "normal_W255_OnAxis Lum",
-            "NOR_W255_ONAXIS_X": "normal_W255_OnAxis x",
-            "NOR_W255_ONAXIS_Y": "normal_W255_OnAxis y",
-            "NOR_W255_ONAXIS_LUM_AT_47C": "normal_W255_OnAxis Lum at 47C",
-            "NOR_W255_ONAXIS_X_AT_47C": "normal_W255_OnAxis x at 47C",
-            "NOR_W255_ONAXIS_Y_AT_47C": "normal_W255_OnAxis y at 47C",
-            "NOR_W255_SKY_LUM_30DEG": "normal_W255_Sky Lum(30deg)",
-            "NOR_W255_SKY_X_30DEG": "normal_W255_Sky x(30deg)",
-            "NOR_W255_SKY_Y_30DEG": "normal_W255_Sky y(30deg)",
-            "NOR_W255_GRD_LUM_30DEG": "normal_W255_Ground Lum(30deg)",
-            "NOR_W255_GRD_X_30DEG": "normal_W255_Ground x(30deg)",
-            "NOR_W255_GRD_Y_30DEG": "normal_W255_Ground y(30deg)",
-            "NOR_W255_NASAL_LUM_30DEG": "normal_W255_Nasal Lum(30deg)",
-            "NOR_W255_NASAL_X_30DEG": "normal_W255_Nasal x(30deg)",
-            "NOR_W255_NASAL_Y_30DEG": "normal_W255_Nasal y(30deg)",
-            "NOR_W255_TEMP_LUM_30DEG": "normal_W255_Temporal Lum(30deg)",
-            "NOR_W255_TEMP_X_30DEG": "normal_W255_Temporal x(30deg)",
-            "NOR_W255_TEMP_Y_30DEG": "normal_W255_Temporal y(30deg)",
-            "NOR_W255_SKY_NASAL_LUM_30DEG": "normal_W255_Sky_Nasal Lum(30deg)",
-            "NOR_W255_SKY_NASAL_X_30DEG": "normal_W255_Sky_Nasal x(30deg)",
-            "NOR_W255_SKY_NASAL_Y_30DEG": "normal_W255_Sky_Nasal y(30deg)",
-            "NOR_W255_SKY_TEMP_LUM_30DEG": "normal_W255_Sky_Temporal Lum(30deg)",
-            "NOR_W255_SKY_TEMP_X_30DEG": "normal_W255_Sky_Temporal x(30deg)",
-            "NOR_W255_SKY_TEMP_Y_30DEG": "normal_W255_Sky_Temporal y(30deg)",
-            "NOR_W255_GRD_NASAL_LUM_30DEG": "normal_W255_Ground_Nasal Lum(30deg)",
-            "NOR_W255_GRD_NASAL_X_30DEG": "normal_W255_Ground_Nasal x(30deg)",
-            "NOR_W255_GRD_NASAL_Y_30DEG": "normal_W255_Ground_Nasal y(30deg)",
-            "NOR_W255_GRD_TEMP_LUM_30DEG": "normal_W255_Ground_Temporal Lum(30deg)",
-            "NOR_W255_GRD_TEMP_X_30DEG": "normal_W255_Ground_Temporal x(30deg)",
-            "NOR_W255_GRD_TEMP_Y30DEG": "normal_W255_Ground_Temporal y(30deg)",
-            "NOR_W255_MAX_LUM": "normal_W255_Max Lum",
-            "NOR_W255_MAX_LUM_X": "normal_W255_Max Lum x",
-            "NOR_W255_MAX_LUM_Y": "normal_W255_Max Lum y",
-            "NOR_W255_MAX_LUM_X_DEG": "normal_W255_Max Lum x(deg)",
-            "NOR_W255_MAX_LUM_Y_DEG": "normal_W255_Max Lum y(deg)",
-            "NOR_W255_LUM_MEAN_30DEG": "normal_W255_Lum_mean_30deg",
-            "NOR_W255_LUM_DELTA_30DEG": "normal_W255_Lum_delta_30deg",
-            "NOR_W255_LUM_5P30DEG": "normal_W255_Lum 5%30deg",
-            "NOR_W255_LUM_95P30DEG": "normal_W255_Lum 95%30deg",
-            "NOR_W255_LUM_R_07ONAXLUM_30DEG": "normal_W255_Lum_Ratio>0.7OnAxisLum_30deg",
-            "NOR_W255_LUM_R_07MAXLUM_30DEG": "normal_W255_Lum_Ratio>0.7MaxLum_30deg",
-            "NOR_W255_U_MEAN_30DEG": "normal_W255_u'_mean_30deg",
-            "NOR_W255_V_MEAN_30DEG": "normal_W255_v'_mean_30deg",
-            "NOR_W255_UV_DTA_TO_ONAXIS30DEG": "normal_W255_u'v'_delta_to_OnAxis_30deg",
-            "NOR_W255_DUV_95P30DEG": "normal_W255_du'v' 95%30deg",
-            "NOR_RGBBHT_EXPOSURETIME_X": "normal_RGBBoresight_ExposureTime_X",
-            "NOR_RGBBHT_EXPOSURETIME_XZ": "normal_RGBBoresight_ExposureTime_Xz",
-            "NOR_RGBBHT_EXPOSURETIME_YA": "normal_RGBBoresight_ExposureTime_Ya",
-            "NOR_RGBBHT_EXPOSURETIME_YB": "normal_RGBBoresight_ExposureTime_Yb",
-            "NOR_RGBBHT_EXPOSURETIME_Z": "normal_RGBBoresight_ExposureTime_Z",
-            "NOR_RGBBHT_SATURATIONLEVEL_X": "normal_RGBBoresight_SaturationLevel_X",
-            "NOR_RGBBHT_SATURATIONLEVEL_XZ": "normal_RGBBoresight_SaturationLevel_Xz",
-            "NOR_RGBBHT_SATURATIONLEVEL_YA": "normal_RGBBoresight_SaturationLevel_Ya",
-            "NOR_RGBBHT_SATURATIONLEVEL_YB": "normal_RGBBoresight_SaturationLevel_Yb",
-            "NOR_RGBBHT_SATURATIONLEVEL_Z": "normal_RGBBoresight_SaturationLevel_Z",
-            "NOR_RGBBHT_MODULE_TEMPERATURE": "normal_RGBBoresight_Module Temperature",
-            "NOR_RGBBHT_R_LUM": "normal_RGBBoresight_R_Lum",
-            "NOR_RGBBHT_R_X": "normal_RGBBoresight_R_x",
-            "NOR_RGBBHT_R_Y": "normal_RGBBoresight_R_y",
-            "NOR_RGBBHT_R_LUM_AT_47C": "normal_RGBBoresight_R_Lum at 47C",
-            "NOR_RGBBHT_R_X_AT_47C": "normal_RGBBoresight_R_x at 47C",
-            "NOR_RGBBHT_R_Y_AT_47C": "normal_RGBBoresight_R_y at 47C",
-            "NOR_RGBBHT_G_LUM": "normal_RGBBoresight_G_Lum",
-            "NOR_RGBBHT_G_X": "normal_RGBBoresight_G_x",
-            "NOR_RGBBHT_G_Y": "normal_RGBBoresight_G_y",
-            "NOR_RGBBHT_G_LUM_AT_47C": "normal_RGBBoresight_G_Lum at 47C",
-            "NOR_RGBBHT_G_X_AT_47C": "normal_RGBBoresight_G_x at 47C",
-            "NOR_RGBBHT_G_Y_AT_47C": "normal_RGBBoresight_G_y at 47C",
-            "NOR_RGBBHT_B_LUM": "normal_RGBBoresight_B_Lum",
-            "NOR_RGBBHT_B_X": "normal_RGBBoresight_B_x",
-            "NOR_RGBBHT_B_Y": "normal_RGBBoresight_B_y",
-            "NOR_RGBBHT_B_LUM_AT_47C": "normal_RGBBoresight_B_Lum at 47C",
-            "NOR_RGBBHT_B_X_AT_47C": "normal_RGBBoresight_B_x at 47C",
-            "NOR_RGBBHT_B_Y_AT_47C": "normal_RGBBoresight_B_y at 47C",
-            "NOR_RGBBHT_DISPCEN_X_CONO": "normal_RGBBoresight_DispCen_x_cono",
-            "NOR_RGBBHT_DISPCEN_Y_CONO": "normal_RGBBoresight_DispCen_y_cono",
+            'START_TIME': 'Start_Time',
+            'END_TIME': 'End_Time',
+            'OVERALL_RESULT': 'Overall_Result',
+            'OVERALL_ERRORCODE': '',
+            'ELAPSED_SECONDS': 'ELAPSED_SECONDS',
+            'SW_VERSION': 'SW_VERSION',
+            'DUT_POWER_ON_INFO': 'DUT_POWER_ON_INFO',
+            'DUT_POWER_ON_RES': 'DUT_POWER_ON_RES',
+            'JUDGED_BY_CAM': 'JUDGED_BY_CAM',
+            'PRE_WRITE_COUNTS': 'PRE_WRITE_COUNTS',
+            'CFG_BORESIGHT_X': 'CFG_BORESIGHT_X',
+            'CFG_BORESIGHT_Y': 'CFG_BORESIGHT_Y',
+            'CFG_ROTATION': 'CFG_ROTATION',
+            'CFG_LV_W255': 'CFG_LV_W255',
+            'CFG_X_W255': 'CFG_X_W255',
+            'CFG_Y_W255': 'CFG_Y_W255',
+            'CFG_LV_R255': 'CFG_LV_R255',
+            'CFG_X_R255': 'CFG_X_R255',
+            'CFG_Y_R255': 'CFG_Y_R255',
+            'CFG_LV_G255': 'CFG_LV_G255',
+            'CFG_X_G255': 'CFG_X_G255',
+            'CFG_Y_G255': 'CFG_Y_G255',
+            'CFG_LV_B255': 'CFG_LV_B255',
+            'CFG_X_B255': 'CFG_X_B255',
+            'CFG_Y_B255': 'CFG_Y_B255',
+            'CFG_TEMPERATUREW': 'CFG_TemperatureW',
+            'CFG_TEMPERATURER': 'CFG_TemperatureR',
+            'CFG_TEMPERATUREG': 'CFG_TemperatureG',
+            'CFG_TEMPERATUREB': 'CFG_TemperatureB',
+            'CFG_TEMPERATUREWD': 'CFG_TemperatureWD',
+            'CFG_WHITEPOINTGLR': 'CFG_WhitePointGLR',
+            'CFG_WHITEPOINTGLG': 'CFG_WhitePointGLG',
+            'CFG_WHITEPOINTGLB': 'CFG_WhitePointGLB',
+            'CFG_CS': 'CFG_CS',
+            'CFG_VALIDATION_FIELD': 'CFG_VALIDATION_FIELD',
+            'POST_WRITE_COUNTS': 'POST_WRITE_COUNTS',
+            'WRITE_COUNTS_CHECK': 'WRITE_COUNTS_CHECK',
+            'POST_DATA_CHECK': 'POST_DATA_CHECK',
+        }
+        self._mes_mot_dic = {
             "NOR_RGBBHT_DISPCEN_X_DISPLAY": "normal_RGBBoresight_DispCen_x_display",
             "NOR_RGBBHT_DISPCEN_Y_DISPLAY": "normal_RGBBoresight_DispCen_y_display",
             "NOR_RGBBHT_DISP_ROTATE_X": "normal_RGBBoresight_Disp_Rotate_x",
+            "NOR_W255_ONAXIS_LUM": "normal_W255_OnAxis Lum",
             "NOR_RGBBHT_R_LUM_CORRECTED": "normal_RGBBoresight_R_Lum_corrected",
+            "NOR_RGBBHT_G_LUM_CORRECTED": "normal_RGBBoresight_G_Lum_corrected",
+            "NOR_RGBBHT_B_LUM_CORRECTED": "normal_RGBBoresight_B_Lum_corrected",
+            "NOR_W255_ONAXIS_X": "normal_W255_OnAxis x",
+            "NOR_W255_ONAXIS_Y": "normal_W255_OnAxis y",
             "NOR_RGBBHT_R_X_CORRECTED": "normal_RGBBoresight_R_x_corrected",
             "NOR_RGBBHT_R_Y_CORRECTED": "normal_RGBBoresight_R_y_corrected",
-            "NOR_RGBBHT_G_LUM_CORRECTED": "normal_RGBBoresight_G_Lum_corrected",
             "NOR_RGBBHT_G_X_CORRECTED": "normal_RGBBoresight_G_x_corrected",
             "NOR_RGBBHT_G_Y_CORRECTED": "normal_RGBBoresight_G_y_corrected",
-            "NOR_RGBBHT_B_LUM_CORRECTED": "normal_RGBBoresight_B_Lum_corrected",
             "NOR_RGBBHT_B_X_CORRECTED": "normal_RGBBoresight_B_x_corrected",
             "NOR_RGBBHT_B_Y_CORRECTED": "normal_RGBBoresight_B_y_corrected",
-            "TEST_PATTERN_NORMAL_WHITEDOT": "Test_Pattern_normal_WhiteDot",
-            "NOR_WHITEDOT_EXPTIME_X": "normal_WhiteDot_ExposureTime_X",
-            "NOR_WHITEDOT_EXPTIME_XZ": "normal_WhiteDot_ExposureTime_Xz",
-            "NOR_WHITEDOT_EXPTIME_YA": "normal_WhiteDot_ExposureTime_Ya",
-            "NOR_WHITEDOT_EXPTIME_YB": "normal_WhiteDot_ExposureTime_Yb",
-            "NOR_WHITEDOT_EXPTIME_Z": "normal_WhiteDot_ExposureTime_Z",
-            "NOR_WHITEDOT_SATLEVEL_X": "normal_WhiteDot_SaturationLevel_X",
-            "NOR_WHITEDOT_SATLEVEL_XZ": "normal_WhiteDot_SaturationLevel_Xz",
-            "NOR_WHITEDOT_SATLEVEL_YA": "normal_WhiteDot_SaturationLevel_Ya",
-            "NOR_WHITEDOT_SATLEVEL_YB": "normal_WhiteDot_SaturationLevel_Yb",
-            "NOR_WHITEDOT_SATLEVEL_Z": "normal_WhiteDot_SaturationLevel_Z",
+            "NOR_W255_MODULE_TEMPERATURE": "normal_W255_Module Temperature",
+            "UUT_TEMP_NOR_RGBBHT": "UUT_TEMPERATURE_normal_RGBBoresight",
+            "UUT_TEMP_NOR_RGBBHT": "UUT_TEMPERATURE_normal_RGBBoresight",
+            "UUT_TEMP_NOR_RGBBHT": "UUT_TEMPERATURE_normal_RGBBoresight",
             "NOR_WHTDOT_MODULE_TEMPERATURE": "normal_WhiteDot_Module Temperature",
-            "NOR_WHTDOT_TARGET_COLOR_X": "normal_WhiteDot_Target color x",
-            "NOR_WHTDOT_TARGET_COLOR_Y": "normal_WhiteDot_Target color y",
-            "NOR_WHTDOT_WP255_LUM": "normal_WhiteDot_WP255 Lum",
-            "NOR_WHTDOT_WP255_X": "normal_WhiteDot_WP255 x",
-            "NOR_WHTDOT_WP255_Y": "normal_WhiteDot_WP255 y",
-            "NOR_WHTDOT_WP_R_QUEST_ALG": "normal_WhiteDot_WP R Quest Algo",
-            "NOR_WHTDOT_WP_G_QUEST_ALG": "normal_WhiteDot_WP G Quest Algo",
-            "NOR_WHTDOT_WP_B_QUEST_ALG": "normal_WhiteDot_WP B Quest Algo",
-            "NOR_WHTDOT_WP_LUM_QUEST_ALG": "normal_WhiteDot_WP Lum Quest Algo",
-            "NOR_WHTDOT_WP_X_QUEST_ALG": "normal_WhiteDot_WP x  Quest Algo",
-            "NOR_WHTDOT_WP_Y_QUEST_ALG": "normal_WhiteDot_WP y  Quest Algo",
-            "NOR_WHTDOT_WP_R_SEACLIFF_ALG": "normal_WhiteDot_WP R Seacliff Algo",
-            "NOR_WHTDOT_WP_G_SEACLIFF_ALG": "normal_WhiteDot_WP G Seacliff Algo",
-            "NOR_WHTDOT_WP_B_SEACLIFF_ALG": "normal_WhiteDot_WP B Seacliff Algo",
-            "NOR_WHTDOT_WP_LUM_SEACLIFF_ALG": "normal_WhiteDot_WP Lum Seacliff Algo",
-            "NOR_WHTDOT_WP_X_SEACLIFF_ALG": "normal_WhiteDot_WP x Seacliff Algo",
-            "NOR_WHTDOT_WP_Y_SEACLIFF_ALG": "normal_WhiteDot_WP y Seacliff Algo",
             "NOR_WHTDOT_WP_R_TO_DDIC": "normal_WhiteDot_WP R to DDIC",
             "NOR_WHTDOT_WP_G_TO_DDIC": "normal_WhiteDot_WP G to DDIC",
             "NOR_WHTDOT_WP_B_TO_DDIC": "normal_WhiteDot_WP B to DDIC",
-        }
+                             }
         # </editor-fold>
 
     def save_results(self, uut_sn, log_items):
@@ -260,29 +172,97 @@ class ShopFloor_genius(object):
             err_codes = [99999]  # to indicate the test-flow is not executed completely
 
         # 日期格式转换-用于数据上传
-        log_2_mes['STARTTIME'] = datetime.datetime.strptime(log_2_mes['STARTTIME'], '%Y%m%d-%H%M%S')
-        log_2_mes['ENDTIME'] = datetime.datetime.strptime(log_2_mes['ENDTIME'], '%Y%m%d-%H%M%S')
+        log_2_mes['START_TIME'] = datetime.datetime.strptime(log_2_mes['START_TIME'], '%Y%m%d-%H%M%S')
+        log_2_mes['END_TIME'] = datetime.datetime.strptime(log_2_mes['END_TIME'], '%Y%m%d-%H%M%S')
 
         log_2_mes['MODEL_NAME'] = self._machine_type
-        log_2_mes['OVERALLERRORCODE'] = ';'.join(err_codes)
+        log_2_mes['OVERALL_ERRORCODE'] = ';'.join(err_codes)
         insert_response = self.lcd_avi_myzy_log_loader(log_2_mes)
         return insert_response
+
+    # parse dataset from inlog_res
+    def parse_tbl_data(self, res):
+        res_tbl_items = {}
+        for log in res.LOG.diffgram[0].DocumentElement[0].Log:
+            dd = dict(log)
+            for k, v in self._mes_mot_dic.items():
+                if dd.get(k) is None:
+                    continue
+                res_tbl_items[k] = dd.get(k)[0]
+        return res_tbl_items
+
+    def insert_mot_data_in_json(self, uut_sn, dic):
+        res = False
+        try:
+            if not os.path.exists(CALIB_REQ_DATA_FILENAME):
+                os.makedirs(CALIB_REQ_DATA_FILENAME)
+            os.chmod(CALIB_REQ_DATA_FILENAME, os.stat(CALIB_REQ_DATA_FILENAME).st_mode | stat.S_IRWXU)
+
+            if set(self._mes_mot_dic.keys()).issubset(dic.keys()):
+                try:
+                    for k, v in self._mes_mot_dic.items():
+                        dic[v] = dic[k]
+                    dic['display_boresight_x'] = float(dic['normal_RGBBoresight_DispCen_x_display'])
+                    dic['display_boresight_y'] = float(dic['normal_RGBBoresight_DispCen_y_display'])
+                    dic['rotation'] = float(dic['normal_RGBBoresight_Disp_Rotate_x'])
+                    dic['lv_W255'] = float(dic['normal_W255_OnAxis Lum'])
+                    dic['lv_R255'] = float(dic['normal_RGBBoresight_R_Lum_corrected'])
+                    dic['lv_G255'] = float(dic['normal_RGBBoresight_G_Lum_corrected'])
+                    dic['lv_B255'] = float(dic['normal_RGBBoresight_B_Lum_corrected'])
+
+                    dic['x_W255'] = float(dic["normal_W255_OnAxis x"])
+                    dic['y_W255'] = float(dic["normal_W255_OnAxis y"])
+
+                    dic['x_R255'] = float(dic["normal_RGBBoresight_R_x_corrected"])
+                    dic['y_R255'] = float(dic["normal_RGBBoresight_R_y_corrected"])
+
+                    dic['x_G255'] = float(dic["normal_RGBBoresight_G_x_corrected"])
+                    dic['y_G255'] = float(dic["normal_RGBBoresight_G_y_corrected"])
+
+                    dic['x_B255'] = float(dic["normal_RGBBoresight_B_x_corrected"])
+                    dic['y_B255'] = float(dic["normal_RGBBoresight_B_y_corrected"])
+
+                    dic['TemperatureW'] = float(dic['normal_W255_Module Temperature'])
+                    dic['TemperatureR'] = float(dic['UUT_TEMPERATURE_normal_RGBBoresight'])
+                    dic['TemperatureG'] = float(dic['UUT_TEMPERATURE_normal_RGBBoresight'])
+                    dic['TemperatureB'] = float(dic['UUT_TEMPERATURE_normal_RGBBoresight'])
+                    dic['TemperatureWD'] = float(dic['normal_WhiteDot_Module Temperature'])
+                    dic['WhitePointGLR'] = int(dic['normal_WhiteDot_WP R to DDIC'])
+                    dic['WhitePointGLG'] = int(dic['normal_WhiteDot_WP G to DDIC'])
+                    dic['WhitePointGLB'] = int(dic['normal_WhiteDot_WP B to DDIC'])
+
+                    res = True
+                except Exception as e:
+                    logging.error('Fail to parse data from MES.'.format(str(e)))
+            calib_data_json_fn = os.path.join(CALIB_REQ_DATA_FILENAME, f'eeprom_session_miz_{uut_sn}.json')
+            with open(calib_data_json_fn, 'w') as json_file:
+                json.dump(dic, json_file, indent=6)
+        except Exception as e:
+            logging.error('Fail to save json-file: {0}'.format(str(e)))
+        return res
+
 
     # <editor-fold desc="API interface provided by Genius Inc.">
     def p5385_in_lot_info(self, uut_sn):
         count = 0
         success = False
         res = None
+        res_simple_data = {}
         while count < self._max_retries and (not success):
             try:
                 client = suds.client.Client(SF_URL, timeout=self._time_out)
                 res = client.service.GetInLotInfo(self._machine_type, uut_sn, '', '', '')
+                if res is not None:
+                    res_simple_data['STATUS'] = res.STATUS
+                    res_simple_data['LOT'] = res.LOT
+                    res_simple_data['STATION'] = res.STATION
+                    res_simple_data['PART_NO'] = res.PART_NO
                 if hasattr(res, 'STATUS') and (res.STATUS == 'SUCCESS'):
                     success = True
             except Exception as e:
                 logging.error(f'Fail to call P5385_in_lot. Ex: {str(e)}')
             count += 1
-        logging.info(f'Inlot: {count}, success: {success} <= {res}')
+        logging.info(f"Inlot: {count}, success: {success} <= {res_simple_data}")
         return res
 
     def lcd_avi_myzy_log_loader(self, lcd_avi_data):
@@ -292,7 +272,7 @@ class ShopFloor_genius(object):
         while count < self._max_retries and (not success):
             try:
                 client = suds.client.Client(SF_LOADER_URL, timeout=self._time_out)
-                res = client.service.MOT_Overall_LOG_Loader(lcd_avi_data)
+                res = client.service.EEPROM_Overall_LOG_Loader(lcd_avi_data)
                 if res is not None:
                     success = True
             except Exception as e:
@@ -394,16 +374,31 @@ def ok_to_test(serial):
         ok_to_test_res = True
     else:
         ok_to_test_res = False
+        validate_res = {}
         try:
+            if not os.path.exists(SF_EEPROM_DIRS):
+                os.makedirs(SF_EEPROM_DIRS)
+            os.chmod(SF_EEPROM_DIRS, os.stat(SF_EEPROM_DIRS).st_mode | stat.S_IRWXU)
+
             validate_res = _ex_shop_floor.p5385_in_lot_info(serial)
             if hasattr(validate_res, 'STATUS'):
                 inspection = None
                 if validate_res.STATUS.upper() == 'SUCCESS':
                     inspection = validate_res.INSPECTION_RESULT
-                    if validate_res.INSPECTION_RESULT in ['OK', 'WAIVER', 'PASS']:
-                        ok_to_test_res = True
+                    if validate_res.INSPECTION_RESULT in ['PASS']:
+                        get_mot_data_res = _ex_shop_floor.parse_tbl_data(validate_res)
+                        if get_mot_data_res:
+                            # 截取所需内容并以dict形式保存在本地（json文件）
+                            if _ex_shop_floor.insert_mot_data_in_json(serial, get_mot_data_res):
+                                ok_to_test_res = True
+                            else:
+                                msg = '过站检测失败, 本地JSON文件保存失败.'
+                        else:
+                            msg = '过站检测失败, 无法解析接收的数据.'
                     else:
                         msg = '过站检测失败 站点状态: {0}, 前站结果: {1}'.format(validate_res.STATUS, inspection)
+                else:
+                    msg = '过站检测失败 站点状态: {0}'.format(validate_res.STATUS)
             else:
                 msg = '过站检测失败 网络异常'
             if not ok_to_test_res:
@@ -511,7 +506,8 @@ def tkinter_showinfo(msg):
     tkinter.simpledialog.messagebox.showinfo('提示', msg)
     root.destroy()
 
-def initialise(station_config):
+
+def initialize(station_config):
     global _ex_shop_floor, MES_CHK_OFFLINE
     logger = logging.getLogger()
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -541,11 +537,11 @@ def initialise(station_config):
 if __name__ == '__main__':
     logging.info('----------------------------')
     logging.debug('+' * 20)
-    initialise(None)
+    initialize(None)
     log_dir = r'c:\oculus\run\shop_floor_interface'
     fn_name = r'P1-123456789_seacliff_mot-04_20211125-154400_P.log'
     # serial_numbers = ['P1-123456789', 'P1-234567890', 'P1-234567890', 'P1-999999999', 'M210814102250']
-    serial_numbers = ['P1-123456789', 'P1-234567890', 'P1-234567890', 'P1-345678900', 'P1-999999999']
+    serial_numbers = ['P1-123456789', 'P1-234567890',]
     for serial_number in serial_numbers:
         res = ok_to_test(serial_number)
         # da = save_results_from_logs(os.path.join(log_dir, fn_name), log_upload_after_test=True)
