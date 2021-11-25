@@ -5,6 +5,7 @@ Version 1.2.3
 2021-11-24 elton<elton.tian@mygyroup.com>
 -1. update test items based MOT V1.2.4
 -2. update DDIC version to 0x12
+-3. decode DDIC data and save it automatically.
 
 ========================================================
 Version 1.2.2
