@@ -27,8 +27,8 @@ import stat
 # MES_CTRL_PWD = 'MES123'
 MES_IN_LOT_CTRL = False  # required by Haha. 1/11/2021
 
-SF_LOADER_URL = 'http://10.99.10.126:8100/api/MesTransferBind/'
-SF_MESDATA_URL = 'http://10.99.10.126:8100/api/MesData/'
+SF_LOADER_URL = 'http://10.96.16.7:8100/api/MesTransferBind/'
+SF_MESDATA_URL = 'http://10.96.16.7:8100/api/MesData/'
 
 CALIB_REQ_DATA_FILENAME = r'c:\oculus\run\seacliff_eeprom\session_data'
 
@@ -431,7 +431,7 @@ def ok_to_test(serial):
         # elif input_pwd is not None:
         #     tkinter.simpledialog.messagebox.showinfo(dialog_title, '密码输入错误')
         # root.destroy()
-    return ok_to_test_res, msg
+    return ok_to_test_res, f'MAC:{_ex_shop_floor._mac_id}:{msg}'
 
 
 def save_results(test_log):

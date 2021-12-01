@@ -53,8 +53,8 @@ SHOP_FLOOR_BAK_DIR = r'c:\shop_floor_to_be_uploaded'
 SHOP_FLOOR_FAIL_TO_UPLOAD = r'c:\shop_floor_fails'
 SW_VERSION_MISMATCH_LOGS_DIR = r'c:\shop_floor_fails\version_mismatch_logs'
 MACHINE_TYPE = 'MODULE_OPTICAL_TEST'
-STATION_ID = 'seacliff_mot-04'
-MAC_ID_FILER = '本地'
+STATION_ID = 'seacliff_mot-06'
+MAC_ID_FILER = 'Ethernet 2'
 HostProgressName = 'seacliff_mot_run.exe'
 SHOP_FLOOR_BAK_DIR_FILTER = f'*_{STATION_ID}_*.log'
 # URL should end with ?WSDL
@@ -404,6 +404,8 @@ def ok_to_test(serial):
                         ok_to_test_res = True
                     else:
                         msg = '过站检测失败 站点状态: {0}, 前站结果: {1}'.format(validate_res.STATUS, inspection)
+                else:
+                    msg = '过站检测失败 站点状态: {0}'.format(validate_res.STATUS)
             else:
                 msg = '过站检测失败 网络异常'
             if not ok_to_test_res:
@@ -511,7 +513,7 @@ def tkinter_showinfo(msg):
     tkinter.simpledialog.messagebox.showinfo('提示', msg)
     root.destroy()
 
-def initialise(station_config):
+def initialize(station_config):
     global _ex_shop_floor, MES_CHK_OFFLINE
     logger = logging.getLogger()
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -541,7 +543,7 @@ def initialise(station_config):
 if __name__ == '__main__':
     logging.info('----------------------------')
     logging.debug('+' * 20)
-    initialise(None)
+    initialize(None)
     log_dir = r'c:\oculus\run\shop_floor_interface'
     fn_name = r'P1-123456789_seacliff_mot-04_20211125-154400_P.log'
     # serial_numbers = ['P1-123456789', 'P1-234567890', 'P1-234567890', 'P1-999999999', 'M210814102250']
