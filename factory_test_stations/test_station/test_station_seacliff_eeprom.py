@@ -366,6 +366,23 @@ class EEPStationAssistant(object):
         raw_data_cpy[75 - self._dr_offset] = self._ddic_version
         return raw_data_cpy
 
+    def resolution_check(self, mes_dic: dict, chk_dic: dict):
+        check_result = {}
+        detail = {}
+        for key, mapping in self._eeprom_map_group.items():
+            if key not in mes_dic.keys() or key not in chk_dic.keys():
+                check_result[key] = False
+                detail.update({key: {'res_chk': check_result[key]}})
+            else:
+                diff = math.fabs(mes_dic[key] - chk_dic[key])
+                data_len, sign_or_not, integ, deci = self._cvt_flag[mapping[1]]
+                check_result[key] = (diff <= 1/(1 << deci))
+                detail.update({key: {'diff': diff,
+                                     'flag': mapping[1],
+                                     'resolution6': f'{1 / (1 << deci):0.6f}',
+                                     'res_chk': check_result[key]}})
+        return check_result, detail
+
 
 class seacliffeepromStation(test_station.TestStation):
     """
@@ -427,7 +444,7 @@ class seacliffeepromStation(test_station.TestStation):
         self._equip = test_equipment_seacliff_eeprom.seacliffeepromEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '1.2.3'
+        self._sw_version = '1.2.4'
         self._eep_assistant = EEPStationAssistant()
         self._max_retries = 5
 
@@ -719,30 +736,42 @@ class seacliffeepromStation(test_station.TestStation):
                 data_from_nvram_cap = None
 
                 while read_tries <= self._max_retries and not post_data_check:
-                    if not self._station_config.DUT_SIM:
-                        try:
-                            data_from_nvram = the_unit.nvm_read_data(data_len=self._eep_assistant.nvm_data_len)[2:]
-                            data_from_nvram_cap = [c.upper() for c in data_from_nvram]
-                            if data_from_nvram_cap == raw_data_cpy_cap:
-                                var_check_data = data_from_nvram_cap
-                                post_data_check = True
-                        except Exception as e2:
-                            self._operator_interface.print_to_console(f'msg for read data: {str(e2)}\n')
+                    if self._station_config.DUT_SIM:
+                        var_check_data = raw_data_cpy_cap
+                        post_data_check = True
+                        continue
+                    try:
+                        data_from_nvram = the_unit.nvm_read_data(data_len=self._eep_assistant.nvm_data_len)[2:]
+                        data_from_nvram_cap = [c.upper() for c in data_from_nvram]
+                        if data_from_nvram_cap == raw_data_cpy_cap:
+                            var_check_data = data_from_nvram_cap
+                            post_data_check = True
+                    except Exception as e2:
+                        self._operator_interface.print_to_console(f'msg for read data: {str(e2)}\n')
                     dummy_msg = None
                     if isinstance(data_from_nvram, list):
                         dummy_msg = ','.join(data_from_nvram)
                     self._operator_interface.print_to_console(f"RD_DATA {read_tries}:  {dummy_msg}.\n")
                     read_tries += 1
                 # save decoded data.
+                resolution_chk_result = {}
                 if post_data_check and var_check_data:
                     var_check_data_json = self._eep_assistant.decode_raw_data(raw_data=var_check_data)
                     if not os.path.exists(self._station_config.RAW_IMAGE_LOG_DIR):
                         hardware_station_common.utils.os_utils.mkdir_p(self._station_config.RAW_IMAGE_LOG_DIR)
-                    post_data_json_fn = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR,
-                                                     f'eeprom_session_miz_{serial_number}_confirm_data.json')
+                    post_data_json_fn = os.path.join(
+                        self._station_config.RAW_IMAGE_LOG_DIR,
+                        f'eeprom_session_miz_{serial_number}_{datetime.datetime.now():%Y%m%d_%H%M%S}.json')
+                    resolution_chk_result, detail = self._eep_assistant.resolution_check(var_data, var_check_data_json)
                     with open(os.path.join(post_data_json_fn), 'w') as post_json_file:
-                        json.dump(var_check_data_json, post_json_file, indent=6)
+                        j_data = {'Raw': var_data,
+                                  'Revert': var_check_data_json,
+                                  'Chk': detail}
+                        json.dump(j_data, post_json_file, indent=6)
+
                 test_log.set_measured_value_by_name_ex('POST_DATA_CHECK', post_data_check)
+                test_log.set_measured_value_by_name_ex('RESOLUTION_CHECK', any(resolution_chk_result)
+                                                       and all(resolution_chk_result.values()))
 
                 del data_from_nvram, raw_data_cpy, raw_data_cpy_cap, data_from_nvram_cap
             elif write_count >= self._station_config.NVM_WRITE_COUNT_MAX:

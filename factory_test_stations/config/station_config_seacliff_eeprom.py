@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.2.4
+2021-12-13 elton<elton.tian@mygyroup.com>
+-1. add test item for Resolution check.
+
+========================================================
 Version 1.2.3
 2021-11-24 elton<elton.tian@mygyroup.com>
 -1. update test items based MOT V1.2.4

@@ -64,6 +64,7 @@ STATION_LIMITS_ARRAYS = [
     ["CFG_VALIDATION_FIELD", None, None, 2025],
 
     ['POST_DATA_CHECK', True, True, 3001],
+    ['RESOLUTION_CHECK', True, True, 3002],
 
     ["POST_WRITE_COUNTS", 0, 7, 5001],
     ["WRITE_COUNTS_CHECK", True, True, 5002],
