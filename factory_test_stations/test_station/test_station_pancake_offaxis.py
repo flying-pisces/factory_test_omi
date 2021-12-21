@@ -12,6 +12,7 @@ from test_station.test_fixture.test_fixture_pancake_offaxis import pancakeoffaxi
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 from test_station.test_equipment.test_equipment_pancake_offaxis import pancakeoffaxisEquipment
 from test_station.dut.dut import projectDut, DUTError
+import hardware_station_common.utils as hsc_utils
 import types
 import glob
 import sys
@@ -213,19 +214,22 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._retries_screen_on = 0
         timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
                                 else self._station_config.TIMEOUT_FOR_BTN_IDLE)
-        timeout_for_dual = timeout_for_btn_idle
+
+        timeout_for_dual = time.time()
         try:
             self._fixture.button_disable()
             self._fixture.power_on_button_status(True)
             self._the_unit.initialize()
             self._operator_interface.print_to_console("Initialize DUT... \n")
-            while timeout_for_dual > 0:
+            tm_current = timeout_for_dual
+            while tm_current - timeout_for_dual <= timeout_for_btn_idle:
                 if ready or self._is_cancel_test_by_op:
                     break
                 msg_prompt = 'Load DUT, and then Press PowerOn-Btn(Litup) in %s counts...'
                 if power_on_trigger:
                     msg_prompt = 'Press Dual-Btn(Load)/L-Btn(Cancel)/PowerOn-Btn(Re Litup)  in %s counts...'
-                self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow')
+                tm_data = timeout_for_btn_idle - (tm_current - timeout_for_dual)
+                self._operator_interface.prompt(msg_prompt % int(tm_data), 'yellow')
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
                     ready = True
@@ -257,8 +261,8 @@ class pancakeoffaxisStation(test_station.TestStation):
                     elif ready_status == 0x04:
                         self._operator_interface.print_to_console('please load the dut correctly.\n')
                         pass
-                time.sleep(0.1)
-                timeout_for_dual -= 1
+                time.sleep(0.01)
+                tm_current = time.time()
         except Exception as e:
             self._operator_interface.print_to_console('exception msg {0}.\n'.format(e))
         finally:
@@ -354,18 +358,27 @@ class pancakeoffaxisStation(test_station.TestStation):
             self._operator_interface.print_to_console('clear registration\n')
             self._equipment.clear_registration()
             if not self._station_config.EQUIPMENT_SIM:
-                uni_file_name = re.sub('_x.log', '_{}.ttxm'.format(posIdx), test_log.get_filename())
+                uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+                if not os.path.exists(uni_file_name):
+                    hsc_utils.mkdir_p(uni_file_name)
                 bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
-                databaseFileName = os.path.join(bak_dir, uni_file_name)
+                databaseFileName = os.path.join(bak_dir, uni_file_name, f'{posIdx}.ttxm')
                 self._equipment.create_database(databaseFileName)
                 self._ttxm_filelist.append(databaseFileName)
             else:
-                db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
-                fns = glob.glob1(db_dir, '%s_*_%s.ttxm'%(serial_number, posIdx))
-                if len(fns) > 0:
-                    databaseFileName = os.path.join(db_dir, fns[0])
-                    self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
-                    self._equipment.set_database(databaseFileName)
+                uut_dirs = [c for c in glob.glob(os.path.join(self._station_config.EQUIPMENT_DEMO_DATABASE, r'*'))
+                            if os.path.isdir(c)
+                            and os.path.relpath(c, self._station_config.EQUIPMENT_DEMO_DATABASE)
+                                .upper().startswith(serial_number.upper())]
+                if len(uut_dirs) <= 0:
+                    raise FileNotFoundError(f'unable to address data for {serial_number}')
+                db_dir = uut_dirs[-1]
+                fns = glob.glob1(db_dir, f'{posIdx}.ttxm')
+                if len(fns) <= 0:
+                    raise FileNotFoundError(f'unable to address data for {serial_number}')
+                databaseFileName = os.path.join(db_dir, fns[0])
+                self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
+                self._equipment.set_database(databaseFileName)
 
             self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
             self._fixture.mov_abs_xy(pos[0], pos[1])
@@ -403,6 +416,8 @@ class pancakeoffaxisStation(test_station.TestStation):
                 cy_dic = {}
                 center_dic = {}
                 duv_dic = {}
+                u_dic = {}
+                v_dic = {}
                 u_values = None
                 u_values = None
 
@@ -460,12 +475,14 @@ class pancakeoffaxisStation(test_station.TestStation):
                         vs0 = vs_dic[center_item]
                         duvs = np.sqrt((np.array(us) - us0)**2 + (np.array(vs) - vs0)**2)
                         duv_dic = dict(zip(keys, duvs))
+                        u_dic.update(us_dic)
+                        v_dic.update(vs_dic)
                     lv_all_items[f'{posIdx}_{test_pattern}'] = lv_dic
                 # endregion
 
                 # region Normal Test Item.
 
-                # Brightness at 30deg polar angle (nits)
+                # BrCOMMAND_DISP_POWERON_DLYightness at 30deg polar angle (nits)
                 brightness_items = []
                 for item in self._station_config.BRIGHTNESS_AT_POLE_AZI:
                     tlv = lv_dic.get('P_%s_%s' % item)
@@ -474,6 +491,16 @@ class pancakeoffaxisStation(test_station.TestStation):
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, tlv)
+
+                for item in self._station_config.COLOR_PRIMARY_AT_POLE_AZI:
+                    u = u_dic.get(f'P_%s_%s' % item)
+                    v = v_dic.get(f'P_%s_%s' % item)
+                    if u is None or v is None:
+                        continue
+                    test_item = '{}_{}_u_{}_{}'.format(posIdx, pattern, *item)
+                    test_log.set_measured_value_by_name_ex(test_item, u)
+                    test_item = '{}_{}_v_{}_{}'.format(posIdx, pattern, *item)
+                    test_log.set_measured_value_by_name_ex(test_item, v)
 
                 for p0, p180 in self._station_config.BRIGHTNESS_AT_POLE_ASSEM:
                     lv_x_0 = lv_dic.get('P_%s_%s' % p0)

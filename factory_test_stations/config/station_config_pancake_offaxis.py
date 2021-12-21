@@ -44,10 +44,10 @@ SERIAL_NUMBER_MODEL_NUMBER = r'^\dPRP[\w|\d]{10}$'  # Peak panel SN
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM11" #
+FIXTURE_COMPORT = "COM2" #
 FIXTURE_PARTICLE_COMPORT = "COM1" #
 FIXTURE_PARTICLE_ADDR = 1
-DUT_COMPORT = "COM5" #
+DUT_COMPORT = "COM1" #
 
 DUT_LITUP_OUTSIDE = True
 TIMEOUT_FOR_BTN_IDLE = 10
@@ -168,7 +168,7 @@ FIXTRUE_PARTICLE_START_DLY = 0
 # DEFAULT_VSYNC_US = 13.8889  # 72  # 111.44646
 DUT_ON_MAXRETRY = 5
 
-DUT_DISPLAYSLEEPTIME = 0
+DUT_DISPLAYSLEEPTIME = 0.025
 ##################################
 # Test Equipment related parameters
 IS_VERBOSE = True
@@ -178,7 +178,6 @@ SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqx
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
-USE_MULTI_DB = True
 
 FOCUS_DISTANCE = 0.45
 APERTURE = 8.0
@@ -193,8 +192,6 @@ IS_EXPORT_CSV = False
 IS_EXPORT_PNG = False
 Resolution_Bin_X = 360
 Resolution_Bin_Y = 360
-
-CAMERA_SN = "159496752"
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
@@ -217,19 +214,22 @@ CENTER_AT_POLE_AZI = 'P_0_0'
 BRIGHTNESS_AT_POLE_AZI = [(0, 0),
                          (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338),
                          (10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10, 180), (10, 225), (10, 270), (10, 315), (10, 68), (10, 112), (10, 158), (10, 202), (10, 248), (10, 292), (10, 338),
-                         (20, 0), (20, 22), (20, 45), (20, 90), (20, 135), (20, 180), (20, 225), (20, 270), (20, 315), (20, 68), (20, 112), (20, 158), (20, 202), (20, 248), (20, 292), (20, 338)]
-BRIGHTNESS_AT_POLE_AZI_PER = [(30, 0), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315)]
-BRIGHTNESS_AT_POLE_ASSEM = [ ((30, 0), (30, 180)), ]
-COLORSHIFT_AT_POLE_AZI = [(10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10, 180), (10, 225), (10, 270), (10, 315), (10, 68), (10, 112), (10, 158), (10, 202), (10, 248), (10, 292), (10, 338),
                          (20, 0), (20, 22), (20, 45), (20, 90), (20, 135), (20, 180), (20, 225), (20, 270), (20, 315), (20, 68), (20, 112), (20, 158), (20, 202), (20, 248), (20, 292), (20, 338),
+                         (15, 0), (15, 22), (15, 45), (15, 90), (15, 135), (15, 180), (15, 225), (15, 270), (15, 315), (15, 68), (15, 112), (15, 158), (15, 202), (15, 248), (15, 292), (15, 338),
+                          ]
+BRIGHTNESS_AT_POLE_AZI_PER = [(15, 0), (15, 90), (15, 180), (15, 270), (30, 0), (30, 90), (30, 180), (30, 270)]
+BRIGHTNESS_AT_POLE_ASSEM = [((30, 0), (30, 180))]
+COLORSHIFT_AT_POLE_AZI = [(15, 0), (15, 22), (15, 45), (15, 90), (15, 135), (15, 180), (15, 225), (15, 270), (15, 315), (15, 68), (15, 112), (15, 158), (15, 202), (15, 248), (15, 292), (15, 338),
                          (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338)]
+COLOR_PRIMARY_AT_POLE_AZI = [(0, 0), (15, 0), (15, 180), (30, 0), (30, 180)]
 
-CR_AT_POLE_AZI = [(0, 0), (30, 0), (30, 90), (30, 180), (30, 270)]
+CR_AT_POLE_AZI = [(0, 0), (15, 0), (15, 90), (15, 180), (15, 270), (30, 0), (30, 90), (30, 180), (30, 270)]
 
 EXPORT_RAW_DATA_PATTERN = {'P1': ['W255', 'W000']}
 EXPORT_RAW_DATA_PATTERN_AZI = [('Vertical', 90), ('Diagonal', 45), ('Horizontal', 0), ('Diagonal', 135)]
 EXPORT_RAW_DATA_PATTERN_POLE = list(range(-60, 61, 2))
 IS_EXPORT_RAW_DATA = True
+SORTED_EXPORT_LOG = False
 
 ##################################
 # IT and work order
@@ -239,10 +239,11 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 DATA_COLLECT_ONLY = False
-EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis_2'
+EQUIPMENT_DEMO_DATABASE = r'C:\ShareData\OffAxis'
 
-DUT_SIM = False
+DUT_SIM = True
 # CAMERA_SN = "159496752"
-EQUIPMENT_SIM = False
-FIXTURE_SIM = False
+CAMERA_SN = 'Demo'
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True
 
