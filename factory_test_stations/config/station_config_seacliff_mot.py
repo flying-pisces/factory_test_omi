@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.2.5
+2021-12-21 elton<elton.tian@myzygroup>
+-1. add compensation for boresight center
+
+========================================================
 Version 1.2.4
 2021-11-16 elton<elton.tian@myzygroup>
 -1. Conoscope V72
@@ -255,7 +260,7 @@ COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255
 DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 10
 
-VERSION_REVISION_EQUIPMENT = '57'
+VERSION_REVISION_EQUIPMENT = '72'
 FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 
 # set sensor_temperature
@@ -424,6 +429,16 @@ DATA_STATUS_DEGS = [10, 20, 30]
 # COLORMATRIX_COEFF = [[0.9459, 0.0134, 0.0081], [-0.0205, 0.9731, 0.0031], [-0.0001, 0.0007, 1.0062]]
 COLORMATRIX_COEFF = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
+COMPENSATION_COEFF = {
+    'L': {
+        'DispCen_x_display': 0,
+        'DispCen_y_display': 0,
+    },
+    'R': {
+        'DispCen_x_display': 0,
+        'DispCen_y_display': 0,
+    },
+}
 ##################################
 # IT and work order
 #

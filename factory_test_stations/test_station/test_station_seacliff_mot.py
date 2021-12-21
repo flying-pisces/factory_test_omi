@@ -366,7 +366,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.2.4{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.2.5{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -727,16 +727,6 @@ class seacliffmotStation(test_station.TestStation):
                 self._pool.close()
                 self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')
                 self._operator_interface.print_to_console('Please wait...')
-                self._the_unit.close()
-                self._fixture.unload()
-            except:
-                pass
-            try:
-                self._the_unit.close()
-                self._fixture.unload()
-            except:
-                pass
-            try:
                 self._the_unit.close()
                 self._fixture.unload()
             except:
@@ -1142,6 +1132,11 @@ class seacliffmotStation(test_station.TestStation):
                                 for export_key, export_value in color_exports.items():
                                     measure_item_name = '{0}_{1}_{2}'.format(
                                         pos_name_i, pattern_name_i, export_key)
+
+                                    if export_key in self._station_config.COMPENSATION_COEFF[self._module_left_or_right]:
+                                        cp = self._station_config.COMPENSATION_COEFF[self._module_left_or_right][export_key]
+                                        if isinstance(export_value, float):
+                                            export_value += cp
                                     test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
                             self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}, err_msg: {err_msg}')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
