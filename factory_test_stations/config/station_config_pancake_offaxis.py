@@ -1,6 +1,12 @@
 """
 Release Note:
 ========================================================
+Version 2.1.3
+2021-12-24 author<elton.tian@myzygroup.com>
+-1. update limit base Tokki V0.2.
+-2. optimize the timeout for loading DUT.
+
+========================================================
 Version 2.1.2
 2021-8-24 author<elton.tian@myzygroup.com>
 -1. Fix multi summary file for same limit file.
