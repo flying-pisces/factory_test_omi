@@ -1137,6 +1137,7 @@ class seacliffmotStation(test_station.TestStation):
                                         cp = self._station_config.COMPENSATION_COEFF[self._module_left_or_right][export_key]
                                         if isinstance(export_value, float):
                                             export_value += cp
+                                        test_log.set_measured_value_by_name_ex(f'COMPENSATION_{export_key}', cp)
                                     test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
                             self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}, err_msg: {err_msg}')
                             self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True

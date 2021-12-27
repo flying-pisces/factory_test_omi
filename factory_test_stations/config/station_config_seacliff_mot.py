@@ -2,8 +2,9 @@
 Release Note:
 ========================================================
 Version 1.2.5
-2021-12-21 elton<elton.tian@myzygroup>
+2021-12-27 elton<elton.tian@myzygroup>
 -1. add compensation for boresight center
+-2. add compensation records into logs.
 
 ========================================================
 Version 1.2.4

@@ -35,6 +35,8 @@ STATION_LIMITS_ARRAYS = [
     # ["UUT_PW255_WhitePointGLR", None, None, 11010],
     # ["UUT_PW255_WhitePointGLG", None, None, 11011],
     # ["UUT_PW255_WhitePointGLB", None, None, 11012],
+    ["COMPENSATION_DispCen_x_display", None, None, 11013],
+    ["COMPENSATION_DispCen_y_display", None, None, 11014],
 
     ["normal_W255_ExposureTime_X", None, None, 20000],
     ["normal_W255_ExposureTime_Xz", None, None, 20001],
