@@ -249,13 +249,13 @@ class pancakeoffaxisStation(test_station.TestStation):
                             self._the_unit.screen_on()
                             power_on_trigger = True
                             self._fixture.button_enable()
-                            timeout_for_dual = timeout_for_btn_idle
+                            timeout_for_dual = time.time()
                         else:
                             self._the_unit.screen_off()
                             self._the_unit.reboot()  # Reboot
                             self._the_unit.screen_on()
                             power_on_trigger = True
-                            timeout_for_dual = timeout_for_btn_idle
+                            timeout_for_dual = time.time()
                     elif ready_status == 0x02:
                         self._is_cancel_test_by_op = True  # Cancel test.
                     elif ready_status == 0x04:
@@ -273,10 +273,10 @@ class pancakeoffaxisStation(test_station.TestStation):
                 if not ready:
                     if not self._is_cancel_test_by_op:
                         self._operator_interface.print_to_console(
-                            'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
+                            'Unable to get start signal in %s from fixture.\n' % int(time.time() - timeout_for_dual))
                     else:
                         self._operator_interface.print_to_console(
-                            'Cancel start signal from dual %s.\n' % timeout_for_dual)
+                            'Cancel start signal from dual %s.\n' % int(time.time() - timeout_for_dual))
                     self._the_unit.close()
                     self._the_unit = None
             except:
