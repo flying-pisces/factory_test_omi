@@ -110,10 +110,10 @@ class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.T
     def initialize(self):
         self._operator_interface.print_to_console("Initializing seacliff Vid Equipment.\n")
         self._camera_sn = None
+        res, __ = self._parse_result(self._rxLib.InitLFSystem())
         if self._station_config.EQUIPMENT_SIM:
             self._camera_sn = 'SIM'
         else:
-            res, __ = self._parse_result(self._rxLib.InitLFSystem())
             res, __ = self._parse_result(self._rxLib.BindConnectedCamera())
             res, sn_msg = self._parse_result(self._rxLib.GetCameraSerialNumber())
             self._camera_sn = sn_msg.get(self._k_message)
@@ -130,17 +130,21 @@ class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.T
         self._rxLib.ClearLFSystem()
 
     def do_measure_and_export(self, pattern_name, data_save_dir):
-        cfg_filename = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_CONFIG)
-        self._rxLib.LoadCameraConfig(cfg_filename.encode(encoding='utf-8'))
-        self._rxLib.TriggerCamera()
+        raw_db_pth = os.path.join(data_save_dir, f'{pattern_name}.ray')
+        if self._station_config.EQUIPMENT_SIM:
+            self._bind_ray_file(raw_db_pth)
+        else:
+            cfg_filename = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_CONFIG)
+            self._load_camera_config(cfg_filename.encode(encoding='utf-8'))
+            self._trigger_camera()
         rxset = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_RX_SET)
         self._set_compute_parameters(rxset)
         self._compute_image(85)
         target_filename = os.path.join(
-            data_save_dir, rf'{pattern_name}_Depth3D_ViewObjectOrthographic_To_Reference_AfterSettings.tiff')
+            data_save_dir, 'exp', rf'{pattern_name}_Depth3D_ViewObjectOrthographic_To_Reference_AfterSettings.tiff')
         self._save_image(target_filename)
-        raw_db_pth = os.path.join(data_save_dir, f'{pattern_name}.ray')
-        self._rxLib.SaveRay(raw_db_pth.encode())
+        if not self._station_config.EQUIPMENT_SIM:
+            self._save_ray(raw_db_pth)
 
 
 def print_to_console(self, msg):
@@ -157,9 +161,12 @@ if __name__ == '__main__':
     station_config.load_station('seacliff_vid')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
     equip = seacliffVidEquipment(station_config, station_config)
-    equip.initialize()
+    equip._init_lf_system()
+    # equip.initialize()
+    equip._bind_ray_file(r'C:\Users\Shuttle\Desktop\1209\R25-M-E-U3-B028-RS-A - 2125_1.1.ray')
 
     cfg_filename = os.path.join(station_config.ROOT_DIR, station_config.CAMERA_CONFIG)
+
     equip._load_camera_config(cfg_filename)
     equip._trigger_camera()
     equip._clear_lf_system()

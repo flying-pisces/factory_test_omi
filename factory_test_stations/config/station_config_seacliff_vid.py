@@ -23,8 +23,9 @@ SW_VERSION_SUFFIX = ''
 SPEC_VERSION = '0000'
 
 CAMERA_DYNAMIC_LIB = r'C:\oculus\SimplePython.dll'
-CAMERA_CONFIG = r'C:\oculus\CameraConfig.json'
-CAMERA_RX_SET = 'Facebook Oculus.rxset'
+CAMERA_CONFIG = 'C:\oculus\CameraConfig.json'
+# CAMERA_RX_SET = 'C:\oculus\Facebook Oculus.rxset'
+CAMERA_RX_SET = 'C:\oculus\OculusDensePointMap.rxset'
 
 # DUT COMMAND
 COMMAND_DISP_HELP = "$c.help"
