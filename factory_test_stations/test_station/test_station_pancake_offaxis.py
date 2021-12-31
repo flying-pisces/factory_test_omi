@@ -355,13 +355,14 @@ class pancakeoffaxisStation(test_station.TestStation):
         pos_items = self._station_config.POSITIONS
         pre_color = None
         for posIdx, pos, pos_patterns in pos_items:
+            analysis_result_dic = {}
             self._operator_interface.print_to_console('clear registration\n')
             self._equipment.clear_registration()
             if not self._station_config.EQUIPMENT_SIM:
                 uni_file_name = re.sub('_x.log', '', test_log.get_filename())
-                if not os.path.exists(uni_file_name):
-                    hsc_utils.mkdir_p(uni_file_name)
-                bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
+                bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
+                if not os.path.exists(os.path.join(bak_dir, uni_file_name)):
+                    hsc_utils.mkdir_p(os.path.join(bak_dir, uni_file_name))
                 databaseFileName = os.path.join(bak_dir, uni_file_name, f'{posIdx}.ttxm')
                 self._equipment.create_database(databaseFileName)
                 self._ttxm_filelist.append(databaseFileName)
@@ -410,6 +411,13 @@ class pancakeoffaxisStation(test_station.TestStation):
                     self._equipment.clear_registration()
                 analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, True)
                 self._operator_interface.print_to_console("Sequence run step  {}.\n".format(analysis))
+                analysis_result_dic[pattern] = analysis_result.copy()
+
+                # region extract raw data
+            for test_pattern in [c for c in pos_patterns if not self._station_config.DATA_COLLECT_ONLY]:
+                i = self._station_config.PATTERNS.index(test_pattern)
+                pattern = self._station_config.PATTERNS[i]
+                analysis = self._station_config.ANALYSIS[i]
 
                 lv_dic = {}
                 cx_dic = {}
@@ -421,13 +429,10 @@ class pancakeoffaxisStation(test_station.TestStation):
                 u_values = None
                 u_values = None
 
-                if self._station_config.DATA_COLLECT_ONLY:
-                    continue
-
-                # region extract raw data
-
-                for c, result in analysis_result.items():
-                    if c != analysis:
+                analysis_result = analysis_result_dic.get(pattern)
+                if isinstance(analysis_result, dict) and analysis in analysis_result:
+                    result = analysis_result[analysis]
+                    if not isinstance(result, dict):
                         continue
                     for ra in result:
                         r = re.sub(' ', '', ra)
