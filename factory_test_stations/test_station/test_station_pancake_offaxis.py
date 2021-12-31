@@ -47,7 +47,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._operator_interface.print_to_console(msg)
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '2.1.2'
+        self._sw_version = '2.1.3'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
@@ -73,7 +73,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._ttxm_filelist = []
 
     def initialize(self):
-        self._operator_interface.print_to_console("Initializing station...\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version} SP2\n")
         self._fixture.initialize()
 
         if self._station_config.FIXTURE_PARTICLE_COUNTER and hasattr(self, '_particle_counter_start_time'):
