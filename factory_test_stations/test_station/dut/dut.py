@@ -132,8 +132,6 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def screen_on(self, ignore_err=False):
         if not self.is_screen_poweron:
-            # self._power_off()
-            # time.sleep(0.5)
             retries = 1
             recvobj = None
             while retries <= 5 and not self.is_screen_poweron:
@@ -206,16 +204,16 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                 raise DUTError("Exit display_color because can't receive any data from dut.")
             if int(recvobj[0]) != 0x00:
                 raise DUTError("Exit display_color because rev err msg. Msg = {0}".format(recvobj))
-        time.sleep(self._station_config.DUT_DISPLAYSLEEPTIME)
+        time.sleep(0.025)
 
     def display_image(self, image, is_ddr_data=False):
         if self.is_screen_poweron:
-            recvobj = self._showImage(image, is_ddr_data)
+            recvobj = self.__showImage(image, is_ddr_data)
             if recvobj is None:
                 raise DUTError("Exit disp_image because can't receive any data from dut.")
             if int(recvobj[0]) != 0x00:
                 raise DUTError("Exit disp_image because rev err msg. Msg = {0}".format(recvobj))
-        time.sleep(self._station_config.DUT_DISPLAYSLEEPTIME)
+        time.sleep(0.025)
 
     def vsync_microseconds(self):
         recvobj = self._vsyn_time()
@@ -316,7 +314,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         """
         cmd = '{0}, {1}, {2}'.format(self._station_config.COMMAND_NVM_WRITE, len(data_array), ','.join(data_array))
         self._write_serial_cmd(cmd)
-        resp = self._read_response(timeout=self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
+        resp = self._read_response(timeout=10)
         recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_WRITE, resp)
         if int(recv_obj[0]) != 0x00:
             raise DUTError('Fail to nvm write data = {0}'.format(recv_obj))
@@ -496,23 +494,22 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
 
     def _power_on(self):
         self._write_serial_cmd(self._station_config.COMMAND_DISP_POWERON)
-        time.sleep(self._station_config.COMMAND_DISP_POWERON_DLY)
+        time.sleep(0.5)
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_POWERON, response)
 
     def _power_off(self):
         self._write_serial_cmd(self._station_config.COMMAND_DISP_POWEROFF)
-        time.sleep(self._station_config.COMMAND_DISP_POWEROFF_DLY)
         response = self._read_response()
         # return self._prase_respose(self._station_config.COMMAND_DISP_POWEROFF, response)
 
     def _reset(self):
         self._write_serial_cmd(self._station_config.COMMAND_DISP_RESET)
-        time.sleep(self._station_config.COMMAND_DISP_RESET_DLY)
+        time.sleep(1)
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_RESET, response)
 
-    def _showImage(self, image_index, is_ddr_img):
+    def __showImage(self, image_index, is_ddr_img):
         # type: (int, bool) -> str
         command = ''
         if isinstance(image_index, str):
@@ -522,7 +519,6 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                 image_index = 0x20 + image_index
             command = '{},{}'.format(self._station_config.COMMAND_DISP_SHOWIMAGE, hex(image_index))
         self._write_serial_cmd(command)
-        time.sleep(self._station_config.COMMAND_DISP_SHOWIMG_DLY)
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_SHOWIMAGE, response)
 
@@ -580,9 +576,6 @@ class projectDut(object):
         self._operator_interface = operator_interface
         self._station_config = station_config
         self._serial_number = serial_number
-        self._operator_interface = operator_interface
-        self._station_config = station_config
-        self._serial_number = serial_number
 
     def is_ready(self):
         pass
@@ -608,7 +601,6 @@ if __name__ == "__main__" :
 
     station_config = cfgstub()
     station_config.DUT_COMPORT = "COM14"
-    station_config.DUT_DISPLAYSLEEPTIME = 0.1
     station_config.DUT_RENDER_ONE_IMAGE_TIMEOUT = 0
     station_config.COMMAND_DISP_HELP = "$c.help"
     station_config.COMMAND_DISP_VERSION_GRP = ['mcu', 'hw', 'fpga']
@@ -629,11 +621,6 @@ if __name__ == "__main__" :
     station_config.COMMAND_NVM_READ = 'NVMRead'
     station_config.COMMAND_NVM_WRITE = 'NVMWrite'
     station_config.COMMAND_SPEED_MODE = 'SET.B7MODE'
-
-    station_config.COMMAND_DISP_POWERON_DLY = 2
-    station_config.COMMAND_DISP_RESET_DLY = 1
-    station_config.COMMAND_DISP_SHOWIMG_DLY = 0.05
-    station_config.COMMAND_DISP_POWEROFF_DLY = 0
 
     import sys
     import types
