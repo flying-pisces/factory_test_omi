@@ -135,7 +135,7 @@ class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.T
             self._bind_ray_file(raw_db_pth)
         else:
             cfg_filename = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_CONFIG)
-            self._load_camera_config(cfg_filename.encode(encoding='utf-8'))
+            self._load_camera_config(cfg_filename)
             self._trigger_camera()
         rxset = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_RX_SET)
         self._set_compute_parameters(rxset)

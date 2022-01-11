@@ -72,7 +72,10 @@ class seacliffVidStation(test_station.TestStation):
     def close(self):
         self._operator_interface.print_to_console("Close...\n")
         self._operator_interface.print_to_console("\there, I'm shutting the station down..\n")
+        self._equip.close()
+        self._equip = None
         self._fixture.close()
+        self._fixture = None
 
     def _query_dual_start(self):
         serial_number = self._latest_serial_number
