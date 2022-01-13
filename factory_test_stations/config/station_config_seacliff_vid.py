@@ -80,6 +80,8 @@ FIXTURE_UNLOAD_DLY = 3
 TIMEOUT_FOR_BTN_IDLE = 20
 FIXTURE_SOCK_DLY = 0.05
 
+CALIB_Z_BY_STATION_SW = True
+
 TEST_ITEM_PATTERNS = [
     {'name': 'W255', 'pattern': 0},
     {'name': 'W000', 'pattern': 1},

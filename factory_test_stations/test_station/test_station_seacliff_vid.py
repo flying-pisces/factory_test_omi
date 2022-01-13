@@ -77,6 +77,9 @@ class seacliffVidStation(test_station.TestStation):
         self._fixture.close()
         self._fixture = None
 
+    def z_corr(self, zr):
+        return 10180 * np.power(zr, -0.2526) - 1823
+
     def _query_dual_start(self):
         serial_number = self._latest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
@@ -298,6 +301,13 @@ class seacliffVidStation(test_station.TestStation):
                         maskx = np.multiply(maskx[0], maskx[1])
                         masky = np.multiply(masky[0], masky[1])
 
+                        # maskx = np.zeros(image_x.shape)
+                        # masky = np.zeros(image_y.shape)
+                        # maskx[x_tl:x_br, :] = 1
+                        # masky[:, y_tl:y_br] = 1
+                        # maskx = np.multiply(maskx, np.where(image_x != np.nan, 1, 0))
+                        # masky = np.multiply(masky, np.where(image_y != np.nan, 1, 0))
+
                         maskxy = np.multiply(maskx, masky)
                         maskxy_position = np.nonzero(maskxy)
                         raw_x = image_x[maskxy_position]
@@ -311,9 +321,10 @@ class seacliffVidStation(test_station.TestStation):
                             field_names = ['x', 'y', 'z', 'a']
                             writer = csv.writer(csv_file, dialect='excel')
                             writer.writerow(field_names)
-                            writer.writerows(tuple(zip(raw_x, raw_y, raw_z, raw_a)))
-                        if len(raw_z) > 0:
-                            test_log.set_measured_value_by_name_ex(f'{pattern_name}_{p_name}', np.mean(raw_z))
+                            if len(raw_z) > 0 and self._station_config.CALIB_Z_BY_STATION_SW:
+                                raw_z = self.z_corr(raw_z)
+                                writer.writerows(tuple(zip(raw_x, raw_y, raw_z, raw_a)))
+                                test_log.set_measured_value_by_name_ex(f'{pattern_name}_{p_name}', np.mean(raw_z))
                         del image_x, image_y, image_z, image_a, raw_x, raw_y, raw_z, raw_a
                         del maskx, masky, maskxy, maskxy_position
                 del img
