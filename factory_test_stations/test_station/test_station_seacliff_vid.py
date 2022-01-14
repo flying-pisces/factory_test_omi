@@ -281,16 +281,17 @@ class seacliffVidStation(test_station.TestStation):
             for pattern_name, pattern_config in self._station_config.TEST_ITEM_POS.items():
                 fns = glob.glob(
                     os.path.join(capture_path, 'exp',
-                                rf'{pattern_name}_Depth3D_ViewObjectOrthographic_To_Reference_AfterSettings.tiff'))
+                                rf'{pattern_name}_Depth3D_ViewVirtualUndistorted_To_Virtual_AfterSettings.tiff'))
                 fn = fns[0] if len(fns) == 0x01 else None
                 if not fn:
                     self._operator_interface.print_to_console(f'Unable to find tiff file for {pattern_name}\n')
                     continue
                 from skimage.io import imread
-                img = imread(os.path.join(fn, fn))
+                img = imread(os.path.join(capture_path, fn))
                 roi_items = pattern_config['ROI']
                 with np.errstate(divide='ignore', invalid='ignore'):
                     for p_name, roi in roi_items.items():
+                        self._operator_interface.print_to_console(f'parse data {p_name}: {roi} \n')
                         x_tl, y_tl, x_br, y_br = roi
                         image_x = np.array(img[:, :, 0])
                         image_y = np.array(img[:, :, 1])
@@ -323,7 +324,8 @@ class seacliffVidStation(test_station.TestStation):
                             writer.writerow(field_names)
                             if len(raw_z) > 0 and self._station_config.CALIB_Z_BY_STATION_SW:
                                 raw_z = self.z_corr(raw_z)
-                                writer.writerows(tuple(zip(raw_x, raw_y, raw_z, raw_a)))
+                            writer.writerows(tuple(zip(raw_x, raw_y, raw_z, raw_a)))
+                            if len(raw_z) > 0:
                                 test_log.set_measured_value_by_name_ex(f'{pattern_name}_{p_name}', np.mean(raw_z))
                         del image_x, image_y, image_z, image_a, raw_x, raw_y, raw_z, raw_a
                         del maskx, masky, maskxy, maskxy_position

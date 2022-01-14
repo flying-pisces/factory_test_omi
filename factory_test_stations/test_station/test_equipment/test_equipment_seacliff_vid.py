@@ -9,6 +9,7 @@ from datetime import datetime
 import logging
 import ctypes
 import traceback
+import glob
 
 
 class seacliffVidEquipmentError(Exception):
@@ -51,6 +52,15 @@ class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.T
         self._rxLib.BindRayFile.argtypes = ctypes.c_char_p,
         self._rxLib.SaveRay.restype = ctypes.c_char_p
         self._rxLib.SaveRay.argtypes = ctypes.c_char_p,
+
+        self._export_list = {
+            'Depth3D_ViewVirtualUndistorted_To_Virtual_AfterSettings': 80,
+            'Depth3D_ViewVirtualUndistorted_To_Object_AfterSettings': 81,
+            'Depth3D_ViewVirtualUndistorted_To_Reference_AfterSettings': 82,
+            'Depth3D_ViewObjectOrthographic_To_Virtual_AfterSettings': 83,
+            'Depth3D_ViewObjectOrthographic_To_Object_AfterSettings': 84,
+            'Depth3D_ViewObjectOrthographic_To_Reference_AfterSettings': 85,
+        }
 
     @property
     def camera_sn(self):
@@ -130,19 +140,25 @@ class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.T
         self._rxLib.ClearLFSystem()
 
     def do_measure_and_export(self, pattern_name, data_save_dir):
+        rxset = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_RX_SET)
+        self._set_compute_parameters(rxset)
+
         raw_db_pth = os.path.join(data_save_dir, f'{pattern_name}.ray')
         if self._station_config.EQUIPMENT_SIM:
+            files = glob.glob(os.path.join(data_save_dir, f'*.ray'))
+            if len(files) >= 1:
+                raw_db_pth = files[-1]
+            self._operator_interface.print_to_console(f'bind file: {raw_db_pth} .\n')
             self._bind_ray_file(raw_db_pth)
         else:
             cfg_filename = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_CONFIG)
             self._load_camera_config(cfg_filename)
             self._trigger_camera()
-        rxset = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_RX_SET)
-        self._set_compute_parameters(rxset)
-        self._compute_image(85)
-        target_filename = os.path.join(
-            data_save_dir, 'exp', rf'{pattern_name}_Depth3D_ViewObjectOrthographic_To_Reference_AfterSettings.tiff')
-        self._save_image(target_filename)
+        for k, v in self._export_list.items():
+            self._compute_image(v)
+            target_filename = os.path.join(
+                data_save_dir, 'exp', rf'{pattern_name}_{k}.tiff')
+            self._save_image(target_filename)
         if not self._station_config.EQUIPMENT_SIM:
             self._save_ray(raw_db_pth)
 

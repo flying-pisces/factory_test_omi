@@ -80,7 +80,7 @@ FIXTURE_UNLOAD_DLY = 3
 TIMEOUT_FOR_BTN_IDLE = 20
 FIXTURE_SOCK_DLY = 0.05
 
-CALIB_Z_BY_STATION_SW = True
+CALIB_Z_BY_STATION_SW = False
 
 TEST_ITEM_PATTERNS = [
     {'name': 'W255', 'pattern': 0},
@@ -95,11 +95,11 @@ TEST_ITEM_POS = {
         {
             'ROI':
                 {
-                    'P1': (200, 200, 250, 300),
-                    'P2': (200, 200, 250, 300),
-                    'P3': (200, 200, 250, 300),
-                    'P4': (200, 200, 250, 300),
-                    'P5': (200, 200, 250, 300),
+                    'P1': (23, -79, 107, -8),
+                    'P2': (23, 269, 105, 340),
+                    'P4': (383, -92, 470, -16),
+                    'P6': (42, -451, 125, -373),
+                    'P8': (-313, -61, -232, 4),
                 }
         },
 }
