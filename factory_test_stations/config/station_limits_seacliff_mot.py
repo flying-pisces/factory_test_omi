@@ -35,8 +35,6 @@ STATION_LIMITS_ARRAYS = [
     # ["UUT_PW255_WhitePointGLR", None, None, 11010],
     # ["UUT_PW255_WhitePointGLG", None, None, 11011],
     # ["UUT_PW255_WhitePointGLB", None, None, 11012],
-    # ["COMPENSATION_DispCen_x_display", None, None, 11013],
-    # ["COMPENSATION_DispCen_y_display", None, None, 11014],
 
     ["normal_W255_ExposureTime_X", None, None, 20000],
     ["normal_W255_ExposureTime_Xz", None, None, 20001],
@@ -301,6 +299,9 @@ STATION_LIMITS_ARRAYS = [
     # ["normal_PW255_v'_mean_30deg", None, None, 27053],
     # ["normal_PW255_u'v'_delta_to_OnAxis_30deg", 0, 0.02, 27054],
     # ["normal_PW255_du'v' 95%30deg", None, None, 27055],
+
+    ["COMPENSATION_DispCen_x_display", None, None, 11013],
+    ["COMPENSATION_DispCen_y_display", None, None, 11014],
 ]
 
 global STATION_LIMITS
