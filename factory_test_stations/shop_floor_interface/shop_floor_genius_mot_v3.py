@@ -1,5 +1,5 @@
 __author__ = 'elton.tian'
-__version__ = '3.0.0'
+__version__ = '3.0.1'
 """
 Change List:
 0.0.1:  Init Version, 
@@ -11,6 +11,7 @@ Change List:
 0.0.6:  all test items upload to mes.
 2.0.0： new schema for MOT V1.2.1
 3.0.0： new schema for MOT V1.2.4
+3.0.1： add items for MOT V1.2.5
 """
 
 # !/usr/bin/env python
@@ -63,7 +64,7 @@ SF_LOADER_URL = 'http://192.168.100.96:8012/LoaderWS/Service/SummaryLoader.asmx?
 SF_MAIL_URL = 'http://192.168.100.96:8011/MailWS/GseoWS.asmx?WSDL'
 MES_CHK_OFFLINE = {}
 
-SW_VERSION = '1.2.4'
+SW_VERSION = '1.2.5'
 
 class ShopFloorError(Exception):
     pass
@@ -74,7 +75,7 @@ class ShopFloor_genius(object):
         self._machine_type = machine_type
         self._station_id = station_id
         self._headers = {'Content-Type': 'application/json'}
-        self._time_out = 3  # timeout for web-service.
+        self._time_out = 5  # timeout for web-service.
         self._max_retries = 3
 
         # <editor-fold desc="LOG_2_MES">
@@ -236,6 +237,8 @@ class ShopFloor_genius(object):
             "NOR_WHTDOT_WP_R_TO_DDIC": "normal_WhiteDot_WP R to DDIC",
             "NOR_WHTDOT_WP_G_TO_DDIC": "normal_WhiteDot_WP G to DDIC",
             "NOR_WHTDOT_WP_B_TO_DDIC": "normal_WhiteDot_WP B to DDIC",
+            "COMPENSATION_DISPCEN_X_DISP": "COMPENSATION_DispCen_x_display",
+            "COMPENSATION_DISPCEN_Y_DISP": "COMPENSATION_DispCen_y_display"
         }
         # </editor-fold>
 
