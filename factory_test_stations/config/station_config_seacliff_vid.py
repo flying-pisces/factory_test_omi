@@ -7,6 +7,7 @@
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\VID_summary'
 
 ##################################
 # serial number codes
@@ -80,7 +81,7 @@ FIXTURE_UNLOAD_DLY = 3
 TIMEOUT_FOR_BTN_IDLE = 20
 FIXTURE_SOCK_DLY = 0.05
 
-CALIB_Z_BY_STATION_SW = False
+CALIB_Z_BY_STATION_SW = True
 
 TEST_ITEM_PATTERNS = [
     {'name': 'W255', 'pattern': 0},
@@ -135,8 +136,12 @@ TEST_CPU_COUNT = 5
 #####
 ### Facebook_IT Enable boolean
 FACEBOOK_IT_ENABLED = False
+IS_STATION_ACTIVE = True
 
 DUT_SIM = True
 EQUIPMENT_SIM = True
 FIXTURE_SIM = True
+
+STATION_TYPE = 'seacliff_vid'
+STATION_NUMBER = '0001'
 

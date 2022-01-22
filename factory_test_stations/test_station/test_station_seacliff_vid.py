@@ -6,6 +6,7 @@ from test_station.test_fixture.test_fixture_project_station import projectstatio
 import test_station.test_equipment.test_equipment_seacliff_vid as test_equipment_seacliff_vid
 from test_station.dut.dut import pancakeDut, projectDut, DUTError
 import hardware_station_common.utils.os_utils as os_utils
+import hardware_station_common.utils.io_utils as io_utils
 import time
 import os
 import types
@@ -24,17 +25,6 @@ import csv
 
 class seacliffVidStationError(Exception):
     pass
-
-
-def chk_and_set_measured_value_by_name(test_log, item, value):
-    """
-
-    :type test_log: test_station.TestRecord
-    """
-    if item in test_log.results_array():
-        test_log.set_measured_value_by_name(item, value)
-    # else:
-    #     pprint.pprint(item)
 
 
 def limit_cpu():
@@ -76,6 +66,18 @@ class seacliffVidStation(test_station.TestStation):
         self._equip = None
         self._fixture.close()
         self._fixture = None
+
+    def chk_and_set_measured_value_by_name(self, test_log, item, value):
+        """
+
+        :type test_log: test_station.TestRecord
+        """
+        if item in test_log.results_array():
+            test_log.set_measured_value_by_name(item, value)
+            did_pass = test_log.get_test_by_name(item).did_pass()
+            self._operator_interface.update_test_value(item, value, 1 if did_pass else -1)
+        # else:
+        #     pprint.pprint(item)
 
     def z_corr(self, zr):
         return 10180 * np.power(zr, -0.2526) - 1823
@@ -236,7 +238,7 @@ class seacliffVidStation(test_station.TestStation):
             self._operator_interface.print_to_console("Initialize DUT... \n")
             self._the_unit.screen_on()
 
-            test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
+            test_log.set_measured_value_by_name_ex = types.MethodType(self.chk_and_set_measured_value_by_name, test_log)
 
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
@@ -281,7 +283,7 @@ class seacliffVidStation(test_station.TestStation):
             for pattern_name, pattern_config in self._station_config.TEST_ITEM_POS.items():
                 fns = glob.glob(
                     os.path.join(capture_path, 'exp',
-                                rf'{pattern_name}_Depth3D_ViewVirtualUndistorted_To_Virtual_AfterSettings.tiff'))
+                                rf'{pattern_name}_Depth3D_ViewVirtualUndistorted_To_Reference_AfterSettings.tiff'))
                 fn = fns[0] if len(fns) == 0x01 else None
                 if not fn:
                     self._operator_interface.print_to_console(f'Unable to find tiff file for {pattern_name}\n')
@@ -326,7 +328,8 @@ class seacliffVidStation(test_station.TestStation):
                                 raw_z = self.z_corr(raw_z)
                             writer.writerows(tuple(zip(raw_x, raw_y, raw_z, raw_a)))
                             if len(raw_z) > 0:
-                                test_log.set_measured_value_by_name_ex(f'{pattern_name}_{p_name}', np.mean(raw_z))
+                                mean_z = io_utils.round_ex(np.mean(raw_z), 2)
+                                test_log.set_measured_value_by_name_ex(f'{pattern_name}_{p_name}', mean_z)
                         del image_x, image_y, image_z, image_a, raw_x, raw_y, raw_z, raw_a
                         del maskx, masky, maskxy, maskxy_position
                 del img
