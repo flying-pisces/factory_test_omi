@@ -13,6 +13,7 @@ from test_station.test_fixture.test_fixture_project_station import projectstatio
 from test_station.test_equipment.test_equipment_pancake_offaxis import pancakeoffaxisEquipment
 from test_station.dut.dut import projectDut, DUTError
 import hardware_station_common.utils as hsc_utils
+import hardware_station_common.utils.io_utils as io_utils
 import types
 import glob
 import sys
@@ -20,16 +21,6 @@ import shutil
 
 
 class pancakeoffaxisError(Exception):
-    pass
-
-
-def chk_and_set_measured_value_by_name(test_log, item, value):
-    """
-
-    :type test_log: test_station.TestRecord
-    """
-    if item in test_log.results_array():
-        test_log.set_measured_value_by_name(item, value)
     pass
 
 
@@ -92,9 +83,18 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._equipment.close()
         self._equipment = None
 
+    def chk_and_set_measured_value_by_name(self, test_log, item, value):
+        """
+        :type test_log: test_station.TestRecord
+        """
+        if item in test_log.results_array():
+            test_log.set_measured_value_by_name(item, value)
+            did_pass = test_log.get_test_by_name(item).did_pass()
+            self._operator_interface.update_test_value(item, value, 1 if did_pass else -1)
+
     def _do_test(self, serial_number, test_log):
         # type: (str, test_station.test_log) -> tuple
-        test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
+        test_log.set_measured_value_by_name_ex = types.MethodType(self.chk_and_set_measured_value_by_name, test_log)
         self._overall_result = False
         self._overall_errorcode = ''
         # self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
@@ -523,7 +523,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                     tlv = lv_dic.get('P_%s_%s' % item)
                     if tlv is None:
                         continue
-                    tlv = tlv / lv_dic[center_item]
+                    tlv = io_utils.round_ex(tlv / lv_dic[center_item], 3)
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_Proportion_{}_{}'.format(posIdx, pattern, *item)
                     test_log.set_measured_value_by_name_ex(test_item, tlv)
@@ -533,7 +533,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                     if duv is None:
                         continue
                     test_item = '{}_{}_duv_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, duv)
+                    test_log.set_measured_value_by_name_ex(test_item, io_utils.round_ex(duv, 3))
                 if len(lv_dic) > 0:
                     # Max brightness location
                     max_loc = max(lv_dic, key=lv_dic.get)
@@ -562,7 +562,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                         continue
                     cr = lv_cr_items[w][item_key] / lv_cr_items[d][item_key]
                     test_item = '{}_CR_{}_{}'.format(posIdx, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, cr)
+                    test_log.set_measured_value_by_name_ex(test_item, io_utils.round_ex(cr, 1))
             # endregion
 
             self.data_export(serial_number, test_log, posIdx)

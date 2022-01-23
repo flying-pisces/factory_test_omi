@@ -244,6 +244,10 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
+IS_STATION_ACTIVE = True
+STATION_TYPE = 'pancake_offaxis'
+STATION_NUMBER = '0001'
+
 DATA_COLLECT_ONLY = False
 EQUIPMENT_DEMO_DATABASE = r'C:\ShareData\OffAxis'
 
