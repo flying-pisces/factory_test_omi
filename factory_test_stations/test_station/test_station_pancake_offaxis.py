@@ -1,3 +1,4 @@
+# encoding=utf-8
 import hardware_station_common.test_station.test_station as test_station
 import numpy as np
 import os
@@ -38,7 +39,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._operator_interface.print_to_console(msg)
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '2.1.3'
+        self._sw_version = '2.1.4'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
@@ -186,8 +187,35 @@ class pancakeoffaxisStation(test_station.TestStation):
             return overall_result, first_failed_test_result
 
     def close_test(self, test_log):
-        ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###
+        result_array = test_log.results_array()
+        save_pnl_dic = self._station_config.SAVE_PNL_IF_FAIL
+        ui_msg = {
+                'LA': 'L (左眼)',
+                'RA': 'R (右眼)'
+        }
+        test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', '')
         self._overall_result = test_log.get_overall_result()
+        # modified the test result if ok_for_left/right
+        if not self._overall_result and set(ui_msg.keys()).issubset(save_pnl_dic.keys()):
+            save_pnl_dic_left = [result_array[c].did_pass() for c in save_pnl_dic['LA']]
+            save_pnl_dic_right = [result_array[c].did_pass() for c in save_pnl_dic['RA']]
+            if (False in save_pnl_dic_left) and (False not in save_pnl_dic_right):
+                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'LA')
+            elif (False not in save_pnl_dic_left) and (False in save_pnl_dic_right):
+                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'RA')
+            else:
+                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'FAIL')
+            ext_ctl_val = result_array['EXT_CTRL_RES'].get_measured_value()
+            if ext_ctl_val in ui_msg.keys():
+                test_log.get_overall_result()
+                self._overall_result = True
+                test_log._overall_did_pass = True
+                test_log._overall_error_code = 0
+                self._operator_interface.update_root_config({'ResultMsgEx': ui_msg[ext_ctl_val]})
+        else:
+            test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'AA')
+            self._operator_interface.update_root_config({'ResultMsgEx': 'L/R(左/右眼)'})
+
         self._first_failed_test_result = test_log.get_first_failed_test_result()
         return self._overall_result, self._first_failed_test_result
 

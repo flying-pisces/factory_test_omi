@@ -1,6 +1,14 @@
 """
 Release Note:
 ========================================================
+Version 2.1.4
+2022-1-26 author<elton.tian@myzygroup.com>
+-1. add test-item "EXT_CTRL_RES" to record the panel for LA/RA/AA
+-2. spec updated based on ERS v6 for TJ3 panel
+-3. update UI with data-grid.
+-4. format the test-values with method round to save the space for UI.
+
+========================================================
 Version 2.1.3
 2021-12-24 author<elton.tian@myzygroup.com>
 -1. update limit base Tokki V0.2.
@@ -201,10 +209,11 @@ Resolution_Bin_Y = 360
 
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
-             ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"])]
+             # ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+             # ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
+             # ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+             # ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"]),
+             ]
 PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
 SAVE_IMAGES = [False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
@@ -216,6 +225,11 @@ MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255"]
 
 CR_TEST_PATTERNS = ['W255', 'W000']
 CENTER_AT_POLE_AZI = 'P_0_0'
+
+SAVE_PNL_IF_FAIL = {
+    'LA': ['P1_W255_duv_15_0', 'P1_R255_duv_15_0', 'P1_G255_duv_15_0', 'P1_B255_duv_15_0'],
+    'RA': ['P1_W255_duv_15_180', 'P1_R255_duv_15_180', 'P1_G255_duv_15_180', 'P1_B255_duv_15_180'],
+}
 
 BRIGHTNESS_AT_POLE_AZI = [(0, 0),
                          (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338),
@@ -247,6 +261,7 @@ USE_WORKORDER_ENTRY = False
 IS_STATION_ACTIVE = True
 STATION_TYPE = 'pancake_offaxis'
 STATION_NUMBER = '0001'
+SHOPFLOOR_SYSTEM = ''
 
 DATA_COLLECT_ONLY = False
 EQUIPMENT_DEMO_DATABASE = r'C:\ShareData\OffAxis'
