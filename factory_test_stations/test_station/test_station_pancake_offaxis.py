@@ -65,7 +65,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._ttxm_filelist = []
 
     def initialize(self):
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version} SP2\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
         self._fixture.initialize()
 
         if self._station_config.FIXTURE_PARTICLE_COUNTER and hasattr(self, '_particle_counter_start_time'):
@@ -84,14 +84,16 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._equipment.close()
         self._equipment = None
 
-    def chk_and_set_measured_value_by_name(self, test_log, item, value):
+    def chk_and_set_measured_value_by_name(self, test_log, item, value, value_msg=None):
         """
         :type test_log: test_station.TestRecord
         """
         if item in test_log.results_array():
             test_log.set_measured_value_by_name(item, value)
             did_pass = test_log.get_test_by_name(item).did_pass()
-            self._operator_interface.update_test_value(item, value, 1 if did_pass else -1)
+            if value_msg is None:
+                value_msg = value
+            self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def _do_test(self, serial_number, test_log):
         # type: (str, test_station.test_log) -> tuple
@@ -212,6 +214,9 @@ class pancakeoffaxisStation(test_station.TestStation):
                 test_log._overall_did_pass = True
                 test_log._overall_error_code = 0
                 self._operator_interface.update_root_config({'ResultMsgEx': ui_msg[ext_ctl_val]})
+            if not self._overall_result and len([k for k, v in result_array.items()
+                                                 if v.get_measured_value() is None]) > 0:
+                raise test_station.TestStationProcessControlError(f'Fail to test this DUT. 测试产品失败， 请重新测试')
         else:
             test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'AA')
             self._operator_interface.update_root_config({'ResultMsgEx': 'L/R(左/右眼)'})
@@ -551,17 +556,17 @@ class pancakeoffaxisStation(test_station.TestStation):
                     tlv = lv_dic.get('P_%s_%s' % item)
                     if tlv is None:
                         continue
-                    tlv = io_utils.round_ex(tlv / lv_dic[center_item], 3)
+                    tlv = tlv / lv_dic[center_item]
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_Proportion_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, tlv)
+                    test_log.set_measured_value_by_name_ex(test_item, tlv, io_utils.round_ex(tlv, 3))
 
                 for item in self._station_config.COLORSHIFT_AT_POLE_AZI:
                     duv = duv_dic.get('P_%s_%s' % item)
                     if duv is None:
                         continue
                     test_item = '{}_{}_duv_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, io_utils.round_ex(duv, 3))
+                    test_log.set_measured_value_by_name_ex(test_item, duv, io_utils.round_ex(duv, 3))
                 if len(lv_dic) > 0:
                     # Max brightness location
                     max_loc = max(lv_dic, key=lv_dic.get)
@@ -590,7 +595,7 @@ class pancakeoffaxisStation(test_station.TestStation):
                         continue
                     cr = lv_cr_items[w][item_key] / lv_cr_items[d][item_key]
                     test_item = '{}_CR_{}_{}'.format(posIdx, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, io_utils.round_ex(cr, 1))
+                    test_log.set_measured_value_by_name_ex(test_item, cr, io_utils.round_ex(cr, 1))
             # endregion
 
             self.data_export(serial_number, test_log, posIdx)

@@ -6,7 +6,7 @@ Version 2.1.4
 -1. add test-item "EXT_CTRL_RES" to record the panel for LA/RA/AA
 -2. spec updated based on ERS v6 for TJ3 panel
 -3. update UI with data-grid.
--4. format the test-values with method round to save the space for UI.
+-4. format the test-values on GUI to save the space for UI.
 
 ========================================================
 Version 2.1.3
@@ -46,7 +46,7 @@ Version 1.1.0
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\offaxis_summary'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\offaxis_summary_1PV6'
 
 
 ##################################
@@ -214,13 +214,13 @@ POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
              # ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
              # ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"]),
              ]
-PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
-SAVE_IMAGES = [False, False, False, False, False]
+PATTERNS = ["W255", "W000", "R255", "G255", "B255", "L127", "L063", "L031", "L015", "L007"]
+SAVE_IMAGES = [False, False, False, False, False, False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
-COLORS = [(255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
+COLORS = [(255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255), (127, 127, 127), (63, 63, 63), (31, 31, 31), (15, 15, 15), (7, 7, 7)]
 # COLORS = ['0008', '0001', '0800', '8000', '0010']
-ANALYSIS = ["Points Of Interest W255", "Points Of Interest W000", "Points Of Interest R255", "Points Of Interest G255", "Points Of Interest B255"]
-MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255"]
+ANALYSIS = ["Points Of Interest W255", "Points Of Interest W000", "Points Of Interest R255", "Points Of Interest G255", "Points Of Interest B255", "Points Of Interest L127", "Points Of Interest L063", "Points Of Interest L031", "Points Of Interest L015", "Points Of Interest L007"]
+MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255", "L127", "L063", "L031", "L015", "L007"]
 ##################################
 
 CR_TEST_PATTERNS = ['W255', 'W000']
