@@ -24,7 +24,8 @@ SW_VERSION_SUFFIX = ''
 SPEC_VERSION = '0000'
 
 CAMERA_DYNAMIC_LIB = r'C:\oculus\SimplePython.dll'
-CAMERA_CONFIG = 'C:\oculus\CameraConfig.json'
+# CAMERA_CONFIG = 'C:\oculus\CameraConfig.json'
+CAMERA_CONFIG = 'C:\oculus\R25Config'
 CAMERA_RX_SET = 'C:\oculus\Facebook Oculus.rxset'
 # CAMERA_RX_SET = 'C:\oculus\OculusDensePointMap.rxset'
 
@@ -92,15 +93,37 @@ TEST_ITEM_PATTERNS = [
 ]
 
 TEST_ITEM_POS = {
-    'W255':
+    'B255':
         {
             'ROI':
                 {
-                    'P1': (23, -79, 107, -8),
-                    'P2': (23, 269, 105, 340),
-                    'P4': (383, -92, 470, -16),
-                    'P6': (42, -451, 125, -373),
-                    'P8': (-313, -61, -232, 4),
+                    'P1': (-11, -105, 69, -19),
+                    'P2': (-9, 312, 57, 394),
+                    'P4': (439, -124, 450, -36),
+                    'P6': (-1, -511, 18, -474),
+                    'P8': (-478, -100, -365, -14),
+                }
+        },
+    'G255':
+        {
+            'ROI':
+                {
+                    'P1': (-11, -105, 69, -19),
+                    'P2': (-9, 312, 57, 394),
+                    'P4': (439, -124, 490, -36),
+                    'P6': (-1, -511, 18, -474),
+                    'P8': (-478, -100, -365, -14),
+                }
+        },
+    'R255':
+        {
+            'ROI':
+                {
+                    'P1': (-11, -105, 69, -19),
+                    'P2': (-9, 312, 57, 394),
+                    'P4': (439, -124, 490, -36),
+                    'P6': (-1, -511, 18, -474),
+                    'P8': (-478, -100, -365, -14),
                 }
         },
 }
