@@ -55,7 +55,7 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
                                           115200,
                                           parity='N',
                                           stopbits=1,
-                                          timeout=1,
+                                          timeout=0.3,
                                           xonxoff=0,
                                           rtscts=0)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:

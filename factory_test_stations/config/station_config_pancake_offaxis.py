@@ -1,6 +1,20 @@
 """
 Release Note:
 ========================================================
+Version 2.1.4
+2022-1-26 author<elton.tian@myzygroup.com>
+-1. add test-item "EXT_CTRL_RES" to record the panel for LA/RA/AA
+-2. spec updated based on ERS v6 for TJ3 panel
+-3. update UI with data-grid.
+-4. format the test-values on GUI to save the space for UI.
+
+========================================================
+Version 2.1.3
+2021-12-24 author<elton.tian@myzygroup.com>
+-1. update limit base Tokki V0.2.
+-2. optimize the timeout for loading DUT.
+
+========================================================
 Version 2.1.2
 2021-8-24 author<elton.tian@myzygroup.com>
 -1. Fix multi summary file for same limit file.
@@ -32,7 +46,7 @@ Version 1.1.0
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\offaxis_summary'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\offaxis_summary_1PV6'
 
 
 ##################################
@@ -44,10 +58,10 @@ SERIAL_NUMBER_MODEL_NUMBER = r'^\dPRP[\w|\d]{10}$'  # Peak panel SN
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM11" #
+FIXTURE_COMPORT = "COM2" #
 FIXTURE_PARTICLE_COMPORT = "COM1" #
 FIXTURE_PARTICLE_ADDR = 1
-DUT_COMPORT = "COM5" #
+DUT_COMPORT = "COM1" #
 
 DUT_LITUP_OUTSIDE = True
 TIMEOUT_FOR_BTN_IDLE = 10
@@ -163,7 +177,7 @@ FIXTRUE_PARTICLE_START_DLY = 0
 # DEFAULT_VSYNC_US = 13.8889  # 72  # 111.44646
 DUT_ON_MAXRETRY = 5
 
-DUT_DISPLAYSLEEPTIME = 0
+DUT_DISPLAYSLEEPTIME = 0.025
 ##################################
 # Test Equipment related parameters
 IS_VERBOSE = True
@@ -173,7 +187,6 @@ SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqx
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
-USE_MULTI_DB = True
 
 FOCUS_DISTANCE = 0.45
 APERTURE = 8.0
@@ -189,42 +202,49 @@ IS_EXPORT_PNG = False
 Resolution_Bin_X = 360
 Resolution_Bin_Y = 360
 
-CAMERA_SN = "159496752"
-
 # PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
 POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
-             ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-             ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"])]
-PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
-SAVE_IMAGES = [False, False, False, False, False]
+             # ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+             # ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
+             # ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+             # ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"]),
+             ]
+PATTERNS = ["W255", "W000", "R255", "G255", "B255", "L127", "L063", "L031", "L015", "L007"]
+SAVE_IMAGES = [False, False, False, False, False, False, False, False, False, False]
 # SAVE_IMAGES = [True, True, True, True, True, True]
-COLORS = [(255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
+COLORS = [(255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255), (127, 127, 127), (63, 63, 63), (31, 31, 31), (15, 15, 15), (7, 7, 7)]
 # COLORS = ['0008', '0001', '0800', '8000', '0010']
-ANALYSIS = ["Points Of Interest W255", "Points Of Interest W000", "Points Of Interest R255", "Points Of Interest G255", "Points Of Interest B255"]
-MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255"]
+ANALYSIS = ["Points Of Interest W255", "Points Of Interest W000", "Points Of Interest R255", "Points Of Interest G255", "Points Of Interest B255", "Points Of Interest L127", "Points Of Interest L063", "Points Of Interest L031", "Points Of Interest L015", "Points Of Interest L007"]
+MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255", "L127", "L063", "L031", "L015", "L007"]
 ##################################
 
 CR_TEST_PATTERNS = ['W255', 'W000']
 CENTER_AT_POLE_AZI = 'P_0_0'
 
+SAVE_PNL_IF_FAIL = {
+    'LA': ['P1_W255_duv_15_0', 'P1_R255_duv_15_0', 'P1_G255_duv_15_0', 'P1_B255_duv_15_0'],
+    'RA': ['P1_W255_duv_15_180', 'P1_R255_duv_15_180', 'P1_G255_duv_15_180', 'P1_B255_duv_15_180'],
+}
+
 BRIGHTNESS_AT_POLE_AZI = [(0, 0),
                          (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338),
                          (10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10, 180), (10, 225), (10, 270), (10, 315), (10, 68), (10, 112), (10, 158), (10, 202), (10, 248), (10, 292), (10, 338),
-                         (20, 0), (20, 22), (20, 45), (20, 90), (20, 135), (20, 180), (20, 225), (20, 270), (20, 315), (20, 68), (20, 112), (20, 158), (20, 202), (20, 248), (20, 292), (20, 338)]
-BRIGHTNESS_AT_POLE_AZI_PER = [(30, 0), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315)]
-BRIGHTNESS_AT_POLE_ASSEM = [ ((30, 0), (30, 180)), ]
-COLORSHIFT_AT_POLE_AZI = [(10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10, 180), (10, 225), (10, 270), (10, 315), (10, 68), (10, 112), (10, 158), (10, 202), (10, 248), (10, 292), (10, 338),
                          (20, 0), (20, 22), (20, 45), (20, 90), (20, 135), (20, 180), (20, 225), (20, 270), (20, 315), (20, 68), (20, 112), (20, 158), (20, 202), (20, 248), (20, 292), (20, 338),
+                         (15, 0), (15, 22), (15, 45), (15, 90), (15, 135), (15, 180), (15, 225), (15, 270), (15, 315), (15, 68), (15, 112), (15, 158), (15, 202), (15, 248), (15, 292), (15, 338),
+                          ]
+BRIGHTNESS_AT_POLE_AZI_PER = [(15, 0), (15, 90), (15, 180), (15, 270), (30, 0), (30, 90), (30, 180), (30, 270)]
+BRIGHTNESS_AT_POLE_ASSEM = [((30, 0), (30, 180))]
+COLORSHIFT_AT_POLE_AZI = [(15, 0), (15, 22), (15, 45), (15, 90), (15, 135), (15, 180), (15, 225), (15, 270), (15, 315), (15, 68), (15, 112), (15, 158), (15, 202), (15, 248), (15, 292), (15, 338),
                          (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338)]
+COLOR_PRIMARY_AT_POLE_AZI = [(0, 0), (15, 0), (15, 180), (30, 0), (30, 180)]
 
-CR_AT_POLE_AZI = [(0, 0), (30, 0), (30, 90), (30, 180), (30, 270)]
+CR_AT_POLE_AZI = [(0, 0), (15, 0), (15, 90), (15, 180), (15, 270), (30, 0), (30, 90), (30, 180), (30, 270)]
 
 EXPORT_RAW_DATA_PATTERN = {'P1': ['W255', 'W000']}
 EXPORT_RAW_DATA_PATTERN_AZI = [('Vertical', 90), ('Diagonal', 45), ('Horizontal', 0), ('Diagonal', 135)]
 EXPORT_RAW_DATA_PATTERN_POLE = list(range(-60, 61, 2))
 IS_EXPORT_RAW_DATA = True
+SORTED_EXPORT_LOG = False
 
 ##################################
 # IT and work order
@@ -233,11 +253,17 @@ FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 
-DATA_COLLECT_ONLY = False
-EQUIPMENT_DEMO_DATABASE = r'G:\oculus_sunny_t3\offaxis_2'
+IS_STATION_ACTIVE = True
+STATION_TYPE = 'pancake_offaxis'
+STATION_NUMBER = '0001'
+SHOPFLOOR_SYSTEM = ''
 
-DUT_SIM = False
+DATA_COLLECT_ONLY = False
+EQUIPMENT_DEMO_DATABASE = r'C:\ShareData\OffAxis'
+
+DUT_SIM = True
 # CAMERA_SN = "159496752"
-EQUIPMENT_SIM = False
-FIXTURE_SIM = False
+CAMERA_SN = 'Demo'
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True
 
