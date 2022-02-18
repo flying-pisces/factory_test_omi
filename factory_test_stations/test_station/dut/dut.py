@@ -539,7 +539,7 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
     def _MIPI_write(self, reg, typ, val):
         command = '{0},{1},{2},{3}'.format(self._station_config.COMMAND_DISP_WRITE, reg, typ, val)
         self._write_serial_cmd(command)
-        #time.sleep(1)
+        # time.sleep(1)
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_WRITE, response)
 
@@ -560,13 +560,32 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         self._write_serial_cmd(cmd)
         response = self._read_response()
         return self._prase_respose(cmd, response)
+
+    def read_color_sensor(self):
+        self._write_serial_cmd(self._station_config.COMMAND_DISP_GETCOLOR)
+        response = self._read_response()
+        rev = self._prase_respose(self._station_config.COMMAND_DISP_GETCOLOR, response)
+        if int(rev[0]) != 0:
+            raise DUTError('Read color sensor failed. \n')
+        return tuple([int(x, 16) for x in rev[1:]])
+
+    def display_color_check(self, color):
+        norm_color = tuple([c / 255.0 for c in color])
+        color1 = np.float32([[norm_color]])
+        hsv = cv2.cvtColor(color1, cv2.COLOR_RGB2HSV)
+        h, s, v = tuple(hsv[0, 0, :])
+        self._operator_interface.print_to_console('COLOR: = {},{},{}\n'.format(h, s, v))
+        return (self._station_config.DISP_CHECKER_L_HsvH <= h <= self._station_config.DISP_CHECKER_H_HsvH and
+                self._station_config.DISP_CHECKER_L_HsvS <= s <= self._station_config.DISP_CHECKER_H_HsvS)
+
     # </editor-fold>
+
 
 def print_to_console(self, msg):
     pass
 
 
-############ projectDut is just an example
+# projectDut is just an example
 class projectDut(object):
     """
         class for pancake uniformity DUT
@@ -591,11 +610,11 @@ class projectDut(object):
             pass
         if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image', 'nvm_read_statistics',
                     'nvm_write_data', '_get_color_ext', 'render_image', 'nvm_read_data', 'nvm_speed_mode',
-                    'get_module_inplace', 'nvm_get_ecc']:
+                    'get_module_inplace', 'nvm_get_ecc', 'read_color_sensor', 'display_color_check']:
             return not_find
 
-if __name__ == "__main__" :
 
+if __name__ == "__main__":
     class cfgstub(object):
         pass
 
