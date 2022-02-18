@@ -22,6 +22,55 @@ class TokkiOffAxisNFixtureError(Exception):
 
 
 class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.TestFixture):
+
+    class Scanner710(object):
+        def __init__(self, com_port='COM1'):
+            self._error_msg = 'ERROR'
+            self._cmd_on = b'LON\r'
+            self._cmd_off = b'LOFF\r'
+            self._max_retries = 4
+            self._serial_port = serial.Serial(com_port,
+                                              115200,
+                                              parity='E',
+                                              bytesize=8,
+                                              stopbits=1,
+                                              timeout=0.3,
+                                              xonxoff=0,
+                                              rtscts=0)
+            self._com_port = com_port
+
+        def scan(self, timeout=2):
+            self._serial_port.write(self._cmd_off)
+            retries = 0
+            sn_code = None
+            while retries <= self._max_retries and sn_code is None:
+                self.on()
+                msg = []
+                tim = time.time()
+                try:
+                    while time.time() - tim < timeout and ord('\r') not in msg:
+                        line_in = self._serial_port.readline()
+                        if line_in != b'':
+                            msg.extend(line_in)
+                    if len(msg) > 0:
+                        sn_code = bytearray(msg).decode('utf-8', 'ignore').splitlines(keepends=False)[-1]
+                except Exception as ex:
+                    print(f'unable to get data from SR700. {ex}')
+                retries += 1
+            if sn_code == self._error_msg or sn_code is None:
+                self.off()
+            return sn_code
+
+        def off(self):
+            self._serial_port.write(self._cmd_off)
+
+        def on(self):
+            self._serial_port.write(self._cmd_on)
+
+        def __del__(self):
+            if self._serial_port:
+                self._serial_port.close()
+
     """
         class for auo unif Fixture
             this is for doing all the specific things necessary to interface with instruments
@@ -315,6 +364,12 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
             if val is None:
                 raise TokkiOffAxisNFixtureError('Failed to read data from particle counter.')
             return val
+
+    def scan_code(self, com_port='COM1'):
+        scanner = TokkiOffAxisNFixture.Scanner710(com_port=com_port)
+        code = scanner.scan(timeout=2)
+        del scanner
+        return code
 
 
 def print_to_console(self, msg):
