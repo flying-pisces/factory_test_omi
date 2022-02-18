@@ -15,6 +15,7 @@ from pymodbus.register_read_message import ReadHoldingRegistersResponse
 from pymodbus.constants import Defaults
 import time
 import ctypes
+import threading
 
 
 class TokkiOffAxisNFixtureError(Exception):
@@ -83,22 +84,19 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
         self._end_delimiter = '@_@'
         self._error_msg = r'Please scanf "CMD_HELP" check help command'
         self._particle_counter_client = None  # type: ModbusSerialClient
+        self._fixture_mutex = threading.Lock()
 
     def is_ready(self):
         if self._serial_port is not None:
-            resp = self._read_response(2)
+            with self._fixture_mutex:
+                resp = self._read_response(0.05)
             if resp:
-                if not hasattr(self._station_config, 'DUT_LITUP_OUTSIDE') or not self._station_config.DUT_LITUP_OUTSIDE:
-                    items = list(filter(lambda r: re.match(r'LOAD:\d+', r, re.I), resp))
+                btn_dic = {3: r'PowerOn_Button:\d', 1: r'BUTTON_Left:\d', 2: r'BUTTON_Right:\d',
+                           0: r'BUTTON:0', 4: r'BUTTON:1'}
+                for key, item in btn_dic.items():
+                    items = list(filter(lambda r: re.match(item, r, re.I), resp))
                     if items:
-                        return int((items[0].split(self._start_delimiter))[1].split(self._end_delimiter)[0]) == 0x00
-                else:
-                    btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d',
-                               0: r'BUTTON:0', 4: r'BUTTON:1'}
-                    for key, item in btn_dic.items():
-                        items = list(filter(lambda r: re.match(item, r, re.I), resp))
-                        if items:
-                            return key
+                        return key
 
     def initialize(self):
         self._operator_interface.print_to_console("Initializing offaxis Fixture\n")
@@ -164,33 +162,61 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
                 print('Fail to read any data in {0} seconds. '.format(timeout))
         return response
 
-    def read_response(self, timeout=5):
+    def read_response(self, timeout=0.5):
         response = self._read_response(timeout)
         if not response:
             raise TokkiOffAxisNFixtureError('reading data time out ->.')
         return response
 
     def help(self):
-        self._write_serial(self._station_config.COMMAND_HELP)
-        response = self.read_response()
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_HELP)
+            response = self.read_response()
         if self._verbose:
             pprint.pprint(response)
         return response
 
     def reset(self):
-        self._write_serial(self._station_config.COMMAND_RESET)
-        response = self.read_response()
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_RESET)
+            response = self.read_response()
         val = int(self._prase_response(r'LOAD:(\d+)', response).group(1))
         if val == 0x00:
             time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
         return val
 
     def id(self):
-        self._write_serial(self._station_config.COMMAND_ID)
-        response = self.read_response()
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_ID)
+            response = self.read_response()
         if self._verbose:
             print(response[1])
         return self._prase_response(r'ID:(.+)', response).group(1)
+
+    def version(self):
+        """
+        get version number
+        @return:
+        """
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_VERSION)
+            response = self._read_response()
+        return self._prase_response(r'VERSION:(.+)', response).group(1)
+
+    def vacuum(self, on):
+        """
+        get version number
+        @return:
+        """
+        vacuum_dict = {
+            True: ('ON', r'VACUUM_ON:(\d+)'),
+            False: ('OFF', r'VACUUM_OFF:(\d+)'),
+        }
+        cmd = vacuum_dict[on]
+        with self._fixture_mutex:
+            self._write_serial(f'{self._station_config.COMMAND_VACUUM_CTRL}:{cmd[0]}')
+            response = self._read_response()
+        return self._prase_response(cmd[1], response).group(1)
 
     def close(self):
         self._operator_interface.print_to_console("Closing auo offaxis Fixture\n")
@@ -214,32 +240,25 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
     # Fixture control
     ######################
     def button_enable(self):
-        self._write_serial(self._station_config.COMMAND_BUTTON_ENABLE)
-        response = self.read_response()
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_BUTTON_ENABLE)
+            response = self.read_response()
         return int(self._prase_response(r'BTN_ENABLE:(\d+)', response).group(1))
 
     def button_disable(self):
-        self._write_serial(self._station_config.COMMAND_BUTTON_DISABLE)
-        response = self.read_response()
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_BUTTON_DISABLE)
+            response = self.read_response()
         return int(self._prase_response(r'BTN_DISABLE:(\d+)', response).group(1))
 
     def mov_abs_xy(self, x, y):
-        CMD_MOVE_STRING = self._station_config.COMMAND_ABS_X_Y + ':' + str(x) + ',' + str(y)
-        self._write_serial(CMD_MOVE_STRING)
-        response = self.read_response()
+        CMD_MOVE_STRING = self._station_config.COMMAND_ABS_X_Y + ':' + str(-1*x) + ',' + str(y)
+        with self._fixture_mutex:
+            self._write_serial(CMD_MOVE_STRING)
+            response = self.read_response(timeout=5)
         if self._verbose:
             print(response)
         return int(self._prase_response(r'ABS_X_Y:(\d+)', response).group(1))
-
-    # def pogo_state_up(self, up):
-    #     cmd = self._station_config.COMMAND_POGO_DOWN # OFF
-    #     r = r'POGO_DOWN:\d+'
-    #     if up:
-    #         cmd = self._station_config.COMMAND_POGO_UP # ON
-    #         r = r'POGO_UP:\d+'
-    #     self._write_serial(cmd)
-    #     response = self.read_response()
-    #     return self._prase_response(r, response)
 
     def load(self):
         self._load()
@@ -248,13 +267,15 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
         self._unload()
 
     def _load(self):
-        self._write_serial(self._station_config.COMMAND_LOAD)
-        response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_LOAD)
+            response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
         return int(self._prase_response(r'LOAD:(\d+)', response).group(1))
 
     def _unload(self):
-        self._write_serial(self._station_config.COMMAND_UNLOAD)
-        response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_UNLOAD)
+            response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
         return int(self._prase_response(r'UNLOAD:(\d+)', response).group(1))
 
     def _prase_response(self, regex, resp):
@@ -264,16 +285,6 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
         if not items:
             raise TokkiOffAxisNFixtureError('unable to parse msg. {}'.format(items))
         return re.search(regex, items[0], re.I | re.S)
-
-    # def press_ctrl_up(self, up=True):
-    #     cmd = self._station_config.COMMAND_PRESS_DOWN # ON
-    #     r = r'PRESS_DOWN:\d+'
-    #     if up:
-    #         cmd = self._station_config.COMMAND_PRESS_UP # OFF
-    #         r = r'PRESS_UP:\d+'
-    #     self._write_serial(cmd)
-    #     response = self.read_response()
-    #     return self._prase_response(r, response)
 
     def set_tri_color(self, color):
         """
@@ -286,8 +297,9 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
         }
         cmd = switch.get(color)
         if cmd:
-            self._write_serial(cmd)
-            response = self.read_response()
+            with self._fixture_mutex:
+                self._write_serial(cmd)
+                response = self.read_response()
             r = r'LED_[R|Y|G]:(\d+)'
             return int(self._prase_response(r, response).group(1))
 
@@ -302,8 +314,9 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
             False: (self._station_config.COMMAND_BUTTON_LITUP_DISABLE, r'PowerOnButton_DISABLE:(\d+)'),
         }
         cmd = status_dic[on]
-        self._write_serial(cmd[0])
-        response = self.read_response()
+        with self._fixture_mutex:
+            self._write_serial(cmd[0])
+            response = self.read_response()
         if int(self._prase_response(cmd[1], response).group(1)) != 0:
             raise TokkiOffAxisNFixtureError('fail to send command. %s' % response)
 
@@ -382,11 +395,12 @@ if __name__ == "__main__":
         import station_config
         import hardware_station_common.operator_interface.operator_interface
 
-        print('Self check for pancake_offaxis')
-        station_config.load_station('pancake_offaxis')
-        station_config.FIXTURE_COMPORT = 'COM3'
+        print('Self check for tokki_offaxis')
+        station_config.load_station('tokki_offaxisn')
+        station_config.FIXTURE_COMPORT = 'COM9'
+        station_config.FIXTURE_PARTICLE_COUNTER = False
         station_config.print_to_console = types.MethodType(print_to_console, station_config)
-        the_fixture = pancakeoffaxisFixture(station_config, station_config)
+        the_fixture = TokkiOffAxisNFixture(station_config, station_config)
         the_fixture._verbose = True
 
         try:
@@ -395,6 +409,8 @@ if __name__ == "__main__":
             # the_fixture.mov_abs_xy(5, 1)
             for idx in range(0, 20):
                 print('Id = %s' % the_fixture.id())
+
+                the_fixture.vacuum(True)
 
                 the_fixture.set_tri_color('r')
                 the_fixture.load()
@@ -413,6 +429,8 @@ if __name__ == "__main__":
                 the_fixture.mov_abs_xy(-1800, 0)
                 time.sleep(0.5)
                 the_fixture.button_disable()
+
+                the_fixture.vacuum(False)
 
                 the_fixture.set_tri_color('g')
                 the_fixture.unload()

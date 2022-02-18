@@ -24,11 +24,13 @@ SERIAL_NUMBER_MODEL_NUMBER = r'^\dPRP[\w|\d]{10}$'  # Peak panel SN
 ##################################
 # Fixture parameters
 # Fixture commands
-FIXTURE_COMPORT = "COM2" #
+FIXTURE_COMPORT = "COM9" #
 FIXTURE_PARTICLE_COMPORT = "COM1" #
 FIXTURE_SCANER_COMPORT = 'COM3'
 FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = "COM1" #
+DUT_ETH_PROXY = True
+DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
 
 TIMEOUT_FOR_BTN_IDLE = 10
 
@@ -105,6 +107,7 @@ COMMAND_TRI_LED_G = 'CMD_LED:G'
 COMMAND_BUTTON_LITUP_ENABLE = 'CMD_POWERON_BUTTON_ENABLE'
 COMMAND_BUTTON_LITUP_DISABLE = 'CMD_POWERON_BUTTON_DISABLE'
 COMMAND_LITUP_STATUS = 'CMD_POWERON_BUTTON'
+COMMAND_VACUUM_CTRL = 'CMD_VACUUM'
 
 # Fixture Status Enum Values
 PTB_POSITION_STATUS = ["Testing Position", "Reset Position", "Outside Position", "Other Position"]
@@ -146,7 +149,7 @@ DUT_ON_MAXRETRY = 5
 DUT_DISPLAYSLEEPTIME = 0.025
 ##################################
 # Test Equipment related parameters
-IS_VERBOSE = True
+IS_VERBOSE = False
 IS_PRINT_TO_LOG = False
 MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqxc'
@@ -256,7 +259,7 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 IS_STATION_ACTIVE = True
-STATION_TYPE = 'pancake_offaxis'
+STATION_TYPE = 'tokki_offaxisn'
 STATION_NUMBER = '0001'
 SHOPFLOOR_SYSTEM = ''
 AUTO_SCAN_CODE = False
@@ -264,8 +267,8 @@ AUTO_SCAN_CODE = False
 DATA_COLLECT_ONLY = False
 EQUIPMENT_DEMO_DATABASE = r'C:\ShareData\OffAxis'
 
-DUT_SIM = True
-# CAMERA_SN = "159496752"
-CAMERA_SN = 'Demo'
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+CAMERA_SN = "1525410258"
+# CAMERA_SN = 'Demo'
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False

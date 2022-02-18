@@ -54,16 +54,13 @@ class TokkiOffAxisNStation(test_station.TestStation):
         self._ttxm_filelist = []
 
     def initialize(self):
-        raise TokkiOffAxisNStationError(f'Fail to initialize fixture. unable to find com-port')
-
         self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
         self._station_config.FIXTURE_COMPORT = None
-        self._station_config.FIXTURE_SCANER_COMPORT = None
         self._station_config.FIXTURE_PARTICLE_COMPORT = None
         # <editor-fold desc="port configuration automatically">
         cfg = 'station_config.json'
         station_config = {
-            'FixtureCom': 'MYZY',
+            'FixtureCom': 'Fixture',
             'ParticleCounter': 'ParticleCounter',
             'Scanner': 'SR710',
         }
@@ -87,12 +84,12 @@ class TokkiOffAxisNStation(test_station.TestStation):
             self._station_config.FIXTURE_COMPORT = com_ports[-1]
 
         # config the port for scanner
-        regex_port = station_config['Scanner']
-        com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
-        if len(com_ports) == 1:
-            self._station_config.FIXTURE_SCANER_COMPORT = com_ports[-1]
-        else:
-            self._operator_interface.print_to_console(f'Unable to find scanner Port: {regex_port}\n', 'red')
+        # regex_port = station_config['Scanner']
+        # com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
+        # if len(com_ports) == 1:
+        #     self._station_config.FIXTURE_SCANER_COMPORT = com_ports[-1]
+        # else:
+        #     self._operator_interface.print_to_console(f'Unable to find scanner Port: {regex_port}\n', 'red')
 
         # config the port for scanner
         regex_port = station_config['ParticleCounter']
@@ -104,7 +101,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
         # </editor-fold>
 
         if (not self._station_config.FIXTURE_SIM and
-                (None in [self._station_config.FIXTURE_PARTICLE_COMPORT, self._station_config.FIXTURE_SCANER_COMPORT,
+                (None in [self._station_config.FIXTURE_PARTICLE_COMPORT,
                           self._station_config.FIXTURE_COMPORT])):
             raise TokkiOffAxisNStationError(f'Fail to initialize fixture. unable to find com-port')
 
@@ -242,8 +239,8 @@ class TokkiOffAxisNStation(test_station.TestStation):
         serial_number = self._latest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
         self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
-        if self._station_config.DUT_SIM:
-            self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
+        if not self._station_config.DUT_SIM:
+            self._the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
         return self.is_ready_litup_outside()
 
     def is_ready_litup_outside(self):
@@ -267,7 +264,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
                     break
                 msg_prompt = 'Load DUT, and then Press PowerOn-Btn(Litup) in %s counts...'
                 if power_on_trigger:
-                    msg_prompt = 'Press Dual-Btn(Load)/L-Btn(Cancel)/PowerOn-Btn(Re Litup)  in %s counts...'
+                    msg_prompt = 'Press Dual-Btn(Load)/PowerOn-Btn(Toggle)  in %s counts...'
                 tm_data = timeout_for_btn_idle - (tm_current - timeout_for_dual)
                 self._operator_interface.prompt(msg_prompt % int(tm_data), 'yellow')
                 if self._station_config.FIXTURE_SIM:
@@ -282,25 +279,21 @@ class TokkiOffAxisNStation(test_station.TestStation):
                         if self._retries_screen_on == 0:
                             self._the_unit.screen_on()
 
-                    elif ready_status == 0x03:
-                        self._operator_interface.print_to_console('Try to litup DUT.\n')
-                        self._retries_screen_on += 1
+                    elif ready_status in [0x03, 0x01]:
+                        self._operator_interface.print_to_console(f'Try to change DUT status. {power_on_trigger}\n')
                         if not power_on_trigger:
+                            self._retries_screen_on += 1
                             self._the_unit.screen_on()
                             power_on_trigger = True
+                            self._fixture.power_on_button_status(False)
                             self._fixture.button_enable()
                             timeout_for_dual = time.time()
                         else:
                             self._the_unit.screen_off()
-                            self._the_unit.reboot()  # Reboot
-                            self._the_unit.screen_on()
-                            power_on_trigger = True
+                            power_on_trigger = False
+                            self._fixture.button_disable()
+                            self._fixture.power_on_button_status(True)
                             timeout_for_dual = time.time()
-                    elif ready_status == 0x02:
-                        self._is_cancel_test_by_op = True  # Cancel test.
-                    elif ready_status == 0x04:
-                        self._operator_interface.print_to_console('please load the dut correctly.\n')
-                        pass
                 time.sleep(0.01)
                 tm_current = time.time()
         except Exception as e:
@@ -310,6 +303,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
             try:
                 self._fixture.button_disable()
                 self._fixture.power_on_button_status(False)
+                self._fixture.vacuum(False)
                 if not ready:
                     if not self._is_cancel_test_by_op:
                         self._operator_interface.print_to_console(
@@ -600,7 +594,10 @@ class TokkiOffAxisNStation(test_station.TestStation):
                             export_raw_data[:, pattern_idx * len(
                                 self._station_config.EXPORT_RAW_DATA_PATTERN_AZI) + aziIdx + 1] = export_raw_values
                     try:
-                        raw_data_dir = os.path.join(os.path.dirname(test_log.get_file_path()), 'raw')
+                        uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+                        bak_dir = os.path.join(self._station_config.ROOT_DIR,
+                                               self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
+                        raw_data_dir = os.path.join(bak_dir, uni_file_name)
                         if not os.path.exists(raw_data_dir):
                             os.mkdir(raw_data_dir)
 
