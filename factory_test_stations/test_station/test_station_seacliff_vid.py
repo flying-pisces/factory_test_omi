@@ -49,6 +49,8 @@ class seacliffVidStation(test_station.TestStation):
         self._is_screen_on_by_op = False
         self._is_cancel_test_by_op = False
         self._retries_screen_on = 0
+        self._panel_left_or_right = None
+        self._latest_serial_number = None
         self._sw_version = '0.0.1'
 
     def initialize(self):
@@ -188,16 +190,13 @@ class seacliffVidStation(test_station.TestStation):
     def render_pattern_on_dut(self, pattern_name, pattern_value):
         msg = f'try to render image  {pattern_name} -> {pattern_value}.\n'
         self._operator_interface.print_to_console(msg)
-        pattern_value_valid = True
+        pattern_value_valid = False
         if isinstance(pattern_value, (int, str)):
             self._the_unit.display_image(pattern_value, False)
-        elif isinstance(pattern_value, tuple):
-            if len(pattern_value) == 0x03:
-                self._the_unit.display_color(pattern_value)
-            else:
-                pattern_value_valid = False
-        else:
-            pattern_value_valid = False
+            pattern_value_valid = True
+        elif isinstance(pattern_value, tuple) and len(pattern_value) == 0x03:
+            self._the_unit.display_color(pattern_value)
+            pattern_value_valid = True
         return pattern_value_valid
 
     def _do_test(self, serial_number, test_log):
@@ -267,13 +266,25 @@ class seacliffVidStation(test_station.TestStation):
                         'Unable to find information for pattern: %s \n' % pattern_name)
                     continue
 
-                if latest_pattern_value_bak != pattern_info['pattern']:
-                    pattern_value_valid = self.render_pattern_on_dut(pattern_name, pattern_info['pattern'])
+                sel_pattern_value = None
+                if isinstance(pattern_info['pattern'], int) or isinstance(pattern_info['pattern'], str):
+                    sel_pattern_value = pattern_info['pattern']
+                elif isinstance(pattern_info['pattern'], tuple):
+                    if self._panel_left_or_right == 'L':
+                        sel_pattern_value = pattern_info['pattern'][0]
+                    elif self._panel_left_or_right == 'R':
+                        sel_pattern_value = pattern_info['pattern'][1]
+                if sel_pattern_value is None:
+                    raise seacliffVidStationError(f'unable to parse the pattern: {pattern_name}')
+
+                if latest_pattern_value_bak != sel_pattern_value:
+                    pattern_value_valid = self.render_pattern_on_dut(pattern_name, sel_pattern_value)
                     if not pattern_value_valid:
                         self._operator_interface.print_to_console(
-                            'Unable to change pattern: {0} = {1} \n'.format(pattern_name, pattern_info['pattern']))
+                            'Unable to change pattern: {0} = {1} \n'.format(pattern_name, sel_pattern_value))
                         continue
-                    latest_pattern_value_bak = pattern_info['pattern']
+                    latest_pattern_value_bak = sel_pattern_value
+
                 self._operator_interface.print_to_console(f'capture image for pattern: {pattern_name}\n')
                 if not os.path.exists(os.path.join(capture_path, 'exp')):
                     os_utils.mkdir_p(os.path.join(capture_path, 'exp'))
@@ -359,5 +370,12 @@ class seacliffVidStation(test_station.TestStation):
         return True
 
     def validate_sn(self, serial_num):
+        self._panel_left_or_right = None
         self._latest_serial_number = serial_num
-        return test_station.TestStation.validate_sn(self, serial_num)
+        if test_station.TestStation.validate_sn(self, serial_num):
+            # TODO:
+            if self._panel_left_or_right not in ['L', 'R']:
+                self._operator_interface.print_to_console(
+                    f'Unable to determine this PANEL is left-one or right-one. from SN: {serial_num}\n', 'red')
+                return False
+        return False
