@@ -623,7 +623,10 @@ class pancakeoffaxisStation(test_station.TestStation):
                             export_raw_values = [lv_all_items[f'{posIdx}_{exp_raw_data_pattern}'].get(c) for c in export_raw_keys]
                             export_raw_data[:, pattern_idx * len(self._station_config.EXPORT_RAW_DATA_PATTERN_AZI) + aziIdx + 1] = export_raw_values
                     try:
-                        raw_data_dir = os.path.join(os.path.dirname(test_log.get_file_path()), 'raw')
+                        uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+                        bak_dir = os.path.join(self._station_config.ROOT_DIR,
+                                               self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
+                        raw_data_dir = os.path.join(bak_dir, uni_file_name)
                         if not os.path.exists(raw_data_dir):
                             os.mkdir(raw_data_dir)
 
