@@ -373,9 +373,27 @@ class seacliffVidStation(test_station.TestStation):
         self._panel_left_or_right = None
         self._latest_serial_number = serial_num
         if test_station.TestStation.validate_sn(self, serial_num):
-            # TODO:
-            if self._panel_left_or_right not in ['L', 'R']:
+            if not self._station_config.SERIAL_NUMBER_VALIDATION:
+                return True
+            else:
+                self._panel_left_or_right = dict({
+                    'Q': 'L',
+                    'R': 'R',
+                }).get([self._parse(serial_num)['QRM']])
+            if self._panel_left_or_right in ['L', 'R']:
+                return True
+            else:
                 self._operator_interface.print_to_console(
                     f'Unable to determine this PANEL is left-one or right-one. from SN: {serial_num}\n', 'red')
                 return False
         return False
+
+    def _parse(self, serial_num):
+        assert len(serial_num) == 14, f'{serial_num} is not matched the rules defined by meta.'
+        return {
+            'project_code': serial_num[0:2],
+            'vendor_code': serial_num[2:4],
+            'QRM': serial_num[4],
+            'configuration_code': serial_num[5:7],
+            'uid': serial_num[10:14]
+        }
