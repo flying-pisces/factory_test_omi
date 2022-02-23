@@ -5,6 +5,8 @@ STATION_LIMITS_ARRAYS = [
     ["DUT_ScreenOnRetries", 0, 5, 97],
     ["DUT_ScreenOnStatus", True, True, 98],
     ["ENV_ParticleCounter", None, None, 99],
+    
+    ["EXT_CTRL_RES", None, None, 9999],
 
     ["P1_W255_Lv_max_pos", None, None, 10091],
     ["P1_W000_Lv_max_pos", None, None, 10092],
