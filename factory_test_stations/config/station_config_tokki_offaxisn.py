@@ -12,7 +12,7 @@ Version 3.0.0
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\offaxis_summary_1PV6'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\tokki_offaxis_5Npt_5Patterns'
 
 
 ##################################
@@ -172,10 +172,10 @@ Resolution_Bin_X = 360
 Resolution_Bin_Y = 360
 
 TEST_POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
-                 # ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-                 # ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
-                 # ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-                 # ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"]),
+                 ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+                 ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
+                 ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+                 ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"]),
                  ]
 
 TEST_PATTERNS = {
@@ -227,8 +227,8 @@ CR_TEST_PATTERNS = ['W255', 'W000']
 CENTER_AT_POLE_AZI = 'P_0_0'
 
 SAVE_PNL_IF_FAIL = {
-    'LA': ['P1_W255_duv_15_0', 'P1_R255_duv_15_0', 'P1_G255_duv_15_0', 'P1_B255_duv_15_0'],
-    'RA': ['P1_W255_duv_15_180', 'P1_R255_duv_15_180', 'P1_G255_duv_15_180', 'P1_B255_duv_15_180'],
+    'LA': [],
+    'RA': [],
 }
 
 BRIGHTNESS_AT_POLE_AZI = [(0, 0),
@@ -249,7 +249,6 @@ EXPORT_RAW_DATA_PATTERN = {'P1': ['W255', 'W000']}
 EXPORT_RAW_DATA_PATTERN_AZI = [('Vertical', 90), ('Diagonal', 45), ('Horizontal', 0), ('Diagonal', 135)]
 EXPORT_RAW_DATA_PATTERN_POLE = list(range(-60, 61, 2))
 IS_EXPORT_RAW_DATA = True
-SORTED_EXPORT_LOG = False
 
 ##################################
 # IT and work order
