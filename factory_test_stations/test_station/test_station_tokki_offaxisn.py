@@ -206,13 +206,16 @@ class TokkiOffAxisNStation(test_station.TestStation):
         if not self._overall_result and set(ui_msg.keys()).issubset(save_pnl_dic.keys()):
             save_pnl_dic_left = [result_array[c].did_pass() for c in save_pnl_dic['LA']]
             save_pnl_dic_right = [result_array[c].did_pass() for c in save_pnl_dic['RA']]
+            ext_ctl_val = None
             if (False in save_pnl_dic_left) and (False not in save_pnl_dic_right):
                 test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'LA')
+                ext_ctl_val = 'LA'
             elif (False not in save_pnl_dic_left) and (False in save_pnl_dic_right):
                 test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'RA')
+                ext_ctl_val = 'RA'
             else:
                 test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'FAIL')
-            ext_ctl_val = result_array['EXT_CTRL_RES'].get_measured_value()
+                ext_ctl_val = 'FAIL'
             if ext_ctl_val in ui_msg.keys():
                 test_log.get_overall_result()
                 self._overall_result = True

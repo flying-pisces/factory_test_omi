@@ -151,8 +151,8 @@ DUT_DISPLAYSLEEPTIME = 0.025
 # Test Equipment related parameters
 IS_VERBOSE = False
 IS_PRINT_TO_LOG = False
-MPKAPI_RELATIVEPATH = r'test_station\test_equipment\MPK_API.dll'
-SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqxc'
+MPKAPI_RELATIVEPATH = r"C:\Program Files\Radiant Vision Systems\TrueTest 1.7\MPK_API.dll"
+SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\tokki_offaxis2022.seqxc'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'

@@ -252,7 +252,7 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
         return int(self._prase_response(r'BTN_DISABLE:(\d+)', response).group(1))
 
     def mov_abs_xy(self, x, y):
-        CMD_MOVE_STRING = self._station_config.COMMAND_ABS_X_Y + ':' + str(-1*x) + ',' + str(y)
+        CMD_MOVE_STRING = self._station_config.COMMAND_ABS_X_Y + ':' + str(x) + ',' + str(y)
         with self._fixture_mutex:
             self._write_serial(CMD_MOVE_STRING)
             response = self.read_response(timeout=5)
