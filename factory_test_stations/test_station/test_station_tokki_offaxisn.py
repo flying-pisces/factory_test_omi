@@ -318,7 +318,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
                     self._the_unit = None
             except:
                 pass
-            self._operator_interface.prompt('', 'SystemButtonFace')
+            self._operator_interface.prompt('')
 
     def data_export(self, serial_number, test_log, tposIdx):
         """
