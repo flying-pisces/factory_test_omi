@@ -104,15 +104,15 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         self._nvm_data_len = 45
         self._renderImgTool = os.path.join(os.getcwd(), r'CambriaTools\exe\CambriaTools.exe')
 
-    def initialize(self):
+    def initialize(self, **kwargs):
         self.is_screen_poweron = False
         try:
             if hasattr(self._station_config, 'DUT_ETH_PROXY') and self._station_config.DUT_ETH_PROXY:
-                self._serial_port = DutEthernetCommunicationProxy(self._station_config.DUT_ETH_PROXY_ADDR)
+                self._serial_port = DutEthernetCommunicationProxy(kwargs.get('eth_addr'))
                 if self._verbose:
-                    print(f'DUT {self.serial_number} Initialised.  Port = 8080. ')
+                    print(f'DUT {self.serial_number} Initialised.  Port = {kwargs} ')
             else:
-                self._serial_port = serial.Serial(self._station_config.DUT_COMPORT,
+                self._serial_port = serial.Serial(kwargs.get('com_port'),
                                                   baudrate=115200,
                                                   bytesize=serial.EIGHTBITS,
                                                   parity=serial.PARITY_NONE,
@@ -124,10 +124,9 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
                                                   writeTimeout=None,
                                                   interCharTimeout=None)
                 if self._verbose:
-                    print(f'DUT {self.serial_number} Initialised COM = {self._station_config.DUT_COMPORT}. ')
+                    print(f'DUT {self.serial_number} Initialised COM = {kwargs}. ')
         except Exception as e:
-            raise DUTError('Unable to open DUT with Com={0} or Ethernet: Exp={1}'
-                           .format(self._station_config.DUT_COMPORT, str(e)))
+            raise DUTError(f'Unable to open DUT with {kwargs}, Exp={str(e)}')
         return True
 
     def screen_on(self, ignore_err=False):
@@ -580,7 +579,7 @@ class projectDut(object):
     def is_ready(self):
         pass
 
-    def initialize(self):
+    def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing pancake Fixture_DUT.\n")
 
     def close(self):
