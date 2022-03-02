@@ -9,6 +9,7 @@
 # from test_station_pancake_pr788 import *
 # from test_station_pancake_eeprom import *
 # from test_station_pancake_muni import *
-
+# from test_station_seacliff_offaxis4 import *
 # from test_station_seacliff_vid import *
 # from test_station_tokki_offaxisn import *
+# from test_station_seacliff_offaxis import *

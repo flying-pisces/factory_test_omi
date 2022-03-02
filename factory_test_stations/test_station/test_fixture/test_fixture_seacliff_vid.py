@@ -52,9 +52,9 @@ class seacliffVidFixture(hardware_station_common.test_station.test_fixture.TestF
                     if items:
                         return key
 
-    def initialize(self):
+    def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing seacliff vid Fixture\n")
-        self._serial_port = serial.Serial(self._station_config.FIXTURE_COMPORT,
+        self._serial_port = serial.Serial(kwargs.get('fixture_com'),
                                           115200,
                                           parity='N',
                                           bytesize=8,
@@ -63,7 +63,7 @@ class seacliffVidFixture(hardware_station_common.test_station.test_fixture.TestF
                                           xonxoff=0,
                                           rtscts=0)
         if not self._serial_port:
-            raise seacliffVidFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
+            raise seacliffVidFixtureError(f'Unable to open fixture port: {kwargs}')
         else:  # disable the buttons automatically
             self.start_button_status(True)
             self.power_on_button_status(True)
@@ -73,8 +73,7 @@ class seacliffVidFixture(hardware_station_common.test_station.test_fixture.TestF
             self._version = self.version()
             self._id = self.id()
 
-            self._operator_interface.print_to_console(
-                "Fixture %s Initialized.\n" % self._station_config.FIXTURE_COMPORT)
+            self._operator_interface.print_to_console(f"Fixture %s Initialized. {kwargs}")
             return True
 
     @property

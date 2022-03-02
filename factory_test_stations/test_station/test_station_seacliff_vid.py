@@ -21,6 +21,7 @@ import json
 import collections
 import math
 import csv
+import serial
 
 
 class seacliffVidStationError(Exception):
@@ -51,12 +52,41 @@ class seacliffVidStation(test_station.TestStation):
         self._retries_screen_on = 0
         self._panel_left_or_right = None
         self._latest_serial_number = None
+        self._fixture_port = None
         self._sw_version = '0.0.1'
 
     def initialize(self):
         try:
             self._operator_interface.print_to_console("Initializing seacliff vid station...\n")
-            self._fixture.initialize()
+            # <editor-fold desc="port configuration automatically">
+            cfg = 'station_config_seacliff_vid.json'
+            station_config = {
+                'FixtureCom': 'Fixture',
+            }
+            com_ports = list(serial.tools.list_ports.comports())
+            port_list = [(com.device, com.hwid, com.serial_number, com.description)
+                         for com in com_ports if com.serial_number]
+            if not os.path.exists(cfg):
+                station_config['PORT_LIST'] = port_list
+                with open(cfg, 'w') as f:
+                    json.dump(station_config, fp=f, indent=4)
+            else:
+                with open(cfg, 'r') as f:
+                    station_config = json.load(f)
+
+            port_err_message = []
+            # config the port for fixture
+            regex_port = station_config['FixtureCom']
+            com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
+            if len(com_ports) != 1:
+                port_err_message.append(f'Fixture')
+            else:
+                self._fixture_port = com_ports[-1]
+            # </editor-fold>
+            if not self._station_config.FIXTURE_SIM and len(port_err_message) > 0:
+                raise seacliffVidStationError(f'Fail to find ports for fixture {";".join(port_err_message)}', 'red')
+
+            self._fixture.initialize(fixture_com=self._fixture_port)
             self._equip.initialize()
         except:
             raise
@@ -109,7 +139,8 @@ class seacliffVidStation(test_station.TestStation):
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._fixture.power_on_button_status(True)
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-            self._the_unit.initialize()
+            self._the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
+                                      eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
             self._the_unit.nvm_speed_mode(mode='normal')
             self._operator_interface.print_to_console("Initialize DUT... \n")
             while timeout_for_dual > 0:

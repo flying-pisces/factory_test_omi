@@ -12,7 +12,7 @@ class projectstationFixture(hardware_station_common.test_station.test_fixture.Te
     def is_ready(self):
         pass
 
-    def initialize(self):
+    def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing project station Fixture\n")
 
     def close(self):

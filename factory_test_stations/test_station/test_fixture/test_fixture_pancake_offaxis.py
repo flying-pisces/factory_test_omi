@@ -49,9 +49,9 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
                         if items:
                             return key
 
-    def initialize(self):
+    def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing offaxis Fixture\n")
-        self._serial_port = serial.Serial(self._station_config.FIXTURE_COMPORT,
+        self._serial_port = serial.Serial(kwargs.get('fixture_port'),
                                           115200,
                                           parity='N',
                                           stopbits=1,
@@ -64,15 +64,14 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
                 Defaults.RetryOnEmpty = True
                 self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
                                                                    stopbits=1,
-                                                                   port=self._station_config.FIXTURE_PARTICLE_COMPORT,
+                                                                   port=kwargs.get('particle_port'),
                                                                    timeout=2000)
                 self._particle_counter_client.inter_char_timeout = 0.2
                 if not self._particle_counter_client.connect():
-                    raise pancakeoffaxisFixtureError( 'Unable to open particle counter port: %s'
-                                                      % self._station_config.FIXTURE_PARTICLE_COMPORT)
+                    raise pancakeoffaxisFixtureError(f'Unable to open particle counter port: {kwargs}')
 
         if not self._serial_port:
-            raise pancakeoffaxisFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
+            raise pancakeoffaxisFixtureError(f'Unable to open fixture port: {kwargs}')
         else:  # disable the buttons automatically
             self.set_tri_color('y')
             self.button_enable()
@@ -80,7 +79,7 @@ class pancakeoffaxisFixture(hardware_station_common.test_station.test_fixture.Te
             self.button_disable()
             self.set_tri_color('g')
             if self._verbose:
-                print("Fixture %s Initialized" % self._station_config.FIXTURE_COMPORT)
+                print(f"Fixture Initialized. {kwargs}")
             return True
 
     def _write_serial(self, input_bytes):

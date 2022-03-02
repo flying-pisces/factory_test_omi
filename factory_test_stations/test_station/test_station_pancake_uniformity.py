@@ -228,7 +228,7 @@ class pancakeuniformityStation(test_station.TestStation):
         timeout_for_btn_idle = 20
         timeout_for_dual = timeout_for_btn_idle
         try:
-            self._the_unit.initialize()
+            self._the_unit.initialize(com_port=self._station_config.DUT_COMPORT)
             self._fixture.button_enable()
 
             while timeout_for_dual > 0:

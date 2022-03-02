@@ -13,7 +13,7 @@ from test_station.test_fixture.test_fixture_project_station import projectstatio
 from test_station.test_equipment.test_equipment_tokki_offaxisn import TokkiOffAxisNEquipment
 from test_station.dut.dut import projectDut, DUTError
 import hardware_station_common.utils as hsc_utils
-import hardware_station_common.utils.io_utils as io_utils
+from hardware_station_common.utils.io_utils import round_ex
 import types
 import glob
 import sys
@@ -58,7 +58,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
         self._station_config.FIXTURE_COMPORT = None
         self._station_config.FIXTURE_PARTICLE_COMPORT = None
         # <editor-fold desc="port configuration automatically">
-        cfg = 'station_config.json'
+        cfg = 'station_config_tokki_offaxisn.json'
         station_config = {
             'FixtureCom': 'Fixture',
             'ParticleCounter': 'ParticleCounter',
@@ -259,7 +259,8 @@ class TokkiOffAxisNStation(test_station.TestStation):
         try:
             self._fixture.button_disable()
             self._fixture.power_on_button_status(True)
-            self._the_unit.initialize()
+            self._the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
+                                      eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
             self._operator_interface.print_to_console("Initialize DUT... \n")
             tm_current = timeout_for_dual
             while tm_current - timeout_for_dual <= timeout_for_btn_idle:
@@ -499,7 +500,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
                         continue
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, tlv)
+                    test_log.set_measured_value_by_name_ex(test_item, round_ex(tlv, 1))
 
                 for item in self._station_config.COLOR_PRIMARY_AT_POLE_AZI:
                     u = u_dic.get(f'P_%s_%s' % item)
@@ -507,9 +508,9 @@ class TokkiOffAxisNStation(test_station.TestStation):
                     if u is None or v is None:
                         continue
                     test_item = '{}_{}_u_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, u)
+                    test_log.set_measured_value_by_name_ex(test_item, round_ex(u, ndigits=4))
                     test_item = '{}_{}_v_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, v)
+                    test_log.set_measured_value_by_name_ex(test_item, round_ex(v, ndigits=4))
 
                 for p0, p180 in self._station_config.BRIGHTNESS_AT_POLE_ASSEM:
                     lv_x_0 = lv_dic.get('P_%s_%s' % p0)
@@ -530,14 +531,14 @@ class TokkiOffAxisNStation(test_station.TestStation):
                     tlv = tlv / lv_dic[center_item]
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_Proportion_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, tlv, io_utils.round_ex(tlv, 3))
+                    test_log.set_measured_value_by_name_ex(test_item, tlv, round_ex(tlv, 3))
 
                 for item in self._station_config.COLORSHIFT_AT_POLE_AZI:
                     duv = duv_dic.get('P_%s_%s' % item)
                     if duv is None:
                         continue
                     test_item = '{}_{}_duv_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, duv, io_utils.round_ex(duv, 3))
+                    test_log.set_measured_value_by_name_ex(test_item, duv, round_ex(duv, 3))
                 if len(lv_dic) > 0:
                     # Max brightness location
                     max_loc = max(lv_dic, key=lv_dic.get)
@@ -566,7 +567,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
                         continue
                     cr = lv_cr_items[w][item_key] / lv_cr_items[d][item_key]
                     test_item = '{}_CR_{}_{}'.format(posIdx, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, cr, io_utils.round_ex(cr, 1))
+                    test_log.set_measured_value_by_name_ex(test_item, cr, round_ex(cr, 1))
             # endregion
 
             self.data_export(serial_number, test_log, posIdx)
