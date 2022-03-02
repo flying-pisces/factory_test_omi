@@ -6,9 +6,6 @@ clr.AddReference('System.Drawing')
 clr.AddReference('System')
 from System.Collections.Generic import List
 import System
-apipath = os.path.join(r"C:\Program Files\Radiant Vision Systems\TrueTest 1.7\MPK_API.dll")
-clr.AddReference(apipath)
-from MPK_API_CS import *
 from System.Drawing import *
 from System import String
 import numpy as np
@@ -25,6 +22,9 @@ class pancakeoffaxisEquipmentError(Exception):
 	
 class pancakeoffaxisEquipment(hardware_station_common.test_station.test_equipment.TestEquipment):
     def __init__(self, station_config):
+        apipath = os.path.join(os.path.join(station_config.ROOT_DIR, station_config.MPKAPI_RELATIVEPATH))
+        clr.AddReference(apipath)
+        from MPK_API_CS import MPK_API
         self.name = "i16"
         self._verbose = station_config.IS_VERBOSE
         self._station_config = station_config
