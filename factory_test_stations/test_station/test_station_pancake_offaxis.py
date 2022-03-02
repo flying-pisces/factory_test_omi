@@ -217,7 +217,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         try:
             self._fixture.button_disable()
             self._fixture.power_on_button_status(True)
-            self._the_unit.initialize()
+            self._the_unit.initialize(com_port=self._station_config.FIXTURE_COMPORT)
             self._operator_interface.print_to_console("Initialize DUT... \n")
             while timeout_for_dual > 0:
                 if ready or self._is_cancel_test_by_op:

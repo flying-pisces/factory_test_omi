@@ -346,7 +346,7 @@ class pancakemuniStation(test_station.TestStation):
         timeout_for_btn_idle = 20
         timeout_for_dual = timeout_for_btn_idle
         try:
-            self._the_unit.initialize()
+            self._the_unit.initialize(com_port=self._station_config.FIXTURE_COMPORT)
             self._fixture.start_button_status(False)
             self._fixture.power_on_button_status(True)
             while timeout_for_dual > 0:

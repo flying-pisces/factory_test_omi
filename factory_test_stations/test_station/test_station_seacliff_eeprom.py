@@ -532,7 +532,8 @@ class seacliffeepromStation(test_station.TestStation):
         test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
 
         try:
-            the_unit.initialize()
+            the_unit.initialize(com_port=self._station_config.FIXTURE_COMPORT,
+                                eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
             recv_obj = the_unit.screen_on(ignore_err=True)
             if recv_obj is True or self._station_config.DUT_SIM:
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', 0)

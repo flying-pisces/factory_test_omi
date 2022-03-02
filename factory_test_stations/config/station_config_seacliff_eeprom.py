@@ -79,6 +79,7 @@ SERIAL_NUMBER_MODEL_NUMBER = '^[\w]{13,14}$'
 # Fixture parameters
 AUTO_CFG_COMPORTS = True
 DUT_COMPORT = "COM14"  #
+DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu', 'hw', 'fpga']

@@ -839,7 +839,8 @@ class seacliffmotStation(test_station.TestStation):
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._fixture.power_on_button_status(True)
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-            self._the_unit.initialize()
+            self._the_unit.initialize(com_port=self._station_config.FIXTURE_COMPORT,
+                                      eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
             self._the_unit.nvm_speed_mode(mode='normal')
             self._operator_interface.print_to_console("Initialize DUT... \n")
             while timeout_for_dual > 0:
