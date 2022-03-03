@@ -18,17 +18,7 @@ import multiprocessing as mp
 import json
 import collections
 import math
-
-
-def chk_and_set_measured_value_by_name(test_log, item, value):
-    """
-
-    :type test_log: test_station.TestRecord
-    """
-    if item in test_log.results_array():
-        test_log.set_measured_value_by_name(item, value)
-    # else:
-    #     pprint.pprint(item)
+from hardware_station_common.utils.io_utils import round_ex
 
 
 class seacliffmotStationError(Exception):
@@ -255,15 +245,6 @@ class seacliffmotStation(test_station.TestStation):
     _fixture: test_fixture_seacliff_mot.seacliffmotFixture
     _pool: mp.Pool
 
-    def write(self, msg):
-        """
-        @type msg: str
-        @return:
-        """
-        if msg.endswith('\n'):
-            msg += os.linesep
-        self._operator_interface.print_to_console(msg)
-
     def auto_find_com_ports(self):
         import serial.tools.list_ports
         import serial
@@ -445,6 +426,29 @@ class seacliffmotStation(test_station.TestStation):
         file_names.sort(reverse=True)
         return file_names
 
+    def chk_and_set_measured_value_by_name(self, test_log, item, value, value_msg=None):
+        """
+        :type test_log: test_station.TestRecord
+        """
+        exp_format_dic = {
+            'OnAxis Lum': 1, 'OnAxis x': 4, 'OnAxis y': 4,
+            'Lum_Ratio>0.7MaxLum_30deg': 2, "u'v'_delta_to_OnAxis_30deg": 4,
+            "DispCen_x_display": 1, "DispCen_y_display": 1, "Disp_Rotate_x": 2,
+            'R_x_corrected': 4, 'R_y_corrected': 4,
+            'G_x_corrected': 3, 'G_y_corrected': 4,
+            'B_x_corrected': 3, 'B_y_corrected': 4,
+        }
+        if item in test_log.results_array():
+            test_log.set_measured_value_by_name(item, value)
+            did_pass = test_log.get_test_by_name(item).did_pass()
+            if value_msg is None:
+                value_msg = value
+                disp_format = [(k, v) for k, v in exp_format_dic.items() if k in item]
+                if any(disp_format) and isinstance(value, float):
+                    value_msg = round_ex(value, disp_format[0][1])
+
+            self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
+
     def _do_test(self, serial_number, test_log):
         """
 
@@ -488,7 +492,7 @@ class seacliffmotStation(test_station.TestStation):
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
             self._operator_interface.print_to_console("Initialize DUT... \n")
 
-            test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
+            test_log.set_measured_value_by_name_ex = types.MethodType(self.chk_and_set_measured_value_by_name, test_log)
 
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
