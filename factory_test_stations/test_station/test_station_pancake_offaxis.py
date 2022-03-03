@@ -118,7 +118,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         # </editor-fold>
 
         if not self._station_config.FIXTURE_SIM and len(port_err_message) > 0:
-            raise pancakeoffaxisError(f'Fail to find ports for fixture {";".join(port_err_message)}', 'red')
+            raise pancakeoffaxisError(f'Fail to find ports for fixture {";".join(port_err_message)}')
 
         self._fixture.initialize(fixture_port=self._fixture_port,
                                  particle_port=self._fixture_particle_port)

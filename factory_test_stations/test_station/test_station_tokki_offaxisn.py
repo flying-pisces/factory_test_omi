@@ -52,11 +52,11 @@ class TokkiOffAxisNStation(test_station.TestStation):
         self._retries_screen_on = 0
         self._is_cancel_test_by_op = False
         self._ttxm_filelist = []
+        self.fixture_port = None
+        self.fixture_particle_port = None
 
     def initialize(self):
         self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
-        self._station_config.FIXTURE_COMPORT = None
-        self._station_config.FIXTURE_PARTICLE_COMPORT = None
         # <editor-fold desc="port configuration automatically">
         cfg = 'station_config_tokki_offaxisn.json'
         station_config = {
@@ -75,13 +75,14 @@ class TokkiOffAxisNStation(test_station.TestStation):
             with open(cfg, 'r') as f:
                 station_config = json.load(f)
 
+        port_err_message = []
         # config the port for fixture
         regex_port = station_config['FixtureCom']
         com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
         if len(com_ports) != 1:
-            self._operator_interface.print_to_console(f'Unable to find fixture Port: {regex_port}', 'red')
+            port_err_message.append(f'Fixture')
         else:
-            self._station_config.FIXTURE_COMPORT = com_ports[-1]
+            self.fixture_port = com_ports[-1]
 
         # config the port for scanner
         # regex_port = station_config['Scanner']
@@ -92,20 +93,19 @@ class TokkiOffAxisNStation(test_station.TestStation):
         #     self._operator_interface.print_to_console(f'Unable to find scanner Port: {regex_port}\n', 'red')
 
         # config the port for scanner
-        regex_port = station_config['ParticleCounter']
-        com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
-        if len(com_ports) == 1:
-            self._station_config.FIXTURE_PARTICLE_COMPORT = com_ports[-1]
-        else:
-            self._operator_interface.print_to_console(f'Unable to find scanner Port: {regex_port}\n', 'red')
+        if self._station_config.FIXTURE_PARTICLE_COUNTER:
+            regex_port = station_config['ParticleCounter']
+            com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
+            if len(com_ports) == 1:
+                self.fixture_particle_port = com_ports[-1]
+            else:
+                port_err_message.append(f'Particle counter')
         # </editor-fold>
 
-        if (not self._station_config.FIXTURE_SIM and
-                (None in [self._station_config.FIXTURE_PARTICLE_COMPORT,
-                          self._station_config.FIXTURE_COMPORT])):
-            raise TokkiOffAxisNStationError(f'Fail to initialize fixture. unable to find com-port')
+        if not self._station_config.FIXTURE_SIM and len(port_err_message) > 0:
+            raise TokkiOffAxisNStationError(f'Fail to find ports for fixture {";".join(port_err_message)}')
 
-        self._fixture.initialize()
+        self._fixture.initialize(fixture_port=self.fixture_port, particle_port=self.fixture_particle_port)
         if self._station_config.FIXTURE_PARTICLE_COUNTER and hasattr(self, '_particle_counter_start_time'):
             while ((datetime.datetime.now() - self._particle_counter_start_time)
                    < datetime.timedelta(self._station_config.FIXTRUE_PARTICLE_START_DLY)):

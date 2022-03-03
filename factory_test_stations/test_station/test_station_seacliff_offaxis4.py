@@ -213,7 +213,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 # pancakeDut('', station_config, self._operator_interface)
 
             if not self._station_config.FIXTURE_SIM and len(port_err_message) > 0:
-                raise SeacliffOffAxis4StationError(f'Fail to find ports for fixture {";".join(port_err_message)}', 'red')
+                raise SeacliffOffAxis4StationError(f'Fail to find ports for fixture {";".join(port_err_message)}')
 
         if self._station_config.IS_STATION_MASTER:
             self._fixture.initialize(fixture_port=self.fixture_port,

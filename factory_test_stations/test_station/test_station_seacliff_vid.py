@@ -84,7 +84,7 @@ class seacliffVidStation(test_station.TestStation):
                 self._fixture_port = com_ports[-1]
             # </editor-fold>
             if not self._station_config.FIXTURE_SIM and len(port_err_message) > 0:
-                raise seacliffVidStationError(f'Fail to find ports for fixture {";".join(port_err_message)}', 'red')
+                raise seacliffVidStationError(f'Fail to find ports for fixture {";".join(port_err_message)}')
 
             self._fixture.initialize(fixture_com=self._fixture_port)
             self._equip.initialize()

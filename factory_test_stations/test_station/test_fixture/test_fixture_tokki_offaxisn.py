@@ -98,9 +98,9 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
                     if items:
                         return key
 
-    def initialize(self):
+    def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing offaxis Fixture\n")
-        self._serial_port = serial.Serial(self._station_config.FIXTURE_COMPORT,
+        self._serial_port = serial.Serial(kwargs.get('fixture_port'),
                                           115200,
                                           parity='N',
                                           stopbits=1,
@@ -113,15 +113,14 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
                 Defaults.RetryOnEmpty = True
                 self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
                                                                    stopbits=1,
-                                                                   port=self._station_config.FIXTURE_PARTICLE_COMPORT,
+                                                                   port=kwargs.get('particle_port'),
                                                                    timeout=2000)
                 self._particle_counter_client.inter_char_timeout = 0.2
                 if not self._particle_counter_client.connect():
-                    raise TokkiOffAxisNFixtureError( 'Unable to open particle counter port: %s'
-                                                      % self._station_config.FIXTURE_PARTICLE_COMPORT)
+                    raise TokkiOffAxisNFixtureError(f'Unable to open particle counter port: {kwargs}')
 
         if not self._serial_port:
-            raise TokkiOffAxisNFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
+            raise TokkiOffAxisNFixtureError(f'Unable to open fixture port: {kwargs}')
         else:  # disable the buttons automatically
             self.set_tri_color('y')
             self.button_enable()
@@ -129,7 +128,7 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
             self.button_disable()
             self.set_tri_color('g')
             if self._verbose:
-                print("Fixture %s Initialized" % self._station_config.FIXTURE_COMPORT)
+                print(f"Fixture Initialized {kwargs}")
             return True
 
     def _write_serial(self, input_bytes):
@@ -221,8 +220,7 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
     def close(self):
         self._operator_interface.print_to_console("Closing auo offaxis Fixture\n")
         if hasattr(self, '_serial_port') \
-                and self._serial_port is not None \
-                and self._station_config.FIXTURE_COMPORT:
+                and self._serial_port is not None:
             self.set_tri_color('y')
             self.button_disable()
             self._serial_port.close()
@@ -397,7 +395,6 @@ if __name__ == "__main__":
 
         print('Self check for tokki_offaxis')
         station_config.load_station('tokki_offaxisn')
-        station_config.FIXTURE_COMPORT = 'COM9'
         station_config.FIXTURE_PARTICLE_COUNTER = False
         station_config.print_to_console = types.MethodType(print_to_console, station_config)
         the_fixture = TokkiOffAxisNFixture(station_config, station_config)
