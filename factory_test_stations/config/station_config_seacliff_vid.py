@@ -72,7 +72,7 @@ COMMAND_RESET = 'CMD_RESET'
 COMMAND_STATUS_LIGHT_ON = 'CMD_STATUS_LIGHT_ON'
 COMMAND_STATUS_LIGHT_OFF = 'CMD_STATUS_LIGHT_OFF'
 COMMAND_LOAD = "CMD_LOAD"
-COMMAND_PRE_LOAD_TYPE = 'LOAD_DUT'
+COMMAND_PRE_LOAD_TYPE = 'CMD_LOAD_DUT'
 COMMAND_UNLOAD = "CMD_UNLOAD"
 COMMAND_BUTTON_LITUP_ENABLE = 'CMD_POWERON_BUTTON_ENABLE'
 COMMAND_BUTTON_LITUP_DISABLE = 'CMD_POWERON_BUTTON_DISABLE'
@@ -85,11 +85,12 @@ TIMEOUT_FOR_BTN_IDLE = 20
 CALIB_Z_BY_STATION_SW = True
 
 TEST_ITEM_PATTERNS = [
-    {'name': 'W255', 'pattern': 0},
-    {'name': 'W000', 'pattern': 1},
-    {'name': 'R255', 'pattern': 2},
-    {'name': 'G255', 'pattern': 3},
-    {'name': 'B255', 'pattern': 4},
+    {'name': 'R255', 'pattern': (4, 5)},
+    {'name': 'G255', 'pattern': (2, 3)},
+    {'name': 'B255', 'pattern': (0, 1)},
+    {'name': 'W127', 'pattern': 6},
+
+    {'name': 'Audit', 'pattern': 1},
 ]
 
 TEST_ITEM_POS = {
@@ -97,33 +98,56 @@ TEST_ITEM_POS = {
         {
             'ROI':
                 {
-                    'P1': (-11, -105, 69, -19),
-                    'P2': (-9, 312, 57, 394),
-                    'P4': (439, -124, 450, -36),
-                    'P6': (-1, -511, 18, -474),
-                    'P8': (-478, -100, -365, -14),
+                    'P1': (7, -104, 50, -38),
+                    'P2': (4, 339, 36, 360),
+                    'P4': (481, -96, 510, -55),
+                    'P6': (3, -509, 67, -474),
+                    'P8': (-440, -96, -397, -36),
                 }
         },
     'G255':
         {
             'ROI':
                 {
-                    'P1': (-11, -105, 69, -19),
-                    'P2': (-9, 312, 57, 394),
-                    'P4': (439, -124, 490, -36),
-                    'P6': (-1, -511, 18, -474),
-                    'P8': (-478, -100, -365, -14),
+                    'P1': (7, -104, 50, -38),
+                    'P2': (4, 339, 36, 360),
+                    'P4': (481, -96, 510, -55),
+                    'P6': (3, -509, 67, -474),
+                    'P8': (-440, -96, -397, -36),
                 }
         },
     'R255':
         {
             'ROI':
                 {
-                    'P1': (-11, -105, 69, -19),
-                    'P2': (-9, 312, 57, 394),
-                    'P4': (439, -124, 490, -36),
-                    'P6': (-1, -511, 18, -474),
-                    'P8': (-478, -100, -365, -14),
+                    'P1': (7, -104, 50, -38),
+                    'P2': (4, 339, 36, 360),
+                    'P4': (481, -96, 510, -55),
+                    'P6': (3, -509, 67, -474),
+                    'P8': (-440, -96, -397, -36),
+                }
+        },
+    'W127':
+        {
+            'ROI':
+                {
+                    'P1': (7, -104, 50, -38),
+                    'P2': (4, 339, 36, 360),
+                    'P4': (481, -96, 510, -55),
+                    'P6': (3, -509, 67, -474),
+                    'P8': (-440, -96, -397, -36),
+                }
+        },
+
+    'Audit':
+        {
+            'ROI':
+                {
+                    'P1': (-9, -76, 110, --2),
+                    'P2': (13, 301, 56, 348),
+                    'P4': (409, -72, 458, -23),
+                    'P6': (10, -455, 60, -420),
+                    'P8': (-332, -45, -285, -3),
                 }
         },
 }
@@ -151,7 +175,7 @@ SHOP_FLOOR_DBG = False
 # use multi-thread to save UI dead-lock.
 OPTIMIZE_UI_MODE = True
 # show console when running seperately.
-SHOW_CONSOLE = True
+SHOW_CONSOLE = False
 # print all data to log-file
 IS_PRINT_TO_LOG = False
 IS_VERBOSE = True
@@ -161,9 +185,9 @@ TEST_CPU_COUNT = 5
 FACEBOOK_IT_ENABLED = False
 IS_STATION_ACTIVE = True
 
-DUT_SIM = True
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False
 
 STATION_TYPE = 'seacliff_vid'
 STATION_NUMBER = '0001'

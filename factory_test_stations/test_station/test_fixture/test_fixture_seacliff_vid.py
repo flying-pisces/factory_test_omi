@@ -44,7 +44,7 @@ class seacliffVidFixture(hardware_station_common.test_station.test_fixture.TestF
 
     def is_ready(self):
         if self._serial_port is not None:
-            resp = self._read_response(0.5)
+            resp = self._read_response(0.05)
             if resp:
                 btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d',
                            0x10: r'BUTTON_L:0', 0x11: r'BUTTON_R:0'}
@@ -333,7 +333,7 @@ if __name__ == '__main__':
     station_config.load_station('seacliff_vid')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
     the_unit = seacliffVidFixture(station_config, station_config)
-    the_unit.initialize()
+    the_unit.initialize(fixture_com='com8')
     the_unit.start_button_status(True)
     the_unit.close()
 

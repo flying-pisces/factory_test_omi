@@ -8,6 +8,12 @@ STATION_LIMITS_ARRAYS = [
     ["DUT_ScreenOnStatus", True, True, 84],
     ["DUT_CancelByOperator", False, False, 85],
 
+    ["Audit_P1", None, float('inf'), 91001],
+    ["Audit_P2", None, float('inf'), 91002],
+    ["Audit_P4", None, float('inf'), 91003],
+    ["Audit_P6", None, float('inf'), 91004],
+    ["Audit_P8", None, float('inf'), 91005],
+
     ["R255_P1", None, float('inf'), 21001],
     ["R255_P2", None, float('inf'), 21002],
     ["R255_P4", None, float('inf'), 21003],
@@ -25,6 +31,12 @@ STATION_LIMITS_ARRAYS = [
     ["B255_P4", None, float('inf'), 41003],
     ["B255_P6", None, float('inf'), 41004],
     ["B255_P8", None, float('inf'), 41005],
+
+    ["W127_P1", None, float('inf'), 81001],
+    ["W127_P2", None, float('inf'), 81002],
+    ["W127_P4", None, float('inf'), 81003],
+    ["W127_P6", None, float('inf'), 81004],
+    ["W127_P8", None, float('inf'), 81005],
 ]
 
 global STATION_LIMITS

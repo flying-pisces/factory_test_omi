@@ -180,18 +180,19 @@ class seacliffVidStation(test_station.TestStation):
                         if power_on_trigger:
                             self._the_unit.screen_off()
                             power_on_trigger = False
-                            self._fixture.button_disable()
+                            self._fixture.start_button_status(False)
                             self._fixture.power_on_button_status(True)
                         else:
                             self._the_unit.screen_on()
                             power_on_trigger = True
                             self._fixture.power_on_button_status(False)
-                            self._fixture.button_enable()
+                            self._fixture.start_button_status(True)
                             self._fixture.load_position(self._panel_left_or_right)
                         timeout_for_dual = time.time()
                     elif ready_status == 0x01:
                         self._is_cancel_test_by_op = True  # Cancel test.
-                time.sleep(0.1)
+                time.sleep(0.01)
+                tm_current = time.time()
         except (seacliffVidStationError, DUTError, RuntimeError) as e:
             self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
@@ -212,7 +213,7 @@ class seacliffVidStation(test_station.TestStation):
             except Exception as e:
                 self._operator_interface.operator_input(None, str(e), msg_type='error')
                 self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
-            self._operator_interface.prompt('', 'SystemButtonFace')
+            self._operator_interface.prompt('')
 
     def get_test_item_pattern(self, name):
         pattern_info = None
@@ -406,14 +407,18 @@ class seacliffVidStation(test_station.TestStation):
     def validate_sn(self, serial_num):
         self._panel_left_or_right = None
         self._latest_serial_number = serial_num
+
         if test_station.TestStation.validate_sn(self, serial_num):
             if not self._station_config.SERIAL_NUMBER_VALIDATION:
                 return True
             else:
+                serial_num_info = self._parse(serial_num)
+                if self._station_config.IS_VERBOSE:
+                    pprint.pprint(serial_num_info)
                 self._panel_left_or_right = dict({
                     'Q': 'L',
                     'R': 'R',
-                }).get([self._parse(serial_num)['QRM']])
+                }).get(serial_num_info['QRM'])
             if self._panel_left_or_right in ['L', 'R']:
                 return True
             else:
