@@ -121,7 +121,6 @@ class seacliffVidStation(test_station.TestStation):
         if hasattr(self._station_config, 'DUT_SIM') and self._station_config.DUT_SIM:
             self._the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
 
-        # TODO:  Initialized the DUT Simply
         ready = False
         power_on_trigger = False
         self._retries_screen_on = 0
@@ -130,26 +129,25 @@ class seacliffVidStation(test_station.TestStation):
         self._probe_con_status = False
         timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
                                     else self._station_config.TIMEOUT_FOR_BTN_IDLE)
-        timeout_for_dual = timeout_for_btn_idle
+        timeout_for_dual = time.time()
         try:
             self._fixture.flush_data()
             self._fixture.power_on_button_status(False)
-            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._fixture.start_button_status(False)
-            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._fixture.power_on_button_status(True)
-            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
                                       eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
             self._the_unit.nvm_speed_mode(mode='normal')
             self._operator_interface.print_to_console("Initialize DUT... \n")
-            while timeout_for_dual > 0:
+            tm_current = timeout_for_dual
+            while tm_current - timeout_for_dual <= timeout_for_btn_idle:
                 if ready or self._is_cancel_test_by_op:
                     break
-                msg_prompt = 'Load DUT, and then Press PowerOn-Btn (Lit up) in %s S...'
+                msg_prompt = 'Load DUT, and then Press PowerOn-Btn (On screen) in %s S...'
                 if power_on_trigger:
-                    msg_prompt = 'Press Dual-Btn(Load)/PowerOn-Btn(Re Lit up)  in %s S...'
-                self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow')
+                    msg_prompt = 'Press Dual-Btn(Load)/PowerOn-Btn(Toggle)  in %s S...'
+                tm_data = timeout_for_btn_idle - (tm_current - timeout_for_dual)
+                self._operator_interface.prompt(msg_prompt % int(tm_data), 'yellow')
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
                     self._the_unit.screen_on()
@@ -158,36 +156,42 @@ class seacliffVidStation(test_station.TestStation):
 
                 if (hasattr(self._station_config, 'DUT_LOAD_WITHOUT_OPERATOR')
                         and self._station_config.DUT_LOAD_WITHOUT_OPERATOR is True):
-                    self._fixture.load()
+                    self._fixture.load(self._panel_left_or_right)
                     ready_status = 0
                 else:
                     ready_status = self._fixture.is_ready()
                 if ready_status is not None:
-                    if ready_status == 0x00:  # load DUT automatically and then screen on
-                        ready = True  # Start to test.
-                        self._is_screen_on_by_op = True
-                        if self._retries_screen_on == 0:
-                            self._the_unit.screen_on()
-                        self._the_unit.display_color((255, 0, 0))
-                        self._fixture.power_on_button_status(False)
+                    if ready_status in [0x10, 0x11]:  # load DUT automatically and then screen on
+                        if ((ready_status == 0x10 and self._panel_left_or_right == 'L') or
+                                (ready_status == 0x11 and self._panel_left_or_right == 'R')):
+                            ready = True  # Start to test.
+                            self._is_screen_on_by_op = True
+                            if self._retries_screen_on == 0:
+                                self._the_unit.screen_on()
+                            self._the_unit.display_color((255, 0, 0))
+                            self._fixture.power_on_button_status(False)
+                        else:
+                            msg = f'Fail to start [{serial_number}]: {ready_status}, {self._panel_left_or_right}'
+                            self._operator_interface.print_to_console(msg, 'red')
                     elif ready_status == 0x03 or ready_status == 0x02:
                         self._operator_interface.print_to_console('Try to lit up DUT.\n')
                         self._retries_screen_on += 1
                         # power the dut on normally.
                         if power_on_trigger:
                             self._the_unit.screen_off()
-                            # self._the_unit.reboot()  # Reboot
-                        self._the_unit.screen_on()
-                        power_on_trigger = True
-                        # check the color sensor
-                        timeout_for_dual = timeout_for_btn_idle
-                        self._fixture.power_on_button_status(False)
-                        time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-                        self._fixture.start_button_status(True)
+                            power_on_trigger = False
+                            self._fixture.button_disable()
+                            self._fixture.power_on_button_status(True)
+                        else:
+                            self._the_unit.screen_on()
+                            power_on_trigger = True
+                            self._fixture.power_on_button_status(False)
+                            self._fixture.button_enable()
+                            self._fixture.load_position(self._panel_left_or_right)
+                        timeout_for_dual = time.time()
                     elif ready_status == 0x01:
                         self._is_cancel_test_by_op = True  # Cancel test.
                 time.sleep(0.1)
-                timeout_for_dual -= 1
         except (seacliffVidStationError, DUTError, RuntimeError) as e:
             self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
@@ -197,14 +201,13 @@ class seacliffVidStation(test_station.TestStation):
                 if not ready:
                     if not self._is_cancel_test_by_op:
                         self._operator_interface.print_to_console(
-                            'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
+                            'Unable to get start signal in %s from fixture.\n' % int(time.time() - timeout_for_dual))
                     else:
                         self._operator_interface.print_to_console(
-                            'Cancel start signal from dual %s.\n' % timeout_for_dual)
+                            'Cancel start signal from dual %s.\n' % int(time.time() - timeout_for_dual))
                     self._the_unit.close()
                     self._the_unit = None
                 self._fixture.start_button_status(False)
-                time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                 self._fixture.power_on_button_status(False)
             except Exception as e:
                 self._operator_interface.operator_input(None, str(e), msg_type='error')

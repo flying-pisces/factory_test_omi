@@ -46,7 +46,8 @@ class seacliffVidFixture(hardware_station_common.test_station.test_fixture.TestF
         if self._serial_port is not None:
             resp = self._read_response(0.5)
             if resp:
-                btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d', 0: r'BUTTON:0'}
+                btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d',
+                           0x10: r'BUTTON_L:0', 0x11: r'BUTTON_R:0'}
                 for key, item in btn_dic.items():
                     items = list(filter(lambda r: re.match(item, r, re.I | re.S), resp))
                     if items:
@@ -266,14 +267,34 @@ class seacliffVidFixture(hardware_station_common.test_station.test_fixture.TestF
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
             raise seacliffVidFixtureError('fail to send command. %s' % response)
 
-    def load(self):
+    def load(self, dut_type='L'):
         """
         load carrier
         @return:
         """
-        self._alignment_pos = None
-        self._write_serial(self._station_config.COMMAND_LOAD)
-        rev_pattern = r'LOAD:(\d+)'
+        module_typ_cmd = {
+            'L': 'L',
+            'R': 'R'
+        }
+        assert dut_type in module_typ_cmd
+        self._write_serial(f'{self._station_config.COMMAND_LOAD}_{module_typ_cmd[dut_type]}')
+        rev_pattern = r'LOAD_[L|R]:(\d+)'
+        response = self._read_response(timeout=self._station_config.FIXTURE_LOAD_DLY, rev_pattern=rev_pattern)
+        if int(self._parse_response(rev_pattern, response).group(1)) != 0:
+            raise seacliffVidFixtureError('fail to send command. %s' % response)
+
+    def load_position(self, dut_type='L'):
+        """
+        set the mode for  carrier loader
+        @return:
+        """
+        module_typ_cmd = {
+            'L': 'L',
+            'R': 'R'
+        }
+        assert dut_type in module_typ_cmd
+        self._write_serial(f'{self._station_config.COMMAND_PRE_LOAD_TYPE}:{module_typ_cmd[dut_type]}')
+        rev_pattern = r'LOAD_DUT_[L|R]:(\d+)'
         response = self._read_response(timeout=self._station_config.FIXTURE_LOAD_DLY, rev_pattern=rev_pattern)
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
             raise seacliffVidFixtureError('fail to send command. %s' % response)
