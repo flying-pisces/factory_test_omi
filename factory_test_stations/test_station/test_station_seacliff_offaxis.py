@@ -1,3 +1,4 @@
+import threading
 import hardware_station_common.test_station.test_station as test_station
 import numpy as np
 import os
@@ -49,17 +50,16 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._is_screen_on_by_op = False
-        self._retries_screen_on = 0
         self._is_cancel_test_by_op = False
         self._ttxm_filelist = []
         self.fixture_port = None
         self.fixture_scanner_port = None
         self.fixture_particle_port = None
+        self._is_running = False
 
     def initialize(self):
         self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
-        self._station_config.FIXTURE_COMPORT = None
-        self._station_config.FIXTURE_PARTICLE_COMPORT = None
+        self._operator_interface.update_root_config({'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE)})
         # <editor-fold desc="port configuration automatically">
         cfg = 'station_config_seacliff_offaxis.json'
         station_config = {
@@ -117,8 +117,15 @@ class SeacliffOffAxisStation(test_station.TestStation):
                 time.sleep(0.1)
                 self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
 
+        self._the_unit = dut.projectDut(None, self._station_config, self._operator_interface)
+        if not self._station_config.DUT_SIM:
+            self._the_unit = dut.pancakeDut(None, self._station_config, self._operator_interface)
+        self._the_unit.initialize(eth_addr=self._station_config.DUT_ETH_PROXY_ADDR,
+                                  com_port=self._station_config.DUT_COMPORT)
+
         self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
         self._equipment.initialize()
+        threading.Thread(target=self._btn_monitor_thr, daemon=True).start()
 
     def close(self):
         if self._fixture is not None:
@@ -148,7 +155,6 @@ class SeacliffOffAxisStation(test_station.TestStation):
             self._fixture.flush_data()
             self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
-            test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op or is_screen_on)
 
             if not is_screen_on and not self._is_screen_on_by_op:  # dut can't be lit up
@@ -188,7 +194,6 @@ class SeacliffOffAxisStation(test_station.TestStation):
                     self._the_unit.close()
                 if self._fixture is not None:
                     self._fixture.unload()
-                    self._fixture.button_disable()
             except:
                 pass
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
@@ -196,6 +201,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
 
             self._runningCount += 1
             self._operator_interface.print_to_console('--- do test finished ---\n')
+            self._is_running = False
             return overall_result, first_failed_test_result
 
     def close_test(self, test_log):
@@ -238,25 +244,81 @@ class SeacliffOffAxisStation(test_station.TestStation):
         return self._overall_result, self._first_failed_test_result
 
     def validate_sn(self, serial_num):
-        if self._station_config.AUTO_SCAN_CODE:
-            serial_num = self._fixture.scan_code(self.fixture_scanner_port)
         self._latest_serial_number = serial_num
         return test_station.TestStation.validate_sn(self, serial_num)
+
+    def _btn_monitor_thr(self):
+        current_scan_mode = None
+        power_on_trigger = False
+        scan_sn = None
+        running_status_bak = None
+        while True:
+            time.sleep(0.05)
+            try:
+                if current_scan_mode is None or current_scan_mode != self._station_config.AUTO_SCAN_CODE:
+                    self._fixture.button_disable()
+                    self._fixture.power_on_button_status(False)
+                    power_on_trigger = False
+                    current_scan_mode = self._station_config.AUTO_SCAN_CODE
+                    if current_scan_mode:
+                        self._fixture.power_on_button_status(True)
+
+                if not self._station_config.AUTO_SCAN_CODE or not self._station_config.FIXTURE_HAS_AUTO_SCANNER:
+                    continue
+
+                is_running = self._is_running
+                if running_status_bak is None or is_running != running_status_bak:
+                    if not is_running:
+                        self._fixture.power_on_button_status(True)
+                    running_status_bak = is_running
+                if is_running:
+                    continue
+
+                ready_status = self._fixture.is_ready()
+                if ready_status is None:
+                    continue
+                if self._station_config.IS_VERBOSE:
+                    print(f'Fixture signal {ready_status}...\n')
+                if ready_status == 0x00 and scan_sn:  # load DUT automatically and then screen on
+                    self._is_screen_on_by_op = True
+                    self._operator_interface.active_start_loop(scan_sn)
+                    self._is_running = True
+                elif ready_status in [0x03, 0x01]:
+                    self._operator_interface.print_to_console(f'Try to change DUT status. {power_on_trigger}\n')
+                    if not power_on_trigger:
+                        scan_sn = self._fixture.scan_code(self.fixture_scanner_port)
+                        if scan_sn and test_station.TestStation.validate_sn(self, scan_sn):
+                            self._operator_interface.update_root_config({'SN': scan_sn})
+                            if self._the_unit.screen_on(ignore_err=True):
+                                self._fixture.power_on_button_status(False)
+                                self._fixture.button_enable()
+                                power_on_trigger = True
+                        else:
+                            self._operator_interface.print_to_console(f'Fail to scan code. {scan_sn}', 'red')
+                    else:
+                        self._the_unit.screen_off()
+                        power_on_trigger = False
+                        self._fixture.button_disable()
+                        self._fixture.power_on_button_status(True)
+                        scan_sn = None
+                        self._operator_interface.update_root_config({'sn': ''})
+            except Exception as e:
+                self._operator_interface.print_to_console(f'Fail to _btn_monitor_thr {str(e)}', 'red')
+                power_on_trigger = False
+                scan_sn = None
 
     def is_ready(self):
         serial_number = self._latest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
-        self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
-        if not self._station_config.DUT_SIM:
-            self._the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
-        return self.is_ready_litup_outside()
+        if not self._station_config.AUTO_SCAN_CODE:
+            self.is_ready_litup_outside()
+        return True
 
     def is_ready_litup_outside(self):
         ready = False
         power_on_trigger = False
         self._is_screen_on_by_op = False
         self._is_cancel_test_by_op = False
-        self._retries_screen_on = 0
         timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
                                 else self._station_config.TIMEOUT_FOR_BTN_IDLE)
 
@@ -285,13 +347,12 @@ class SeacliffOffAxisStation(test_station.TestStation):
                     if ready_status == 0x00:  # load DUT automatically and then screen on
                         ready = True  # Start to test.
                         self._is_screen_on_by_op = True
-                        if self._retries_screen_on == 0:
+                        if not power_on_trigger:
                             self._the_unit.screen_on()
 
                     elif ready_status in [0x03, 0x01]:
                         self._operator_interface.print_to_console(f'Try to change DUT status. {power_on_trigger}\n')
                         if not power_on_trigger:
-                            self._retries_screen_on += 1
                             self._the_unit.screen_on()
                             power_on_trigger = True
                             self._fixture.power_on_button_status(False)
