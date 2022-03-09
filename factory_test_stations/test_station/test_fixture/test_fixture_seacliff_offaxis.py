@@ -29,10 +29,10 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
             self._error_msg = 'ERROR'
             self._cmd_on = b'LON\r'
             self._cmd_off = b'LOFF\r'
-            self._max_retries = 4
+            self._max_retries = 3
             self._serial_port = serial.Serial(com_port,
                                               115200,
-                                              parity='E',
+                                              parity='N',
                                               bytesize=8,
                                               stopbits=1,
                                               timeout=0.3,
@@ -42,7 +42,7 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
 
         def scan(self, timeout=2):
             self._serial_port.write(self._cmd_off)
-            retries = 0
+            retries = 1
             sn_code = None
             while retries <= self._max_retries and sn_code is None:
                 self.on()
@@ -57,9 +57,10 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
                         sn_code = bytearray(msg).decode('utf-8', 'ignore').splitlines(keepends=False)[-1]
                 except Exception as ex:
                     print(f'unable to get data from SR700. {ex}')
+                if sn_code == self._error_msg or sn_code is None:
+                    self.off()
+                    self._serial_port.readline()
                 retries += 1
-            if sn_code == self._error_msg or sn_code is None:
-                self.off()
             return sn_code
 
         def off(self):
@@ -223,6 +224,7 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
                 and self._serial_port is not None:
             self.set_tri_color('y')
             self.button_disable()
+            self.power_on_button_status(False)
             self._serial_port.close()
             self._serial_port = None
         if hasattr(self, '_particle_counter_client') and \
@@ -259,10 +261,11 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
         return int(self._prase_response(r'ABS_X_Y:(\d+)', response).group(1))
 
     def load(self):
-        self._load()
+        return self._load()
 
     def unload(self):
-        self._unload()
+        if self._unload() != 0:
+            raise SeacliffOffAxisFixtureError('Fail to unload carrier')
 
     def _load(self):
         with self._fixture_mutex:
@@ -376,9 +379,9 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
                 raise SeacliffOffAxisFixtureError('Failed to read data from particle counter.')
             return val
 
-    def scan_code(self, com_port='COM1'):
+    def scan_code(self, com_port='COM1', timeout=2):
         scanner = SeacliffOffAxisFixture.Scanner710(com_port=com_port)
-        code = scanner.scan(timeout=2)
+        code = scanner.scan(timeout=timeout)
         del scanner
         return code
 
@@ -393,15 +396,15 @@ if __name__ == "__main__":
         import station_config
         import hardware_station_common.operator_interface.operator_interface
 
-        print('Self check for tokki_offaxis')
-        station_config.load_station('tokki_offaxisn')
+        print('Self check for seacliff_offaxis')
+        station_config.load_station('seacliff_offaxis')
         station_config.FIXTURE_PARTICLE_COUNTER = False
         station_config.print_to_console = types.MethodType(print_to_console, station_config)
         the_fixture = SeacliffOffAxisFixture(station_config, station_config)
         the_fixture._verbose = True
 
         try:
-            the_fixture.initialize()
+            the_fixture.initialize(fixture_port='com8', particle_port='com9')
 
             # the_fixture.mov_abs_xy(5, 1)
             for idx in range(0, 20):
@@ -417,14 +420,14 @@ if __name__ == "__main__":
 
                 the_fixture.mov_abs_xy(0, 0)
                 time.sleep(0.5)
-                the_fixture.mov_abs_xy(0, 1800)
-                time.sleep(0.5)
-                the_fixture.mov_abs_xy(0, -1800)
-                time.sleep(0.5)
-                the_fixture.mov_abs_xy(1800, 0)
-                time.sleep(0.5)
-                the_fixture.mov_abs_xy(-1800, 0)
-                time.sleep(0.5)
+                # the_fixture.mov_abs_xy(0, 1800)
+                # time.sleep(0.5)
+                # the_fixture.mov_abs_xy(0, -1800)
+                # time.sleep(0.5)
+                # the_fixture.mov_abs_xy(1800, 0)
+                # time.sleep(0.5)
+                # the_fixture.mov_abs_xy(-1800, 0)
+                # time.sleep(0.5)
                 the_fixture.button_disable()
 
                 the_fixture.vacuum(False)
@@ -433,6 +436,6 @@ if __name__ == "__main__":
                 the_fixture.unload()
 
         except SeacliffOffAxisFixtureError as e:
-            print('exception {}'.format(e.message))
+            print('exception {}'.format(str(e)))
         finally:
             the_fixture.close()

@@ -1,9 +1,49 @@
 """
 Release Note:
 ========================================================
-Version 1.0.0
-2022-2-18 elton<elton.tian@myzygroup.com>
--1. Init version for seacliff-OffAxis
+Version 2.1.5
+2022-3-9 author<elton.tian@myzygroup.com>
+-1. add support for auto-scanner
+-2. change project name from pancake to seacliff
+
+========================================================
+Version 2.1.4
+2022-1-26 author<elton.tian@myzygroup.com>
+-1. add test-item "EXT_CTRL_RES" to record the panel for LA/RA/AA
+-2. spec updated based on ERS v6 for TJ3 panel
+-3. update UI with data-grid.
+-4. format the test-values on GUI to save the space for UI.
+
+========================================================
+Version 2.1.3
+2021-12-24 author<elton.tian@myzygroup.com>
+-1. update limit base Tokki V0.2.
+-2. optimize the timeout for loading DUT.
+
+========================================================
+Version 2.1.2
+2021-8-24 author<elton.tian@myzygroup.com>
+-1. Fix multi summary file for same limit file.
+
+========================================================
+Version 2.1.1
+2021-8-16 author<elton.tian@myzygroup.com>
+-1. Add spec for summary log.
+
+========================================================
+Version 2.1.0
+2021-7-12 author<elton.tian@myzygroup.com>
+-1. export raw data for P1
+
+========================================================
+Version 2.0.3
+2020-10-28 author<elton.tian@myzygroup.com>
+-1. add test patterns
+
+========================================================
+Version 1.1.0
+2020-1-18 elton<elton.tian@myzygroup.com>
+-1. Init version for OffAxis
 """
 ##################################
 # directories
@@ -12,7 +52,7 @@ Version 1.0.0
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\tokki_offaxis_5Npt_5Patterns'
+CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_offaxis_MP'
 
 
 ##################################
@@ -24,7 +64,7 @@ SERIAL_NUMBER_MODEL_NUMBER = r'^\dPRP[\w|\d]{10}$'  # Peak panel SN
 
 ##################################
 # Fixture commands
-FIXTURE_HAS_AUTO_SCANNER = False
+FIXTURE_HAS_AUTO_SCANNER = True
 FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = "COM1" #
 DUT_ETH_PROXY = True
@@ -150,7 +190,7 @@ DUT_DISPLAYSLEEPTIME = 0.025
 IS_VERBOSE = False
 IS_PRINT_TO_LOG = False
 MPKAPI_RELATIVEPATH = r"C:\Program Files\Radiant Vision Systems\TrueTest 1.7\MPK_API.dll"
-SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqxc'
+SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_202220122_DOE.seqxc'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
@@ -170,10 +210,10 @@ Resolution_Bin_X = 360
 Resolution_Bin_Y = 360
 
 TEST_POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
-                 ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-                 ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
-                 ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-                 ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"]),
+                 # ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+                 # ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
+                 # ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+                 # ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"]),
                  ]
 
 TEST_PATTERNS = {
@@ -256,16 +296,16 @@ FACEBOOK_IT_ENABLED = False
 USE_WORKORDER_ENTRY = False
 
 IS_STATION_ACTIVE = True
-STATION_TYPE = 'tokki_offaxisn'
-STATION_NUMBER = '0001'
+STATION_TYPE = 'seacliff_offaxis'
+STATION_NUMBER = '0002'
 SHOPFLOOR_SYSTEM = ''
-AUTO_SCAN_CODE = False
+AUTO_SCAN_CODE = True
 
 DATA_COLLECT_ONLY = False
 EQUIPMENT_DEMO_DATABASE = r'C:\ShareData\OffAxis'
 
-DUT_SIM = True
-# CAMERA_SN = "1525410258"
-CAMERA_SN = 'Demo'
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+CAMERA_SN = "1525710238"
+# CAMERA_SN = 'Demo'
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False

@@ -33,7 +33,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
         """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '3.0.0'
+        self._sw_version = '2.1.5'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = projectstationFixture(station_config, operator_interface)
@@ -56,6 +56,8 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self.fixture_scanner_port = None
         self.fixture_particle_port = None
         self._is_running = False
+        self._closed = False
+        self._pthr_monitor = None
 
     def initialize(self):
         self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
@@ -125,9 +127,13 @@ class SeacliffOffAxisStation(test_station.TestStation):
 
         self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
         self._equipment.initialize()
-        threading.Thread(target=self._btn_monitor_thr, daemon=True).start()
+        self._pthr_monitor = threading.Thread(target=self._btn_monitor_thr, daemon=True)
+        self._pthr_monitor.start()
 
     def close(self):
+        self._closed = True
+        if self._pthr_monitor is not None:
+            self._pthr_monitor.join()
         if self._fixture is not None:
             self._fixture.close()
             self._fixture = None
@@ -190,18 +196,15 @@ class SeacliffOffAxisStation(test_station.TestStation):
             self._operator_interface.print_to_console('release current test resource.\n')
             # noinspection PyBroadException
             try:
-                if self._the_unit is not None:
-                    self._the_unit.close()
-                if self._fixture is not None:
-                    self._fixture.unload()
-            except:
-                pass
+                self._the_unit.screen_off()
+                self._fixture.unload()
+            except Exception as e:
+                self._operator_interface.print_to_console(f"Release resource exception {str(e)}.\n", 'red')
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
-            overall_result, first_failed_test_result = self.close_test(test_log)
-
             self._runningCount += 1
             self._operator_interface.print_to_console('--- do test finished ---\n')
             self._is_running = False
+            overall_result, first_failed_test_result = self.close_test(test_log)
             return overall_result, first_failed_test_result
 
     def close_test(self, test_log):
@@ -252,8 +255,8 @@ class SeacliffOffAxisStation(test_station.TestStation):
         power_on_trigger = False
         scan_sn = None
         running_status_bak = None
-        while True:
-            time.sleep(0.05)
+        while not self._closed:
+            time.sleep(20E-03)
             try:
                 if current_scan_mode is None or current_scan_mode != self._station_config.AUTO_SCAN_CODE:
                     self._fixture.button_disable()
@@ -270,6 +273,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
                 if running_status_bak is None or is_running != running_status_bak:
                     if not is_running:
                         self._fixture.power_on_button_status(True)
+                        power_on_trigger = False
                     running_status_bak = is_running
                 if is_running:
                     continue
@@ -284,7 +288,8 @@ class SeacliffOffAxisStation(test_station.TestStation):
                     self._operator_interface.active_start_loop(scan_sn)
                     self._is_running = True
                 elif ready_status in [0x03, 0x01]:
-                    self._operator_interface.print_to_console(f'Try to change DUT status. {power_on_trigger}\n')
+                    if self._station_config.IS_VERBOSE:
+                        print(f'Try to change DUT status. {power_on_trigger}\n')
                     if not power_on_trigger:
                         scan_sn = self._fixture.scan_code(self.fixture_scanner_port)
                         if scan_sn and test_station.TestStation.validate_sn(self, scan_sn):
