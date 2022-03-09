@@ -29,10 +29,10 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
             self._error_msg = 'ERROR'
             self._cmd_on = b'LON\r'
             self._cmd_off = b'LOFF\r'
-            self._max_retries = 4
+            self._max_retries = 3
             self._serial_port = serial.Serial(com_port,
                                               115200,
-                                              parity='E',
+                                              parity='N',
                                               bytesize=8,
                                               stopbits=1,
                                               timeout=0.3,
@@ -42,7 +42,7 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
 
         def scan(self, timeout=2):
             self._serial_port.write(self._cmd_off)
-            retries = 0
+            retries = 1
             sn_code = None
             while retries <= self._max_retries and sn_code is None:
                 self.on()
@@ -57,9 +57,10 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
                         sn_code = bytearray(msg).decode('utf-8', 'ignore').splitlines(keepends=False)[-1]
                 except Exception as ex:
                     print(f'unable to get data from SR700. {ex}')
+                if sn_code == self._error_msg or sn_code is None:
+                    self.off()
+                    self._serial_port.readline()
                 retries += 1
-            if sn_code == self._error_msg or sn_code is None:
-                self.off()
             return sn_code
 
         def off(self):

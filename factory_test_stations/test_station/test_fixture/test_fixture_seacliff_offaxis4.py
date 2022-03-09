@@ -20,56 +20,56 @@ class SeacliffOffAxis4FixtureError(Exception):
     pass
 
 
-class Scanner710(object):
-    def __init__(self, com_port='COM1'):
-        self._error_msg = 'ERROR'
-        self._cmd_on = b'LON\r'
-        self._cmd_off = b'LOFF\r'
-        self._max_retries = 4
-        self._serial_port = serial.Serial(com_port,
-                                          115200,
-                                          parity='E',
-                                          bytesize=8,
-                                          stopbits=1,
-                                          timeout=0.3,
-                                          xonxoff=0,
-                                          rtscts=0)
-        self._com_port = com_port
-
-    def scan(self, timeout=2):
-        self._serial_port.write(self._cmd_off)
-        retries = 0
-        sn_code = None
-        while retries <= self._max_retries and sn_code is None:
-            self.on()
-            msg = []
-            tim = time.time()
-            try:
-                while time.time() - tim < timeout and ord('\r') not in msg:
-                    line_in = self._serial_port.readline()
-                    if line_in != b'':
-                        msg.extend(line_in)
-                if len(msg) > 0:
-                    sn_code = bytearray(msg).decode('utf-8', 'ignore').splitlines(keepends=False)[-1]
-            except Exception as ex:
-                print(f'unable to get data from SR700. {ex}')
-            retries += 1
-        if sn_code == self._error_msg or sn_code is None:
-            self.off()
-        return sn_code
-
-    def off(self):
-        self._serial_port.write(self._cmd_off)
-
-    def on(self):
-        self._serial_port.write(self._cmd_on)
-
-    def __del__(self):
-        if self._serial_port:
-            self._serial_port.close()
-
-
 class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.TestFixture):
+
+    class Scanner710(object):
+        def __init__(self, com_port='COM1'):
+            self._error_msg = 'ERROR'
+            self._cmd_on = b'LON\r'
+            self._cmd_off = b'LOFF\r'
+            self._max_retries = 3
+            self._serial_port = serial.Serial(com_port,
+                                              115200,
+                                              parity='N',
+                                              bytesize=8,
+                                              stopbits=1,
+                                              timeout=0.3,
+                                              xonxoff=0,
+                                              rtscts=0)
+            self._com_port = com_port
+
+        def scan(self, timeout=2):
+            self._serial_port.write(self._cmd_off)
+            retries = 1
+            sn_code = None
+            while retries <= self._max_retries and sn_code is None:
+                self.on()
+                msg = []
+                tim = time.time()
+                try:
+                    while time.time() - tim < timeout and ord('\r') not in msg:
+                        line_in = self._serial_port.readline()
+                        if line_in != b'':
+                            msg.extend(line_in)
+                    if len(msg) > 0:
+                        sn_code = bytearray(msg).decode('utf-8', 'ignore').splitlines(keepends=False)[-1]
+                except Exception as ex:
+                    print(f'unable to get data from SR700. {ex}')
+                if sn_code == self._error_msg or sn_code is None:
+                    self.off()
+                    self._serial_port.readline()
+                retries += 1
+            return sn_code
+
+        def off(self):
+            self._serial_port.write(self._cmd_off)
+
+        def on(self):
+            self._serial_port.write(self._cmd_on)
+
+        def __del__(self):
+            if self._serial_port:
+                self._serial_port.close()
     """
         class for Tokki offaxis Fixture
             this is for doing all the specific things necessary to interface with instruments
@@ -350,7 +350,7 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
             return val
 
     def scan_code(self, com_port='COM1'):
-        scanner = Scanner710(com_port=com_port)
+        scanner = SeacliffOffAxis4Fixture.Scanner710(com_port=com_port)
         code = scanner.scan(timeout=2)
         del scanner
         return code
