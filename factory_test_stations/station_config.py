@@ -14,38 +14,32 @@ import suds.client
 import tkinter.simpledialog
 import lxml
 from lxml import etree
+import importlib
 
 
 ###################################
 # station_type
 #
-# Valid values are 'UNIF', 'MURA'
-STATION_NUMBER = 0
-STATION_TYPE = ''
-
-
 def load_station(station):
-    global STATION_NUMBER
-    global STATION_TYPE
-    if not STATION_TYPE:
-        STATION_TYPE = station
-        STATION_NUMBER = 0
     #  add by elton:1028/2019
     config_path = os.getcwd()
     bak_cwd = os.getcwd()
     if os.path.exists(__file__):
         config_path = os.path.dirname(os.path.realpath(__file__))
 
-    station_config_file = os.path.join(config_path, 'config', ('station_config_' + STATION_TYPE + '.py'))
-    station_limits_file = os.path.join(config_path, 'config', ('station_limits_' + STATION_TYPE + '.py'))
+    station_config_file = os.path.join(config_path, 'config', ('station_config_' + station))
     print(station_config_file)
-    print(station_limits_file)
     try:
-        #execfile(station_config_file, globals())  # imports station_config into current namespace
-        #execfile(station_limits_file, globals())
-        exec(open(station_config_file).read(), globals())
-        #exec(open(station_limits_file).read(), globals())
-    except:
-        raise
+        station_config_file_pth = os.path.dirname(station_config_file)
+        sys.path.append(station_config_file_pth)
+        cfg = importlib.__import__(os.path.basename(station_config_file), fromlist=[station_config_file_pth])
+        globals().update(dict([(k, v) for k, v in cfg.__dict__.items() if k not in globals().keys()]))
+        if 'STATION_TYPE' not in globals().keys():
+            globals().update({
+                'STATION_TYPE': station,
+                'STATION_NUMBER': 0,
+            })
+    except Exception as e:
+        print(f'Fail to load config =================={str(e)}=====================\n')
     finally:
         os.path.curdir = bak_cwd
