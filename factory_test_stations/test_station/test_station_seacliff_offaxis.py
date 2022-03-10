@@ -159,6 +159,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
         try:
             is_screen_on = False
             self._fixture.flush_data()
+            self._fixture.vacuum(False)
             self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op or is_screen_on)
@@ -378,7 +379,6 @@ class SeacliffOffAxisStation(test_station.TestStation):
             try:
                 self._fixture.button_disable()
                 self._fixture.power_on_button_status(False)
-                self._fixture.vacuum(False)
                 if not ready:
                     if not self._is_cancel_test_by_op:
                         self._operator_interface.print_to_console(

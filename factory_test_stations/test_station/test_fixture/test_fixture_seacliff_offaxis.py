@@ -125,6 +125,7 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
         else:  # disable the buttons automatically
             self.set_tri_color('y')
             self.button_enable()
+            self.vacuum(False)
             self.unload()
             self.button_disable()
             self.set_tri_color('g')
