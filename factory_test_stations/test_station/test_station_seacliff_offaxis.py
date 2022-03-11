@@ -133,7 +133,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
     def close(self):
         self._closed = True
         if self._pthr_monitor is not None:
-            self._pthr_monitor.join()
+            self._pthr_monitor.join(0.5)
         if self._fixture is not None:
             self._fixture.close()
             self._fixture = None
