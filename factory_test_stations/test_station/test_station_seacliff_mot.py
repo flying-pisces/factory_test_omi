@@ -251,95 +251,48 @@ class seacliffmotStation(test_station.TestStation):
         from pymodbus.client.sync import ModbusSerialClient
         from pymodbus.register_read_message import ReadHoldingRegistersResponse
 
-        self._operator_interface.print_to_console("auto config com ports...\n")
-        self._station_config.DUT_COMPORT = None
-        self._station_config.FIXTURE_COMPORT = None
-        self._station_config.FIXTURE_PARTICLE_COMPORT = None
-
+        # <editor-fold desc="port configuration automatically">
+        cfg = 'station_config_seacliff_mot.json'
+        station_config = {
+            'FixtureCom': 'Fixture',
+            'ParticleCounter': 'ParticleCounter',
+        }
         com_ports = list(serial.tools.list_ports.comports())
-        pprint.pprint(f'Ports = {[(com.device, com.hwid, com.description) for com in com_ports]} \n')
+        port_list = [(com.device, com.hwid, com.serial_number, com.description)
+                     for com in com_ports if com.serial_number]
+        if not os.path.exists(cfg):
+            station_config['PORT_LIST'] = port_list
+            with open(cfg, 'w') as f:
+                json.dump(station_config, fp=f, indent=4)
+        else:
+            with open(cfg, 'r') as f:
+                station_config = json.load(f)
 
-        for com in com_ports:
-            hit_success = False
-            if self._station_config.FIXTURE_PARTICLE_COUNTER \
-                    and self._station_config.FIXTURE_PARTICLE_COMPORT is None \
-                    and (self._station_config.FIXTURE_PARTICLE_COMPORT_FILTER in com.hwid):
-                try:
-                    timeout_modbus = 5 if not hasattr(self._station_config, 'PARTICLE_COUNTER_TIMEOUT') \
-                        else self._station_config.PARTICLE_COUNTER_TIMEOUT
-                    modbus_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8,
-                                                       parity='N', stopbits=1,
-                                                       port=com.device, timeout=timeout_modbus)
-                    if modbus_client is not None:
-                        retries = 1
-                        while (retries < 5) and (not hit_success):
-                            print(f'try to search modbus for particle counter. {retries}\n')
-                            if modbus_client.connect():
-                                rs = modbus_client.read_holding_registers(
-                                    self._station_config.FIXTRUE_PARTICLE_ADDR_STATUS,
-                                    2, unit=self._station_config.FIXTURE_PARTICLE_ADDR)
-                                modbus_client.close()
-                                # type: ReadHoldingRegistersResponse
-                                if rs is None or rs.isError():
-                                    # retries = retries + 1
-                                    time.sleep(0.05)
-                                else:
-                                    self._station_config.FIXTURE_PARTICLE_COMPORT = com.device
-                                    hit_success = True
-                            retries += 1
-                except Exception as e:
-                    print(f'Fail to confirm [{com.device}] for particle counter. {str(e)}\n')
+        port_err_message = []
+        if not self._station_config.FIXTURE_SIM and not self._station_config.IS_PROXY_COMMUNICATION:
+            # config the port for fixture
+            regex_port = station_config['FixtureCom']
+            com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
+            if len(com_ports) != 1:
+                port_err_message.append(f'Fixture')
+            else:
+                self.fixture_port = com_ports[-1]
 
-            if hit_success:
-                continue
-            if (self._station_config.FIXTURE_COMPORT is None) and (not self._station_config.IS_PROXY_COMMUNICATION):
-                a_serial = None
-                try:
-                    a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1, bytesize=8,
-                                             timeout=1, xonxoff=0, rtscts=0)
-                    if a_serial is not None:
-                        a_serial.flush()
-                        a_serial.write('CMD_ID\r\n'.encode())
-                        msg = a_serial.readline()
-                        if 'ID' in msg.decode(encoding='utf-8').upper():
-                            self._station_config.FIXTURE_COMPORT = com.device
-                            hit_success = True
-                except Exception as e:
-                    pass
-                finally:
-                    if a_serial is not None:
-                        a_serial.close()
+        # config the port for scanner
+        if self._station_config.FIXTURE_PARTICLE_COUNTER:
+            regex_port = station_config['ParticleCounter']
+            com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
+            if len(com_ports) == 1:
+                self.fixture_particle_port = com_ports[-1]
+            else:
+                port_err_message.append(f'Particle counter')
+        # </editor-fold>
 
-            if (self._station_config.DUT_COMPORT is None) and not self._station_config.DUT_ETH_PROXY:
-                try:
-                    a_serial = serial.Serial(com.device, 115200, parity='N', stopbits=1, bytesize=8,
-                                             timeout=1, xonxoff=0, rtscts=0)
-                    if a_serial is not None:
-                        a_serial.flush()
-                        a_serial.write('$c.VERSION,mcu\r\n'.encode())
-                        ver_mcu = a_serial.readline()
-                        if '$P.VERSION' in ver_mcu.decode(encoding='utf-8').upper():
-                            a_serial.flush()
-                            a_serial.write('$c.DUT.POWEROFF\r\n'.encode())
-                            pw_msg = a_serial.readline()
-                            if pw_msg != b'':
-                                print('Ver_MCU: {0}, POWER_OFF: {1}'.format(ver_mcu, pw_msg.decode()))
-                            self._station_config.DUT_COMPORT = com.device
-                            hit_success = True
-                except Exception as e:
-                    pass
-                finally:
-                    a_serial.close()
-
-            if hit_success:
-                continue
+        if not self._station_config.FIXTURE_SIM and len(port_err_message) > 0:
+            raise seacliffmotStationError(f'Fail to find ports for fixture {";".join(port_err_message)}')
 
     def __init__(self, station_config, operator_interface):
         test_station.TestStation.__init__(self, station_config, operator_interface)
-        if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
-            sys.stdout = self
-            sys.stderr = self
-            sys.stdin = None
         self._fixture = None
         self._fixture = test_fixture_seacliff_mot.seacliffmotFixture(station_config, operator_interface)
         if hasattr(station_config, 'FIXTURE_SIM') and station_config.FIXTURE_SIM:
@@ -359,6 +312,8 @@ class seacliffmotStation(test_station.TestStation):
         self._eepStationAssistant = EEPStationAssistant()
         self._eep_data_from_npy = {}
         self._multi_lock = mp.Lock()
+        self.fixture_port = None
+        self.fixture_particle_port = None
 
     def initialize(self):
         try:
@@ -366,10 +321,13 @@ class seacliffmotStation(test_station.TestStation):
                                                       .format(self._sw_version))
             if self._station_config.AUTO_CFG_COMPORTS:
                 self.auto_find_com_ports()
+            else:
+                self.fixture_port = self._station_config.FIXTURE_COMPORT
+                self.fixture_particle_port = self._station_config.FIXTURE_PARTICLE_COMPORT
 
-            msg = "find ports FIXTURE = {0}, DUT = {1}, PARTICLE COUNTER = {2}. \n" \
-                .format(self._station_config.FIXTURE_COMPORT,
-                        self._station_config.DUT_COMPORT, self._station_config.FIXTURE_PARTICLE_COMPORT)
+            msg = "find ports FIXTURE = {0}, PARTICLE COUNTER = {1}. \n" \
+                .format(self.fixture_port,
+                        self.fixture_particle_port)
             self._operator_interface.print_to_console(msg)
             eep_data_json_file = os.path.join(self._station_config.SEQUENCE_RELATIVEPATH, 'eep_p1_all.json')
             if os.path.exists(eep_data_json_file):
@@ -377,7 +335,7 @@ class seacliffmotStation(test_station.TestStation):
                     yyds = np.array(json.load(jf))
                     self._eep_data_from_npy = dict(zip(yyds[:, 0], yyds[:, 1:]))
 
-            self._fixture.initialize()
+            self._fixture.initialize(fixture_port=self.fixture_port, particle_port=self.fixture_particle_port)
             self._equipment.initialize()
             self._equipment.open()
         except Exception as e:
@@ -486,8 +444,7 @@ class seacliffmotStation(test_station.TestStation):
         try:
             self._operator_interface.print_to_console(f"Initialize Test condition.={cpu_count_used}/{cpu_count}.. \n")
             self._operator_interface.print_to_console(
-                "\n*********** Fixture at %s to load DUT %s ***************\n"
-                % (self._station_config.FIXTURE_COMPORT, self._station_config.DUT_COMPORT))
+                "\n*********** Fixture at %s to load DUT ***************\n" % self.fixture_port)
 
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
             self._operator_interface.print_to_console("Initialize DUT... \n")
@@ -843,7 +800,7 @@ class seacliffmotStation(test_station.TestStation):
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._fixture.power_on_button_status(True)
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-            self._the_unit.initialize(com_port=self._station_config.FIXTURE_COMPORT,
+            self._the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
                                       eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
             self._the_unit.nvm_speed_mode(mode='normal')
             self._operator_interface.print_to_console("Initialize DUT... \n")

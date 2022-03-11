@@ -176,16 +176,16 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                     if items:
                         return key
 
-    def initialize(self):
+    def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing seacliff_mot Fixture\n")
         if hasattr(self._station_config, 'IS_PROXY_COMMUNICATION') and \
                 self._station_config.IS_PROXY_COMMUNICATION:
             StationCommunicationProxy._communication_proxy_name = self._station_config.PROXY_COMMUNICATION_PATH
             StationCommunicationProxy.run_daemon_application()
             time.sleep(6)
-            self._serial_port = StationCommunicationProxy(self._station_config.PROXY_ENDPOINT)
+            self._serial_port = StationCommunicationProxy()
         else:
-            self._serial_port = serial.Serial(self._station_config.FIXTURE_COMPORT,
+            self._serial_port = serial.Serial(kwargs.get('fixture_port'),
                                               115200,
                                               parity='N',
                                               stopbits=1,
@@ -198,14 +198,13 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             Defaults.RetryOnEmpty = True
             self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
                                                                stopbits=1,
-                                                               port=self._station_config.FIXTURE_PARTICLE_COMPORT,
+                                                               port=kwargs.get('particle_port'),
                                                                timeout=2)
             self._particle_counter_client.inter_char_timeout = 0.2
             if not self._particle_counter_client.connect():
-                raise seacliffmotFixtureError('Unable to open particle counter port: %s'
-                                                 % self._station_config.FIXTURE_PARTICLE_COMPORT)
+                raise seacliffmotFixtureError(f'Unable to open particle counter port: {kwargs}')
         if not self._serial_port:
-            raise seacliffmotFixtureError('Unable to open fixture port: %s' % self._station_config.FIXTURE_COMPORT)
+            raise seacliffmotFixtureError(f'Unable to open fixture port: {kwargs}')
         else:  # disable the buttons automatically
             self.start_button_status(True)
             self.power_on_button_status(True)
@@ -213,8 +212,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             self.start_button_status(False)
             self.power_on_button_status(False)
 
-            self._operator_interface.print_to_console(
-                "Fixture %s Initialized.\n" % self._station_config.FIXTURE_COMPORT)
+            self._operator_interface.print_to_console(f"Fixture Initialized {kwargs}.\n")
             return True
 
     def _write_serial(self, input_bytes):
