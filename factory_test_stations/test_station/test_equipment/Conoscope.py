@@ -208,7 +208,7 @@ class Conoscope:
             ("nbAcquisition", ctypes.c_int),
             ("state", ctypes.c_int)]
 
-    def __init__(self, emulate_camera=False, emulate_wheel=False):
+    def __init__(self, *, emulate_camera=False, emulate_wheel=False, semulate_spectro=False):
         print("create an instance of the conoscope")
 
         self.conoscopeConfig = Conoscope.ConoscopeConfig()

@@ -95,7 +95,8 @@ Version 1.1.0
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 SEQUENCE_RELATIVEPATH = r'C:\oculus\run\seacliff_mot_run\test_station\test_equipment\algorithm'
-CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment_57'
+# CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment_57'
+CONOSCOPE_DLL_PATH = r'C:\O2\taprisiot\TestPython'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_mot_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
@@ -257,7 +258,11 @@ COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255
 DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 10
 
-VERSION_REVISION_EQUIPMENT = '72'
+VERSION_REVISION_EQUIPMENT = '87'
+VERSION_REVISION_LIST = {
+    'Conoscope': ['72'],
+    'ConoscopeV2': ['87'],
+}
 FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 
 # set sensor_temperature
@@ -300,6 +305,8 @@ SEQ_CAP_INIT_CONFIG = {
     "exposureTimeUs_FilterYa": 10,
     "exposureTimeUs_FilterYb": 10,
     "exposureTimeUs_FilterZ": 10,
+
+    "bSpectro": False,  # configuration for spectro
 }
 
 MEASURE_CAP_INIT_CONFIG = {
@@ -461,4 +468,5 @@ EQUIPMENT_SIM_CAPTURE_FROM_DIR = False
 DUT_SIM = True
 EQUIPMENT_SIM = True
 EQUIPMENT_WHEEL_SIM = True
+EQUIPMENT_SPECTRO_SIM = True
 FIXTURE_SIM = True
