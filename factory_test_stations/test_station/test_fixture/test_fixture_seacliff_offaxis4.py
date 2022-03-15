@@ -14,6 +14,7 @@ from pymodbus.register_read_message import ReadHoldingRegistersResponse
 from pymodbus.constants import Defaults
 import time
 import ctypes
+import threading
 
 
 class SeacliffOffAxis4FixtureError(Exception):
@@ -80,15 +81,23 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
         self._verbose = station_config.IS_VERBOSE
         self._start_delimiter = ':'
         self._end_delimiter = '@_@'
+        self._end_delimiter_auto_response = '^_^'
         self._error_msg = r'Please scanf "CMD_HELP" check help command'
         self._particle_counter_client = None  # type: ModbusSerialClient
+        self._fixture_mutex = threading.Lock()
 
     def is_ready(self):
-        if self._serial_port is not None:
-            resp = self._read_response(2)
+        if self._serial_port is not None and self._fixture_mutex.acquire(blocking=False):
+            resp = self._read_response(0.1, end_delimiter=self._end_delimiter_auto_response)
+            self._fixture_mutex.release()
             if resp:
-                btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d',
-                               0: r'BUTTON:0', 4: r'BUTTON:1'}
+                print(resp)
+                btn_dic = {4: r'PowerOn_Button_R:\d',
+                           3: r'PowerOn_Button_L:\d',
+                           2: r'BUTTON_LEFT:\d',
+                           1: r'BUTTON_RIGHT:\d',
+                           0: r'BUTTON:0',
+                           99: r'BUTTON:1'}
                 for key, item in btn_dic.items():
                     items = list(filter(lambda r: re.match(item, r, re.I), resp))
                     if items:
@@ -119,8 +128,14 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
             raise SeacliffOffAxis4FixtureError(f'Unable to open fixture port: {kwargs}')
         else:  # disable the buttons automatically
             self.set_tri_color('y')
+            for bk in ['A', 'B']:
+                self.vacuum(False, bk_mode=bk)
+                self.power_on_button_status(True, bk_mode=bk)
             self.button_enable()
             self.unload()
+            for bk in ['A', 'B']:
+                self.vacuum(False, bk_mode=bk)
+                self.power_on_button_status(False, bk_mode=bk)
             self.button_disable()
             self.set_tri_color('g')
             if self._verbose:
@@ -128,9 +143,7 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
             return True
 
     def _write_serial(self, input_bytes):
-        self._serial_port.flush()
         if self._verbose:
-            print("flushed")
             print('writing: ' + input_bytes)
         cmd = '{0}\r\n'.format(input_bytes)
         self._serial_port.reset_input_buffer()
@@ -141,10 +154,10 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
         if self._serial_port is not None:
             self._serial_port.flush()
 
-    def _read_response(self, timeout=10):
+    def _read_response(self, timeout=10, end_delimiter='@_@'):
         msg = ''
         tim = time.time()
-        while (not re.search(self._end_delimiter, msg, re.IGNORECASE)
+        while (not re.search(end_delimiter, msg, re.IGNORECASE)
                and (time.time() - tim < timeout)):
             line_in = self._serial_port.readline()
             if line_in != b'':
@@ -153,7 +166,7 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
         if self._verbose:
             if len(response) > 1:
                 pprint.pprint(response)
-            else:
+            elif end_delimiter not in [self._end_delimiter_auto_response]:
                 print('Fail to read any data in {0} seconds. '.format(timeout))
         return response
 
@@ -164,23 +177,26 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
         return response
 
     def help(self):
-        self._write_serial(self._station_config.COMMAND_HELP)
-        response = self.read_response()
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_HELP)
+            response = self.read_response()
         if self._verbose:
             pprint.pprint(response)
         return response
 
     def reset(self):
-        self._write_serial(self._station_config.COMMAND_RESET)
-        response = self.read_response()
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_RESET)
+            response = self.read_response()
         val = int(self._prase_response(r'LOAD:(\d+)', response).group(1))
         if val == 0x00:
             time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
         return val
 
     def id(self):
-        self._write_serial(self._station_config.COMMAND_ID)
-        response = self.read_response()
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_ID)
+            response = self.read_response()
         if self._verbose:
             print(response[1])
         return self._prase_response(r'ID:(.+)', response).group(1)
@@ -188,9 +204,11 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
     def close(self):
         self._operator_interface.print_to_console("Closing tokki offaxis Fixture\n")
         if hasattr(self, '_serial_port') \
-                and self._serial_port is not None \
-                and self._station_config.FIXTURE_COMPORT:
+                and self._serial_port is not None:
             self.set_tri_color('y')
+            for c in ['A', 'B']:
+                self.power_on_button_status(False, c)
+                self.vacuum(False, c)
             self.button_disable()
             self._serial_port.close()
             self._serial_port = None
@@ -206,28 +224,23 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
     ######################
     # Fixture control
     ######################
-    def button_enable(self, bk_mode='A'):
-        bt_command = {
-            'A': f'{self._station_config.COMMAND_BUTTON_ENABLE}:A',
-            'B': f'{self._station_config.COMMAND_BUTTON_ENABLE}:B'
-        }
-        self._write_serial(bt_command[bk_mode])
-        response = self.read_response()
+    def button_enable(self):
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_BUTTON_ENABLE)
+            response = self.read_response()
         return int(self._prase_response(r'BTN_ENABLE:(\d+)', response).group(1))
 
-    def button_disable(self, bk_mode='A'):
-        bt_command = {
-            'A': f'{self._station_config.COMMAND_BUTTON_DISABLE}:A',
-            'B': f'{self._station_config.COMMAND_BUTTON_DISABLE}:B'
-        }
-        self._write_serial(bt_command[bk_mode])
-        response = self.read_response()
+    def button_disable(self):
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_BUTTON_DISABLE)
+            response = self.read_response()
         return int(self._prase_response(r'BTN_DISABLE:(\d+)', response).group(1))
 
     def mov_abs_xy(self, x, y):
         CMD_MOVE_STRING = self._station_config.COMMAND_ABS_X_Y + ':' + str(x) + ',' + str(y)
-        self._write_serial(CMD_MOVE_STRING)
-        response = self.read_response()
+        with self._fixture_mutex:
+            self._write_serial(CMD_MOVE_STRING)
+            response = self.read_response()
         if self._verbose:
             print(response)
         return int(self._prase_response(r'ABS_X_Y:(\d+)', response).group(1))
@@ -238,14 +251,65 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
     def unload(self):
         self._unload()
 
+    def vacuum(self, on, bk_mode='A'):
+        """
+        get version number
+        @return:
+        """
+        vacuum_dict = {
+            True: ('ON', r'VACUUM_[L|]ON:(\d+)'),
+            False: ('OFF', r'VACUUM_[L|R]OFF:(\d+)'),
+        }
+        bk_dic = {
+            'A': f'L',
+            'B': f'R'
+        }
+        cmd = vacuum_dict[on]
+        with self._fixture_mutex:
+            self._write_serial(f'{self._station_config.COMMAND_VACUUM_CTRL}:{bk_dic[bk_mode.upper()]}{cmd[0]}')
+            response = self._read_response()
+        return self._prase_response(cmd[1], response).group(1)
+
+    def vacuum_status(self, bk_mode='A'):
+        """
+        enable the power on button
+        @return:
+        """
+        bk_dic = {
+            'A': 0x10,
+            'B': 0x01
+        }
+        with self._fixture_mutex:
+            self._write_serial(f'{self._station_config.COMMAND_VACUUM_STATUS}')
+            response = self.read_response()
+        return 0 != int(self._prase_response(r'Vacuum_Button_Status:(\d+)',
+                        response).group(1), 16) & bk_dic[bk_mode.upper()]
+
+    def power_on_status(self, bk_mode='A'):
+        """
+        @type bk_mode: 'A'/'B'
+        enable the power on button
+        @return:
+        """
+        bk_dic = {
+            'A': f'L',
+            'B': f'R'
+        }
+        with self._fixture_mutex:
+            self._write_serial(f'{self._station_config.COMMAND_POWERON_STATUS}:{bk_dic[bk_mode.upper()]}')
+            response = self.read_response()
+        return int(self._prase_response(r'PowerOn_Button_[L|R]:(\d+)', response).group(1))
+
     def _load(self):
-        self._write_serial(self._station_config.COMMAND_LOAD)
-        response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_LOAD)
+            response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
         return int(self._prase_response(r'LOAD:(\d+)', response).group(1))
 
     def _unload(self):
-        self._write_serial(self._station_config.COMMAND_UNLOAD)
-        response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_UNLOAD)
+            response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
         return int(self._prase_response(r'UNLOAD:(\d+)', response).group(1))
 
     def _prase_response(self, regex, resp):
@@ -267,24 +331,31 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
         }
         cmd = switch.get(color)
         if cmd:
-            self._write_serial(cmd)
-            response = self.read_response()
+            with self._fixture_mutex:
+                self._write_serial(cmd)
+                response = self.read_response()
             r = r'LED_[R|Y|G]:(\d+)'
             return int(self._prase_response(r, response).group(1))
 
-    def power_on_button_status(self, on):
+    def power_on_button_status(self, on=True, bk_mode='A'):
         """
         @type on : bool
+        @type bk_mode: 'A'/'B'
         enable the power on button
         @return:
         """
         status_dic = {
-            True: (self._station_config.COMMAND_BUTTON_LITUP_ENABLE, r'PowerOnButton_ENABLE:(\d+)'),
-            False: (self._station_config.COMMAND_BUTTON_LITUP_DISABLE, r'PowerOnButton_DISABLE:(\d+)'),
+            True: (self._station_config.COMMAND_BUTTON_LITUP_ENABLE, r'PowerOnButton_ENABLE_[L|R]:(\d+)'),
+            False: (self._station_config.COMMAND_BUTTON_LITUP_DISABLE, r'PowerOnButton_DISABLE_[L|R]:(\d+)'),
+        }
+        bk_dic = {
+            'A': f'L',
+            'B': f'R'
         }
         cmd = status_dic[on]
-        self._write_serial(cmd[0])
-        response = self.read_response()
+        with self._fixture_mutex:
+            self._write_serial(f'{cmd[0]}:{bk_dic[bk_mode.upper()]}')
+            response = self.read_response()
         if int(self._prase_response(cmd[1], response).group(1)) != 0:
             raise SeacliffOffAxis4FixtureError('fail to send command. %s' % response)
 
@@ -354,3 +425,36 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
         code = scanner.scan(timeout=2)
         del scanner
         return code
+
+
+def print_to_console(self, msg):
+    pass
+
+
+if __name__ == '__main__':
+    import sys
+    import types
+
+    sys.path.append(r'..\..')
+    import station_config
+    import serial.tools
+    coms = serial.tools.list_ports.comports()
+
+    station_config.load_station('seacliff_offaxis4')
+    station_config.print_to_console = types.MethodType(print_to_console, station_config)
+    the_unit = SeacliffOffAxis4Fixture(station_config, station_config)
+    the_unit.initialize(fixture_port='com6', particle_port='com8')
+    for __ in range(10):
+        for bk in ['A', 'b']:
+            the_unit.load()
+            the_unit.button_enable(bk)
+            the_unit.set_tri_color('y')
+            the_unit.button_disable(bk)
+
+            the_unit.power_on_button_status(True, bk_mode=bk)
+            the_unit.power_on_button_status(False, bk_mode=bk)
+
+            the_unit.unload()
+            the_unit.set_tri_color('r')
+    the_unit.close()
+    pass

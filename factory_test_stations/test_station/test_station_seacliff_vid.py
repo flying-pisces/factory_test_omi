@@ -22,6 +22,7 @@ import collections
 import math
 import csv
 import serial
+from scipy import interpolate
 
 
 class seacliffVidStationError(Exception):
@@ -375,7 +376,17 @@ class seacliffVidStation(test_station.TestStation):
                             writer.writerows(tuple(zip(raw_x, raw_y, raw_z, raw_a)))
                             if len(raw_z) > 0:
                                 mean_z = io_utils.round_ex(np.mean(raw_z), 2)
-                                test_log.set_measured_value_by_name_ex(f'{pattern_name}_{p_name}', mean_z)
+                                if (p_name in self._station_config.CALIB_DATA
+                                        and len(self._station_config.CALIB_DATA[p_name]) >= 2):
+                                    x = [c for c, __ in self._station_config.CALIB_DATA[p_name]]
+                                    y = [c for __, c in self._station_config.CALIB_DATA[p_name]]
+                                    p = interpolate.interp1d(x, y, copy=True, bounds_error=False)
+                                    mean_zz = p(mean_z)
+                                else:
+                                    mean_zz == mean_z
+                                self._operator_interface.print_to_console(f'Interp1d to {pattern_name}_{p_name} '
+                                                                          f'{mean_z} ---> {mean_zz}')
+                                test_log.set_measured_value_by_name_ex(f'{pattern_name}_{p_name}', mean_zz)
                         del image_x, image_y, image_z, image_a, raw_x, raw_y, raw_z, raw_a
                         del maskx, masky, maskxy, maskxy_position
                 del img

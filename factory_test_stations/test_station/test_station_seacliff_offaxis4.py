@@ -29,8 +29,9 @@ import json
 import socketserver
 
 
-ms_client_info = {}
-ms_message_queue = Queue()
+ms_client_list = {}
+ms_receive_message_queue = Queue()
+USER_SHUTDOWN_STATION = False
 
 
 class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
@@ -43,19 +44,19 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         self.port = self.client_address[1]
         self.request.settimeout(self.timeout)
         print(f'IP {self.ip} port: {self.port} is connected.')
-        ms_client_info.update({f'{self.ip}': self.request})
+        ms_client_list.update({f'{self.ip}': self.request})
 
     def handle(self):
         active = True
         end_char = b'@_@'
         total_data = b''
-        while active:
+        while not USER_SHUTDOWN_STATION and active:
             try:
                 rev_msg = self.request.recv(512)
                 total_data += rev_msg
                 while end_char in total_data:
                     cmd = total_data[:total_data.find(end_char)].decode(encoding='utf-8')
-                    ms_message_queue.put((self.ip,  json.loads(cmd)))
+                    ms_receive_message_queue.put((self.ip, json.loads(cmd)))
                     print(f'handle---------{self.ip}__{cmd}-----------\n')
                     time.sleep(0.005)
                     total_data = total_data[(total_data.find(end_char) + len(end_char)):]
@@ -67,7 +68,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
 
     def finish(self):
         print('client is disconnect!')
-        ms_client_info.pop(f'{self.ip}')
+        ms_client_list.pop(f'{self.ip}')
 
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -101,17 +102,17 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         self._equipment = SeacliffOffAxis4Equipment(station_config)  # type: SeacliffOffAxis4Equipment
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._the_unit = {}   # type: pancakeDut
         self._ttxm_filelist = []
-        self._is_under_testing = False
-        self._station_major_ctrl_queue = Queue(maxsize=0)
-
-        self._http_local_client_queue = Queue(maxsize=0)
+        self._is_slot_under_testing = False
+        self._local_ctrl_queue = Queue(maxsize=0)
         self._work_flow_ctrl_event = threading.Event()
         self._work_flow_ctrl_event_err_msg = None
-        self._query_list = Queue(maxsize=0)
+        self._fixture_query_command = Queue(maxsize=0)
         self._shop_floor = None  # type: ShopFloor
-        self._is_exit = False
+        self._mutex = threading.Lock()
+
+        self._major_ctrl_queue = Queue(maxsize=0)
+        self._is_major_ctrl_under_testing = False
 
         self._multi_station_dic = dict([(k, {
             'SN': None,
@@ -120,12 +121,15 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             'IsActive': False,
         }) for k in self._station_config.SUB_STATION_INFO.keys()])
 
-        self._mutex = threading.Lock()
         self.btn_status = {
             'DUAL_START': False,
             'PWR_A': False,
             'PWR_B': False,
+            'VACCUM_A': False,
+            'VACCUM_B': False,
         }
+
+        self._the_unit = {}   # type: pancakeDut
         self.fixture_scanner_ports = {}
         self.fixture_port = None
         self.fixture_particle_port = None
@@ -140,6 +144,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             self._operator_interface.update_test_value(item, value, 1 if did_pass else -1)
 
     def initialize(self):
+        self._operator_interface.update_root_config({'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE)})
         self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version} SP2\n")
         self._operator_interface.update_root_config({'IsStartLoopFromKeyboard': 'false'})
 
@@ -154,7 +159,6 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             if self._station_config.IS_STATION_MASTER:
                 for k, v in self._station_config.SUB_STATION_INFO.items():
                     self._multi_station_dic[k]['IP'] = v['IP']
-            # pprint.pprint(self._multi_station_dic)
 
         except Exception as e:
             self._operator_interface.print_to_console(f'Fail to init this station as Master. {str(e)}\n')
@@ -166,6 +170,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 'FixtureCom': 'Fixture',
                 'ScannerA': 'SR71001A',
                 'ScannerB': 'SR71002A',
+                'ParticleCounter': 'ParticleCounter',
             }
             com_ports = list(serial.tools.list_ports.comports())
             port_list = [(com.device, com.hwid, com.serial_number, com.description)
@@ -193,7 +198,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 regex_port = station_config[reg_p]
                 com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
                 if len(com_ports) > 0:
-                    self.fixture_scanner_ports[reg_p] = com_ports[-1]
+                    self.fixture_scanner_ports[c] = com_ports[-1]
                 else:
                     port_err_message.append(f'Scanner {c}')
 
@@ -206,12 +211,6 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 else:
                     port_err_message.append(f'Particle counter')
             # </editor-fold>
-
-            for k, v in self._station_config.DUT_ETH_PROXY_ADDR.items():
-                self._the_unit[k] = projectDut(None, station_config, self._operator_interface)
-                self._the_unit[k].initialize(eth_port=v)
-                # pancakeDut('', station_config, self._operator_interface)
-
             if not self._station_config.FIXTURE_SIM and len(port_err_message) > 0:
                 raise SeacliffOffAxis4StationError(f'Fail to find ports for fixture {";".join(port_err_message)}')
 
@@ -230,7 +229,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
         self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
         self._equipment.initialize()
-        self._is_under_testing = False
+        self._is_slot_under_testing = False
         self._shop_floor = ShopFloor()
         threading.Thread(target=self._fixture_query_thr, daemon=True).start()
         threading.Thread(target=self._station_monitor_ctrl_thr, daemon=True).start()  # read particle-counter from device.
@@ -250,18 +249,18 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             threading.Thread(target=self._http_local_client, daemon=True).start()
         else:
             threading.Thread(target=self._http_local_client, daemon=True).start()
-
-        import keyboard
-        keyboard.add_hotkey('ctrl+q', self._fixture_btn_emulator, ('start',))
+        # import keyboard
+        # keyboard.add_hotkey('ctrl+q', self._fixture_btn_emulator, ('start',))
+        self._operator_interface.print_to_console(f'Wait for testing...', 'green')
 
     def _fixture_btn_emulator(self, arg):
-        self._operator_interface.print_to_console(f'emulator signal for dual-start: {self._is_under_testing}')
-        if not self._is_under_testing and self._query_list.empty():
-            self._query_list.put('dual_start')
+        self._operator_interface.print_to_console(f'emulator signal for dual-start: {self._is_slot_under_testing}')
+        if not self._is_slot_under_testing and self._fixture_query_command.empty():
+            self._fixture_query_command.put('dual_start')
 
     def __append_local_client_msg_q(self, cmd, args=None):
         cmd_text = json.dumps({'CMD': cmd, 'ARG': args})
-        self._http_local_client_queue.put(f'{cmd_text}@_@')
+        self._local_ctrl_queue.put(f'{cmd_text}@_@')
 
     def _http_local_client(self):
         local_client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -269,7 +268,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         end_char = b'@_@'
         total_data = b''
         sock_exception = False
-        while not self._is_exit:
+        while not USER_SHUTDOWN_STATION:
             try:
                 local_client_sock.settimeout(0.010)
                 rev_msg = local_client_sock.recv(512)
@@ -278,7 +277,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     total_data += rev_msg
                 while end_char in total_data:
                     cmd = total_data[:total_data.find(end_char)].decode(encoding='utf-8')
-                    self._station_major_ctrl_queue.put(json.loads(cmd))
+                    self._major_ctrl_queue.put(json.loads(cmd))
                     if self._station_config.IS_VERBOSE:
                         print(f'recv command -------->{cmd}')
                     time.sleep(0.02)
@@ -290,8 +289,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     self._operator_interface.print_to_console(f'Fail to loop http_local_client. {str(e)} \n', 'red')
                     sock_exception = True
 
-            if not self._http_local_client_queue.empty():
-                cmd = self._http_local_client_queue.get()
+            if not self._local_ctrl_queue.empty():
+                cmd = self._local_ctrl_queue.get()
                 if isinstance(cmd, str):
                     local_client_sock.sendall(cmd.encode('utf-8'))
                     if self._station_config.IS_VERBOSE:
@@ -313,10 +312,10 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             stationIp = self.trans_station_index_2_ip(station_index)
             if not stationIp:
                 self._operator_interface.print_to_console(f'slot {station_index} is not connected.')
-            elif not(stationIp in ms_client_info):
+            elif not(stationIp in ms_client_list):
                 self._operator_interface.print_to_console(f'socket for slot {station_index} is not connected.', 'red')
             else:
-                psock = ms_client_info[stationIp]
+                psock = ms_client_list[stationIp]
                 cmd_text = {'CMD': cmd, 'ARG': args, 'ERR': err}
                 psock.sendall(f'{json.dumps(cmd_text)}@_@'.encode())
                 if self._station_config.IS_VERBOSE:
@@ -328,14 +327,14 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
     def _station_slave_ctrl_thr(self):
         active_status_bak = None
-        while not self._is_exit:
+        while not USER_SHUTDOWN_STATION:
             time.sleep(0.05)
             if active_status_bak is None or active_status_bak != self._station_config.IS_STATION_ACTIVE:
                 active_status_bak = self._station_config.IS_STATION_ACTIVE
                 self.__append_local_client_msg_q('ActiveStatus', active_status_bak)
             try:
-                if not self._station_major_ctrl_queue.empty():
-                    command = self._station_major_ctrl_queue.get()
+                if not self._major_ctrl_queue.empty():
+                    command = self._major_ctrl_queue.get()
                     if self._station_config.IS_VERBOSE:
                         print(f'station_slave_ctrl rev command <----  {command}')
                     cmd = command.get('CMD')
@@ -351,19 +350,21 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         # 等待关闭DUT与MES 数据上传
                         self._work_flow_ctrl_event.set()
                     elif cmd == 'start_loop' and isinstance(cmd1, str):
-                        self._is_under_testing = True
+                        self._is_slot_under_testing = True
                         self._work_flow_ctrl_event.clear()
                         self._operator_interface.update_root_config({'SN': cmd1})
                         self._operator_interface.active_start_loop(cmd1)
                         self._work_flow_ctrl_event.set()
+                    elif cmd == 'UPDATE_SN':
+                        self._operator_interface.update_root_config({'SN': cmd1 if cmd1 else ''})
             except Exception as e:
                 self._operator_interface.print_to_console(f'Fail to slave_ctrl_thr: {str(e)}', 'red')
 
     def _station_master_ctrl_thr(self):
-        while not self._is_exit:
+        while not USER_SHUTDOWN_STATION:
             try:
-                if not ms_message_queue.empty():
-                    command = ms_message_queue.get()
+                if not ms_receive_message_queue.empty():
+                    command = ms_receive_message_queue.get()
                     if self._station_config.IS_VERBOSE:
                         print(f'station master ctrl thread. {command}\n')
                     if isinstance(command, tuple):  # command get from slave-station
@@ -377,7 +378,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                             self._operator_interface.print_to_console(f'Station {station_index} Finished.')
                             self.send_command(station_index, 'FinishTestAck')
                             if all([not c['IsRunning'] for k, c in self._multi_station_dic.items() if c['IsActive']]):
-                                self._query_list.put('unload')
+                                self._fixture_query_command.put('unload')
                         elif cmd == 'NextPattern' and isinstance(arg1, str):  # message slave ---> master
                             self.render_pattern(station_index, arg1)
                             self.send_command(station_index, 'NextPatternAck')
@@ -429,97 +430,128 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         while True:
             time.sleep(0.01)
             try:
-                if self._query_list.empty():
+                if self._fixture_query_command.empty():
                     continue
-                cmd = self._query_list.get()
+                cmd = self._fixture_query_command.get()
                 if self._station_config.IS_VERBOSE:
                     print(f'fixture query command: {cmd}\n')
                 if isinstance(cmd, str) and re.match('pwron_status:[A|B]_(?:true|false)', cmd, re.I | re.S):
                     cmd1 = cmd.split(':')[1].split('_')[0]
-                    cmd2 = bool(cmd.split(':')[1].split('_')[1])
+                    cmd2 = cmd.split(':')[1].split('_')[1].lower() in ['true']
                     if cmd2:
-                        self._fixture.button_enable(cmd1)
+                        self._fixture.power_on_button_status(True, bk_mode=cmd1)
                     else:
-                        self._fixture.button_disable(cmd1)
+                        self._fixture.power_on_button_status(False, bk_mode=cmd1)
                     self.btn_status[f'PWR_{cmd1}'] = cmd2
                 elif isinstance(cmd, str) and re.match('dual_start:(?:true|false)', cmd, re.I | re.S):
-                    cmd1 = bool(cmd.split(':')[1])
+                    cmd1 = cmd.split(':')[1].lower() in ['true']
                     if cmd1:
                         self._fixture.button_enable()
                     else:
-                        self._fixture.button_enable()
+                        self._fixture.button_disable()
+                    self.btn_status['DUAL_START'] = cmd1
                 elif cmd == 'dual_start':
-                    self._fixture.load()
-                    # self._query_list.put('pwron_status:A,False')
-                    # self._query_list.put('pwron_status:B,False')
-                    # self._query_list.put(f'dual_btn:False')
-                    self._query_list.put(f'dual_start_post')
+                    self._is_major_ctrl_under_testing = True
+                    self.btn_status['DUAL_START'] = False
+                    # self._fixture.load()  # carry the DUTs to the expected position automatically.
+                    self._fixture_query_command.put('pwron_status:A_False')
+                    self._fixture_query_command.put('pwron_status:B_False')
+                    self._fixture_query_command.put(f'dual_start_post')
                 elif cmd == 'dual_start_post':
-                    # 表明已经运行到测试位置
                     for k, v in self._multi_station_dic.items():
                         if v['IsActive']:  # and v['SN']:
-                            self.send_command(k, 'start_loop', 'T004')
+                            self.send_command(k, 'start_loop', self._multi_station_dic[k]['SN'])
                             self._multi_station_dic[k]['IsRunning'] = True
-                            # 关闭双启动按钮
+                        # it says the dual btn was disabled
                 elif cmd == 'unload':
                     self._fixture.unload()
+                    for channel, v in self._multi_station_dic.items():
+                        if v['IsActive']:
+                            self._update_sn(channel, None)
+                    self._is_major_ctrl_under_testing = False
                 elif isinstance(cmd, tuple) and len(cmd) == 2 and cmd[0] == 'power_on':
                     channel = cmd[1].upper()
-                    if self._multi_station_dic[channel]['IsActive']:
+                    if not self._multi_station_dic[channel]['IsActive']:
                         continue
                     assert channel in self._station_config.SUB_STATION_INFO.keys()
-                    if self._multi_station_dic[channel]['SN']:
+                    if self._multi_station_dic[channel]['SN'] is not None:
                         self._the_unit[channel].screen_off()
-                        self._multi_station_dic[channel]['SN'] = None
+                        self._the_unit[channel] = None
+                        self._update_sn(channel, None)
+                        self._the_unit[channel] = None
                         continue
-                    sn = self._fixture.scan_code(self.fixture_scanner_ports[channel])
+                    sn = datetime.datetime.now().strftime('%m%d%H%M%S')
+                    # sn = self._fixture.scan_code(self.fixture_scanner_ports[channel])
                     if not isinstance(sn, str) or 'ERROR' in sn:
                         self._operator_interface.print_to_console(f'Unable to scan code for station: {sn}\n', 'red')
                         continue
-                    if self.validate_sn(serial_num=sn):
+                    if not self.validate_sn(serial_num=sn):
                         self._operator_interface.print_to_console(f'Fail to validate Serial Number : {sn}\n', 'red')
                     else:
                         sf_res = self._shop_floor.ok_to_test(serial_number=sn)
-                        if isinstance(sf_res, tuple) and sf_res[0]:
+                        if sf_res is True or (isinstance(sf_res, tuple) and sf_res[0]):
+                            self._fixture.vacuum(False, channel)
+                            if channel in self._station_config.DUT_ETH_PROXY_ADDR:
+                                v = self._station_config.DUT_ETH_PROXY_ADDR[channel]
+                                self._the_unit[channel] = projectDut(sn, self._station_config, self._operator_interface)
+                                if not self._station_config.DUT_SIM:
+                                    self._the_unit[channel] = pancakeDut(sn, self._station_config, self._operator_interface)
+                                self._the_unit[channel].initialize(eth_addr=v)
                             pw_res = self._the_unit[channel].screen_on(ignore_err=True)
                             if pw_res is True:
-                                self._multi_station_dic[channel]['SN'] = sn
-                                if all([not c['SN'] for c in self._multi_station_dic if c['IsActive']]):
-                                        pass
-                                        # 开启双启按钮
+                                self._update_sn(channel, sn)
+                                self._operator_interface.print_to_console(f'Set SN {sn} to slot_{channel}.')
+                                if all([v['SN'] is not None for k, v in self._multi_station_dic.items() if v['IsActive']]):
+                                    pass
+                                    # Active dual start button
                             else:
                                 self._operator_interface.print_to_console(f'Fail to power on: {sn}, {pw_res}\n', 'red')
                                 self._the_unit[channel].screen_off()
+                                self._the_unit[channel] = None
                         else:
                             self._operator_interface.print_to_console(f'MES response info: {sn}, {sf_res}\n', 'red')
             except Exception as e:
                 self._operator_interface.print_to_console(f'Fail to fixture_query_thr : {str(e)}\n', 'red')
 
+    def _update_sn(self, station_index, sn):
+        self._multi_station_dic[station_index]['SN'] = sn
+        self.send_command(station_index, 'UPDATE_SN', sn)
+
     def _btn_scan_thr(self):
-        while not self._is_exit:
+        while not USER_SHUTDOWN_STATION:
             grp_btn_ab_status = False
             time.sleep(0.05)
-            if not self._query_list.empty():
+            if not self._fixture_query_command.empty() or self._is_major_ctrl_under_testing:
                 continue
-
-            grp = [v for k, v in self._multi_station_dic.items() if v['IsActive']]
-            if (len(grp) > 0  # channel actived ?
-                    and all([c['SN'] is not None for c in grp])  # SN should be set correctly
-                    and all([not c['IsRunning'] for c in grp])):  # Not running
-                grp_btn_ab_status = True  # if so, should change the status for dual start button
-            if grp_btn_ab_status != self.btn_status['DUAL_START']:
-                self._query_list.put(f'dual_btn:{grp_btn_ab_status}')
 
             for k, v in self._multi_station_dic.items():
                 pwr_status = False
                 if not v['IsRunning'] and v['IsActive']:
                     pwr_status = True
                 if pwr_status != self.btn_status[f'PWR_{k}']:
-                    self._query_list.put(f'pwron_status:{k}_{pwr_status}')
+                    self._fixture_query_command.put(f'pwron_status:{k}_{pwr_status}')
+
+            grp = [v for k, v in self._multi_station_dic.items() if v['IsActive']]
+            if (len(grp) > 0
+                    and all([c['SN'] is not None for c in grp])  # SN should be set correctly
+                    and all([not c['IsRunning'] for c in grp])):  # Not running
+                grp_btn_ab_status = True  # if so, should change the status for dual start button
+            if grp_btn_ab_status != self.btn_status['DUAL_START']:
+                self._fixture_query_command.put(f'dual_start:{grp_btn_ab_status}')
+                time.sleep(0.05)
+
             if self._fixture:
                 ready_key = self._fixture.is_ready()
-                if ready_key == 0:
-                    self._query_list.put('start')
+                query_key_cmd_list = {
+                    0: 'dual_start',
+                    3: ('power_on', 'A'),
+                    4: ('power_on', 'B'),
+                    1: ('power_on', 'B'),
+                }
+                if ready_key in query_key_cmd_list:
+                    self._fixture_query_command.put(query_key_cmd_list.get(ready_key))
+                elif ready_key is not None:
+                    self._operator_interface.print_to_console(f'Recv command not handled: {ready_key} \n')
 
     def render_pattern(self, station_index, test_pattern):
         assert station_index in self._multi_station_dic.keys()
@@ -535,14 +567,19 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         self._operator_interface.print_to_console(f'Set DUT {station_index} To Color: {pre_color}.\n')
 
     def close(self):
-        self._is_exit = True
-        # TODO:
-
-        if self._fixture is not None:
+        global USER_SHUTDOWN_STATION
+        USER_SHUTDOWN_STATION = True
+        time.sleep(0.05)
+        try:
             self._fixture.close()
             self._fixture = None
-        self._equipment.close()
-        self._equipment = None
+        except:
+            pass
+        try:
+            self._equipment.close()
+            self._equipment = None
+        except:
+            pass
 
     def _do_test(self, serial_number, test_log):
         # type: (str, test_station.test_log) -> tuple
@@ -563,14 +600,15 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 particles_read_timeout = 0
                 while not isinstance(particles, list) and particles_read_timeout < 10:
                     try:
-                        while os.path.exists(os.path.join(self._station_config.SHARED_DATA_PATH, 'particles.json')):
+                        if os.path.exists(os.path.join(self._station_config.SHARED_DATA_PATH, 'particles.json')):
                             with open(os.path.join(self._station_config.SHARED_DATA_PATH, 'particles.json'), 'r') as f:
                                 particles = json.load(f)['particles']
                     except Exception as e:
                         pass
                     particles_read_timeout += 1
                     time.sleep(0.01)
-                particle_count = int(np.average(particles))
+                if isinstance(particles, list) and len(particles) > 1:
+                    particle_count = int(np.average(particles))
             test_log.set_measured_value_by_name_ex("ENV_ParticleCounter", particle_count)
 
             self._operator_interface.print_to_console("Set Camera Database. %s\n" % self._station_config.CAMERA_SN)
@@ -608,7 +646,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
     def close_test(self, test_log):
         self._overall_result = test_log.get_overall_result()
         self._first_failed_test_result = test_log.get_first_failed_test_result()
-        self._is_under_testing = False
+        self._is_slot_under_testing = False
         return self._overall_result, self._first_failed_test_result
 
     def validate_sn(self, serial_num):

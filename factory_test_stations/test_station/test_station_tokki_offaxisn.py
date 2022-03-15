@@ -140,7 +140,6 @@ class TokkiOffAxisNStation(test_station.TestStation):
         self._overall_errorcode = ''
         try:
             is_screen_on = False
-            self._fixture.flush_data()
             self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
@@ -176,7 +175,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
         except Exception as e:
             self._operator_interface.print_to_console("Test exception {0}.\n".format(e))
         finally:
-            self._operator_interface.print_to_console('release current test resource.\n')
+            self._operator_interface.print_to_console('try to release current test resource.\n')
             # noinspection PyBroadException
             try:
                 if self._the_unit is not None:
@@ -184,8 +183,8 @@ class TokkiOffAxisNStation(test_station.TestStation):
                 if self._fixture is not None:
                     self._fixture.unload()
                     self._fixture.button_disable()
-            except:
-                pass
+            except Exception as e:
+                self._operator_interface.print_to_console(f'Fail to release current resource. {str(e)}')
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
             overall_result, first_failed_test_result = self.close_test(test_log)
 
@@ -257,6 +256,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
 
         timeout_for_dual = time.time()
         try:
+            self._fixture.flush_data()
             self._fixture.button_disable()
             self._fixture.power_on_button_status(True)
             self._the_unit.initialize(com_port=self._station_config.DUT_COMPORT,

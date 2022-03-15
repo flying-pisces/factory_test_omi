@@ -83,6 +83,7 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
         self._verbose = station_config.IS_VERBOSE
         self._start_delimiter = ':'
         self._end_delimiter = '@_@'
+        self._end_delimiter_auto_response = '^_^'
         self._error_msg = r'Please scanf "CMD_HELP" check help command'
         self._particle_counter_client = None  # type: ModbusSerialClient
         self._fixture_mutex = threading.Lock()
@@ -90,7 +91,7 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
     def is_ready(self):
         if self._serial_port is not None:
             with self._fixture_mutex:
-                resp = self._read_response(0.05)
+                resp = self._read_response(0.05, self._end_delimiter_auto_response)
             if resp:
                 btn_dic = {3: r'PowerOn_Button:\d', 1: r'BUTTON_Left:\d', 2: r'BUTTON_Right:\d',
                            0: r'BUTTON:0', 4: r'BUTTON:1'}
@@ -133,12 +134,9 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
             return True
 
     def _write_serial(self, input_bytes):
-        self._serial_port.flush()
         if self._verbose:
-            print("flushed")
             print('writing: ' + input_bytes)
         cmd = '{0}\r\n'.format(input_bytes)
-        self._serial_port.reset_input_buffer()
         bytes_written = self._serial_port.write(cmd.encode())
         return bytes_written
 
@@ -146,10 +144,10 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
         if self._serial_port is not None:
             self._serial_port.flush()
 
-    def _read_response(self, timeout=10):
+    def _read_response(self, timeout=10, end_delimiter='@_@'):
         msg = ''
         tim = time.time()
-        while (not re.search(self._end_delimiter, msg, re.IGNORECASE)
+        while (not re.search(end_delimiter, msg, re.IGNORECASE)
                and (time.time() - tim < timeout)):
             line_in = self._serial_port.readline()
             if line_in != b'':
@@ -159,10 +157,10 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
             if len(response) > 1:
                 pprint.pprint(response)
             else:
-                print('Fail to read any data in {0} seconds. '.format(timeout))
+                print(f'Fail to read any data in {timeout} seconds. elapsed = {time.time() - tim}. {msg}')
         return response
 
-    def read_response(self, timeout=0.5):
+    def read_response(self, timeout=3):
         response = self._read_response(timeout)
         if not response:
             raise TokkiOffAxisNFixtureError('reading data time out ->.')
@@ -200,7 +198,7 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
         """
         with self._fixture_mutex:
             self._write_serial(self._station_config.COMMAND_VERSION)
-            response = self._read_response()
+            response = self.read_response()
         return self._prase_response(r'VERSION:(.+)', response).group(1)
 
     def vacuum(self, on):
@@ -215,7 +213,7 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
         cmd = vacuum_dict[on]
         with self._fixture_mutex:
             self._write_serial(f'{self._station_config.COMMAND_VACUUM_CTRL}:{cmd[0]}')
-            response = self._read_response()
+            response = self.read_response()
         return self._prase_response(cmd[1], response).group(1)
 
     def close(self):
@@ -255,8 +253,6 @@ class TokkiOffAxisNFixture(hardware_station_common.test_station.test_fixture.Tes
         with self._fixture_mutex:
             self._write_serial(CMD_MOVE_STRING)
             response = self.read_response(timeout=5)
-        if self._verbose:
-            print(response)
         return int(self._prase_response(r'ABS_X_Y:(\d+)', response).group(1))
 
     def load(self):
