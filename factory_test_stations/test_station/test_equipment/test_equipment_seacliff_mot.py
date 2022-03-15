@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import csv
 import importlib
+import sys
 
 
 class seacliffmotEquipmentError(Exception):
@@ -38,25 +39,12 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         self.name = "eldim"
         self._verbose = station_config.IS_VERBOSE
         self._station_config = station_config
-        assert hasattr(self._station_config, 'VERSION_REVISION_LIST'), 'Please update config to support multi conoscope'
-        try:
-            eq_list = [(k, v) for k, v in self._station_config.VERSION_REVISION_LIST.items()\
-                    if  self._station_config.VERSION_REVISION_EQUIPMENT in v]
-            if len(eq_list) > 0:
-                cono, __ = eq_list[0]
-                conoscope = importlib.import_module(cono)
-                conoscope.Conoscope.DLL_PATH = self._station_config.CONOSCOPE_DLL_PATH
-                conoscope.Conoscope.VERSION_REVISION = self._station_config.VERSION_REVISION_EQUIPMENT
-                self._device = conoscope.Conoscope(emulate_camera=self._station_config.EQUIPMENT_SIM,
-                                                   emulate_wheel=self._station_config.EQUIPMENT_WHEEL_SIM,
-                                                   semulate_spectro=self._station_config.EQUIPMENT_SPECTRO_SIM)
-        except Exception as e:
-            self._operator_interface.print_to_console(f'Fail to init conoscope. {str(e)}')
 
         self._error_message = self.name + "is out of work"
         self._version = None
         self._config = None
         self._open = None
+        self._conoscope = None
 
     ## Eldim specific return.
     def _log(self, ret, functionName):
@@ -149,11 +137,11 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                 processStateCurrent = processState
                 processStepCurrent = processStep
 
-            if processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Error:
+            if processState == 7:  # Conoscope.CaptureSequenceState.CaptureSequenceState_Error:
                 done = True
                 if self._verbose:
                     print("Error happened")
-            elif processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Done:
+            elif processState == 6:  # conoscope.Conoscope.CaptureSequenceState.CaptureSequenceState_Done:
                 done = True
                 if self._verbose:
                     print("Process Done")
@@ -221,8 +209,8 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
             # assert the initialize status is correct.
             ret = self._device.CmdCaptureSequenceStatus()
             processState = ret['state']
-            if not (processState == Conoscope.CaptureSequenceState.CaptureSequenceState_NotStarted or
-                    processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Done):
+            if not (processState == 0 or  # CaptureSequenceState_NotStarted
+                    processState == 6):  # CaptureSequenceState_Done
                 raise seacliffmotEquipmentError('Fail to CmdMeasureSequence.{0}'.format(processState))
 
             captureSequenceConfig = self._station_config.SEQ_CAP_INIT_CONFIG.copy()
@@ -246,6 +234,26 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
 
     ########### Export ###########
     def initialize(self):
+        conoscope_pth = r'test_station\test_equipment'
+        assert hasattr(self._station_config, 'VERSION_REVISION_LIST'), 'Please update config to support multi conoscope'
+        try:
+            eq_list = [(k, v) for k, v in self._station_config.VERSION_REVISION_LIST.items()
+                       if self._station_config.VERSION_REVISION_EQUIPMENT in v]
+            if len(eq_list) > 0:
+                cono, __ = eq_list[0]
+                sys.path.append(conoscope_pth)
+                self._conoscope = importlib.import_module(cono)
+                self._conoscope.Conoscope.DLL_PATH = self._station_config.CONOSCOPE_DLL_PATH
+                self._conoscope.Conoscope.VERSION_REVISION = self._station_config.VERSION_REVISION_EQUIPMENT
+                self._device = self._conoscope.Conoscope(emulate_camera=self._station_config.EQUIPMENT_SIM,
+                                                         emulate_wheel=self._station_config.EQUIPMENT_WHEEL_SIM,
+                                                         emulate_spectro=self._station_config.EQUIPMENT_SPECTRO_SIM)
+        except ModuleNotFoundError as e:
+            raise seacliffmotEquipmentError(f'Except: {str(e)}, PATH: {conoscope_pth}')
+        except Exception as e:
+            self._operator_interface.print_to_console(f'Fail to init conoscope. {str(e)}')
+            raise seacliffmotEquipmentError(f'Fail to init {str(e)}')
+
         self.get_config()
         self._operator_interface.print_to_console("Initializing Seacliff MOT Equipment \n")
 
