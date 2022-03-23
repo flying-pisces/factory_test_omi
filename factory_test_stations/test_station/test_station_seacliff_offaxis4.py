@@ -90,7 +90,7 @@ class SeacliffOffAxis4StationError(Exception):
 
 class SeacliffOffAxis4Station(test_station.TestStation):
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '4.0.0'
+        self._sw_version = '1.0.0'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
 
@@ -151,9 +151,9 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         # <editor-fold desc="Master">
         try:
             if self._station_config.IS_MULTI_STATION_MANAGER:
-                msg = client_msg(port=self._station_config.MASTER_STATION_PORT,
+                msg = client_msg(port=self._station_config.MULTI_STATION_MANAGER_ADDR[1],
                                  message='00,OPEN',
-                                 ip=self._station_config.MASTER_STATION_IP)
+                                 ip=self._station_config.MULTI_STATION_MANAGER_ADDR[0])
                 online_substation = msg.split(';')
                 self._operator_interface.print_to_console(f'Sub station: {online_substation}')
             if self._station_config.IS_STATION_MASTER:
@@ -227,30 +227,30 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                            < datetime.timedelta(self._station_config.FIXTRUE_PARTICLE_START_DLY)):
                         time.sleep(0.1)
 
-        self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
-        self._equipment.initialize()
         self._is_slot_under_testing = False
         self._shop_floor = ShopFloor()
         threading.Thread(target=self._fixture_query_thr, daemon=True).start()
         threading.Thread(target=self._station_monitor_ctrl_thr, daemon=True).start()  # read particle-counter from device.
         if self._station_config.IS_STATION_MASTER:
-            threading.Thread(target=self._station_master_ctrl_thr, daemon=True).start()  # used for master station.
-            threading.Thread(target=self._btn_scan_thr, daemon=True).start()
-            threading.Thread(target=self._station_slave_ctrl_thr, daemon=True).start()  # used for slave station.
-        else:
-            threading.Thread(target=self._station_slave_ctrl_thr, daemon=True).start()  # used for slave station.
-
-        if self._station_config.IS_STATION_MASTER:
-            server = ThreadedTCPServer(self._station_config.SERV_ADDR, ThreadedTCPRequestHandler)
+            server = ThreadedTCPServer(self._station_config.STATION_MASTER_ADDR, ThreadedTCPRequestHandler)
             server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
             server_thread = threading.Thread(target=server.serve_forever)
             server_thread.daemon = True
             server_thread.start()
+
+            self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
+            self._equipment.initialize()
+            threading.Thread(target=self._station_master_ctrl_thr, daemon=True).start()  # used for master station.
+            threading.Thread(target=self._btn_scan_thr, daemon=True).start()
+
+            threading.Thread(target=self._station_slave_ctrl_thr, daemon=True).start()  # used for slave station.
             threading.Thread(target=self._http_local_client, daemon=True).start()
         else:
+            self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
+            self._equipment.initialize()
+            threading.Thread(target=self._station_slave_ctrl_thr, daemon=True).start()  # used for slave station.
             threading.Thread(target=self._http_local_client, daemon=True).start()
-        # import keyboard
-        # keyboard.add_hotkey('ctrl+q', self._fixture_btn_emulator, ('start',))
+
         self._operator_interface.print_to_console(f'Wait for testing...', 'green')
 
     def _fixture_btn_emulator(self, arg):
@@ -357,6 +357,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         self._work_flow_ctrl_event.set()
                     elif cmd == 'UPDATE_SN':
                         self._operator_interface.update_root_config({'SN': cmd1 if cmd1 else ''})
+                    elif cmd == 'CloseApp':
+                        sys.exit(0)
             except Exception as e:
                 self._operator_interface.print_to_console(f'Fail to slave_ctrl_thr: {str(e)}', 'red')
 
@@ -365,14 +367,17 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             try:
                 if not ms_receive_message_queue.empty():
                     command = ms_receive_message_queue.get()
-                    if self._station_config.IS_VERBOSE:
-                        print(f'station master ctrl thread. {command}\n')
+                    # if self._station_config.IS_VERBOSE:
+                    print(f'station master ctrl thread. {command}\n')
                     if isinstance(command, tuple):  # command get from slave-station
                         ip = command[0]
                         cmd = command[1].get('CMD')
                         arg1 = command[1].get('ARG')
                         station_index = self.trans_ip_2_station_index(ip)
-                        if cmd == 'FinishTest':
+                        if station_index is None:
+                            self._operator_interface.print_to_console(
+                                f'Fail to find {ip} for this master station', 'red')
+                        elif cmd == 'FinishTest':
                             self._multi_station_dic[station_index]['IsRunning'] = False
                             self._the_unit[station_index].screen_off()
                             self._operator_interface.print_to_console(f'Station {station_index} Finished.')
@@ -410,11 +415,10 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 and os.path.isdir(self._station_config.SHARED_DATA_PATH)):
             os_utils.mkdir_p(self._station_config.SHARED_DATA_PATH)
         # save the latest readings from the particle counter to disk, the sub-stations should read it from network-disk.
-
-        while True:
+        while not USER_SHUTDOWN_STATION:
             try:
-                val = self._fixture.particle_counter_read_val()
-                if not val:
+                val = self._fixture.particle_counter_read_val() if self._station_config.FIXTURE_PARTICLE_COUNTER else 0
+                if val is None:
                     continue
                 partical_counter_data.append(val)
                 if len(partical_counter_data) >= partical_counter_data_grp_len:
@@ -568,8 +572,14 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
     def close(self):
         global USER_SHUTDOWN_STATION
+        try:
+            for k, v in self._multi_station_dic.items():
+                if v.get('IP') is not None:
+                    self.send_command(k, 'CloseApp')
+            time.sleep(0.05)
+        except:
+            pass
         USER_SHUTDOWN_STATION = True
-        time.sleep(0.05)
         try:
             self._fixture.close()
             self._fixture = None
