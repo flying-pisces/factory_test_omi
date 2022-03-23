@@ -1,35 +1,9 @@
 """
 Release Note:
 ========================================================
-Version 2.1.3
-2021-12-24 author<elton.tian@myzygroup.com>
--1. update limit base Tokki V0.2.
--2. optimize the timeout for loading DUT.
-
-========================================================
-Version 2.1.2
-2021-8-24 author<elton.tian@myzygroup.com>
--1. Fix multi summary file for same limit file.
-
-========================================================
-Version 2.1.1
-2021-8-16 author<elton.tian@myzygroup.com>
--1. Add spec for summary log.
-
-========================================================
-Version 2.1.0
-2021-7-12 author<elton.tian@myzygroup.com>
--1. export raw data for P1
-
-========================================================
-Version 2.0.3
-2020-10-28 author<elton.tian@myzygroup.com>
--1. add test patterns
-
-========================================================
-Version 1.1.0
-2020-1-18 elton<elton.tian@myzygroup.com>
--1. Init version for OffAxis
+Version 1.0.0
+2022-3-23 elton<elton.tian@myzygroup.com>
+-1. Init version for OffAxis 4 Bank
 """
 ##################################
 # directories
@@ -261,15 +235,15 @@ FULL_TREE_UI = False
 
 IS_MULTI_STATION_MANAGER = False
 IS_STATION_MASTER = True
-MASTER_STATION_IP = '192.168.21.101'
+MASTER_STATION_IP = '192.168.22.131'
 MASTER_STATION_PORT = 6666
-SERV_ADDR = ('192.168.21.101', 9989)
+SERV_ADDR = ('192.168.22.131', 9989)
 SUB_STATION_INFO = {
     'A': {
-        'IP': '192.168.21.101',
+        'IP': '192.168.22.131',
     },
     'B': {
-        'IP': '192.168.21.103',
+        'IP': '192.168.22.133',
     },
 }
 
