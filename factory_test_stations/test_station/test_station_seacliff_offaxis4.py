@@ -145,7 +145,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
     def initialize(self):
         self._operator_interface.update_root_config({'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE)})
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version} SP2\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
         self._operator_interface.update_root_config({'IsStartLoopFromKeyboard': 'false'})
 
         # <editor-fold desc="Master">
@@ -228,9 +228,6 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         time.sleep(0.1)
 
         self._is_slot_under_testing = False
-        self._shop_floor = ShopFloor()
-        threading.Thread(target=self._fixture_query_thr, daemon=True).start()
-        threading.Thread(target=self._station_monitor_ctrl_thr, daemon=True).start()  # read particle-counter from device.
         if self._station_config.IS_STATION_MASTER:
             server = ThreadedTCPServer(self._station_config.STATION_MASTER_ADDR, ThreadedTCPRequestHandler)
             server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
@@ -240,11 +237,15 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
             self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
             self._equipment.initialize()
+            threading.Thread(target=self._fixture_query_thr, daemon=True).start()
+            if self._station_config.IS_MULTI_STATION_MANAGER:
+                threading.Thread(target=self._station_monitor_ctrl_thr,
+                                 daemon=True).start()  # read particle-counter from device.
             threading.Thread(target=self._station_master_ctrl_thr, daemon=True).start()  # used for master station.
             threading.Thread(target=self._btn_scan_thr, daemon=True).start()
-
             threading.Thread(target=self._station_slave_ctrl_thr, daemon=True).start()  # used for slave station.
             threading.Thread(target=self._http_local_client, daemon=True).start()
+            self._shop_floor = ShopFloor()
         else:
             self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
             self._equipment.initialize()
@@ -264,7 +265,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
     def _http_local_client(self):
         local_client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        local_client_sock.connect(self._station_config.SERV_ADDR)
+        local_client_sock.connect(self._station_config.STATION_MASTER_ADDR)
         end_char = b'@_@'
         total_data = b''
         sock_exception = False
@@ -406,9 +407,6 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 time.sleep(0.05)
 
     def _station_monitor_ctrl_thr(self):
-        if not self._station_config.IS_MULTI_STATION_MANAGER:
-            self._operator_interface.print_to_console(f'the particles from be read from local-files.')
-            return
         partical_counter_data = []
         partical_counter_data_grp_len = 10
         if not (os.path.exists(self._station_config.SHARED_DATA_PATH)
@@ -431,7 +429,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 time.sleep(0.1)
 
     def _fixture_query_thr(self):
-        while True:
+        while not USER_SHUTDOWN_STATION:
             time.sleep(0.01)
             try:
                 if self._fixture_query_command.empty():
@@ -447,6 +445,14 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     else:
                         self._fixture.power_on_button_status(False, bk_mode=cmd1)
                     self.btn_status[f'PWR_{cmd1}'] = cmd2
+                elif isinstance(cmd, str) and re.match('vacuum_status:[A|B]_(?:true|false)', cmd, re.I | re.S):
+                    cmd1 = cmd.split(':')[1].split('_')[0]
+                    cmd2 = cmd.split(':')[1].split('_')[1].lower() in ['true']
+                    if cmd2:
+                        self._fixture.vacuum(True, bk_mode=cmd1)
+                    else:
+                        self._fixture.vacuum(False, bk_mode=cmd1)
+                    self.btn_status[f'VACCUM_{cmd1}'] = cmd2
                 elif isinstance(cmd, str) and re.match('dual_start:(?:true|false)', cmd, re.I | re.S):
                     cmd1 = cmd.split(':')[1].lower() in ['true']
                     if cmd1:
@@ -460,6 +466,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     # self._fixture.load()  # carry the DUTs to the expected position automatically.
                     self._fixture_query_command.put('pwron_status:A_False')
                     self._fixture_query_command.put('pwron_status:B_False')
+                    self._fixture_query_command.put('vacuum_status:A_False')
+                    self._fixture_query_command.put('vacuum_status:B_False')
                     self._fixture_query_command.put(f'dual_start_post')
                 elif cmd == 'dual_start_post':
                     for k, v in self._multi_station_dic.items():
@@ -495,12 +503,12 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         sf_res = self._shop_floor.ok_to_test(serial_number=sn)
                         if sf_res is True or (isinstance(sf_res, tuple) and sf_res[0]):
                             self._fixture.vacuum(False, channel)
-                            if channel in self._station_config.DUT_ETH_PROXY_ADDR:
-                                v = self._station_config.DUT_ETH_PROXY_ADDR[channel]
+                            if channel in self._station_config.DUT_ADDR:
+                                v = self._station_config.DUT_ADDR[channel]
                                 self._the_unit[channel] = projectDut(sn, self._station_config, self._operator_interface)
                                 if not self._station_config.DUT_SIM:
                                     self._the_unit[channel] = pancakeDut(sn, self._station_config, self._operator_interface)
-                                self._the_unit[channel].initialize(eth_addr=v)
+                                self._the_unit[channel].initialize(eth_addr=v['eth'], com_port=v['com'])
                             pw_res = self._the_unit[channel].screen_on(ignore_err=True)
                             if pw_res is True:
                                 self._update_sn(channel, sn)
@@ -545,17 +553,28 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 time.sleep(0.05)
 
             if self._fixture:
-                ready_key = self._fixture.is_ready()
+                key_ret_info = self._fixture.is_ready()
                 query_key_cmd_list = {
                     0: 'dual_start',
                     3: ('power_on', 'A'),
                     4: ('power_on', 'B'),
                     1: ('power_on', 'B'),
                 }
-                if ready_key in query_key_cmd_list:
-                    self._fixture_query_command.put(query_key_cmd_list.get(ready_key))
-                elif ready_key is not None:
-                    self._operator_interface.print_to_console(f'Recv command not handled: {ready_key} \n')
+                err_msg_list = {
+                    (0, 1): 'Axis Z running error',
+                    (0, 2): 'This command is cancel by operator',
+                    (0, 3): 'DUT transfer is timeout',
+                    (0, 4): 'Signal from sensor (Door/Grating) is error',
+                    (0, 5): 'Signal from sensor (pressing plate) is not triggered',
+                }
+                if isinstance(key_ret_info, tuple):
+                    ready_key, ready_code = key_ret_info
+                    if ready_key in query_key_cmd_list and ready_code == 0:
+                        self._fixture_query_command.put(query_key_cmd_list.get(ready_key))
+                    elif key_ret_info in err_msg_list:
+                        self._operator_interface.print_to_console(f'Please note: {err_msg_list[key_ret_info]} .\n')
+                    else:
+                        self._operator_interface.print_to_console(f'Recv command not handled: {ready_key} \n')
 
     def render_pattern(self, station_index, test_pattern):
         assert station_index in self._multi_station_dic.keys()
@@ -619,6 +638,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     time.sleep(0.01)
                 if isinstance(particles, list) and len(particles) > 1:
                     particle_count = int(np.average(particles))
+                else:
+                    self._operator_interface.print_to_console(f'Fail to read particles. data = {particles} \n')
             test_log.set_measured_value_by_name_ex("ENV_ParticleCounter", particle_count)
 
             self._operator_interface.print_to_console("Set Camera Database. %s\n" % self._station_config.CAMERA_SN)

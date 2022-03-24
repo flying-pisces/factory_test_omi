@@ -27,9 +27,16 @@ SERIAL_NUMBER_MODEL_NUMBER = r'^\dPRP[\w|\d]{10}$'  # Peak panel SN
 FIXTURE_PARTICLE_ADDR = 1
 
 DUT_ETH_PROXY = True
-DUT_ETH_PROXY_ADDR = {
-    'A': ('192.168.21.131', 6000),
-    'B': ('192.168.21.133', 6000)}
+DUT_ADDR = {
+    'A': {
+        'eth': ('192.168.21.131', 6000),
+        'com': '',
+    },
+    'B': {
+        'eth': ('192.168.21.133', 6000),
+        'com': ''
+    }
+}
 
 TIMEOUT_FOR_BTN_IDLE = 10
 

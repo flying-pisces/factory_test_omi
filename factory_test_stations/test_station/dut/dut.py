@@ -52,7 +52,7 @@ class DutEthernetCommunicationProxy(object):
         if self._sock is not None:
             self._sock.close()
 
-    def readline(self, timeout=1):
+    def readline(self, timeout=0.05):
         import io
         self._sock.settimeout(timeout)
         data = b''

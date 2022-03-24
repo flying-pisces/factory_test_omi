@@ -92,16 +92,15 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
             self._fixture_mutex.release()
             if resp:
                 print(resp)
-                btn_dic = {4: r'PowerOn_Button_R:\d',
-                           3: r'PowerOn_Button_L:\d',
-                           2: r'BUTTON_LEFT:\d',
-                           1: r'BUTTON_RIGHT:\d',
-                           0: r'BUTTON:0',
-                           99: r'BUTTON:1'}
+                btn_dic = {4: r'PowerOn_Button_R:(\d+)',
+                           3: r'PowerOn_Button_L:(\d+)',
+                           2: r'BUTTON_LEFT:(\d+)',
+                           1: r'BUTTON_RIGHT:(\d+)',
+                           0: r'BUTTON:(\d+)'}
                 for key, item in btn_dic.items():
-                    items = list(filter(lambda r: re.match(item, r, re.I), resp))
+                    items = list(filter(lambda r: re.search(item, r, re.I | re.S), resp))
                     if items:
-                        return key
+                        return key, int(re.search(item, items[0], re.I | re.S).group(1))
 
     def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing offaxis Fixture\n")
