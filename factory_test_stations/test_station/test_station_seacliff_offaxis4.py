@@ -359,7 +359,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     elif cmd == 'UPDATE_SN':
                         self._operator_interface.update_root_config({'SN': cmd1 if cmd1 else ''})
                     elif cmd == 'CloseApp':
-                        sys.exit(0)
+                        self._operator_interface.close_application()
             except Exception as e:
                 self._operator_interface.print_to_console(f'Fail to slave_ctrl_thr: {str(e)}', 'red')
 
@@ -492,8 +492,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         self._update_sn(channel, None)
                         self._the_unit[channel] = None
                         continue
-                    sn = datetime.datetime.now().strftime('%m%d%H%M%S')
-                    # sn = self._fixture.scan_code(self.fixture_scanner_ports[channel])
+                    # sn = datetime.datetime.now().strftime('%m%d%H%M%S')
+                    sn = self._fixture.scan_code(self.fixture_scanner_ports[channel])
                     if not isinstance(sn, str) or 'ERROR' in sn:
                         self._operator_interface.print_to_console(f'Unable to scan code for station: {sn}\n', 'red')
                         continue
