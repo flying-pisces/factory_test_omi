@@ -421,7 +421,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 partical_counter_data.append(val)
                 if len(partical_counter_data) >= partical_counter_data_grp_len:
                     with open(os.path.join(self._station_config.SHARED_DATA_PATH, 'particles.json'), 'w') as f:
-                        json.dump(f, {'particles': partical_counter_data}, indent=2)
+                        json.dump({'particles': partical_counter_data}, f, indent=2)
                     partical_counter_data.clear()
             except SeacliffOffAxis4FixtureError as e:
                 self._operator_interface.print_to_console(f'Fail to read particle count {str(e)}', 'red')
