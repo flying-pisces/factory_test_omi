@@ -1,7 +1,7 @@
 """
 Release Note:
 ========================================================
-Version 3.0.0
+Version 1.0.0
 2022-2-18 elton<elton.tian@myzygroup.com>
 -1. Init version for OffAxisN
 """
