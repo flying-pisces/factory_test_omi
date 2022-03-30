@@ -116,9 +116,11 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
         self._multi_station_dic = dict([(k, {
             'SN': None,
+            'IsPWR': False,
             'IP': None,
             'IsRunning': False,
             'IsActive': False,
+            'IsAutoScanCode': False,
         }) for k in self._station_config.SUB_STATION_INFO.keys()])
 
         self.btn_status = {
@@ -327,12 +329,16 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             self._mutex.release()
 
     def _station_slave_ctrl_thr(self):
-        active_status_bak = None
+        status_bak = None
         while not USER_SHUTDOWN_STATION:
             time.sleep(0.05)
-            if active_status_bak is None or active_status_bak != self._station_config.IS_STATION_ACTIVE:
-                active_status_bak = self._station_config.IS_STATION_ACTIVE
-                self.__append_local_client_msg_q('ActiveStatus', active_status_bak)
+            current_status = {'active_status': self._station_config.IS_STATION_ACTIVE,
+                              'auto_scan_code': self._station_config.AUTO_SCAN_CODE}
+            if not self._station_config.AUTO_SCAN_CODE:
+                current_status['ui_serial_number'] = self._operator_interface.current_serial_number()
+            if current_status != status_bak:
+                self.__append_local_client_msg_q('StatusChange', current_status)
+                status_bak = current_status
             try:
                 if not self._major_ctrl_queue.empty():
                     command = self._major_ctrl_queue.get()
@@ -392,8 +398,12 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                             x, y = tuple([int(c) for c in arg1.split(',')])
                             self._fixture.mov_abs_xy(x, y)
                             self.send_command(station_index, 'MovToPosAck')
-                        elif cmd == 'ActiveStatus' and isinstance(arg1, bool):
-                            self._multi_station_dic[station_index]['IsActive'] = arg1
+                        elif cmd == 'StatusChange' and isinstance(arg1, dict):
+                            self._multi_station_dic[station_index]['IsAutoScanCode'] = arg1.get('auto_scan_code')
+                            self._multi_station_dic[station_index]['IsActive'] = arg1.get('active_status')
+                            if arg1.get('auto_scan_code') is False and 'ui_serial_number' in arg1:
+                                self._multi_station_dic[station_index]['SN'] = arg1.get('ui_serial_number')
+
                         # elif cmd == 'start_loop':  # master ---> master
                         #     self._is_under_testing = True
                         #     sn = self._multi_station_dic['A']['SN']
@@ -486,16 +496,20 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     if not self._multi_station_dic[channel]['IsActive']:
                         continue
                     assert channel in self._station_config.SUB_STATION_INFO.keys()
-                    if self._multi_station_dic[channel]['SN'] is not None:
+                    if self._multi_station_dic[channel]['SN'] is not None and self._multi_station_dic[channel]['IsPWR']:
                         self._the_unit[channel].screen_off()
                         self._the_unit[channel] = None
-                        self._update_sn(channel, None)
+                        if self._multi_station_dic[channel]['IsAutoScanCode'] is True:
+                            self._update_sn(channel, None)
                         self._the_unit[channel] = None
+                        self._multi_station_dic[channel]['IsPWR'] = False
                         continue
-                    # sn = datetime.datetime.now().strftime('%m%d%H%M%S')
-                    sn = self._fixture.scan_code(self.fixture_scanner_ports[channel])
+                    if self._multi_station_dic[channel]['IsAutoScanCode'] is True:
+                        sn = self._fixture.scan_code(self.fixture_scanner_ports[channel])
+                    else:
+                        sn = self._multi_station_dic[channel]['SN']
                     if not isinstance(sn, str) or 'ERROR' in sn:
-                        self._operator_interface.print_to_console(f'Unable to scan code for station: {sn}\n', 'red')
+                        self._operator_interface.print_to_console(f'Unable to scan code Station:{channel} --> SN:{sn}\n', 'red')
                         continue
                     if not self.validate_sn(serial_num=sn):
                         self._operator_interface.print_to_console(f'Fail to validate Serial Number : {sn}\n', 'red')
@@ -511,6 +525,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                                 self._the_unit[channel].initialize(eth_addr=v['eth'], com_port=v['com'])
                             pw_res = self._the_unit[channel].screen_on(ignore_err=True)
                             if pw_res is True:
+                                self._multi_station_dic[channel]['IsPWR'] = True
                                 self._update_sn(channel, sn)
                                 self._operator_interface.print_to_console(f'Set SN {sn} to slot_{channel}.')
                                 if all([v['SN'] is not None for k, v in self._multi_station_dic.items() if v['IsActive']]):
@@ -545,7 +560,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
             grp = [v for k, v in self._multi_station_dic.items() if v['IsActive']]
             if (len(grp) > 0
-                    and all([c['SN'] is not None for c in grp])  # SN should be set correctly
+                    and all([c['SN'] is not None and c['IsPWR'] for c in grp])  # SN should be set correctly
                     and all([not c['IsRunning'] for c in grp])):  # Not running
                 grp_btn_ab_status = True  # if so, should change the status for dual start button
             if grp_btn_ab_status != self.btn_status['DUAL_START']:
