@@ -7,6 +7,7 @@ STATION_LIMITS_ARRAYS = [
     ["DUT_ScreenOnRetries", 0, 5, 83],
     ["DUT_ScreenOnStatus", True, True, 84],
     ["DUT_CancelByOperator", False, False, 85],
+    ["DUT_ModuleType", None, None, 86],
 
     ["Audit_P1", None, float('inf'), 91001],
     ["Audit_P2", None, float('inf'), 91002],

@@ -22,7 +22,6 @@ import collections
 import math
 import csv
 import serial
-from scipy import interpolate
 
 
 class seacliffVidStationError(Exception):
@@ -284,6 +283,7 @@ class seacliffVidStation(test_station.TestStation):
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
             test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
+            test_log.set_measured_value_by_name_ex("DUT_ModuleType", self._panel_left_or_right)
 
             uni_file_name = re.sub('_x.log', '', test_log.get_filename())
             capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
@@ -380,8 +380,9 @@ class seacliffVidStation(test_station.TestStation):
                                         and len(self._station_config.CALIB_DATA[p_name]) >= 2):
                                     x = [c for c, __ in self._station_config.CALIB_DATA[p_name]]
                                     y = [c for __, c in self._station_config.CALIB_DATA[p_name]]
-                                    p = interpolate.interp1d(x, y, copy=True, bounds_error=False)
-                                    mean_zz = p(mean_z)
+                                    # TODO:
+                                    p = np.polyfit(x, y, deg=1)
+                                    mean_zz = np.polyval(p, mean_z)
                                 else:
                                     mean_zz == mean_z
                                 self._operator_interface.print_to_console(f'Interp1d to {pattern_name}_{p_name} '
