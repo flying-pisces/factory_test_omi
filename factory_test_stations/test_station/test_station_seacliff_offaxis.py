@@ -60,7 +60,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._pthr_monitor = None
 
     def initialize(self):
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
         self._operator_interface.update_root_config({'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE)})
         # <editor-fold desc="port configuration automatically">
         cfg = 'station_config_seacliff_offaxis.json'

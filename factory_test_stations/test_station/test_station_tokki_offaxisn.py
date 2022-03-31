@@ -56,7 +56,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
         self.fixture_particle_port = None
 
     def initialize(self):
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
         # <editor-fold desc="port configuration automatically">
         cfg = 'station_config_tokki_offaxisn.json'
         station_config = {

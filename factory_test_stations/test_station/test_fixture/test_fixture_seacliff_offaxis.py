@@ -83,6 +83,7 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
         self._verbose = station_config.IS_VERBOSE
         self._start_delimiter = ':'
         self._end_delimiter = '@_@'
+        self._end_delimiter_auto_response = '^_^'
         self._error_msg = r'Please scanf "CMD_HELP" check help command'
         self._particle_counter_client = None  # type: ModbusSerialClient
         self._fixture_mutex = threading.Lock()
@@ -90,7 +91,7 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
     def is_ready(self):
         if self._serial_port is not None:
             with self._fixture_mutex:
-                resp = self._read_response(0.05)
+                resp = self._read_response(0.05, end_delimiter=self._end_delimiter_auto_response)
             if resp:
                 btn_dic = {3: r'PowerOn_Button:\d', 1: r'BUTTON_Left:\d', 2: r'BUTTON_Right:\d',
                            0: r'BUTTON:0', 4: r'BUTTON:1'}
@@ -147,10 +148,10 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
         if self._serial_port is not None:
             self._serial_port.flush()
 
-    def _read_response(self, timeout=10):
+    def _read_response(self, timeout=10, end_delimiter='@_@'):
         msg = ''
         tim = time.time()
-        while (not re.search(self._end_delimiter, msg, re.IGNORECASE)
+        while (not re.search(end_delimiter, msg, re.IGNORECASE)
                and (time.time() - tim < timeout)):
             line_in = self._serial_port.readline()
             if line_in != b'':
@@ -159,7 +160,7 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
         if self._verbose:
             if len(response) > 1:
                 pprint.pprint(response)
-            else:
+            elif end_delimiter not in [self._end_delimiter_auto_response]:
                 print('Fail to read any data in {0} seconds. '.format(timeout))
         return response
 
