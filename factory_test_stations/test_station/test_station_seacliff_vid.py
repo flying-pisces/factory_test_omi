@@ -22,6 +22,7 @@ import collections
 import math
 import csv
 import serial
+from scipy import interpolate
 
 
 class seacliffVidStationError(Exception):
@@ -162,8 +163,8 @@ class seacliffVidStation(test_station.TestStation):
                     ready_status = self._fixture.is_ready()
                 if ready_status is not None:
                     if ready_status in [0x10, 0x11]:  # load DUT automatically and then screen on
-                        if ((ready_status == 0x10 and self._panel_left_or_right == 'L') or
-                                (ready_status == 0x11 and self._panel_left_or_right == 'R')):
+                        if ((self._panel_left_or_right == 'L') or
+                                (self._panel_left_or_right == 'R')):
                             ready = True  # Start to test.
                             self._is_screen_on_by_op = True
                             if self._retries_screen_on == 0:
@@ -253,6 +254,7 @@ class seacliffVidStation(test_station.TestStation):
         if self._the_unit is None:
             raise test_station.TestStationProcessControlError(f'Fail to query dual_start for DUT {serial_number}.')
         self._probe_con_status = True
+        time.sleep(1)
         # if not self._station_config.FIXTURE_SIM:
         #     self._probe_con_status = self._fixture.query_probe_status() == 0
 
@@ -283,7 +285,8 @@ class seacliffVidStation(test_station.TestStation):
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
             test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
-            test_log.set_measured_value_by_name_ex("DUT_ModuleType", self._panel_left_or_right)
+
+            test_log.set_measured_value_by_name_ex('DUT_ModuleType', self._panel_left_or_right)
 
             uni_file_name = re.sub('_x.log', '', test_log.get_filename())
             capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
@@ -380,13 +383,13 @@ class seacliffVidStation(test_station.TestStation):
                                         and len(self._station_config.CALIB_DATA[p_name]) >= 2):
                                     x = [c for c, __ in self._station_config.CALIB_DATA[p_name]]
                                     y = [c for __, c in self._station_config.CALIB_DATA[p_name]]
-                                    # TODO:
-                                    p = np.polyfit(x, y, deg=1)
-                                    mean_zz = np.polyval(p, mean_z)
+                                    p = interpolate.interp1d(x, y, copy=True, bounds_error=False)
+                                    mean_zz = p(mean_z)
                                 else:
                                     mean_zz == mean_z
+                                mean_zz = mean_z
                                 self._operator_interface.print_to_console(f'Interp1d to {pattern_name}_{p_name} '
-                                                                          f'{mean_z} ---> {mean_zz}')
+                                                                          f'{mean_z} ---> {mean_zz}\n')
                                 test_log.set_measured_value_by_name_ex(f'{pattern_name}_{p_name}', mean_zz)
                         del image_x, image_y, image_z, image_a, raw_x, raw_y, raw_z, raw_a
                         del maskx, masky, maskxy, maskxy_position

@@ -273,8 +273,8 @@ class seacliffVidFixture(hardware_station_common.test_station.test_fixture.TestF
         @return:
         """
         module_typ_cmd = {
-            'L': 'L',
-            'R': 'R'
+            'L': 'R',
+            'R': 'L'
         }
         assert dut_type in module_typ_cmd
         self._write_serial(f'{self._station_config.COMMAND_LOAD}_{module_typ_cmd[dut_type]}')
@@ -283,7 +283,7 @@ class seacliffVidFixture(hardware_station_common.test_station.test_fixture.TestF
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
             raise seacliffVidFixtureError('fail to send command. %s' % response)
 
-    def load_position(self, dut_type='L'):
+    def load_position(self, dut_type):
         """
         set the mode for  carrier loader
         @return:

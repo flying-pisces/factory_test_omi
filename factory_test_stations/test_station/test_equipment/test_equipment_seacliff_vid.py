@@ -54,8 +54,8 @@ class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.T
         self._rxLib.SaveRay.argtypes = ctypes.c_char_p,
 
         self._export_list = {
-            'Depth3D_ViewVirtualUndistorted_To_Virtual_AfterSettings': 80,
-            'Depth3D_ViewVirtualUndistorted_To_Object_AfterSettings': 81,
+            # 'Depth3D_ViewVirtualUndistorted_To_Virtual_AfterSettings': 80,
+            # 'Depth3D_ViewVirtualUndistorted_To_Object_AfterSettings': 81,
             'Depth3D_ViewVirtualUndistorted_To_Reference_AfterSettings': 82,
             # 'Depth3D_ViewObjectOrthographic_To_Virtual_AfterSettings': 83,
             # 'Depth3D_ViewObjectOrthographic_To_Object_AfterSettings': 84,
