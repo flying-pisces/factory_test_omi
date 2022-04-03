@@ -300,7 +300,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.2.5{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.2.6{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -397,6 +397,7 @@ class seacliffmotStation(test_station.TestStation):
             'R_x_corrected': 4, 'R_y_corrected': 4,
             'G_x_corrected': 3, 'G_y_corrected': 4,
             'B_x_corrected': 3, 'B_y_corrected': 4,
+            'Instantaneous % of On-axis': 3,
         }
         if item in test_log.results_array():
             test_log.set_measured_value_by_name(item, value)
