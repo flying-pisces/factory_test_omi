@@ -183,7 +183,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             StationCommunicationProxy._communication_proxy_name = self._station_config.PROXY_COMMUNICATION_PATH
             StationCommunicationProxy.run_daemon_application()
             time.sleep(6)
-            self._serial_port = StationCommunicationProxy()
+            self._serial_port = StationCommunicationProxy(kwargs.get('proxy_port'))
         else:
             self._serial_port = serial.Serial(kwargs.get('fixture_port'),
                                               115200,

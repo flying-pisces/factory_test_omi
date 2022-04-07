@@ -335,7 +335,9 @@ class seacliffmotStation(test_station.TestStation):
                     yyds = np.array(json.load(jf))
                     self._eep_data_from_npy = dict(zip(yyds[:, 0], yyds[:, 1:]))
 
-            self._fixture.initialize(fixture_port=self.fixture_port, particle_port=self.fixture_particle_port)
+            self._fixture.initialize(fixture_port=self.fixture_port,
+                                     particle_port=self.fixture_particle_port,
+                                     proxy_port=self._station_config.PROXY_ENDPOINT)
             self._equipment.initialize()
             self._equipment.open()
         except Exception as e:
