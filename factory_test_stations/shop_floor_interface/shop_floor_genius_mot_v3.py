@@ -1,5 +1,5 @@
 __author__ = 'elton.tian'
-__version__ = '3.0.1'
+__version__ = '3.0.2'
 """
 Change List:
 0.0.1:  Init Version, 
@@ -12,6 +12,7 @@ Change List:
 2.0.0： new schema for MOT V1.2.1
 3.0.0： new schema for MOT V1.2.4
 3.0.1： add items for MOT V1.2.5
+3.0.2： add items for MOT V1.2.6
 """
 
 # !/usr/bin/env python
@@ -39,7 +40,7 @@ import psutil
 MES_IT_MAIL_NOTIFICATION = True
 
 MES_RECV_MAIL_LIST = ['Rays.wang@gseo.com', ]
-MES_CC_MAIL_LIST = ['Allen.Chiang@gseo.com', 'gladys.lin@gseo.com', ]
+MES_CC_MAIL_LIST = ['Allen.Chiang@gseo.com', 'Hill.wang@gseo.com', ]
 
 # MES_RECV_MAIL_LIST = ['elton.tian@myzygroup.com', ]
 # MES_CC_MAIL_LIST = []
@@ -64,7 +65,7 @@ SF_LOADER_URL = 'http://192.168.100.96:8012/LoaderWS/Service/SummaryLoader.asmx?
 SF_MAIL_URL = 'http://192.168.100.96:8011/MailWS/GseoWS.asmx?WSDL'
 MES_CHK_OFFLINE = {}
 
-SW_VERSION = '1.2.5'
+SW_VERSION = '1.2.6'
 
 class ShopFloorError(Exception):
     pass
@@ -75,7 +76,7 @@ class ShopFloor_genius(object):
         self._machine_type = machine_type
         self._station_id = station_id
         self._headers = {'Content-Type': 'application/json'}
-        self._time_out = 5  # timeout for web-service.
+        self._time_out = 3  # timeout for web-service.
         self._max_retries = 3
 
         # <editor-fold desc="LOG_2_MES">
@@ -238,7 +239,10 @@ class ShopFloor_genius(object):
             "NOR_WHTDOT_WP_G_TO_DDIC": "normal_WhiteDot_WP G to DDIC",
             "NOR_WHTDOT_WP_B_TO_DDIC": "normal_WhiteDot_WP B to DDIC",
             "COMPENSATION_DISPCEN_X_DISP": "COMPENSATION_DispCen_x_display",
-            "COMPENSATION_DISPCEN_Y_DISP": "COMPENSATION_DispCen_y_display"
+            "COMPENSATION_DISPCEN_Y_DISP": "COMPENSATION_DispCen_y_display",
+            "NOR_W255_LU_TMP_INS_ON_AXIS": "normal_W255_Luminance Temporal Instantaneous % of On-axis",
+            "NOR_W255_LU_GRD_INS_ON_AXIS": "normal_W255_Luminance Ground Instantaneous % of On-axis",
+            "NOR_W255_LU_SKY_INS_ON_AXIS": "normal_W255_Luminance Sky Instantaneous % of On-axis",
         }
         # </editor-fold>
 
@@ -279,7 +283,7 @@ class ShopFloor_genius(object):
         while count < self._max_retries and (not success):
             try:
                 client = suds.client.Client(SF_URL, timeout=self._time_out)
-                res = client.service.GetInLotInfo(self._machine_type, uut_sn, '', '', '')
+                res = client.service.GetInLotInfo(self._machine_type, uut_sn, self._station_id, '', '')
                 if hasattr(res, 'STATUS') and (res.STATUS == 'SUCCESS'):
                     success = True
             except Exception as e:
