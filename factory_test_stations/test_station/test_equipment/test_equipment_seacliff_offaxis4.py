@@ -5,6 +5,7 @@ import clr
 
 clr.AddReference('System.Drawing')
 clr.AddReference('System')
+clr.AddReference('System.Collections')
 from System.Collections.Generic import List
 import System
 
@@ -86,16 +87,9 @@ class SeacliffOffAxis4Equipment(hardware_station_common.test_station.test_equipm
 
     def serialnumber(self):
         response = json.loads(self._device.GetCameraSerial())
-        sn = "Camera Serial Number: {0}".format(response['CameraSerial'])
         if self._verbose:
-            print(sn)
-        return
-
-    def getsn(self, channel=0):
-        response = self._device.ReadSerialNumber(channel)
-        if self._verbose:
-            pprint.pprint(response)
-        return
+            print(f"Camera Serial Number: {response}")
+        return response.get('CameraSerial')
 
     def version(self):
         if self._version is None:
@@ -110,10 +104,10 @@ class SeacliffOffAxis4Equipment(hardware_station_common.test_station.test_equipm
     def initialize(self):
         response = self._device.InitializeCamera(self._station_config.CAMERA_SN, False, True)
         pres = json.loads(response)
-        init_result = "Init Camera Result - ErrorCode: {0}".format(pres['ErrorCode'])  # 0 means return successful
+        init_result = 'SUCCESS' in pres.get('ErrorCode').upper()
         if self._verbose:
             pprint.pprint(response)
-        return init_result
+        return init_result, pres
 
     def close(self):
         response = self._device.CloseCommunication()

@@ -230,6 +230,15 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         time.sleep(0.1)
 
         self._is_slot_under_testing = False
+
+        conoscope_sn = 'None' if not self._station_config.EQUIPMENT_SIM else 'Demo'
+        conoscope_sn_count = 5
+        while re.match(r'^none$', conoscope_sn, re.I | re.S) and conoscope_sn_count > 0:
+            conoscope_sn = self._equipment.serialnumber()
+            conoscope_sn_count -= 1
+            time.sleep(0.2)
+        self._station_config.CAMERA_SN = conoscope_sn
+        self._operator_interface.print_to_console("Initialize Camera SN = %s\n" % self._station_config.CAMERA_SN)
         if self._station_config.IS_STATION_MASTER:
             server = ThreadedTCPServer(self._station_config.STATION_MASTER_ADDR, ThreadedTCPRequestHandler)
             server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
@@ -237,8 +246,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             server_thread.daemon = True
             server_thread.start()
 
-            self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
-            self._equipment.initialize()
+            equ_res, equ_msg = self._equipment.initialize()
             threading.Thread(target=self._fixture_query_thr, daemon=True).start()
             if self._station_config.IS_MULTI_STATION_MANAGER:
                 threading.Thread(target=self._station_monitor_ctrl_thr,
@@ -249,11 +257,12 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             threading.Thread(target=self._http_local_client, daemon=True).start()
             self._shop_floor = ShopFloor()
         else:
-            self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
-            self._equipment.initialize()
+            equ_res, equ_msg = self._equipment.initialize()
             threading.Thread(target=self._station_slave_ctrl_thr, daemon=True).start()  # used for slave station.
             threading.Thread(target=self._http_local_client, daemon=True).start()
 
+        if not equ_res:
+            raise SeacliffOffAxis4StationError(f'Fail to init the conoscope: {equ_msg}')
         self._operator_interface.print_to_console(f'Wait for testing...', 'green')
 
     def _fixture_btn_emulator(self, arg):
