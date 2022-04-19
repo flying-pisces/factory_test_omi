@@ -1,3 +1,15 @@
+"""
+Release Note:
+========================================================
+Version 1.0.1
+2022-2-22 elton<elton.tian@myzygroup.com>
+-1. Change the schema for ROI to (cent_x, cent_y, half_w, half_h)
+
+========================================================
+Version 1.0.0
+2022-2-22 elton<elton.tian@myzygroup.com>
+-1. Init version for VID
+"""
 ##################################
 # directories
 #
@@ -13,7 +25,7 @@ CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-tes
 # serial number codes
 #
 SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = '^[\w]{13,14}$'  # Fake model number requirement, need config. re.regex
+SERIAL_NUMBER_MODEL_NUMBER = '^\w{14}$'  # Fake model number requirement, need config. re.regex
 
 FIXTURE_COMPORT = 'COM2'
 DUT_COMPORT = "COM1"
@@ -97,27 +109,28 @@ TEST_ITEM_PATTERNS = [
     # {'name': 'Audit', 'pattern': 1},
 ]
 
+# schema (cent_x, cent_y, half_w, half_h)
 TEST_ITEM_POS = {
     'G180':
         {
             'ROI':
                 {
-                    'P1': (-10, -61, 86, 9),
-                    'P2': (-40, 270, 43, 364),
-                    'P4': (427, -79, 515, 5),
-                    'P6': (-25, -470, 64, -360),
-                    'P8': (-497, -71, -400, -0),
+                    'P1': (38.0, -26.0, 48.0, 35.0),
+                    'P2': (1.5, 317.0, 41.5, 47.0),
+                    'P4': (471.0, -37.0, 44.0, 42.0),
+                    'P6': (19.5, -415.0, 44.5, 55.0),
+                    'P8': (-448.5, -35.5, 48.5, 35.5),
                 }
         },
     'G255':
         {
             'ROI':
                 {
-                    'P1': (-10, -61, 86, 9),
-                    'P2': (-40, 270, 43, 364),
-                    'P4': (427, -79, 515, 5),
-                    'P6': (-25, -470, 64, -360),
-                    'P8': (-497, -71, -400, -0),
+                    'P1': (38.0, -26.0, 48.0, 35.0),
+                    'P2': (1.5, 317.0, 41.5, 47.0),
+                    'P4': (471.0, -37.0, 44.0, 42.0),
+                    'P6': (19.5, -415.0, 44.5, 55.0),
+                    'P8': (-448.5, -35.5, 48.5, 35.5),
                 }
         },
     # 'R255':
@@ -157,11 +170,11 @@ TEST_ITEM_POS = {
 }
 
 CALIB_DATA = {
-    'P1': [(1, 1), (1, 1), (2, 2)],
-    'P2': [(1, 1), (1, 1), (2, 2)],
-    'P4': [(1, 1), (1, 1), (2, 2)],
-    'P6': [(1, 1), (1, 1), (2, 2)],
-    'P8': [(1, 1), (1, 1), (2, 2)],
+    'P1': [(0, 0), (1, 1), (2, 2)],
+    'P2': [(0, 0), (1, 1), (2, 2)],
+    'P4': [(0, 0), (1, 1), (2, 2)],
+    'P6': [(0, 0), (1, 1), (2, 2)],
+    'P8': [(0, 0), (1, 1), (2, 2)],
 }
 
 ##################################
