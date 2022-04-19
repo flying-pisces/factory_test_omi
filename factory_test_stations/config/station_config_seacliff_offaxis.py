@@ -5,6 +5,8 @@ Version 2.1.5
 2022-3-9 author<elton.tian@myzygroup.com>
 -1. add support for auto-scanner
 -2. change project name from pancake to seacliff
+-3. read SN for conoscope  automatically.
+-4. skip the testing while DUT is not able to lit up.
 
 ========================================================
 Version 2.1.4

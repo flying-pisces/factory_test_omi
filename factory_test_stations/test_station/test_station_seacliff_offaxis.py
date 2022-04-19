@@ -60,7 +60,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._pthr_monitor = None
 
     def initialize(self):
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP2\n")
         self._operator_interface.update_root_config({'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE)})
         # <editor-fold desc="port configuration automatically">
         cfg = 'station_config_seacliff_offaxis.json'
@@ -125,8 +125,19 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._the_unit.initialize(eth_addr=self._station_config.DUT_ETH_PROXY_ADDR,
                                   com_port=self._station_config.DUT_COMPORT)
 
+        conoscope_sn = 'None' if not self._station_config.EQUIPMENT_SIM else 'Demo'
+        conoscope_sn_count = 5
+        while re.match(r'^none$', conoscope_sn, re.I | re.S) and conoscope_sn_count > 0:
+            conoscope_sn = self._equipment.serialnumber()
+            conoscope_sn_count -= 1
+            time.sleep(0.2)
+        self._station_config.CAMERA_SN = conoscope_sn
         self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
-        self._equipment.initialize()
+        equ_res, equ_msg = self._equipment.initialize()
+        if not equ_res:
+            raise SeacliffOffAxisStationError(f'Fail to init the conoscope: {equ_msg}')
+
+        self._operator_interface.print_to_console(f'Wait for testing...', 'green')
         self._pthr_monitor = threading.Thread(target=self._btn_monitor_thr, daemon=True)
         self._pthr_monitor.start()
 
@@ -284,7 +295,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
                     continue
                 if self._station_config.IS_VERBOSE:
                     print(f'Fixture signal {ready_status}...\n')
-                if ready_status == 0x00 and scan_sn:  # load DUT automatically and then screen on
+                if ready_status == 0x00 and scan_sn and power_on_trigger:  # load DUT automatically and then screen on
                     self._is_screen_on_by_op = True
                     self._operator_interface.active_start_loop(scan_sn)
                     self._is_running = True
@@ -295,10 +306,13 @@ class SeacliffOffAxisStation(test_station.TestStation):
                         scan_sn = self._fixture.scan_code(self.fixture_scanner_port)
                         if scan_sn and test_station.TestStation.validate_sn(self, scan_sn):
                             self._operator_interface.update_root_config({'SN': scan_sn})
-                            if self._the_unit.screen_on(ignore_err=True):
+                            res_screen_on = self._the_unit.screen_on(ignore_err=True)
+                            if res_screen_on is True:
                                 self._fixture.power_on_button_status(False)
                                 self._fixture.button_enable()
                                 power_on_trigger = True
+                            else:
+                                self._operator_interface.print_to_console(f'Fail to power on the DUT. {res_screen_on}', 'red')
                         else:
                             self._operator_interface.print_to_console(f'Fail to scan code. {scan_sn}', 'red')
                     else:
