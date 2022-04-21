@@ -105,7 +105,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         self._ttxm_filelist = []
         self._is_slot_under_testing = False
         self._local_ctrl_queue = Queue(maxsize=0)
-        self._work_flow_ctrl_event = threading.Event()
+        self._work_flow_ctrl_event = threading.Semaphore(value=0)
+
         self._work_flow_ctrl_event_err_msg = None
         self._fixture_query_command = Queue(maxsize=0)
         self._shop_floor = None  # type: ShopFloor
@@ -147,7 +148,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
     def initialize(self):
         self._operator_interface.update_root_config({'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE)})
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
         self._operator_interface.update_root_config({'IsStartLoopFromKeyboard': 'false'})
 
         # <editor-fold desc="Master">
@@ -358,19 +359,18 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     self._work_flow_ctrl_event_err_msg = cmd_err
                     cmd1 = command.get('ARG')
                     if cmd == 'NextPatternAck':
-                        self._work_flow_ctrl_event.set()
+                        self._work_flow_ctrl_event.release()
                     if cmd == 'MovToPosAck':
-                        self._work_flow_ctrl_event.set()
+                        self._work_flow_ctrl_event.release()
                     elif cmd == 'FinishTestAck':
                         # TODO:
                         # 等待关闭DUT与MES 数据上传
-                        self._work_flow_ctrl_event.set()
+                        self._work_flow_ctrl_event.release()
                     elif cmd == 'start_loop' and isinstance(cmd1, str):
+                        self._operator_interface.print_to_console(f'Receive Start Loop: {cmd1}')
                         self._is_slot_under_testing = True
-                        self._work_flow_ctrl_event.clear()
                         self._operator_interface.update_root_config({'SN': cmd1})
                         self._operator_interface.active_start_loop(cmd1)
-                        self._work_flow_ctrl_event.set()
                     elif cmd == 'UPDATE_SN':
                         self._operator_interface.update_root_config({'SN': cmd1 if cmd1 else ''})
                     elif cmd == 'CloseApp':
@@ -689,7 +689,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             overall_result, first_failed_test_result = self.close_test(test_log)
 
             self.__append_local_client_msg_q('FinishTest')
-            self._work_flow_ctrl_event.wait()
+            self._work_flow_ctrl_event.acquire()
             self._operator_interface.print_to_console(
                 f'release current test resource. {self._work_flow_ctrl_event_err_msg}\n',
                 'red' if self._work_flow_ctrl_event_err_msg else None)
@@ -783,10 +783,10 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
                 self._equipment.set_database(databaseFileName)
 
-            self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
-            self.__append_local_client_msg_q('MovToPos', f'{pos[0]},{pos[1]}')
-            self._work_flow_ctrl_event.wait()
-            # self._fixture.mov_abs_xy(pos[0], pos[1])
+            if self._station_config.IS_STATION_MASTER:
+                self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
+                self.__append_local_client_msg_q('MovToPos', f'{pos[0]},{pos[1]}')
+                self._work_flow_ctrl_event.acquire()
 
             center_item = self._station_config.CENTER_AT_POLE_AZI
             lv_cr_items = {}
@@ -797,7 +797,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                                                               .format(test_pattern, posIdx))
                     continue
                 self.__append_local_client_msg_q('NextPattern', f'{test_pattern}')
-                self._work_flow_ctrl_event.wait()
+                self._work_flow_ctrl_event.acquire()
+
                 if self._work_flow_ctrl_event_err_msg:
                     raise SeacliffOffAxis4StationError(
                         f'Fail to show next pattern {test_pattern}. {self._work_flow_ctrl_event_err_msg}')
