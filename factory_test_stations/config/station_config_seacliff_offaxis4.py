@@ -4,6 +4,8 @@ Release Note:
 Version 1.0.0
 2022-3-23 elton<elton.tian@myzygroup.com>
 -1. Init version for OffAxis 4 Bank
+-2. fix error: the semaphore for multi-station is not reset correctly.
+-3. backup the raw data automatically.
 """
 ##################################
 # directories
@@ -169,6 +171,7 @@ SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqx
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
+ANALYSIS_RELATIVEPATH_BAK = r'factory-test_logs'
 
 FOCUS_DISTANCE = 0.45
 APERTURE = 8.0

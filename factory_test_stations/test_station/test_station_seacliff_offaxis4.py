@@ -261,10 +261,47 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             equ_res, equ_msg = self._equipment.initialize()
             threading.Thread(target=self._station_slave_ctrl_thr, daemon=True).start()  # used for slave station.
             threading.Thread(target=self._http_local_client, daemon=True).start()
-
+        threading.Thread(target=self._auto_backup_thr, daemon=True).start()
         if not equ_res:
             raise SeacliffOffAxis4StationError(f'Fail to init the conoscope: {equ_msg}')
         self._operator_interface.print_to_console(f'Wait for testing...', 'green')
+
+    def data_backup(self, source_path, target_path):
+        if not os.path.exists(target_path):
+            os.makedirs(target_path)
+        if os.path.exists(source_path):
+            for root, dirs, files in os.walk(source_path):
+                for file in files:
+                    src_file = os.path.join(root, file)
+                    shutil.move(src_file, target_path)
+
+    # backup the raw data automatically
+    def _auto_backup_thr(self):
+        raw_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
+        bak_dir = raw_dir
+        if hasattr(self._station_config, 'ANALYSIS_RELATIVEPATH_BAK'):
+            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH_BAK, 'raw')
+        ex_file_list = []
+        while not USER_SHUTDOWN_STATION and not os.path.samefile(bak_dir, raw_dir):
+            if self._is_slot_under_testing:
+                time.sleep(0.5)
+                continue
+
+            uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
+                           if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
+            # backup all the raw data which is created about 8 hours ago.
+            uut_raw_dir_old = [c for c, d in uut_raw_dir if time.time() - d > 3600*8]
+            if len(uut_raw_dir_old) <= 0:
+                time.sleep(1)
+                continue
+            n1 = uut_raw_dir_old[-1]
+            try:
+                self.data_backup(os.path.join(raw_dir, n1), os.path.join(os.path.join(bak_dir, n1)))
+
+                shutil.rmtree(os.path.join(raw_dir, n1))
+            except Exception as e:
+                ex_file_list.append(n1)
+                self._operator_interface.print_to_console(f'Fail to backup file to {bak_dir}. Exp = {str(e)}')
 
     def _fixture_btn_emulator(self, arg):
         self._operator_interface.print_to_console(f'emulator signal for dual-start: {self._is_slot_under_testing}')
