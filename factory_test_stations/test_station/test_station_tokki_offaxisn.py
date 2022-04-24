@@ -603,7 +603,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
                                                self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
                         raw_data_dir = os.path.join(bak_dir, uni_file_name)
                         if not os.path.exists(raw_data_dir):
-                            os.mkdir(raw_data_dir)
+                            hsc_utils.mkdir_p(raw_data_dir)
 
                         export_fn = test_log.get_filename().replace('_x.log', f'_raw_export_{posIdx}.csv')
                         with open(os.path.join(raw_data_dir, export_fn), 'w') as f:

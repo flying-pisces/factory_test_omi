@@ -17,7 +17,6 @@ from test_station.dut.dut import projectDut, DUTError
 from hardware_station_common.test_station.test_log.shop_floor_interface.shop_floor import ShopFloor
 import hardware_station_common.utils as hsc_utils
 from hardware_station_common.utils.io_utils import round_ex
-import hardware_station_common.utils.os_utils as os_utils
 import types
 import glob
 import sys
@@ -467,7 +466,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         partical_counter_data_grp_len = 10
         if not (os.path.exists(self._station_config.SHARED_DATA_PATH)
                 and os.path.isdir(self._station_config.SHARED_DATA_PATH)):
-            os_utils.mkdir_p(self._station_config.SHARED_DATA_PATH)
+            hsc_utils.mkdir_p(self._station_config.SHARED_DATA_PATH)
         # save the latest readings from the particle counter to disk, the sub-stations should read it from network-disk.
         while not USER_SHUTDOWN_STATION:
             try:
@@ -1032,7 +1031,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     try:
                         raw_data_dir = os.path.join(os.path.dirname(test_log.get_file_path()), 'raw')
                         if not os.path.exists(raw_data_dir):
-                            os.mkdir(raw_data_dir)
+                            hsc_utils.mkdir_p(raw_data_dir)
 
                         export_fn = test_log.get_filename().replace('_x.log', f'_raw_export_{posIdx}.csv')
                         with open(os.path.join(raw_data_dir, export_fn), 'w') as f:
