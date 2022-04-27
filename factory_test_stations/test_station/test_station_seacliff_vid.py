@@ -54,7 +54,7 @@ class seacliffVidStation(test_station.TestStation):
         self._panel_left_or_right = None
         self._latest_serial_number = None
         self._fixture_port = None
-        self._sw_version = '0.0.1'
+        self._sw_version = '1.0.1'
 
     def initialize(self):
         try:
@@ -112,7 +112,7 @@ class seacliffVidStation(test_station.TestStation):
             self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def z_corr(self, zr):
-        return 10180 * np.power(zr, -0.2526) - 1823
+        return 2048.9721 - 7.0908132 * zr + 7.0908132 * (zr - 114.571) ** 2 - 0.0001626 * (zr - 114.571) ** 3
 
     def xy_correlation(self, xr, yr, zr):
         # coefficient-X = 0.1853898 + 0.0009405*WD
@@ -380,7 +380,7 @@ class seacliffVidStation(test_station.TestStation):
                         if not os.path.exists(os.path.dirname(exp_csv_fn)):
                             os_utils.mkdir_p(os.path.dirname(exp_csv_fn))
                         with open(exp_csv_fn, 'w', newline='') as csv_file:
-                            field_names = ['x', 'y', 'z', 'a', 'x_e', 'y_e', 'z_e', 'dd_x', 'dd_y']
+                            field_names = ['x', 'y', 'z', 'a', 'x_e', 'y_e', 'z_e', 'dd_x', 'dd_y', 'dd_z']
                             writer = csv.writer(csv_file, dialect='excel')
                             writer.writerow(field_names)
                             if len(raw_z) > 0 and self._station_config.CALIB_Z_BY_STATION_SW:
@@ -388,8 +388,12 @@ class seacliffVidStation(test_station.TestStation):
                                 x_e, y_e = self.xy_correlation(raw_x, raw_y, z_e)
                                 dd_x = np.hypot(x_e, z_e)
                                 dd_y = np.hypot(y_e, z_e)
-                                writer.writerows(tuple(zip(raw_x, raw_y, raw_z, raw_a, x_e, y_e, z_e, dd_x, dd_y)))
-                                mean_z = np.mean(dd_x)
+                                dd_z = (x_e**2 + y_e**2 + z_e**2)**0.5
+                                writer.writerows(tuple(zip(raw_x, raw_y, raw_z, raw_a, x_e, y_e, z_e, dd_x, dd_y, dd_z)))
+                                if p_name in self._station_config.RAW_HOT_FIX:
+                                    mean_z = np.mean(z_e)
+                                else:
+                                    mean_z = np.mean(dd_z)
                                 if (p_name in self._station_config.CALIB_DATA
                                         and len(self._station_config.CALIB_DATA[p_name]) >= 2):
                                     x = [c for c, __ in self._station_config.CALIB_DATA[p_name]]

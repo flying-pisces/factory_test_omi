@@ -4,6 +4,8 @@ Release Note:
 Version 1.0.1
 2022-2-22 elton<elton.tian@myzygroup.com>
 -1. Change the schema for ROI to (cent_x, cent_y, half_w, half_h)
+-2. Apply the hot-fix for X/Y,
+-3. Change the distance for all the points except P1 to sqrt(x**2+y**2+z**2)
 
 ========================================================
 Version 1.0.0
@@ -108,6 +110,9 @@ TEST_ITEM_PATTERNS = [
     #
     # {'name': 'Audit', 'pattern': 1},
 ]
+
+# use original HotFix
+RAW_HOT_FIX = ['P1']
 
 # schema (cent_x, cent_y, half_w, half_h)
 TEST_ITEM_POS = {
