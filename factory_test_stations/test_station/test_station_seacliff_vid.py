@@ -58,7 +58,7 @@ class seacliffVidStation(test_station.TestStation):
 
     def initialize(self):
         try:
-            self._operator_interface.print_to_console("Initializing seacliff vid station...\n")
+            self._operator_interface.print_to_console(f"Initializing seacliff vid station...{self._sw_version}SP1\n")
             # <editor-fold desc="port configuration automatically">
             cfg = 'station_config_seacliff_vid.json'
             station_config = {
@@ -112,7 +112,7 @@ class seacliffVidStation(test_station.TestStation):
             self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def z_corr(self, zr):
-        return 2048.9721 - 7.0908132 * zr + 7.0908132 * (zr - 114.571) ** 2 - 0.0001626 * (zr - 114.571) ** 3
+        return 2048.9721 - 7.0908132 * zr + 0.0377074 * (zr - 114.571) ** 2 - 0.0001626 * (zr - 114.571) ** 3
 
     def xy_correlation(self, xr, yr, zr):
         # coefficient-X = 0.1853898 + 0.0009405*WD
