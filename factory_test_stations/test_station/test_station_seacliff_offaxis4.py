@@ -735,9 +735,42 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             return overall_result, first_failed_test_result
 
     def close_test(self, test_log):
+        result_array = test_log.results_array()
+        save_pnl_dic = self._station_config.SAVE_PNL_IF_FAIL
+        ui_msg = {
+            'LA': 'L (左眼)',
+            'RA': 'R (右眼)'
+        }
+        test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', '')
         self._overall_result = test_log.get_overall_result()
+        # modified the test result if ok_for_left/right
+        if not self._overall_result and set(ui_msg.keys()).issubset(save_pnl_dic.keys()):
+            save_pnl_dic_left = [result_array[c].did_pass() for c in save_pnl_dic['LA']]
+            save_pnl_dic_right = [result_array[c].did_pass() for c in save_pnl_dic['RA']]
+            ext_ctl_val = None
+            if (False in save_pnl_dic_left) and (False not in save_pnl_dic_right):
+                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'LA')
+                ext_ctl_val = 'LA'
+            elif (False not in save_pnl_dic_left) and (False in save_pnl_dic_right):
+                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'RA')
+                ext_ctl_val = 'RA'
+            else:
+                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'FAIL')
+                ext_ctl_val = 'FAIL'
+            if ext_ctl_val in ui_msg.keys():
+                test_log.get_overall_result()
+                self._overall_result = True
+                test_log._overall_did_pass = True
+                test_log._overall_error_code = 0
+                self._operator_interface.update_root_config({'ResultMsgEx': ui_msg[ext_ctl_val]})
+            if not self._overall_result and len([k for k, v in result_array.items()
+                                                 if v.get_measured_value() is None]) > 0:
+                raise test_station.TestStationProcessControlError(f'Fail to test this DUT. 测试产品失败， 请重新测试')
+        else:
+            test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'AA')
+            self._operator_interface.update_root_config({'ResultMsgEx': 'L/R(左/右眼)'})
+
         self._first_failed_test_result = test_log.get_first_failed_test_result()
-        self._is_slot_under_testing = False
         return self._overall_result, self._first_failed_test_result
 
     def validate_sn(self, serial_num):
