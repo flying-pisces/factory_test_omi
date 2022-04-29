@@ -192,7 +192,7 @@ DUT_DISPLAYSLEEPTIME = 0.025
 IS_VERBOSE = False
 IS_PRINT_TO_LOG = False
 MPKAPI_RELATIVEPATH = r"C:\Program Files\Radiant Vision Systems\TrueTest 1.7\MPK_API.dll"
-SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_202220122_DOE.seqxc'
+SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqxc'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 ANALYSIS_RELATIVEPATH = r'factory-test_logs'
@@ -267,8 +267,8 @@ CR_TEST_PATTERNS = ['W255', 'W000']
 CENTER_AT_POLE_AZI = 'P_0_0'
 
 SAVE_PNL_IF_FAIL = {
-    'LA': [],
-    'RA': [],
+    'LA': ['P1_W255_duv_15_0', 'P1_R255_duv_15_0', 'P1_G255_duv_15_0', 'P1_B255_duv_15_0'],
+    'RA': ['P1_W255_duv_15_180', 'P1_R255_duv_15_180', 'P1_G255_duv_15_180', 'P1_B255_duv_15_180'],
 }
 
 BRIGHTNESS_AT_POLE_AZI = [(0, 0),
@@ -299,9 +299,10 @@ USE_WORKORDER_ENTRY = False
 
 IS_STATION_ACTIVE = True
 STATION_TYPE = 'seacliff_offaxis'
-STATION_NUMBER = '0002'
+STATION_NUMBER = '0003'
 SHOPFLOOR_SYSTEM = ''
 AUTO_SCAN_CODE = True
+SW_TITLE = 'FactoryTestOMI - OFFAXIS'                                     
 
 DATA_COLLECT_ONLY = False
 EQUIPMENT_DEMO_DATABASE = r'C:\ShareData\OffAxis'
