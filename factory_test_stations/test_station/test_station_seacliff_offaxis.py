@@ -60,7 +60,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._pthr_monitor = None
 
     def initialize(self):
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP2\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP3\n")
         self._operator_interface.update_root_config({'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE)})
         # <editor-fold desc="port configuration automatically">
         cfg = 'station_config_seacliff_offaxis.json'
@@ -401,7 +401,6 @@ class SeacliffOffAxisStation(test_station.TestStation):
                         self._operator_interface.print_to_console(
                             'Cancel start signal from dual %s.\n' % int(time.time() - timeout_for_dual))
                     self._the_unit.close()
-                    self._the_unit = None
             except:
                 pass
             self._operator_interface.prompt('')
