@@ -14,6 +14,7 @@ from test_station.test_fixture.test_fixture_project_station import projectstatio
 from test_station.test_equipment.test_equipment_seacliff_offaxis import SeacliffOffAxisEquipment, SeacliffOffAxisEquipmentError
 from test_station.dut.dut import projectDut, DUTError
 import hardware_station_common.utils as hsc_utils
+from hardware_station_common.test_station.test_log.shop_floor_interface.shop_floor import ShopFloor
 from hardware_station_common.utils.io_utils import round_ex
 import types
 import glob
@@ -58,10 +59,15 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._is_running = False
         self._closed = False
         self._pthr_monitor = None
+        self._shop_floor: ShopFloor = None
 
     def initialize(self):
         self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP3\n")
-        self._operator_interface.update_root_config({'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE)})
+        self._operator_interface.update_root_config(
+            {
+                'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE),
+                'ShowLogin': 'True',
+             })
         # <editor-fold desc="port configuration automatically">
         cfg = 'station_config_seacliff_offaxis.json'
         station_config = {
@@ -140,6 +146,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._operator_interface.print_to_console(f'Wait for testing...', 'green')
         self._pthr_monitor = threading.Thread(target=self._btn_monitor_thr, daemon=True)
         self._pthr_monitor.start()
+        self._shop_floor = ShopFloor()
 
     def close(self):
         self._closed = True
@@ -714,3 +721,22 @@ class SeacliffOffAxisStation(test_station.TestStation):
 
             del lv_all_items
         self._operator_interface.print_to_console('complete the off_axis test items.\n')
+
+    def login(self, active, usr, pwd):
+        login_success = False
+        if not active:
+            self._operator_interface.update_root_config({'IsUsrLogin': 'False'})
+            self._station_config.FACEBOOK_IT_ENABLED = False
+            login_success = True
+        else:
+            try:
+                login_msg = self._shop_floor.login(usr, pwd)
+                if (login_msg is True) or (isinstance(login_msg, tuple) and login_msg[0] is True):
+                    self._operator_interface.update_root_config({'IsUsrLogin': 'True'})
+                    self._station_config.FACEBOOK_IT_ENABLED = True
+                    login_success = True
+                else:
+                    self._operator_interface.print_to_console(f'Fail to login usr:{usr}, Data = {login_msg}')
+            except Exception as e:
+                self._operator_interface.print_to_console(f'Fail to login usr:{usr}, Except={str(e)}')
+        return login_success

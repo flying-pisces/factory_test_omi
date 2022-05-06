@@ -57,6 +57,11 @@ class TokkiOffAxisNStation(test_station.TestStation):
 
     def initialize(self):
         self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
+        self._operator_interface.update_root_config(
+        {
+            'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE),
+            'ShowLogin': 'True',
+        })
         # <editor-fold desc="port configuration automatically">
         cfg = 'station_config_tokki_offaxisn.json'
         station_config = {
@@ -316,7 +321,6 @@ class TokkiOffAxisNStation(test_station.TestStation):
                         self._operator_interface.print_to_console(
                             'Cancel start signal from dual %s.\n' % int(time.time() - timeout_for_dual))
                     self._the_unit.close()
-                    self._the_unit = None
             except:
                 pass
             self._operator_interface.prompt('')
@@ -630,3 +634,22 @@ class TokkiOffAxisNStation(test_station.TestStation):
 
             del lv_all_items
         self._operator_interface.print_to_console('complete the off_axis test items.\n')
+
+    def login(self, active, usr, pwd):
+        login_success = False
+        if not active:
+            self._operator_interface.update_root_config({'IsUsrLogin': 'False'})
+            self._station_config.FACEBOOK_IT_ENABLED = False
+            login_success = True
+        else:
+            try:
+                login_msg = self._shop_floor.login(usr, pwd)
+                if (login_msg is True) or (isinstance(login_msg, tuple) and login_msg[0] is True):
+                    self._operator_interface.update_root_config({'IsUsrLogin': 'True'})
+                    self._station_config.FACEBOOK_IT_ENABLED = True
+                    login_success = True
+                else:
+                    self._operator_interface.print_to_console(f'Fail to login usr:{usr}, Data = {login_msg}')
+            except Exception as e:
+                self._operator_interface.print_to_console(f'Fail to login usr:{usr}, Except={str(e)}')
+        return login_success
