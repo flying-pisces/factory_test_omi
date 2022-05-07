@@ -20,7 +20,7 @@ Version 1.0.0
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
-RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
+# RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\VID_summary'
 
 ##################################
@@ -138,22 +138,22 @@ TEST_ITEM_POS = {
         {
             'ROI':
                 {
-                    'P1': (38.0, -26.0, 48.0, 35.0),
-                    'P2': (1.5, 317.0, 41.5, 47.0),
-                    'P4': (471.0, -37.0, 44.0, 42.0),
-                    'P6': (19.5, -415.0, 44.5, 55.0),
-                    'P8': (-448.5, -35.5, 48.5, 35.5),
+                    'P1': (26.5, -65.5, 91.0, 80.0),
+                    'P2': (24.0, 301.5, 91.5, 84),
+                    'P4': (502.5, -60.0, 77.0, 86.5),
+                    'P6': (31.0, -446.5, 93.0, 89.0),
+                    'P8': (-435.0, -61.0, 103.5, 84.0),
                 }
         },
     'G255':
         {
             'ROI':
                 {
-                    'P1': (38.0, -26.0, 48.0, 35.0),
-                    'P2': (1.5, 317.0, 41.5, 47.0),
-                    'P4': (471.0, -37.0, 44.0, 42.0),
-                    'P6': (19.5, -415.0, 44.5, 55.0),
-                    'P8': (-448.5, -35.5, 48.5, 35.5),
+                    'P1': (26.5, -65.5, 91.0, 80.0),
+                    'P2': (24.0, 301.5, 91.5, 84),
+                    'P4': (502.5, -60.0, 77.0, 86.5),
+                    'P6': (31.0, -446.5, 93.0, 89.0),
+                    'P8': (-435.0, -61.0, 103.5, 84.0),
                 }
         },
     # 'R255':
@@ -246,6 +246,7 @@ DUT_SIM = False
 EQUIPMENT_SIM = False
 FIXTURE_SIM = False
 
+SW_TITLE = 'FactoryTestOMI - SVID'
 STATION_TYPE = 'seacliff_vid'
 STATION_NUMBER = '0001'
 
