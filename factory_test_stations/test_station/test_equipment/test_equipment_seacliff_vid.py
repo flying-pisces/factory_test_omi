@@ -120,10 +120,14 @@ class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.T
     def initialize(self):
         self._operator_interface.print_to_console("Initializing seacliff Vid Equipment.\n")
         self._camera_sn = None
-        res, __ = self._parse_result(self._rxLib.InitLFSystem())
-        if self._station_config.EQUIPMENT_SIM:
+
+        if self._station_config.EQUIPMENT_SIM is True:
+            self._camera_sn = 'SIM'
+        elif self._station_config.EQUIPMENT_SIM is 0x01:
+            res, __ = self._parse_result(self._rxLib.InitLFSystem())
             self._camera_sn = 'SIM'
         else:
+            res, __ = self._parse_result(self._rxLib.InitLFSystem())
             res, __ = self._parse_result(self._rxLib.BindConnectedCamera())
             res, sn_msg = self._parse_result(self._rxLib.GetCameraSerialNumber())
             self._camera_sn = sn_msg.get(self._k_message)

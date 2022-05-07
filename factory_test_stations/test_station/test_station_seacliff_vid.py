@@ -54,11 +54,11 @@ class seacliffVidStation(test_station.TestStation):
         self._panel_left_or_right = None
         self._latest_serial_number = None
         self._fixture_port = None
-        self._sw_version = '0.0.1'
+        self._sw_version = '1.0.1'
 
     def initialize(self):
         try:
-            self._operator_interface.print_to_console("Initializing seacliff vid station...\n")
+            self._operator_interface.print_to_console(f"Initializing seacliff vid station...{self._sw_version}SP1\n")
             # <editor-fold desc="port configuration automatically">
             cfg = 'station_config_seacliff_vid.json'
             station_config = {
@@ -100,20 +100,26 @@ class seacliffVidStation(test_station.TestStation):
         self._fixture.close()
         self._fixture = None
 
-    def chk_and_set_measured_value_by_name(self, test_log, item, value):
+    def chk_and_set_measured_value_by_name(self, test_log, item, value, value_msg=None):
         """
-
         :type test_log: test_station.TestRecord
         """
         if item in test_log.results_array():
             test_log.set_measured_value_by_name(item, value)
             did_pass = test_log.get_test_by_name(item).did_pass()
-            self._operator_interface.update_test_value(item, value, 1 if did_pass else -1)
-        # else:
-        #     pprint.pprint(item)
+            if value_msg is None:
+                value_msg = value
+            self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def z_corr(self, zr):
-        return 10180 * np.power(zr, -0.2526) - 1823
+        return 2048.9721 - 7.0908132 * zr + 0.0377074 * (zr - 114.571) ** 2 - 0.0001626 * (zr - 114.571) ** 3
+
+    def xy_correlation(self, xr, yr, zr):
+        # coefficient-X = 0.1853898 + 0.0009405*WD
+        # coefficient-Y = 0.223108 + 0.0010064*WD
+        coeff_x = 0.1853898 + 0.0009405*zr
+        coeff_y = 0.223108 + 0.0010064*zr
+        return coeff_x * xr, coeff_y * yr
 
     def _query_dual_start(self):
         serial_number = self._latest_serial_number
@@ -263,7 +269,7 @@ class seacliffVidStation(test_station.TestStation):
         latest_pattern_value_bak = None
         cpu_count = mp.cpu_count()
         cpu_count_used = self._station_config.TEST_CPU_COUNT
-        self._pool = mp.Pool(cpu_count_used, limit_cpu)
+        # self._pool = mp.Pool(cpu_count_used, limit_cpu)
         try:
             self._operator_interface.print_to_console(f"Initialize Test condition.={cpu_count_used}/{cpu_count}.. \n")
             self._operator_interface.print_to_console(
@@ -327,7 +333,10 @@ class seacliffVidStation(test_station.TestStation):
                 self._operator_interface.print_to_console(f'capture image for pattern: {pattern_name}\n')
                 if not os.path.exists(os.path.join(capture_path, 'exp')):
                     os_utils.mkdir_p(os.path.join(capture_path, 'exp'))
-                self._equip.do_measure_and_export(pattern_name, capture_path)
+                if self._station_config.EQUIPMENT_SIM is True:
+                    pass
+                else:
+                    self._equip.do_measure_and_export(pattern_name, capture_path)
 
             self._operator_interface.print_to_console(f'post image processed.\n')
             for pattern_name, pattern_config in self._station_config.TEST_ITEM_POS.items():
@@ -342,22 +351,26 @@ class seacliffVidStation(test_station.TestStation):
                 img = imread(os.path.join(capture_path, fn))
                 roi_items = pattern_config['ROI']
                 with np.errstate(divide='ignore', invalid='ignore'):
-                    for p_name, roi in roi_items.items():
-                        self._operator_interface.print_to_console(f'parse data {p_name}: {roi} \n')
-                        x_tl, y_tl, x_br, y_br = roi
+                    for loc_name, roi in roi_items.items():
+                        self._operator_interface.print_to_console(f'parse data {loc_name}: {roi} \n')
+                        p_name = self._station_config.SENSIBLE_TEXT[self._panel_left_or_right].get(loc_name)
+                        if p_name is None:
+                            self._operator_interface.print_to_console(f'setting alter {loc_name}\n', 'red')
+                            continue
+                        cent_x, cent_y, half_w, half_h = roi
                         image_x = np.array(img[:, :, 0])
                         image_y = np.array(img[:, :, 1])
                         image_z = np.array(img[:, :, 2])
                         image_a = np.array(img[:, :, 3])
-                        maskx = np.where([image_x >= x_tl, image_x <= x_br], 1, 0)
-                        masky = np.where([image_y >= y_tl, image_y <= y_br], 1, 0)
+                        maskx = np.where([image_x >= cent_x - half_w, image_x <= cent_x + half_w], 1, 0)
+                        masky = np.where([image_y >= cent_y - half_h, image_y <= cent_y + half_h], 1, 0)
                         maskx = np.multiply(maskx[0], maskx[1])
                         masky = np.multiply(masky[0], masky[1])
 
                         # maskx = np.zeros(image_x.shape)
                         # masky = np.zeros(image_y.shape)
-                        # maskx[x_tl:x_br, :] = 1
-                        # masky[:, y_tl:y_br] = 1
+                        # maskx[cent_x:half_w, :] = 1
+                        # masky[:, cent_y:half_h] = 1
                         # maskx = np.multiply(maskx, np.where(image_x != np.nan, 1, 0))
                         # masky = np.multiply(masky, np.where(image_y != np.nan, 1, 0))
 
@@ -367,30 +380,38 @@ class seacliffVidStation(test_station.TestStation):
                         raw_y = image_y[maskxy_position]
                         raw_z = image_z[maskxy_position]
                         raw_a = image_a[maskxy_position]
-                        exp_csv_fn = os.path.join(capture_path, 'exp', f'{pattern_name}_{p_name}.csv')
+                        exp_csv_fn = os.path.join(capture_path, 'exp', f'{pattern_name}_{p_name}_{loc_name}.csv')
                         if not os.path.exists(os.path.dirname(exp_csv_fn)):
                             os_utils.mkdir_p(os.path.dirname(exp_csv_fn))
                         with open(exp_csv_fn, 'w', newline='') as csv_file:
-                            field_names = ['x', 'y', 'z', 'a']
+                            field_names = ['x', 'y', 'z', 'a', 'x_e', 'y_e', 'z_e', 'dd_x', 'dd_y', 'dd_z']
                             writer = csv.writer(csv_file, dialect='excel')
                             writer.writerow(field_names)
                             if len(raw_z) > 0 and self._station_config.CALIB_Z_BY_STATION_SW:
-                                raw_z = self.z_corr(raw_z)
-                            writer.writerows(tuple(zip(raw_x, raw_y, raw_z, raw_a)))
-                            if len(raw_z) > 0:
-                                mean_z = io_utils.round_ex(np.mean(raw_z), 2)
-                                if (p_name in self._station_config.CALIB_DATA
-                                        and len(self._station_config.CALIB_DATA[p_name]) >= 2):
-                                    x = [c for c, __ in self._station_config.CALIB_DATA[p_name]]
-                                    y = [c for __, c in self._station_config.CALIB_DATA[p_name]]
-                                    p = interpolate.interp1d(x, y, copy=True, bounds_error=False)
-                                    mean_zz = p(mean_z)
+                                z_e = self.z_corr(raw_z)
+                                x_e, y_e = self.xy_correlation(raw_x, raw_y, z_e)
+                                dd_x = np.hypot(x_e, z_e)
+                                dd_y = np.hypot(y_e, z_e)
+                                dd_z = (x_e**2 + y_e**2 + z_e**2)**0.5
+                                writer.writerows(tuple(zip(raw_x, raw_y, raw_z, raw_a, x_e, y_e, z_e, dd_x, dd_y, dd_z)))
+                                if loc_name in self._station_config.RAW_HOT_FIX:
+                                    mean_z = np.mean(z_e)
                                 else:
-                                    mean_zz == mean_z
-                                mean_zz = mean_z
-                                self._operator_interface.print_to_console(f'Interp1d to {pattern_name}_{p_name} '
-                                                                          f'{mean_z} ---> {mean_zz}\n')
-                                test_log.set_measured_value_by_name_ex(f'{pattern_name}_{p_name}', mean_zz)
+                                    mean_z = np.mean(dd_z)
+                                calib_data = self._station_config.CALIB_DATA.get(self._panel_left_or_right)
+                                if (isinstance(calib_data, dict) and loc_name in calib_data
+                                        and len(calib_data[loc_name]) >= 2):
+                                    x = [c for c, __ in calib_data[loc_name]]
+                                    y = [c for __, c in calib_data[loc_name]]
+                                    p = np.polyfit(x, y, 1)
+                                    mean_zz = np.polyval(p, mean_z)
+                                else:
+                                    mean_zz = mean_z
+
+                                mean_zz_t = io_utils.round_ex(mean_zz, 2)
+                                self._operator_interface.print_to_console(
+                                    f'Interp1d to {pattern_name}_{p_name}: {loc_name} => {mean_z:.5f} ---> {mean_zz_t}\n')
+                                test_log.set_measured_value_by_name_ex(f'{pattern_name}_{p_name}', mean_zz, mean_zz_t)
                         del image_x, image_y, image_z, image_a, raw_x, raw_y, raw_z, raw_a
                         del maskx, masky, maskxy, maskxy_position
                 del img
