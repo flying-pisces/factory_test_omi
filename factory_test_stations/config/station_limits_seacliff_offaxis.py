@@ -3,7 +3,7 @@ STATION_LIMITS_ARRAYS = [
     ["SW_VERSION", None, None, 95],
     ["MPK_API_Version",  None, None, 96],
     # ["DUT_ScreenOnRetries", 0, 5, 97],
-    ["DUT_ScreenOnStatus", True, True, 98],
+    # ["DUT_ScreenOnStatus", True, True, 98],
     ["ENV_ParticleCounter", None, None, 99],
 
     ["EXT_CTRL_RES", None, None, 9999],
