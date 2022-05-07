@@ -351,8 +351,12 @@ class seacliffVidStation(test_station.TestStation):
                 img = imread(os.path.join(capture_path, fn))
                 roi_items = pattern_config['ROI']
                 with np.errstate(divide='ignore', invalid='ignore'):
-                    for p_name, roi in roi_items.items():
-                        self._operator_interface.print_to_console(f'parse data {p_name}: {roi} \n')
+                    for loc_name, roi in roi_items.items():
+                        self._operator_interface.print_to_console(f'parse data {loc_name}: {roi} \n')
+                        p_name = self._station_config.SENSIBLE_TEXT[self._panel_left_or_right].get(loc_name)
+                        if p_name is None:
+                            self._operator_interface.print_to_console(f'setting alter {loc_name}\n', 'red')
+                            continue
                         cent_x, cent_y, half_w, half_h = roi
                         image_x = np.array(img[:, :, 0])
                         image_y = np.array(img[:, :, 1])
@@ -376,7 +380,7 @@ class seacliffVidStation(test_station.TestStation):
                         raw_y = image_y[maskxy_position]
                         raw_z = image_z[maskxy_position]
                         raw_a = image_a[maskxy_position]
-                        exp_csv_fn = os.path.join(capture_path, 'exp', f'{pattern_name}_{p_name}.csv')
+                        exp_csv_fn = os.path.join(capture_path, 'exp', f'{pattern_name}_{p_name}_{loc_name}.csv')
                         if not os.path.exists(os.path.dirname(exp_csv_fn)):
                             os_utils.mkdir_p(os.path.dirname(exp_csv_fn))
                         with open(exp_csv_fn, 'w', newline='') as csv_file:
@@ -390,22 +394,23 @@ class seacliffVidStation(test_station.TestStation):
                                 dd_y = np.hypot(y_e, z_e)
                                 dd_z = (x_e**2 + y_e**2 + z_e**2)**0.5
                                 writer.writerows(tuple(zip(raw_x, raw_y, raw_z, raw_a, x_e, y_e, z_e, dd_x, dd_y, dd_z)))
-                                if p_name in self._station_config.RAW_HOT_FIX:
+                                if loc_name in self._station_config.RAW_HOT_FIX:
                                     mean_z = np.mean(z_e)
                                 else:
                                     mean_z = np.mean(dd_z)
-                                if (p_name in self._station_config.CALIB_DATA
-                                        and len(self._station_config.CALIB_DATA[p_name]) >= 2):
-                                    x = [c for c, __ in self._station_config.CALIB_DATA[p_name]]
-                                    y = [c for __, c in self._station_config.CALIB_DATA[p_name]]
+                                calib_data = self._station_config.CALIB_DATA.get(self._panel_left_or_right)
+                                if (isinstance(calib_data, dict) and loc_name in calib_data
+                                        and len(calib_data[loc_name]) >= 2):
+                                    x = [c for c, __ in calib_data[loc_name]]
+                                    y = [c for __, c in calib_data[loc_name]]
                                     p = np.polyfit(x, y, 1)
                                     mean_zz = np.polyval(p, mean_z)
                                 else:
                                     mean_zz = mean_z
 
                                 mean_zz_t = io_utils.round_ex(mean_zz, 2)
-                                self._operator_interface.print_to_console(f'Interp1d to {pattern_name}_{p_name} '
-                                                                          f'{mean_z:.5f} ---> {mean_zz_t}\n')
+                                self._operator_interface.print_to_console(
+                                    f'Interp1d to {pattern_name}_{p_name}: {loc_name} => {mean_z:.5f} ---> {mean_zz_t}\n')
                                 test_log.set_measured_value_by_name_ex(f'{pattern_name}_{p_name}', mean_zz, mean_zz_t)
                         del image_x, image_y, image_z, image_a, raw_x, raw_y, raw_z, raw_a
                         del maskx, masky, maskxy, maskxy_position
