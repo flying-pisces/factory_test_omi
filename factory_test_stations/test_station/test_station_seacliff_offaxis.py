@@ -146,7 +146,44 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._operator_interface.print_to_console(f'Wait for testing...', 'green')
         self._pthr_monitor = threading.Thread(target=self._btn_monitor_thr, daemon=True)
         self._pthr_monitor.start()
+        threading.Thread(target=self._auto_backup_thr, daemon=True).start()
         self._shop_floor = ShopFloor()
+
+    def data_backup(self, source_path, target_path):
+        if not os.path.exists(target_path):
+            hsc_utils.mkdir_p(target_path)
+        if os.path.exists(source_path):
+            for root, dirs, files in os.walk(source_path):
+                for file in files:
+                    src_file = os.path.join(root, file)
+                    shutil.move(src_file, target_path)
+
+   # backup the raw data automatically
+    def _auto_backup_thr(self):
+        raw_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
+        bak_dir = raw_dir
+        if hasattr(self._station_config, 'ANALYSIS_RELATIVEPATH_BAK'):
+            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH_BAK, 'raw')
+        ex_file_list = []
+        while not self._closed and not os.path.samefile(bak_dir, raw_dir):
+            if self._is_running:
+                time.sleep(0.5)
+                continue
+
+            uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
+                           if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
+            # backup all the raw data which is created about 8 hours ago.
+            uut_raw_dir_old = [c for c, d in uut_raw_dir if time.time() - d > 3600 * 8]
+            if len(uut_raw_dir_old) <= 0:
+                time.sleep(1)
+                continue
+            n1 = uut_raw_dir_old[-1]
+            try:
+                self.data_backup(os.path.join(raw_dir, n1), os.path.join(os.path.join(bak_dir, n1)))
+                shutil.rmtree(os.path.join(raw_dir, n1))
+            except Exception as e:
+                ex_file_list.append(n1)
+                self._operator_interface.print_to_console(f'Fail to backup file to {bak_dir}. Exp = {str(e)}')
 
     def close(self):
         self._closed = True

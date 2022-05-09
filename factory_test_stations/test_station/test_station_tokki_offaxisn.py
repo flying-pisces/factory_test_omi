@@ -20,6 +20,7 @@ import sys
 import shutil
 import serial
 import json
+import threading
 
 
 class TokkiOffAxisNStationError(Exception):
@@ -54,6 +55,8 @@ class TokkiOffAxisNStation(test_station.TestStation):
         self._ttxm_filelist = []
         self.fixture_port = None
         self.fixture_particle_port = None
+        self._closed = False
+        self._is_running = False
 
     def initialize(self):
         self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
@@ -117,10 +120,57 @@ class TokkiOffAxisNStation(test_station.TestStation):
                 time.sleep(0.1)
                 self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
 
+        conoscope_sn = 'None' if not self._station_config.EQUIPMENT_SIM else 'Demo'
+        conoscope_sn_count = 5
+        while re.match(r'^none$', conoscope_sn, re.I | re.S) and conoscope_sn_count > 0:
+            conoscope_sn = self._equipment.serialnumber()
+            conoscope_sn_count -= 1
+            time.sleep(0.2)
+        self._station_config.CAMERA_SN = conoscope_sn
         self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
-        self._equipment.initialize()
+        equ_res, equ_msg = self._equipment.initialize()
+        if not equ_res:
+            raise TokkiOffAxisNStationError(f'Fail to init the conoscope: {equ_msg}')
+        threading.Thread(target=self._auto_backup_thr, daemon=True).start()
+
+    def data_backup(self, source_path, target_path):
+        if not os.path.exists(target_path):
+            hsc_utils.mkdir_p(target_path)
+        if os.path.exists(source_path):
+            for root, dirs, files in os.walk(source_path):
+                for file in files:
+                    src_file = os.path.join(root, file)
+                    shutil.move(src_file, target_path)
+
+    # backup the raw data automatically
+    def _auto_backup_thr(self):
+        raw_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
+        bak_dir = raw_dir
+        if hasattr(self._station_config, 'ANALYSIS_RELATIVEPATH_BAK'):
+            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH_BAK, 'raw')
+        ex_file_list = []
+        while not self._closed and not os.path.samefile(bak_dir, raw_dir):
+            if self._is_running:
+                time.sleep(0.5)
+                continue
+
+            uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
+                           if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
+            # backup all the raw data which is created about 8 hours ago.
+            uut_raw_dir_old = [c for c, d in uut_raw_dir if time.time() - d > 3600 * 8]
+            if len(uut_raw_dir_old) <= 0:
+                time.sleep(1)
+                continue
+            n1 = uut_raw_dir_old[-1]
+            try:
+                self.data_backup(os.path.join(raw_dir, n1), os.path.join(os.path.join(bak_dir, n1)))
+                shutil.rmtree(os.path.join(raw_dir, n1))
+            except Exception as e:
+                ex_file_list.append(n1)
+                self._operator_interface.print_to_console(f'Fail to backup file to {bak_dir}. Exp = {str(e)}')
 
     def close(self):
+        self._closed = True
         if self._fixture is not None:
             self._fixture.close()
             self._fixture = None
@@ -180,6 +230,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
         except Exception as e:
             self._operator_interface.print_to_console("Test exception {0}.\n".format(e))
         finally:
+            self._is_running = False
             self._operator_interface.print_to_console('try to release current test resource.\n')
             # noinspection PyBroadException
             try:
@@ -285,6 +336,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
                     if ready_status == 0x00:  # load DUT automatically and then screen on
                         ready = True  # Start to test.
                         self._is_screen_on_by_op = True
+                        self._is_running = True
                         if self._retries_screen_on == 0:
                             self._the_unit.screen_on()
 
