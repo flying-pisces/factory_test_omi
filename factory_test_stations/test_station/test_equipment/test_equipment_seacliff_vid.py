@@ -10,6 +10,7 @@ import logging
 import ctypes
 import traceback
 import glob
+import re
 
 
 class seacliffVidEquipmentError(Exception):
@@ -33,6 +34,7 @@ class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.T
         self._k_errcode = 'ErrorCode'
         self._k_message = 'Message'
         dll_path = os.path.join(self._station_config.ROOT_DIR, self._station_config.CAMERA_DYNAMIC_LIB)
+        dll_path = self._cased_path(dll_path)
         self._rxLib = ctypes.cdll.LoadLibrary(dll_path)
 
         # Define the input and output parameter for the functions of the raytrix lib
@@ -62,6 +64,10 @@ class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.T
             # 'Depth3D_ViewObjectOrthographic_To_Reference_AfterSettings': 85,
         }
 
+    def _cased_path(self, path):
+        r = glob.glob(re.sub(r'([^:/\\])(?=[/\\]|$)', r'[\1]', path))
+        return r and r[0] or path
+
     @property
     def camera_sn(self):
         return self._camera_sn
@@ -76,6 +82,7 @@ class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.T
         return self._parse_result(self._rxLib.BindConnectedCamera())
 
     def _load_camera_config(self, config_file_name):
+        config_file_name = self._cased_path(config_file_name)
         return self._parse_result(self._rxLib.LoadCameraConfig(config_file_name.encode()))
 
     def _get_camera_sn(self):
@@ -91,9 +98,11 @@ class seacliffVidEquipment(hardware_station_common.test_station.test_equipment.T
         return self._parse_result(self._rxLib.SaveImage(filename.encode()))
 
     def _set_compute_parameters(self, filename):
+        filename = self._cased_path(filename)
         return self._parse_result(self._rxLib.SetComputeParameters(filename.encode()))
 
     def _bind_ray_file(self, filename):
+        filename = self._cased_path(filename)
         return self._parse_result(self._rxLib.BindRayFile(filename.encode()))
 
     def _save_ray(self, filename):

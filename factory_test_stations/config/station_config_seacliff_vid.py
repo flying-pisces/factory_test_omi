@@ -37,10 +37,10 @@ DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
 SW_VERSION_SUFFIX = ''
 SPEC_VERSION = '0000'
 
-CAMERA_DYNAMIC_LIB = r'C:\oculus\SimplePython.dll'
+CAMERA_DYNAMIC_LIB = r'C:\oculus\run\R25Config\SimplePython.dll'
 # CAMERA_CONFIG = 'C:\oculus\CameraConfig.json'
-CAMERA_CONFIG = 'C:\oculus\R25Config'
-CAMERA_RX_SET = 'C:\oculus\Facebook Oculus.rxset'
+CAMERA_CONFIG = r'C:\oculus\run\R25Config'
+CAMERA_RX_SET = r'C:\oculus\run\R25Config\Facebook Oculus.rxset'
 # CAMERA_RX_SET = 'C:\oculus\OculusDensePointMap.rxset'
 
 # DUT COMMAND
