@@ -300,7 +300,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.2.5{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.2.6{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0

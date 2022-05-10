@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.2.6
+2022-4-7 elton<elton.tian@myzygroup>
+-1. add test items for ratio
+
+========================================================
 Version 1.2.5
 2021-12-27 elton<elton.tian@myzygroup>
 -1. add compensation for boresight center

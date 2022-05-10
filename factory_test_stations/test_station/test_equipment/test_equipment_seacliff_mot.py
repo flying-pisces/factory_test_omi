@@ -1016,6 +1016,19 @@ class MotAlgorithmHelper(object):
         stats_summary[1, k] = percentuv_95
         k += 1
 
+        temp_status_s = dict(np.transpose(stats_summary))
+        stats_summary[0, k] = f"Luminance Temporal Instantaneous % of On-axis"
+        stats_summary[1, k] = temp_status_s[f'Temporal Lum({chromaticity_fov}deg)'] / temp_status_s['OnAxis Lum']
+        k += 1
+
+        stats_summary[0, k] = f"Luminance Ground Instantaneous % of On-axis"
+        stats_summary[1, k] = temp_status_s[f'Ground Lum({chromaticity_fov}deg)'] / temp_status_s['OnAxis Lum']
+        k += 1
+
+        stats_summary[0, k] = f"Luminance Sky Instantaneous % of On-axis"
+        stats_summary[1, k] = temp_status_s[f'Sky Lum({chromaticity_fov}deg)'] / temp_status_s['OnAxis Lum']
+        k += 1
+
         stats_summary = stats_summary[:, 0:k]
 
         ## save images
