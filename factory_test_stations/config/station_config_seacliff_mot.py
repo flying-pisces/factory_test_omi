@@ -99,12 +99,12 @@ Version 1.1.0
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-SEQUENCE_RELATIVEPATH = r'C:\oculus\run\seacliff_mot_run\test_station\test_equipment\algorithm'
+SEQUENCE_RELATIVEPATH = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm'
 # CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment_57'
 CONOSCOPE_DLL_PATH = r'C:\oculus\run\test_equipment'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_mot_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
-RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
+# RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
 ##################################
 # serial number codes
 #
@@ -115,7 +115,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 # Fixture parameters
 # Fixture commands
 PROXY_COMMUNICATION_PATH = r"C:\vision\Release\vision.exe"
-IS_PROXY_COMMUNICATION = False
+IS_PROXY_COMMUNICATION = True
 PROXY_ENDPOINT = 8000
 FIXTURE_COMPORT = "COM1" #
 FIXTURE_PARTICLE_COMPORT = "COM1" #
@@ -191,6 +191,7 @@ COMMAND_QUERY_TEMP = 'CMD_GET_TEMPERATURE'
 COMMAND_QUERY_DUT_TEMP = 'CMD_GET_DUT_TEMPERATURE'
 COMMAND_PROBE_BUTTON = 'CMD_PROBE_BUTTON'
 COMMAND_ZERO_POSIT = 'CMD_ZERO_POSIT'
+COMMAND_QUERY_TEMP_RANGE = (10, 60)
 
 COMMAND_USB_POWER_ON = "CMD_USB_POWER_ON"
 COMMAND_USB_POWER_OFF = "CMD_USB_POWER_OFF"
@@ -471,8 +472,8 @@ AUTO_CVT_BGR_IMAGE_FROM_XYZ = False
 AUTO_SAVE_2_TXT = False
 AUTO_SAVE_PROCESSED_PNG = True
 EQUIPMENT_SIM_CAPTURE_FROM_DIR = False
-DUT_SIM = True
-EQUIPMENT_SIM = True
-EQUIPMENT_WHEEL_SIM = True
-EQUIPMENT_SPECTRO_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
+EQUIPMENT_WHEEL_SIM = False
+EQUIPMENT_SPECTRO_SIM = False
+FIXTURE_SIM = False

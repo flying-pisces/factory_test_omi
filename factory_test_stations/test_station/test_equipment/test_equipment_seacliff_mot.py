@@ -125,7 +125,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         self._operator_interface.print_to_console("wait for the sequence to be finished.\n")
         while done is False:
             ret = self._device.CmdCaptureSequenceStatus()
-            processState = ret['state']
+            processState = int(ret['state'].value)
             processStep = ret['currentSteps']
             processNbSteps = ret['nbSteps']
 
@@ -209,8 +209,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
             # assert the initialize status is correct.
             ret = self._device.CmdCaptureSequenceStatus()
             processState = ret['state']
-            if not (processState == 0 or  # CaptureSequenceState_NotStarted
-                    processState == 6):  # CaptureSequenceState_Done
+            if int(processState.value) not in [0, 6]:  # CaptureSequenceState_NotStarted , CaptureSequenceState_Done
                 raise seacliffmotEquipmentError('Fail to CmdMeasureSequence.{0}'.format(processState))
 
             captureSequenceConfig = self._station_config.SEQ_CAP_INIT_CONFIG.copy()
