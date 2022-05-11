@@ -639,6 +639,7 @@ if __name__ == "__main__":
     station_config.COMMAND_NVM_READ = 'NVMRead'
     station_config.COMMAND_NVM_WRITE = 'NVMWrite'
     station_config.COMMAND_SPEED_MODE = 'SET.B7MODE'
+    station_config.DUT_ETH_PROXY = True
 
     import sys
     import types
@@ -664,7 +665,7 @@ if __name__ == "__main__":
         print('pic - count {0}'.format(len(pics)))
         # the_unit.render_image(pics)
 
-        the_unit.initialize()
+        the_unit.initialize(eth_addr=('192.168.21.132', 6000))
         arr = the_unit.nvm_read_data()
 
         try:
