@@ -13,3 +13,4 @@
 # from test_station_seacliff_vid import *
 # from test_station_tokki_offaxisn import *
 # from test_station_seacliff_offaxis import *
+# from test_station_eureka_eeprom import *
