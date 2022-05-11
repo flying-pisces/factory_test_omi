@@ -335,7 +335,13 @@ class seacliffmotStation(test_station.TestStation):
                     yyds = np.array(json.load(jf))
                     self._eep_data_from_npy = dict(zip(yyds[:, 0], yyds[:, 1:]))
 
-            self._fixture.initialize(fixture_port=self.fixture_port, particle_port=self.fixture_particle_port)
+            self._fixture.initialize(fixture_port=self.fixture_port,
+                                     particle_port=self.fixture_particle_port,
+                                     proxy_port=self._station_config.PROXY_ENDPOINT)
+
+            self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM = self._fixture.calib_zero_pos()
+            self._operator_interface.print_to_console(
+                f'update distance between camera and datum: {self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM}\n')
             self._equipment.initialize()
             self._equipment.open()
         except Exception as e:
@@ -404,8 +410,8 @@ class seacliffmotStation(test_station.TestStation):
                 disp_format = [(k, v) for k, v in exp_format_dic.items() if k in item]
                 if any(disp_format) and isinstance(value, float):
                     value_msg = round_ex(value, disp_format[0][1])
-
-            self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
+            if hasattr(self._operator_interface, 'update_test_value'):
+                self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def _do_test(self, serial_number, test_log):
         """

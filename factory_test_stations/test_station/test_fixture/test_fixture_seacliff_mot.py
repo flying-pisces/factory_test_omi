@@ -183,7 +183,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             StationCommunicationProxy._communication_proxy_name = self._station_config.PROXY_COMMUNICATION_PATH
             StationCommunicationProxy.run_daemon_application()
             time.sleep(6)
-            self._serial_port = StationCommunicationProxy()
+            self._serial_port = StationCommunicationProxy(kwargs.get('proxy_port'))
         else:
             self._serial_port = serial.Serial(kwargs.get('fixture_port'),
                                               115200,
@@ -211,7 +211,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             self.unload()
             self.start_button_status(False)
             self.power_on_button_status(False)
-
             self._operator_interface.print_to_console(f"Fixture Initialized {kwargs}.\n")
             return True
 
@@ -477,6 +476,19 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             retries += 1
         if not success:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
+
+    def calib_zero_pos(self):
+        """
+        query the module position
+        @return:
+        """
+        cmd = self._station_config.COMMAND_ZERO_POSIT
+        self._write_serial(cmd)
+        delimiter = r'ZERO_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?)'
+        response = self._read_response(rev_pattern=delimiter)
+        response = [self._re_space_sub.sub('', c) for c in response]
+        deters = self._parse_response(delimiter, response)
+        return int(deters[1])
 
     def module_pos(self):
         """
