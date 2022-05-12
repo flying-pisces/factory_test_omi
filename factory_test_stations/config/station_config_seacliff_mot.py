@@ -1,6 +1,12 @@
 """
 Release Note:
 ========================================================
+Version 1.2.7
+2022-5-12 elton<elton.tian@myzygroup>
+-1. add support for conoscope V2
+-2. active the ParticleCounter.
+
+========================================================
 Version 1.2.6
 2022-4-7 elton<elton.tian@myzygroup>
 -1. add test items for ratio
@@ -209,7 +215,7 @@ FIXTURE_ALIGNMENT_DLY = 18
 FIXTURE_MECH_STABLE_DLY = 0.05
 FIXTURE_SOCK_DLY = 0.05
 PARTICLE_COUNTER_TIMEOUT = 2
-FIXTURE_PARTICLE_COUNTER = False
+FIXTURE_PARTICLE_COUNTER = True
 
 # FIXTRUE_PARTICLE_ADDR_READ = 40006
 # FIXTRUE_PARTICLE_ADDR_START = 40003

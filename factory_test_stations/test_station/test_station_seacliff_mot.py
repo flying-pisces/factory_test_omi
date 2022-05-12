@@ -300,7 +300,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.2.6{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.2.7{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -340,6 +340,10 @@ class seacliffmotStation(test_station.TestStation):
                                      proxy_port=self._station_config.PROXY_ENDPOINT)
 
             self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM = self._fixture.calib_zero_pos()
+            fixture_id = self._fixture.id()
+            if fixture_id != self._station_config.STATION_NUMBER:
+                raise seacliffmotStationError(
+                    f'Fixture Id is not set correctly {self._station_config.STATION_NUMBER} != FW: {fixture_id}')
             self._operator_interface.print_to_console(
                 f'update distance between camera and datum: {self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM}\n')
             self._equipment.initialize()
