@@ -24,17 +24,6 @@ class EurekaEEPROMError(Exception):
     pass
 
 
-def chk_and_set_measured_value_by_name(test_log, item, value):
-    """
-
-    :type test_log: test_station.TestRecord
-    """
-    if item in test_log.results_array():
-        test_log.set_measured_value_by_name(item, value)
-    # else:
-    #     pprint.pprint(item)
-
-
 class EEPStationAssistant(object):
     def __init__(self):
         self._cvt_flag = {
@@ -326,14 +315,14 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._max_retries = 5
 
     def initialize(self):
-        # if (self._station_config.DUT_SIM
-        #         or self._station_config.EQUIPMENT_SIM
-        #         or self._station_config.FIXTURE_SIM
-        #         or self._station_config.NVM_WRITE_PROTECT
-        #         or self._station_config.USER_INPUT_CALIB_DATA not in [0x02]
-        #         or not self._station_config.CAMERA_VERIFY_ENABLE):
-        #     self._operator_interface.operator_input('warn', 'Parameters should be configured correctly', 'warning')
-        #     raise
+        if (self._station_config.DUT_SIM
+                or self._station_config.EQUIPMENT_SIM
+                or self._station_config.FIXTURE_SIM
+                or self._station_config.NVM_WRITE_PROTECT
+                or self._station_config.USER_INPUT_CALIB_DATA not in [0x02]
+                or not self._station_config.CAMERA_VERIFY_ENABLE):
+            self._operator_interface.operator_input('warn', 'Parameters should be configured correctly', 'warning')
+            raise
         try:
             self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
             if self._station_config.AUTO_CFG_COMPORTS:
@@ -356,6 +345,17 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._operator_interface.print_to_console("there, I'm shutting the station down..\n")
         self._fixture.close()
 
+    def chk_and_set_measured_value_by_name(self, test_log, item, value, value_msg=None):
+        """
+        :type test_log: test_station.TestRecord
+        """
+        if item in test_log.results_array():
+            test_log.set_measured_value_by_name(item, value)
+            did_pass = test_log.get_test_by_name(item).did_pass()
+            if value_msg is None:
+                value_msg = value
+            self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
+
     def _do_test(self, serial_number, test_log):
         msg0 = 'info --> write protect: {0}, emulator_dut: {1}, emulator_equip: {2}, emulator_fixture: {3},' \
                ' camera verify: {4}, ver:{5}\n' \
@@ -367,7 +367,7 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._overall_result = False
         self._overall_errorcode = ''
         self._operator_interface.print_to_console('waiting user to input the parameters...\n')
-        test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
+        test_log.set_measured_value_by_name_ex = types.MethodType(self.chk_and_set_measured_value_by_name, test_log)
         the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
         if self._station_config.DUT_SIM:
             the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)

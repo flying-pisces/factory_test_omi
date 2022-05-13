@@ -26,6 +26,7 @@ SERIAL_NUMBER_MODEL_NUMBER = '^[\w]{13,14}$'
 # Fixture parameters
 AUTO_CFG_COMPORTS = True
 DUT_COMPORT = "COM14"  #
+DUT_ETH_PROXY = True
 DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
 
 COMMAND_DISP_HELP = "$c.help"
@@ -154,6 +155,9 @@ IS_PRINT_TO_LOG = True
 OPTIMIZE_UI_MODE = True
 SHOW_CONSOLE = False
 
+STATION_TYPE = 'eureka_eeprom'
+STATION_NUMBER = '0000'
+
 #####
 ### Facebook_IT Enable boolean
 FACEBOOK_IT_ENABLED = False
@@ -163,3 +167,6 @@ USE_WORKORDER_ENTRY = False
 DUT_SIM = True
 EQUIPMENT_SIM = True
 FIXTURE_SIM = True
+
+FULL_TREE_UI = False
+IS_STATION_ACTIVE = True
