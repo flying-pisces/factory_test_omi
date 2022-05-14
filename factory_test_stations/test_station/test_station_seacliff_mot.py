@@ -19,6 +19,8 @@ import json
 import collections
 import math
 from hardware_station_common.utils.io_utils import round_ex
+import threading
+import shutil
 
 
 class seacliffmotStationError(Exception):
@@ -314,6 +316,8 @@ class seacliffmotStation(test_station.TestStation):
         self._multi_lock = mp.Lock()
         self.fixture_port = None
         self.fixture_particle_port = None
+        self._is_exit = False
+        self._is_running = False
 
     def initialize(self):
         try:
@@ -341,16 +345,56 @@ class seacliffmotStation(test_station.TestStation):
 
             self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM = self._fixture.calib_zero_pos()
             fixture_id = self._fixture.id()
-            if fixture_id != self._station_config.STATION_NUMBER:
+            if not self._station_config.FIXTURE_SIM and fixture_id != self._station_config.STATION_NUMBER:
                 raise seacliffmotStationError(
                     f'Fixture Id is not set correctly {self._station_config.STATION_NUMBER} != FW: {fixture_id}')
             self._operator_interface.print_to_console(
                 f'update distance between camera and datum: {self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM}\n')
             self._equipment.initialize()
             self._equipment.open()
+            threading.Thread(target=self._auto_backup_thr, daemon=True).start()
         except Exception as e:
             self._operator_interface.operator_input(None, str(e), 'error')
             raise
+
+    def data_backup(self, source_path, target_path):
+        if not os.path.exists(target_path):
+            os.makedirs(target_path)
+        if os.path.exists(source_path):
+            for root, dirs, files in os.walk(source_path):
+                for file in files:
+                    src_file = os.path.join(root, file)
+                    shutil.move(src_file, target_path)
+
+    # backup the raw data automatically
+    def _auto_backup_thr(self):
+        raw_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.RAW_IMAGE_LOG_DIR)
+        bak_dir = raw_dir
+        if hasattr(self._station_config, 'RAW_IMAGE_LOG_DIR_BAK'):
+            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.RAW_IMAGE_LOG_DIR_BAK)
+        ex_file_list = []
+        while not self._is_exit:
+            if self._is_running:
+                time.sleep(0.5)
+                continue
+            if not(os.path.exists(bak_dir) and os.path.exists(raw_dir) and os.path.samefile(bak_dir, raw_dir)):
+                time.sleep(0.5)
+
+            uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
+                           if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
+            # backup all the raw data which is created about 8 hours ago.
+            uut_raw_dir_old = [c for c, d in uut_raw_dir if time.time() - d > 3600 * 8]
+            if len(uut_raw_dir_old) <= 0:
+                time.sleep(1)
+                continue
+            n1 = uut_raw_dir_old[-1]
+            try:
+                self.data_backup(os.path.join(raw_dir, n1), os.path.join(os.path.join(bak_dir, n1)))
+
+                shutil.rmtree(os.path.join(raw_dir, n1))
+            except Exception as e:
+                ex_file_list.append(n1)
+                self._operator_interface.print_to_console(f'Fail to backup file to {bak_dir}. Exp = {str(e)}')
 
     def _close_fixture(self):
         if self._fixture is not None:
@@ -359,6 +403,7 @@ class seacliffmotStation(test_station.TestStation):
             self._fixture = None
 
     def close(self):
+        self._is_exit = True
         self._operator_interface.print_to_console("Close...\n")
         self._operator_interface.print_to_console("\there, I'm shutting the station down..\n")
         try:
@@ -452,6 +497,7 @@ class seacliffmotStation(test_station.TestStation):
         self._temperature_dic = {}
         self._eep_data = {}
         try:
+            self._is_running = True
             self._operator_interface.print_to_console(f"Initialize Test condition.={cpu_count_used}/{cpu_count}.. \n")
             self._operator_interface.print_to_console(
                 "\n*********** Fixture at %s to load DUT ***************\n" % self.fixture_port)
@@ -709,6 +755,7 @@ class seacliffmotStation(test_station.TestStation):
             self._pool.join()
             self._pool = None
             self._the_unit = None
+            self._is_running = False
         del self._pool_alg_dic
         self._operator_interface.print_to_console(f'Finish------------{serial_number}-------\n')
         return self.close_test(test_log)

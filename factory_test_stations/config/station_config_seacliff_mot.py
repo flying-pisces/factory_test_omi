@@ -110,6 +110,7 @@ SEQUENCE_RELATIVEPATH = r'C:\oculus\factory_test_omi\factory_test_stations\test_
 CONOSCOPE_DLL_PATH = r'C:\oculus\run\test_equipment'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_mot_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
+RAW_IMAGE_LOG_DIR_BAK = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 # RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
 ##################################
 # serial number codes
@@ -121,7 +122,7 @@ SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 # Fixture parameters
 # Fixture commands
 PROXY_COMMUNICATION_PATH = r"C:\vision\Release\vision.exe"
-IS_PROXY_COMMUNICATION = True
+IS_PROXY_COMMUNICATION = False
 PROXY_ENDPOINT = 8000
 FIXTURE_COMPORT = "COM1" #
 FIXTURE_PARTICLE_COMPORT = "COM1" #
@@ -259,7 +260,7 @@ DISTANCE_BETWEEN_CAMERA_AND_DATUM = 21950+18000
 # Test Equipment related parameters
 SORTED_EXPORT_LOG = False
 IS_PRINT_TO_LOG = False
-IS_VERBOSE = False # some path bug, temp set False and work on True later
+IS_VERBOSE = False  # some path bug, temp set False and work on True later
 CFG_PATH = r'..\Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
 
@@ -478,8 +479,8 @@ AUTO_CVT_BGR_IMAGE_FROM_XYZ = False
 AUTO_SAVE_2_TXT = False
 AUTO_SAVE_PROCESSED_PNG = True
 EQUIPMENT_SIM_CAPTURE_FROM_DIR = False
-DUT_SIM = False
-EQUIPMENT_SIM = False
-EQUIPMENT_WHEEL_SIM = False
-EQUIPMENT_SPECTRO_SIM = False
-FIXTURE_SIM = False
+DUT_SIM = True
+EQUIPMENT_SIM = True
+EQUIPMENT_WHEEL_SIM = True
+EQUIPMENT_SPECTRO_SIM = True
+FIXTURE_SIM = True
