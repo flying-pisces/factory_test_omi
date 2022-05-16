@@ -1491,9 +1491,10 @@ class MotAlgorithmHelper(object):
         scenters = []
         sMajorAxisLength = []
         sMinorAxisLength = []
-
         for i, stat in enumerate(stats):
-            if stat['MajorAxisLength'] >= Length_thresh:
+            # if stat['MajorAxisLength'] >= Length_thresh:
+            # modified by elton 20220521
+            if stat['MajorAxisLength'] >= Length_thresh and stat['MinorAxisLength'] >= Length_thresh:
                 scenters.append(list(stat['Centroid']))
                 sMajorAxisLength.append(stat['MajorAxisLength'])
                 sMinorAxisLength.append(stat['MinorAxisLength'])

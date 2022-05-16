@@ -21,6 +21,8 @@ import math
 from hardware_station_common.utils.io_utils import round_ex
 import threading
 import shutil
+from pathlib import Path
+import datetime
 
 
 class seacliffmotStationError(Exception):
@@ -321,7 +323,7 @@ class seacliffmotStation(test_station.TestStation):
 
     def initialize(self):
         try:
-            self._operator_interface.print_to_console("Initializing Seacliff MOT station...{0}\n"
+            self._operator_interface.print_to_console("Initializing Seacliff MOT station...{0}SP2\n"
                                                       .format(self._sw_version))
             if self._station_config.AUTO_CFG_COMPORTS:
                 self.auto_find_com_ports()
@@ -377,13 +379,33 @@ class seacliffmotStation(test_station.TestStation):
             if self._is_running:
                 time.sleep(0.5)
                 continue
+
+            # delete all the bin files automatically.
+            cur_time = datetime.datetime.now().hour + datetime.datetime.minute/60
+            if any([c1 <= cur_time <= c2 for c1, c2 in self._station_config.DATA_CLEAN_SCHEDULE]) and \
+                    os.path.exists(raw_dir):
+                uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
+                               if os.path.isdir(os.path.join(raw_dir, c))
+                               and len(list(Path(os.path.join(raw_dir, c)).rglob('*.bin'))) > 0]
+                uut_raw_dir = [c for c, d in uut_raw_dir if time.time() - d > self._station_config.DATA_CLEAN_SAVED_MINUTES]
+                try:
+                    if len(uut_raw_dir) > 0:
+                        bin_files = Path(uut_raw_dir[0]).rglob('*.bin')
+                        for x in bin_files:
+                            os.remove(x)
+                except Exception as e:
+                    self._operator_interface.print_to_console(f'Fail to delete the bin exp={str(e)}', 'red')
+                time.sleep(0.1)
+                continue
+
+            # backup all the data automatically
             if not(os.path.exists(bak_dir) and os.path.exists(raw_dir) and os.path.samefile(bak_dir, raw_dir)):
                 time.sleep(0.5)
 
             uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
                            if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
             # backup all the raw data which is created about 8 hours ago.
-            uut_raw_dir_old = [c for c, d in uut_raw_dir if time.time() - d > 3600 * 8]
+            uut_raw_dir_old = [c for c, d in uut_raw_dir if time.time() - d > self._station_config.DATA_CLEAN_SAVED_MINUTES_PNG]
             if len(uut_raw_dir_old) <= 0:
                 time.sleep(1)
                 continue

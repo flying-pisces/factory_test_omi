@@ -118,6 +118,10 @@ RAW_IMAGE_LOG_DIR_BAK = r'C:\oculus\factory_test_omi\factory_test_stations\facto
 SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
 
+DATA_CLEAN_SCHEDULE = []  # [(6, 8)]
+DATA_CLEAN_SAVED_MINUTES = 60 * 10
+DATA_CLEAN_SAVED_MINUTES_PNG = 3600 * 24
+
 ##################################
 # Fixture parameters
 # Fixture commands
