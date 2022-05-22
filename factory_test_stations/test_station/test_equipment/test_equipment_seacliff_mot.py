@@ -1912,8 +1912,11 @@ class MotAlgorithmHelper(object):
         masked_tristim = XYZ[:, :, 1] * mask
 
         Lumiance_thresh = 10
+        Lumiance_thresh_blue = 30
         Length_thresh = 10
-        Img = cv2.inRange(masked_tristim, Lumiance_thresh, 255) // 255
+        Img3 = cv2.inRange(masked_tristim, Lumiance_thresh, 255)
+        Img2 = cv2.inRange(XYZ[:, :, 2] * mask, 0, Lumiance_thresh_blue)
+        Img = cv2.bitwise_and(Img3, Img2) // 255
         Img = label(Img, connectivity=2)
         statsRG = regionprops(Img)
         scentersRG = []
@@ -1963,9 +1966,8 @@ class MotAlgorithmHelper(object):
             centroidRG[i, 0] = meanx + int(scentersRG[i][1])
 
         masked_tristim = XYZ[:, :, 2] * mask
-        Lumiance_thresh = 30
         Length_thresh = 50
-        Img = cv2.inRange(masked_tristim, Lumiance_thresh, 255) // 255
+        Img = cv2.inRange(masked_tristim, Lumiance_thresh_blue, 255) // 255
         Img = label(Img, connectivity=2)
         statsB = regionprops(Img)
         scentersB = []

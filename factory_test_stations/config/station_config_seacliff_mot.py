@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.2.8
+2022-5-23 elton<elton.tian@myzygroup>
+-1. optimize algorithm for WhiteDot / RgbBoresight
+
+========================================================
 Version 1.2.7
 2022-5-12 elton<elton.tian@myzygroup>
 -1. add support for conoscope V2
