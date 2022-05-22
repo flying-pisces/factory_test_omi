@@ -379,7 +379,8 @@ class MotAlgorithmHelper(object):
         #         scenters.append(list(stat['Centroid']))
         #         sMajorAxisLength.append(stat['MajorAxisLength'])
         #         sMinorAxisLength.append(stat['MinorAxisLength'])
-        for stat in [c for c in stats if c['MajorAxisLength'] >= axis_length_thresh]:
+        for stat in [c for c in stats
+                     if c['MajorAxisLength'] >= axis_length_thresh and c['MinorAxisLength'] >= axis_length_thresh]:
             scenters.append(list(stat['Centroid']))
             sMajorAxisLength.append(stat['MajorAxisLength'])
             sMinorAxisLength.append(stat['MinorAxisLength'])
@@ -1491,13 +1492,13 @@ class MotAlgorithmHelper(object):
         scenters = []
         sMajorAxisLength = []
         sMinorAxisLength = []
-        for i, stat in enumerate(stats):
+        for stat in [c for c in stats
+                     if c['MajorAxisLength'] >= Length_thresh and c['MinorAxisLength'] >= Length_thresh]:
             # if stat['MajorAxisLength'] >= Length_thresh:
             # modified by elton 20220521
-            if stat['MajorAxisLength'] >= Length_thresh and stat['MinorAxisLength'] >= Length_thresh:
-                scenters.append(list(stat['Centroid']))
-                sMajorAxisLength.append(stat['MajorAxisLength'])
-                sMinorAxisLength.append(stat['MinorAxisLength'])
+            scenters.append(list(stat['Centroid']))
+            sMajorAxisLength.append(stat['MajorAxisLength'])
+            sMinorAxisLength.append(stat['MinorAxisLength'])
 
         # print('num stats 0 / 1'.format(len(scenters), len(stats)))
         num_dots = len(scenters)
@@ -1919,11 +1920,12 @@ class MotAlgorithmHelper(object):
         sMajorAxisLengthRG = []
         sMinorAxisLengthRG = []
         statsRG = sorted(statsRG, key=lambda c: c['centroid'])
-        for i, stat in enumerate(statsRG):
-            if stat['MajorAxisLength'] >= Length_thresh:
-                scentersRG.append(list(stat['centroid']))
-                sMajorAxisLengthRG.append(stat['MajorAxisLength'])
-                sMinorAxisLengthRG.append(stat['MinorAxisLength'])
+
+        for stat in [c for c in statsRG
+                     if c['MajorAxisLength'] >= Length_thresh and c['MinorAxisLength'] >= Length_thresh]:
+            scentersRG.append(list(stat['centroid']))
+            sMajorAxisLengthRG.append(stat['MajorAxisLength'])
+            sMinorAxisLengthRG.append(stat['MinorAxisLength'])
 
         if self._verbose:
             print('num stats {0} / {1}'.format(len(scentersRG), len(statsRG)))
@@ -1970,11 +1972,11 @@ class MotAlgorithmHelper(object):
         sMajorAxisLengthB = []
         sMinorAxisLengthB = []
 
-        for i, stat in enumerate(statsB):
-            if stat['MajorAxisLength'] >= Length_thresh:
-                scentersB.append(list(stat['centroid']))
-                sMajorAxisLengthB.append(stat['MajorAxisLength'])
-                sMinorAxisLengthB.append(stat['MinorAxisLength'])
+        for stat in [c for c in statsB
+                     if c['MajorAxisLength'] >= Length_thresh and c['MinorAxisLength'] >= Length_thresh]:
+            scentersB.append(list(stat['centroid']))
+            sMajorAxisLengthB.append(stat['MajorAxisLength'])
+            sMinorAxisLengthB.append(stat['MinorAxisLength'])
 
         if self._verbose:
             print('num stats {0} / {1}'.format(len(scentersB), len(statsB)))

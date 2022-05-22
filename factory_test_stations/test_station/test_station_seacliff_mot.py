@@ -381,7 +381,7 @@ class seacliffmotStation(test_station.TestStation):
                 continue
 
             # delete all the bin files automatically.
-            cur_time = datetime.datetime.now().hour + datetime.datetime.minute/60
+            cur_time = datetime.datetime.now().hour + datetime.datetime.now().minute / 60
             if any([c1 <= cur_time <= c2 for c1, c2 in self._station_config.DATA_CLEAN_SCHEDULE]) and \
                     os.path.exists(raw_dir):
                 uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
