@@ -379,20 +379,28 @@ class seacliffmotStation(test_station.TestStation):
             if self._is_running:
                 time.sleep(0.5)
                 continue
-
             # delete all the bin files automatically.
             cur_time = datetime.datetime.now().hour + datetime.datetime.now().minute / 60
             if any([c1 <= cur_time <= c2 for c1, c2 in self._station_config.DATA_CLEAN_SCHEDULE]) and \
                     os.path.exists(raw_dir):
+                mask = ['.bin', '.json']
                 uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
                                if os.path.isdir(os.path.join(raw_dir, c))
                                and len(list(Path(os.path.join(raw_dir, c)).rglob('*.bin'))) > 0]
-                uut_raw_dir = [c for c, d in uut_raw_dir if time.time() - d > self._station_config.DATA_CLEAN_SAVED_MINUTES]
+                uut_raw_dir = [os.path.join(raw_dir, c) for c, d in uut_raw_dir if time.time() - d
+                               > self._station_config.DATA_CLEAN_SAVED_MINUTES]
                 try:
+                    def clean_camera_file(dirn):
+                        if not os.path.isdir(dirn):
+                            return
+                        for fn in os.listdir(dirn):
+                            tmp = os.path.join(dirn, fn)
+                            if os.path.isdir(tmp):
+                                clean_camera_file(tmp)
+                            elif os.path.splitext(tmp)[1] in mask:
+                                os.remove(tmp)
                     if len(uut_raw_dir) > 0:
-                        bin_files = Path(uut_raw_dir[0]).rglob('*.bin')
-                        for x in bin_files:
-                            os.remove(x)
+                        clean_camera_file(uut_raw_dir[0])
                 except Exception as e:
                     self._operator_interface.print_to_console(f'Fail to delete the bin exp={str(e)}', 'red')
                 time.sleep(0.1)
@@ -401,6 +409,7 @@ class seacliffmotStation(test_station.TestStation):
             # backup all the data automatically
             if not(os.path.exists(bak_dir) and os.path.exists(raw_dir) and os.path.samefile(bak_dir, raw_dir)):
                 time.sleep(0.5)
+                continue
 
             uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
                            if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
@@ -501,8 +510,8 @@ class seacliffmotStation(test_station.TestStation):
                          and not self._station_config.FIXTURE_SIM)
 
         self._query_dual_start()
-        if self._the_unit is None:
-            raise test_station.TestStationProcessControlError(f'Fail to query dual_start for DUT {serial_number}.')
+        # if self._the_unit is None:
+        #     raise test_station.TestStationProcessControlError(f'Fail to query dual_start for DUT {serial_number}.')
         self._probe_con_status = True
         if not self._station_config.FIXTURE_SIM:
             self._probe_con_status = self._fixture.query_probe_status() == 0
@@ -962,7 +971,7 @@ class seacliffmotStation(test_station.TestStation):
                         self._operator_interface.print_to_console(
                             'Cancel start signal from dual %s.\n' % timeout_for_dual)
                     self._the_unit.close()
-                    self._the_unit = None
+                    # self._the_unit = None
                 self._fixture.start_button_status(False)
                 time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                 self._fixture.power_on_button_status(False)
