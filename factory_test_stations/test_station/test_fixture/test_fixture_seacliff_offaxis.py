@@ -93,10 +93,9 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
             resp = self._read_response(0.1, end_delimiter=self._end_delimiter_auto_response)
             self._fixture_mutex.release()
             if resp:
-                btn_dic = {4: r'PowerOn_Button_R:(\d+)',
-                           3: r'PowerOn_Button_L:(\d+)',
-                           2: r'BUTTON_LEFT:(\d+)',
-                           1: r'BUTTON_RIGHT:(\d+)',
+                btn_dic = {3: r'PowerOn_Button:(\d+)',
+                           2: r'BUTTON_Right:(\d+)',
+                           1: r'BUTTON_Left:(\d+)',
                            0: r'BUTTON:(\d+)'}
                 for key, item in btn_dic.items():
                     items = list(filter(lambda r: re.search(item, r, re.I | re.S), resp))
@@ -127,12 +126,6 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
         if not self._serial_port:
             raise SeacliffOffAxisFixtureError(f'Unable to open fixture port: {kwargs}')
         else:  # disable the buttons automatically
-            self.set_tri_color('y')
-            self.button_enable()
-            self.vacuum(False)
-            self.unload()
-            self.button_disable()
-            self.set_tri_color('g')
             if self._verbose:
                 print(f"Fixture Initialized {kwargs}")
             return True

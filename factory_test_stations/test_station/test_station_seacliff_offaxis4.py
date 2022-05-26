@@ -281,7 +281,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         if hasattr(self._station_config, 'ANALYSIS_RELATIVEPATH_BAK'):
             bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH_BAK, 'raw')
         ex_file_list = []
-        while not USER_SHUTDOWN_STATION and not os.path.samefile(bak_dir, raw_dir):
+        while not USER_SHUTDOWN_STATION:
             if self._is_slot_under_testing:
                 time.sleep(0.5)
                 continue

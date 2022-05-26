@@ -1,6 +1,12 @@
 """
 Release Note:
 ========================================================
+Version 1.0.1
+2022-5-26 author<elton.tian@myzygroup.com>
+-1. add alarm information for grating
+-2. data-backup automatically.
+
+========================================================
 Version 1.0.0
 2022-3-23 elton<elton.tian@myzygroup.com>
 -1. Init version for OffAxis 4 Bank

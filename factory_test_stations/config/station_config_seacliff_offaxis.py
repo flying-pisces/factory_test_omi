@@ -1,6 +1,13 @@
 """
 Release Note:
 ========================================================
+Version 2.1.6
+2022-5-26 author<elton.tian@myzygroup.com>
+-1. add alarm information for grating
+-2. data-backup automatically.
+-3. read fixture-id when sw initialized.
+
+========================================================
 Version 2.1.5
 2022-3-9 author<elton.tian@myzygroup.com>
 -1. add support for auto-scanner
@@ -198,7 +205,7 @@ SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqx
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
 ANALYSIS_RELATIVEPATH = r'C:\Oculus\factory_test_omi\factory_test_stations\factory-test_logs'
-ANALYSIS_RELATIVEPATH_BAK = r'D:\Oculus\factory_test_omi\factory_test_stations\factory-test_logs'
+ANALYSIS_RELATIVEPATH_BAK = r'C:\Oculus\factory_test_omi\factory_test_stations\factory-test_logs'
 
 FOCUS_DISTANCE = 0.45
 APERTURE = 8.0
@@ -302,7 +309,6 @@ USE_WORKORDER_ENTRY = False
 
 IS_STATION_ACTIVE = True
 STATION_TYPE = 'seacliff_offaxis'
-STATION_NUMBER = '0003'
 SHOPFLOOR_SYSTEM = ''
 AUTO_SCAN_CODE = True
 SW_TITLE = 'FactoryTestOMI - OFFAXIS'                                     
@@ -310,8 +316,10 @@ SW_TITLE = 'FactoryTestOMI - OFFAXIS'
 DATA_COLLECT_ONLY = False
 EQUIPMENT_DEMO_DATABASE = r'C:\ShareData\OffAxis'
 
-DUT_SIM = False
+DUT_SIM = True
 CAMERA_SN = "1525710238"
 # CAMERA_SN = 'Demo'
-EQUIPMENT_SIM = False
-FIXTURE_SIM = False
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True
+
+STATION_NUMBER = '0000'

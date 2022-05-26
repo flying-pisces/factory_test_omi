@@ -34,7 +34,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
         """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '2.1.5'
+        self._sw_version = '2.1.6b'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         self._fixture = projectstationFixture(station_config, operator_interface)
@@ -62,7 +62,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._shop_floor: ShopFloor = None
 
     def initialize(self):
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP3\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
         self._operator_interface.update_root_config(
             {
                 'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE),
@@ -118,13 +118,6 @@ class SeacliffOffAxisStation(test_station.TestStation):
             raise SeacliffOffAxisStationError(f'Fail to find ports for fixture {";".join(port_err_message)}')
 
         self._fixture.initialize(fixture_port=self.fixture_port, particle_port=self.fixture_particle_port)
-        if (not self._station_config.FIXTURE_SIM and self._station_config.FIXTURE_PARTICLE_COUNTER
-                and hasattr(self, '_particle_counter_start_time')):
-            while ((datetime.datetime.now() - self._particle_counter_start_time)
-                   < datetime.timedelta(self._station_config.FIXTRUE_PARTICLE_START_DLY)):
-                time.sleep(0.1)
-                self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
-
         self._the_unit = dut.projectDut(None, self._station_config, self._operator_interface)
         if not self._station_config.DUT_SIM:
             self._the_unit = dut.pancakeDut(None, self._station_config, self._operator_interface)
@@ -139,15 +132,39 @@ class SeacliffOffAxisStation(test_station.TestStation):
             time.sleep(0.2)
         self._station_config.CAMERA_SN = conoscope_sn
         self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
-        equ_res, equ_msg = self._equipment.initialize()
-        if not equ_res:
-            raise SeacliffOffAxisStationError(f'Fail to init the conoscope: {equ_msg}')
 
-        self._operator_interface.print_to_console(f'Wait for testing...', 'green')
         self._pthr_monitor = threading.Thread(target=self._btn_monitor_thr, daemon=True)
         self._pthr_monitor.start()
         threading.Thread(target=self._auto_backup_thr, daemon=True).start()
+        threading.Thread(target=self._initialize_station_, daemon=True).start()
         self._shop_floor = ShopFloor()
+
+    def _initialize_station_(self):
+        try:
+            fixture_id = self._fixture.id()
+            if not self._station_config.FIXTURE_SIM and fixture_id != self._station_config.STATION_NUMBER:
+                raise SeacliffOffAxisStationError(
+                    f'Fixture Id is not set correctly {self._station_config.STATION_NUMBER} != FW: {fixture_id}')
+            if (not self._station_config.FIXTURE_SIM and self._station_config.FIXTURE_PARTICLE_COUNTER
+                    and hasattr(self, '_particle_counter_start_time')):
+                while ((datetime.datetime.now() - self._particle_counter_start_time)
+                       < datetime.timedelta(self._station_config.FIXTRUE_PARTICLE_START_DLY)):
+                    time.sleep(0.1)
+                    self._operator_interface.print_to_console('Waiting for initializing particle counter ...\n')
+
+            self._fixture.set_tri_color('y')
+            self._fixture.button_enable()
+            self._fixture.vacuum(False)
+            self._fixture.unload()
+            self._fixture.button_disable()
+            self._fixture.set_tri_color('g')
+            equ_res, equ_msg = self._equipment.initialize()
+            if not equ_res:
+                raise SeacliffOffAxisStationError(f'Fail to init the conoscope: {equ_msg}')
+            self._operator_interface.print_to_console(f'Wait for testing...', 'green')
+            self._operator_interface.update_root_config({'IsEnabled': 'True'})
+        except Exception as e:
+            self._operator_interface.print_to_console(f'Fail to init station: {str(e)}', 'red')
 
     def data_backup(self, source_path, target_path):
         if not os.path.exists(target_path):
@@ -165,7 +182,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
         if hasattr(self._station_config, 'ANALYSIS_RELATIVEPATH_BAK'):
             bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH_BAK, 'raw')
         ex_file_list = []
-        while not self._closed and not os.path.samefile(bak_dir, raw_dir):
+        while not self._closed:
             if self._is_running:
                 time.sleep(0.5)
                 continue
