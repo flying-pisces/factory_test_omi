@@ -1,10 +1,15 @@
 """
 Release Note:
 ========================================================
-Version 1.0.1
+Version 1.1.1
 2022-5-26 author<elton.tian@myzygroup.com>
 -1. add alarm information for grating
 -2. data-backup automatically.
+
+========================================================
+Version 1.1.0
+2022-5-7 elton<elton.tian@myzygroup.com>
+-1. Add MES support
 
 ========================================================
 Version 1.0.0
@@ -26,8 +31,8 @@ CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-tes
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = r'^\dPRP[\w|\d]{10}$'  # Peak panel SN
+SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
+SERIAL_NUMBER_MODEL_NUMBER = r'^\w{14}|[\w|-]{30}$'  # Peak panel SN
 DATA_CLEAN_SAVED_MINUTES = 3600 * 8
 DATA_CLEAN_SCHEDULE = []
 
@@ -39,11 +44,11 @@ FIXTURE_PARTICLE_ADDR = 1
 DUT_ETH_PROXY = True
 DUT_ADDR = {
     'A': {
-        'eth': ('192.168.21.131', 6000),
+        'eth': ('192.168.21.110', 6000),  # net mask: 255.255.21.128
         'com': '',
     },
     'B': {
-        'eth': ('192.168.21.133', 6000),
+        'eth': ('192.168.21.120', 6000),
         'com': ''
     }
 }
@@ -143,7 +148,7 @@ FIXTURE_PTB_ON_TIME = 1
 FIXTURE_USB_OFF_TIME = 1
 FIXTURE_USB_ON_TIME = 1
 FIXTURE_PTB_UNLOAD_DLY = 10
-FIXTURE_PARTICLE_COUNTER = True
+FIXTURE_PARTICLE_COUNTER = False
 SHARED_DATA_PATH = r'\\127.0.0.1\hwst_info'
 
 # FIXTRUE_PARTICLE_ADDR_READ = 40006
@@ -172,7 +177,7 @@ DUT_ON_MAXRETRY = 5
 DUT_DISPLAYSLEEPTIME = 0.025
 ##################################
 # Test Equipment related parameters
-IS_VERBOSE = True
+IS_VERBOSE = False
 IS_PRINT_TO_LOG = False
 MPKAPI_RELATIVEPATH = r"C:\Program Files\Radiant Vision Systems\TrueTest 1.7\MPK_API.dll"
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqxc'
@@ -194,20 +199,56 @@ IS_EXPORT_PNG = False
 Resolution_Bin_X = 360
 Resolution_Bin_Y = 360
 
-# PATTERNS =  ["W255", "W180", 'W127', 'W090', "R255", "G255", "B255"]
-POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
-             # ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-             # ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
-             # ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-             # ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"])
-             ]
-PATTERNS = ["W255", "W000", "R255", "G255", "B255"]
-SAVE_IMAGES = [False, False, False, False, False]
-# SAVE_IMAGES = [True, True, True, True, True, True]
-COLORS = [(255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)]
-# COLORS = ['0008', '0001', '0800', '8000', '0010']
-ANALYSIS = ["Points Of Interest W255", "Points Of Interest W000", "Points Of Interest R255", "Points Of Interest G255", "Points Of Interest B255"]
-MEASUREMENTS = ["W255", "W000", "R255", "G255", "B255"]
+TEST_POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
+                 # ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+                 # ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
+                 # ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+                 # ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"]),
+                 ]
+
+TEST_PATTERNS = {
+    'W255': {
+        'P': (255, 255, 255),
+        'A': "Points Of Interest W255",
+    },
+    'W000': {
+        'P': (0, 0, 0),
+        'A': "Points Of Interest W000",
+    },
+    'R255': {
+        'P': (255, 0, 0),
+        'A': "Points Of Interest R255",
+    },
+    'G255': {
+        'P': (0, 255, 0),
+        'A': "Points Of Interest G255",
+    },
+    'B255': {
+        'P': (0, 0, 255),
+        'A': "Points Of Interest B255",
+    },
+    'L127': {
+        'P': (127, 127, 127),
+        'A': "Points Of Interest L127",
+    },
+    'L063': {
+        'P': (63, 63, 63),
+        'A': "Points Of Interest L063",
+    },
+    'L031': {
+        'P': (31, 31, 31),
+        'A': "Points Of Interest L031",
+    },
+    'L015': {
+        'P': (15, 15, 15),
+        'A': "Points Of Interest L015",
+    },
+    'L007': {
+        'P': (7, 7, 7),
+        'A': "Points Of Interest L007",
+    },
+}
+
 ##################################
 
 CR_TEST_PATTERNS = ['W255', 'W000']
@@ -244,32 +285,39 @@ SORTED_EXPORT_LOG = False
 FACEBOOK_IT_ENABLED = False
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
+SHOPFLOOR_SYSTEM = 'boe_offaxis4'
 
 DATA_COLLECT_ONLY = False
 EQUIPMENT_DEMO_DATABASE = r'C:\ShareData\OffAxis'
 
 AUTO_SCAN_CODE = True
+AUTO_SCAN_USE_WEB_SCAN = True
+WEB_SCAN_REQ = r'192.168.22.131:8080\query'
+WEB_SCAN_CLR = r'192.168.22.131:8080\clear'
+
 IS_STATION_ACTIVE = True
 
 STATION_TYPE = 'seacliff_offaxis4'
-STATION_NUMBER = 1000
+STATION_NUMBER = '0000A'
 FULL_TREE_UI = False
 
-IS_MULTI_STATION_MANAGER = False
+IS_MULTI_STATION_MANAGER = True
 IS_STATION_MASTER = True
 MULTI_STATION_MANAGER_ADDR = ('192.168.22.131', 6666)
 STATION_MASTER_ADDR = ('192.168.22.131', 9989)
 SUB_STATION_INFO = {
     'A': {
         'IP': '192.168.22.131',
+        'WebScannerId': 'A',
     },
     'B': {
-        'IP': '192.168.22.133',
+        'IP': '192.168.22.132',
+        'WebScannerId': 'B',
     },
 }
 
-DUT_SIM = True
+DUT_SIM = False
 # CAMERA_SN = "1525711213"
 CAMERA_SN = 'Demo'
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False

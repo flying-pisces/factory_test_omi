@@ -26,6 +26,7 @@ from queue import Queue
 import serial
 import json
 import socketserver
+import urllib3
 
 
 ms_client_list = {}
@@ -89,7 +90,7 @@ class SeacliffOffAxis4StationError(Exception):
 
 class SeacliffOffAxis4Station(test_station.TestStation):
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '1.0.0'
+        self._sw_version = '1.1.0'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
 
@@ -130,25 +131,35 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             'VACCUM_A': False,
             'VACCUM_B': False,
         }
+        self._station_status = {
+            'Login': False,
+        }
 
         self._the_unit = {}   # type: pancakeDut
         self.fixture_scanner_ports = {}
         self.fixture_port = None
         self.fixture_particle_port = None
+        self._pool_manager = urllib3.PoolManager()
 
-    def chk_and_set_measured_value_by_name(self, test_log, item, value):
+    def chk_and_set_measured_value_by_name(self, test_log, item, value, value_msg=None):
         """
         :type test_log: test_station.TestRecord
         """
         if item in test_log.results_array():
             test_log.set_measured_value_by_name(item, value)
             did_pass = test_log.get_test_by_name(item).did_pass()
-            self._operator_interface.update_test_value(item, value, 1 if did_pass else -1)
+            if value_msg is None:
+                value_msg = value
+            self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def initialize(self):
-        self._operator_interface.update_root_config({'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE)})
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP2\n")
         self._operator_interface.update_root_config({'IsStartLoopFromKeyboard': 'false'})
+        self._operator_interface.update_root_config(
+        {
+            'IsScanCodeAutomatically': str(self._station_config.AUTO_SCAN_CODE),
+            'ShowLogin': str(self._station_config.IS_STATION_MASTER),
+        })
 
         # <editor-fold desc="Master">
         try:
@@ -285,6 +296,9 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             if self._is_slot_under_testing:
                 time.sleep(0.5)
                 continue
+            if not(os.path.exists(bak_dir) and os.path.exists(raw_dir) and os.path.samefile(bak_dir, raw_dir)):
+                time.sleep(0.5)
+                continue
 
             cur_time = datetime.datetime.now().hour + datetime.datetime.now().minute / 60
             if not (any([c1 <= cur_time <= c2 for c1, c2 in self._station_config.DATA_CLEAN_SCHEDULE]) and \
@@ -293,9 +307,6 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 continue
 
             # backup all the data automatically
-            if not (os.path.exists(bak_dir) and os.path.exists(raw_dir) and os.path.samefile(bak_dir, raw_dir)):
-                time.sleep(0.5)
-                continue
 
             uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
                            if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
@@ -421,6 +432,10 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         self._operator_interface.active_start_loop(cmd1)
                     elif cmd == 'UPDATE_SN':
                         self._operator_interface.update_root_config({'SN': cmd1 if cmd1 else ''})
+                    elif cmd == 'StatusChangeMaster':
+                        status = json.loads(cmd1)
+                        self._station_config.FACEBOOK_IT_ENABLED = status.get('Login')
+                        self._operator_interface.update_root_config({'IsUsrLogin': f'{self._station_config.FACEBOOK_IT_ENABLED}'})
                     elif cmd == 'CloseApp':
                         self._operator_interface.close_application()
             except Exception as e:
@@ -453,7 +468,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                             self.send_command(station_index, 'NextPatternAck')
                         elif cmd == 'MovToPos' and isinstance(arg1, str):
                             x, y = tuple([int(c) for c in arg1.split(',')])
-                            self._fixture.mov_abs_xy(x, y)
+                            # self._fixture.mov_abs_xy(x, y)  # may be some error in multi-thread.
                             self.send_command(station_index, 'MovToPosAck')
                         elif cmd == 'StatusChange' and isinstance(arg1, dict):
                             self._multi_station_dic[station_index]['IsAutoScanCode'] = arg1.get('auto_scan_code')
@@ -495,16 +510,48 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             finally:
                 time.sleep(0.1)
 
+    def _web_request_cmd(self, method, channel):
+        res = None
+        try:
+            r = self._pool_manager.request('GET', method, fields={'id': channel}, timeout=1)
+            if r.status == 200:
+                res = r.data.decode(encoding='utf-8')
+        except Exception as e:
+            self._operator_interface.print_to_console(f'Fail to query: {method}: {channel}: {str(e)}')
+        return res
+
     def _fixture_query_thr(self):
         while not USER_SHUTDOWN_STATION:
             time.sleep(0.01)
             try:
                 if self._fixture_query_command.empty():
-                    continue
+                    grp_btn_ab_status = False
+                    for k, v in self._multi_station_dic.items():
+                        pwr_status = False
+                        if not v['IsRunning'] and v['IsActive']:
+                            pwr_status = True
+                        if pwr_status != self.btn_status[f'PWR_{k}']:
+                            self._fixture_query_command.put(f'pwron_status:{k}_{pwr_status}')
+
+                    grp = [v for k, v in self._multi_station_dic.items() if v['IsActive']]
+                    if (len(grp) > 0
+                            and all([c['SN'] is not None and c['IsPWR'] for c in grp])  # SN should be set correctly
+                            and all([not c['IsRunning'] for c in grp])):  # Not running
+                        grp_btn_ab_status = True  # if so, should change the status for dual start button
+                    if grp_btn_ab_status != self.btn_status['DUAL_START']:
+                        self._fixture_query_command.put(f'dual_start:{grp_btn_ab_status}')
+                        self._operator_interface.print_to_console(
+                            f'Change dual_start status: {self.btn_status["DUAL_START"]} -> {grp_btn_ab_status}')
+                    time.sleep(0.05)
+                    continue  # Try to change the status of the fixture
                 cmd = self._fixture_query_command.get()
                 if self._station_config.IS_VERBOSE:
                     print(f'fixture query command: {cmd}\n')
-                if isinstance(cmd, str) and re.match('pwron_status:[A|B]_(?:true|false)', cmd, re.I | re.S):
+                if isinstance(cmd, str) and re.match('StatusChangeMaster', cmd, re.I):
+                    for channel, v in self._multi_station_dic.items():
+                        self.send_command(channel, 'StatusChangeMaster', json.dumps(self._station_status, indent=2))
+
+                elif isinstance(cmd, str) and re.match('pwron_status:[A|B]_(?:true|false)', cmd, re.I | re.S):
                     cmd1 = cmd.split(':')[1].split('_')[0]
                     cmd2 = cmd.split(':')[1].split('_')[1].lower() in ['true']
                     if cmd2:
@@ -527,6 +574,10 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     else:
                         self._fixture.button_disable()
                     self.btn_status['DUAL_START'] = cmd1
+                elif isinstance(cmd, str) and re.match(r'mov_pos:\d+,\d+', cmd, re.I | re.S):
+                    x, y = tuple([int(c) for c in cmd.split(':')[1].split(',')])
+                    self._fixture.mov_abs_xy(x, y)
+                    self._fixture_query_command.put(f'dual_start_post')
                 elif cmd == 'dual_start':
                     self._is_major_ctrl_under_testing = True
                     self.btn_status['DUAL_START'] = False
@@ -535,7 +586,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     self._fixture_query_command.put('pwron_status:B_False')
                     self._fixture_query_command.put('vacuum_status:A_False')
                     self._fixture_query_command.put('vacuum_status:B_False')
-                    self._fixture_query_command.put(f'dual_start_post')
+                    self._fixture_query_command.put('mov_pos:0,0')
                 elif cmd == 'dual_start_post':
                     for k, v in self._multi_station_dic.items():
                         if v['IsActive']:  # and v['SN']:
@@ -547,6 +598,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     for channel, v in self._multi_station_dic.items():
                         if v['IsActive']:
                             self._update_sn(channel, None)
+                            web_scanner_id = self._station_config.SUB_STATION_INFO[channel]['WebScannerId']
+                            self._web_request_cmd(self._station_config.WEB_SCAN_CLR, web_scanner_id)
                     self._is_major_ctrl_under_testing = False
                 elif isinstance(cmd, tuple) and len(cmd) == 2 and cmd[0] == 'power_on':
                     channel = cmd[1].upper()
@@ -562,10 +615,14 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         self._multi_station_dic[channel]['IsPWR'] = False
                         continue
                     if self._multi_station_dic[channel]['IsAutoScanCode'] is True:
-                        sn = self._fixture.scan_code(self.fixture_scanner_ports[channel])
+                        if self._station_config.AUTO_SCAN_USE_WEB_SCAN:
+                            web_scanner_id = self._station_config.SUB_STATION_INFO[channel]['WebScannerId']
+                            sn = self._web_request_cmd(self._station_config.WEB_SCAN_REQ, web_scanner_id)
+                        else:
+                            sn = self._fixture.scan_code(self.fixture_scanner_ports[channel])
                     else:
                         sn = self._multi_station_dic[channel]['SN']
-                    if not isinstance(sn, str) or 'ERROR' in sn:
+                    if not isinstance(sn, str) or len(sn.strip()) == 0 or 'ERROR' in sn:
                         self._operator_interface.print_to_console(f'Unable to scan code Station:{channel} --> SN:{sn}\n', 'red')
                         continue
                     if not self.validate_sn(serial_num=sn):
@@ -603,26 +660,9 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
     def _btn_scan_thr(self):
         while not USER_SHUTDOWN_STATION:
-            grp_btn_ab_status = False
             time.sleep(0.05)
             if not self._fixture_query_command.empty() or self._is_major_ctrl_under_testing:
                 continue
-
-            for k, v in self._multi_station_dic.items():
-                pwr_status = False
-                if not v['IsRunning'] and v['IsActive']:
-                    pwr_status = True
-                if pwr_status != self.btn_status[f'PWR_{k}']:
-                    self._fixture_query_command.put(f'pwron_status:{k}_{pwr_status}')
-
-            grp = [v for k, v in self._multi_station_dic.items() if v['IsActive']]
-            if (len(grp) > 0
-                    and all([c['SN'] is not None and c['IsPWR'] for c in grp])  # SN should be set correctly
-                    and all([not c['IsRunning'] for c in grp])):  # Not running
-                grp_btn_ab_status = True  # if so, should change the status for dual start button
-            if grp_btn_ab_status != self.btn_status['DUAL_START']:
-                self._fixture_query_command.put(f'dual_start:{grp_btn_ab_status}')
-                time.sleep(0.05)
 
             if self._fixture:
                 key_ret_info = self._fixture.is_ready()
@@ -655,16 +695,14 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
     def render_pattern(self, station_index, test_pattern):
         assert station_index in self._multi_station_dic.keys()
-        assert test_pattern in self._station_config.PATTERNS
+        assert test_pattern in self._station_config.TEST_PATTERNS
 
-        i = self._station_config.PATTERNS.index(test_pattern)
-        pattern = self._station_config.PATTERNS[i]
-        pre_color = self._station_config.COLORS[i]
-        if isinstance(self._station_config.COLORS[i], tuple):
-            self._the_unit[station_index].display_color(self._station_config.COLORS[i])
-        elif isinstance(self._station_config.COLORS[i], (str, int)):
-            self._the_unit[station_index].display_image(self._station_config.COLORS[i])
-        self._operator_interface.print_to_console(f'Set DUT {station_index} To Color: {pre_color}.\n')
+        pattern_color = self._station_config.TEST_PATTERNS.get(test_pattern)['P']
+        if isinstance(pattern_color, tuple):
+            self._the_unit[station_index].display_color(pattern_color)
+        elif isinstance(pattern_color, (str, int)):
+            self._the_unit[station_index].display_image(pattern_color)
+        self._operator_interface.print_to_console(f'Set DUT {station_index} To Color: {pattern_color}.\n')
 
     def close(self):
         global USER_SHUTDOWN_STATION
@@ -802,17 +840,14 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         :type test_log: test_station.TestRecord
         :type serial_number: str
         """
-        pos_patterns = None
-        for posIdx, pos, pos_patterns in self._station_config.POSITIONS:
+        for posIdx, pos, pos_patterns in self._station_config.TEST_POSITIONS:
             if posIdx != tposIdx:
                 continue
 
             for test_pattern in pos_patterns:
-                i = self._station_config.PATTERNS.index(test_pattern)
-                if i < 0:
+                if test_pattern not in self._station_config.TEST_PATTERNS:
                     continue
-                self._operator_interface.print_to_console(
-                    "Panel export for Pattern: %s\n" % self._station_config.PATTERNS[i])
+                self._operator_interface.print_to_console(f"Panel export for Pattern: {test_pattern}\n")
                 if self._station_config.IS_EXPORT_CSV or self._station_config.IS_EXPORT_PNG:
                     output_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH,
                                               serial_number + '_' + test_log._start_time.strftime(
@@ -821,9 +856,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         os.mkdir(output_dir, 777)
                     meas_list = self._equipment.get_measurement_list()
                     exp_base_file_name = re.sub('_x.log', '', test_log.get_filename())
-                    measurement = self._station_config.MEASUREMENTS[i]
                     for meas in meas_list:
-                        if meas['Measurement Setup'] != measurement:
+                        if meas['Measurement Setup'] != test_pattern:
                             continue
 
                         id = meas['Measurement ID']
@@ -840,9 +874,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         self._operator_interface.print_to_console("Export data for %s\n" % test_pattern)
 
     def offaxis_test_do(self, serial_number, test_log: test_station.test_log.TestRecord):
-        pos_items = self._station_config.POSITIONS
         pre_color = None
-        for posIdx, pos, pos_patterns in pos_items:
+        for posIdx, pos, pos_patterns in self._station_config.TEST_POSITIONS:
             analysis_result_dic = {}
             self._operator_interface.print_to_console('clear registration\n')
             self._equipment.clear_registration()
@@ -877,36 +910,31 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             center_item = self._station_config.CENTER_AT_POLE_AZI
             lv_cr_items = {}
             lv_all_items = {}
-            for test_pattern in pos_patterns:
-                if test_pattern not in pos_patterns:
+            for pattern in pos_patterns:
+                if pattern not in self._station_config.TEST_PATTERNS:
                     self._operator_interface.print_to_console("Can't find pattern {} for position {}.\n"
-                                                              .format(test_pattern, posIdx))
+                                                              .format(pattern, posIdx))
                     continue
-                self.__append_local_client_msg_q('NextPattern', f'{test_pattern}')
+                color_code = self._station_config.TEST_PATTERNS[pattern]['P']
+                analysis = self._station_config.TEST_PATTERNS[pattern]['A']
+
+                self.__append_local_client_msg_q('NextPattern', f'{pattern}')
                 self._work_flow_ctrl_event.acquire()
 
                 if self._work_flow_ctrl_event_err_msg:
                     raise SeacliffOffAxis4StationError(
-                        f'Fail to show next pattern {test_pattern}. {self._work_flow_ctrl_event_err_msg}')
-                i = self._station_config.PATTERNS.index(test_pattern)
-
-                pattern = self._station_config.PATTERNS[i]
-                analysis = self._station_config.ANALYSIS[i]
-                self._operator_interface.print_to_console(
-                    "Panel Measurement Pattern: %s , Position Id %s.\n" % (pattern, posIdx))
-
+                        f'Fail to show next pattern {pattern}. {self._work_flow_ctrl_event_err_msg}')
                 use_camera = not self._station_config.EQUIPMENT_SIM
                 if not use_camera:
                     self._equipment.clear_registration()
                 analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, True)
                 self._operator_interface.print_to_console("Sequence run step  {}.\n".format(analysis))
-                analysis_result_dic[pattern] = analysis_result.copy()
+                analysis_result_dic[pattern] = analysis_result
+                del analysis_result
 
                 # region extract raw data
-            for test_pattern in [c for c in pos_patterns if not self._station_config.DATA_COLLECT_ONLY]:
-                i = self._station_config.PATTERNS.index(test_pattern)
-                pattern = self._station_config.PATTERNS[i]
-                analysis = self._station_config.ANALYSIS[i]
+            for pattern in [c for c in pos_patterns if not self._station_config.DATA_COLLECT_ONLY]:
+                analysis = self._station_config.TEST_PATTERNS[pattern]['A']
 
                 lv_dic = {}
                 cx_dic = {}
@@ -971,7 +999,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         duv_dic = dict(zip(keys, duvs))
                         u_dic.update(us_dic)
                         v_dic.update(vs_dic)
-                    lv_all_items[f'{posIdx}_{test_pattern}'] = lv_dic
+                    lv_all_items[f'{posIdx}_{pattern}'] = lv_dic
                 # endregion
 
                 # region Normal Test Item.
@@ -1002,8 +1030,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     if lv_x_0 is None or lv_x_180 is None:
                         continue
                     lv_0_0 = lv_dic[center_item]
-                    assem = (lv_x_0 - lv_x_180)/lv_0_0
-                    test_item = '{}_{}_ASYM_{}_{}_{}_{}'.format(posIdx, pattern, *(p0+p180))
+                    assem = (lv_x_0 - lv_x_180) / lv_0_0
+                    test_item = '{}_{}_ASYM_{}_{}_{}_{}'.format(posIdx, pattern, *(p0 + p180))
                     test_log.set_measured_value_by_name_ex(test_item, '{0:.4}'.format(assem))
 
                 # Brightness % @30deg wrt on axis brightness
@@ -1012,17 +1040,17 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     tlv = lv_dic.get('P_%s_%s' % item)
                     if tlv is None:
                         continue
-                    tlv = round_ex(tlv / lv_dic[center_item], 3)
+                    tlv = tlv / lv_dic[center_item]
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_Proportion_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, tlv)
+                    test_log.set_measured_value_by_name_ex(test_item, tlv, round_ex(tlv, 3))
 
                 for item in self._station_config.COLORSHIFT_AT_POLE_AZI:
                     duv = duv_dic.get('P_%s_%s' % item)
                     if duv is None:
                         continue
                     test_item = '{}_{}_duv_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, round_ex(duv, 3))
+                    test_log.set_measured_value_by_name_ex(test_item, duv, round_ex(duv, 3))
                 if len(lv_dic) > 0:
                     # Max brightness location
                     max_loc = max(lv_dic, key=lv_dic.get)
@@ -1051,7 +1079,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         continue
                     cr = lv_cr_items[w][item_key] / lv_cr_items[d][item_key]
                     test_item = '{}_CR_{}_{}'.format(posIdx, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, round_ex(cr, ndigits=1))
+                    test_log.set_measured_value_by_name_ex(test_item, cr, round_ex(cr, 1))
             # endregion
 
             self.data_export(serial_number, test_log, posIdx)
@@ -1076,10 +1104,15 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                                     export_raw_keys.append(f'P_{pole}_{azi}')
                                 else:
                                     export_raw_keys.append(f'P_{-pole}_{azi + 180}')
-                            export_raw_values = [lv_all_items[f'{posIdx}_{exp_raw_data_pattern}'].get(c) for c in export_raw_keys]
-                            export_raw_data[:, pattern_idx * len(self._station_config.EXPORT_RAW_DATA_PATTERN_AZI) + aziIdx + 1] = export_raw_values
+                            export_raw_values = [lv_all_items[f'{posIdx}_{exp_raw_data_pattern}'].get(c) for c in
+                                                 export_raw_keys]
+                            export_raw_data[:, pattern_idx * len(
+                                self._station_config.EXPORT_RAW_DATA_PATTERN_AZI) + aziIdx + 1] = export_raw_values
                     try:
-                        raw_data_dir = os.path.join(os.path.dirname(test_log.get_file_path()), 'raw')
+                        uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+                        bak_dir = os.path.join(self._station_config.ROOT_DIR,
+                                               self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
+                        raw_data_dir = os.path.join(bak_dir, uni_file_name)
                         if not os.path.exists(raw_data_dir):
                             hsc_utils.mkdir_p(raw_data_dir)
 
@@ -1090,7 +1123,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                             header3 = 'Theta,'
                             subItems = ','.join(['' for c in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
                             subItem2s = ','.join([c for c, d in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
-                            subItem3s = ','.join([f'Phi = {d}' for c, d in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
+                            subItem3s = ','.join(
+                                [f'Phi = {d}' for c, d in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
                             header += ','.join([f'{c}{subItems}' for c in export_raw_data_patterns])
                             header2 += ','.join([f'{subItem2s}' for c in export_raw_data_patterns])
                             header3 += ','.join([f'{subItem3s}' for c in export_raw_data_patterns])
@@ -1107,3 +1141,21 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
             del lv_all_items
         self._operator_interface.print_to_console('complete the off_axis test items.\n')
+
+    def login(self, active, usr, pwd):
+        login_success = False
+        if not active:
+            login_success = True
+            self._station_status['Login'] = False
+        else:
+            try:
+                login_msg = self._shop_floor.login(usr, pwd)
+                if (login_msg is True) or (isinstance(login_msg, tuple) and login_msg[0] is True):
+                    self._station_status['Login'] = True
+                    login_success = True
+                else:
+                    self._operator_interface.print_to_console(f'Fail to login usr:{usr}, Data = {login_msg}')
+            except Exception as e:
+                self._operator_interface.print_to_console(f'Fail to login usr:{usr}, Except={str(e)}')
+        self._fixture_query_command.put(f'StatusChangeMaster')
+        return login_success
