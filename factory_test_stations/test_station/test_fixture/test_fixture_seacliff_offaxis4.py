@@ -187,9 +187,7 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
         with self._fixture_mutex:
             self._write_serial(self._station_config.COMMAND_RESET)
             response = self.read_response()
-        val = int(self._prase_response(r'LOAD:(\d+)', response).group(1))
-        if val == 0x00:
-            time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
+        val = int(self._prase_response(r'reset:(\d+)', response).group(1))
         return val
 
     def id(self):

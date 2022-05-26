@@ -22,6 +22,8 @@ CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-tes
 #
 SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = r'^\dPRP[\w|\d]{10}$'  # Peak panel SN
+DATA_CLEAN_SAVED_MINUTES = 3600 * 8
+DATA_CLEAN_SCHEDULE = []
 
 ##################################
 # Fixture parameters
@@ -170,9 +172,8 @@ MPKAPI_RELATIVEPATH = r"C:\Program Files\Radiant Vision Systems\TrueTest 1.7\MPK
 SEQUENCE_RELATIVEPATH = r'test_station\test_equipment\algorithm\P0_20200331.seqxc'
 CALIBRATION_RELATIVEPATH = r'test_station\test_equipment\calibration'
 
-ANALYSIS_RELATIVEPATH = r'factory-test_logs'
-ANALYSIS_RELATIVEPATH_BAK = r'factory-test_logs'
-
+ANALYSIS_RELATIVEPATH = r'C:\Oculus\factory_test_omi\factory_test_stations\factory-test_logs'
+ANALYSIS_RELATIVEPATH_BAK = r'D:\Oculus\factory_test_omi\factory_test_stations\factory-test_logs'
 FOCUS_DISTANCE = 0.45
 APERTURE = 8.0
 ROTATION = 0

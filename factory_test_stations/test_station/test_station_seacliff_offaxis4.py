@@ -286,10 +286,22 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 time.sleep(0.5)
                 continue
 
+            cur_time = datetime.datetime.now().hour + datetime.datetime.now().minute / 60
+            if not (any([c1 <= cur_time <= c2 for c1, c2 in self._station_config.DATA_CLEAN_SCHEDULE]) and \
+                    os.path.exists(raw_dir)):
+                time.sleep(0.5)
+                continue
+
+            # backup all the data automatically
+            if not (os.path.exists(bak_dir) and os.path.exists(raw_dir) and os.path.samefile(bak_dir, raw_dir)):
+                time.sleep(0.5)
+                continue
+
             uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
                            if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
             # backup all the raw data which is created about 8 hours ago.
-            uut_raw_dir_old = [c for c, d in uut_raw_dir if time.time() - d > 3600*8]
+            uut_raw_dir_old = [c for c, d in uut_raw_dir if
+                               time.time() - d > self._station_config.DATA_CLEAN_SAVED_MINUTES]
             if len(uut_raw_dir_old) <= 0:
                 time.sleep(1)
                 continue
@@ -633,6 +645,11 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         self._fixture_query_command.put(query_key_cmd_list.get(ready_key))
                     elif key_ret_info in err_msg_list:
                         self._operator_interface.print_to_console(f'Please note: {err_msg_list[key_ret_info]} .\n')
+                        if ready_key == 0 and ready_code == 4:
+                            while ready_code != 0:
+                                self._operator_interface.operator_input(
+                                    'Hint', err_msg_list.get(key_ret_info), msg_type='warning', msgbtn=0)
+                                ready_code = self._fixture.reset()
                     else:
                         self._operator_interface.print_to_console(f'Recv command not handled: {ready_key} \n')
 
@@ -852,10 +869,10 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
                 self._equipment.set_database(databaseFileName)
 
-            if self._station_config.IS_STATION_MASTER:
-                self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
-                self.__append_local_client_msg_q('MovToPos', f'{pos[0]},{pos[1]}')
-                self._work_flow_ctrl_event.acquire()
+            # if self._station_config.IS_STATION_MASTER:
+            #     self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
+            #     self.__append_local_client_msg_q('MovToPos', f'{pos[0]},{pos[1]}')
+            #     self._work_flow_ctrl_event.acquire()
 
             center_item = self._station_config.CENTER_AT_POLE_AZI
             lv_cr_items = {}

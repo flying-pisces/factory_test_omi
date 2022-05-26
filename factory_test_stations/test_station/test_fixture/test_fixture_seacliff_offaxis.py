@@ -89,16 +89,19 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
         self._fixture_mutex = threading.Lock()
 
     def is_ready(self):
-        if self._serial_port is not None:
-            with self._fixture_mutex:
-                resp = self._read_response(0.05, end_delimiter=self._end_delimiter_auto_response)
+        if self._serial_port is not None and self._fixture_mutex.acquire(blocking=False):
+            resp = self._read_response(0.1, end_delimiter=self._end_delimiter_auto_response)
+            self._fixture_mutex.release()
             if resp:
-                btn_dic = {3: r'PowerOn_Button:\d', 1: r'BUTTON_Left:\d', 2: r'BUTTON_Right:\d',
-                           0: r'BUTTON:0', 4: r'BUTTON:1'}
+                btn_dic = {4: r'PowerOn_Button_R:(\d+)',
+                           3: r'PowerOn_Button_L:(\d+)',
+                           2: r'BUTTON_LEFT:(\d+)',
+                           1: r'BUTTON_RIGHT:(\d+)',
+                           0: r'BUTTON:(\d+)'}
                 for key, item in btn_dic.items():
-                    items = list(filter(lambda r: re.match(item, r, re.I), resp))
+                    items = list(filter(lambda r: re.search(item, r, re.I | re.S), resp))
                     if items:
-                        return key
+                        return key, int(re.search(item, items[0], re.I | re.S).group(1))
 
     def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing offaxis Fixture\n")
@@ -181,10 +184,8 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
     def reset(self):
         with self._fixture_mutex:
             self._write_serial(self._station_config.COMMAND_RESET)
-            response = self.read_response()
-        val = int(self._prase_response(r'LOAD:(\d+)', response).group(1))
-        if val == 0x00:
-            time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
+            response = self.read_response(timeout=30)
+        val = int(self._prase_response(r'reset:(\d+)', response).group(1))
         return val
 
     def id(self):
