@@ -126,17 +126,6 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
         if not self._serial_port:
             raise SeacliffOffAxis4FixtureError(f'Unable to open fixture port: {kwargs}')
         else:  # disable the buttons automatically
-            self.set_tri_color('y')
-            for bk in ['A', 'B']:
-                self.vacuum(False, bk_mode=bk)
-                self.power_on_button_status(True, bk_mode=bk)
-            self.button_enable()
-            self.unload()
-            for bk in ['A', 'B']:
-                self.vacuum(False, bk_mode=bk)
-                self.power_on_button_status(False, bk_mode=bk)
-            self.button_disable()
-            self.set_tri_color('g')
             if self._verbose:
                 print(f"Fixture Initialized: {kwargs}")
             return True
@@ -186,7 +175,7 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
     def reset(self):
         with self._fixture_mutex:
             self._write_serial(self._station_config.COMMAND_RESET)
-            response = self.read_response()
+            response = self.read_response(timeout=25)
         val = int(self._prase_response(r'reset:(\d+)', response).group(1))
         return val
 
@@ -243,10 +232,10 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
         return int(self._prase_response(r'ABS_X_Y:(\d+)', response).group(1))
 
     def load(self):
-        self._load()
+        return self._load()
 
     def unload(self):
-        self._unload()
+        return self._unload()
 
     def vacuum(self, on, bk_mode='A'):
         """
@@ -307,7 +296,7 @@ class SeacliffOffAxis4Fixture(hardware_station_common.test_station.test_fixture.
         with self._fixture_mutex:
             self._write_serial(self._station_config.COMMAND_UNLOAD)
             response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
-        return int(self._prase_response(r'UNLOAD:(\d+)', response).group(1))
+        return int(self._prase_response(r'LOAD:(\d+)', response).group(1))
 
     def _prase_response(self, regex, resp):
         if not resp:

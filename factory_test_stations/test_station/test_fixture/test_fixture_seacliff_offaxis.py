@@ -112,16 +112,16 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
                                           xonxoff=0,
                                           rtscts=0)
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
-                parity = 'N'
-                Defaults.Retries = 5
-                Defaults.RetryOnEmpty = True
-                self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
-                                                                   stopbits=1,
-                                                                   port=kwargs.get('particle_port'),
-                                                                   timeout=2000)
-                self._particle_counter_client.inter_char_timeout = 0.2
-                if not self._particle_counter_client.connect():
-                    raise SeacliffOffAxisFixtureError(f'Unable to open particle counter port: {kwargs}')
+            parity = 'N'
+            Defaults.Retries = 5
+            Defaults.RetryOnEmpty = True
+            self._particle_counter_client = ModbusSerialClient(method='rtu', baudrate=9600, bytesize=8, parity=parity,
+                                                               stopbits=1,
+                                                               port=kwargs.get('particle_port'),
+                                                               timeout=2000)
+            self._particle_counter_client.inter_char_timeout = 0.2
+            if not self._particle_counter_client.connect():
+                raise SeacliffOffAxisFixtureError(f'Unable to open particle counter port: {kwargs}')
 
         if not self._serial_port:
             raise SeacliffOffAxisFixtureError(f'Unable to open fixture port: {kwargs}')
@@ -260,9 +260,7 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
         return self._load()
 
     def unload(self):
-        if self._unload() != 0:
-            raise SeacliffOffAxisFixtureError('Fail to unload carrier')
-
+        return self._unload()
     def _load(self):
         with self._fixture_mutex:
             self._write_serial(self._station_config.COMMAND_LOAD)
@@ -273,7 +271,7 @@ class SeacliffOffAxisFixture(hardware_station_common.test_station.test_fixture.T
         with self._fixture_mutex:
             self._write_serial(self._station_config.COMMAND_UNLOAD)
             response = self.read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
-        return int(self._prase_response(r'UNLOAD:(\d+)', response).group(1))
+        return int(self._prase_response(r'LOAD:(\d+)', response).group(1))
 
     def _prase_response(self, regex, resp):
         if not resp:

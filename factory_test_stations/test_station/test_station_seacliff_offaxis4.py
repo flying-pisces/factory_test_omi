@@ -90,7 +90,7 @@ class SeacliffOffAxis4StationError(Exception):
 
 class SeacliffOffAxis4Station(test_station.TestStation):
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '1.1.0'
+        self._sw_version = '1.1.1'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
 
@@ -98,7 +98,9 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             self._fixture = projectstationFixture(station_config, operator_interface)
             if not station_config.FIXTURE_SIM:
                 self._fixture = SeacliffOffAxis4Fixture(station_config, operator_interface)  # type: SeacliffOffAxis4Fixture
-
+        radiantApiSettings = r'C:\Radiant Vision Systems Data\TrueTest\AppData\Config\TT_API AppSettings.json'
+        if os.path.exists(radiantApiSettings):
+            os.remove(radiantApiSettings)
         self._equipment = SeacliffOffAxis4Equipment(station_config)  # type: SeacliffOffAxis4Equipment
         self._overall_errorcode = ''
         self._first_failed_test_result = None
@@ -134,7 +136,13 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         self._station_status = {
             'Login': False,
         }
-
+        self._err_msg_list = {
+            1: 'Axis Z running error',
+            2: 'This command is cancel by operator',
+            3: 'DUT transfer is timeout',
+            4: 'Signal from sensor (Door/Grating) is error',
+            5: 'Signal from sensor (pressing plate) is not triggered',
+        }
         self._the_unit = {}   # type: pancakeDut
         self.fixture_scanner_ports = {}
         self.fixture_port = None
@@ -153,7 +161,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def initialize(self):
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP2\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
         self._operator_interface.update_root_config({'IsStartLoopFromKeyboard': 'false'})
         self._operator_interface.update_root_config(
         {
@@ -230,6 +238,20 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         if self._station_config.IS_STATION_MASTER:
             self._fixture.initialize(fixture_port=self.fixture_port,
                                      particle_port=self.fixture_particle_port)
+
+            self._fixture.set_tri_color('y')
+            for bk in ['A', 'B']:
+                self._fixture.vacuum(False, bk_mode=bk)
+                self._fixture.power_on_button_status(True, bk_mode=bk)
+            self._fixture.button_enable()
+            if not self._station_config.FIXTURE_SIM and self.alert_handle(self._fixture.unload()) != 0:
+                raise SeacliffOffAxis4StationError(f'Fail to init the fixture.')
+            for bk in ['A', 'B']:
+                self._fixture.vacuum(False, bk_mode=bk)
+                self._fixture.power_on_button_status(False, bk_mode=bk)
+            self._fixture.button_disable()
+            self._fixture.set_tri_color('g')
+
             if (self._station_config.IS_MULTI_STATION_MANAGER
                     and self._station_config.FIXTURE_PARTICLE_COUNTER):
                 if self._fixture.particle_counter_state() == 0:
@@ -594,7 +616,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                             self._multi_station_dic[k]['IsRunning'] = True
                         # it says the dual btn was disabled
                 elif cmd == 'unload':
-                    self._fixture.unload()
+                    self.alert_handle(self._fixture.unload())
                     for channel, v in self._multi_station_dic.items():
                         if v['IsActive']:
                             self._update_sn(channel, None)
@@ -661,10 +683,10 @@ class SeacliffOffAxis4Station(test_station.TestStation):
     def _btn_scan_thr(self):
         while not USER_SHUTDOWN_STATION:
             time.sleep(0.05)
-            if not self._fixture_query_command.empty() or self._is_major_ctrl_under_testing:
+            if not self._fixture_query_command.empty() or self._is_major_ctrl_under_testing or not self._fixture:
                 continue
 
-            if self._fixture:
+            try:
                 key_ret_info = self._fixture.is_ready()
                 query_key_cmd_list = {
                     0: 'dual_start',
@@ -672,26 +694,26 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     4: ('power_on', 'B'),
                     1: ('power_on', 'B'),
                 }
-                err_msg_list = {
-                    (0, 1): 'Axis Z running error',
-                    (0, 2): 'This command is cancel by operator',
-                    (0, 3): 'DUT transfer is timeout',
-                    (0, 4): 'Signal from sensor (Door/Grating) is error',
-                    (0, 5): 'Signal from sensor (pressing plate) is not triggered',
-                }
                 if isinstance(key_ret_info, tuple):
                     ready_key, ready_code = key_ret_info
                     if ready_key in query_key_cmd_list and ready_code == 0:
                         self._fixture_query_command.put(query_key_cmd_list.get(ready_key))
-                    elif key_ret_info in err_msg_list:
-                        self._operator_interface.print_to_console(f'Please note: {err_msg_list[key_ret_info]} .\n')
-                        if ready_key == 0 and ready_code == 4:
-                            while ready_code != 0:
-                                self._operator_interface.operator_input(
-                                    'Hint', err_msg_list.get(key_ret_info), msg_type='warning', msgbtn=0)
-                                ready_code = self._fixture.reset()
+                    elif ready_key == 0 and ready_code in self._err_msg_list:
+                        self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(ready_code)}.\n')
+                        self.alert_handle(ready_code)
                     else:
                         self._operator_interface.print_to_console(f'Recv command not handled: {ready_key} \n')
+            except Exception as e:
+                self._operator_interface.print_to_console(f'Fail to btn scan thread : {str(e)}\n', 'red')
+
+    def alert_handle(self, ready_code):
+        alert_res = ready_code
+        while alert_res in [4, 5]:
+            self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning',
+                                                    msgbtn=0)
+            alert_res = self.reset()
+        self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(alert_res)}.\n', 'red')
+        return alert_res
 
     def render_pattern(self, station_index, test_pattern):
         assert station_index in self._multi_station_dic.keys()

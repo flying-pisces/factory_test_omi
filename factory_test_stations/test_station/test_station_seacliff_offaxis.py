@@ -40,7 +40,9 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._fixture = projectstationFixture(station_config, operator_interface)
         if not station_config.FIXTURE_SIM:
             self._fixture = SeacliffOffAxisFixture(station_config, operator_interface)  # type: SeacliffOffAxisFixture
-
+        radiantApiSettings = r'C:\Radiant Vision Systems Data\TrueTest\AppData\Config\TT_API AppSettings.json'
+        if os.path.exists(radiantApiSettings):
+            os.remove(radiantApiSettings)
         self._equipment = SeacliffOffAxisEquipment(station_config)  # type: SeacliffOffAxisEquipment
         if self._station_config.FIXTURE_PARTICLE_COUNTER:
             if self._fixture.particle_counter_state() == 0:
@@ -60,6 +62,13 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._closed = False
         self._pthr_monitor = None
         self._shop_floor: ShopFloor = None
+        self._err_msg_list = {
+            1: 'Axis Z running error',
+            2: 'This command is cancel by operator',
+            3: 'DUT transfer is timeout',
+            4: 'Signal from sensor (Door/Grating) is error',
+            5: 'Signal from sensor (pressing plate) is not triggered',
+        }
 
     def initialize(self):
         self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
@@ -133,13 +142,12 @@ class SeacliffOffAxisStation(test_station.TestStation):
         self._station_config.CAMERA_SN = conoscope_sn
         self._operator_interface.print_to_console("Initialize Camera %s\n" % self._station_config.CAMERA_SN)
 
-        self._pthr_monitor = threading.Thread(target=self._btn_monitor_thr, daemon=True)
-        self._pthr_monitor.start()
         threading.Thread(target=self._auto_backup_thr, daemon=True).start()
-        threading.Thread(target=self._initialize_station_, daemon=True).start()
+        threading.Thread(target=self._initialize, daemon=True).start()
         self._shop_floor = ShopFloor()
+        return False
 
-    def _initialize_station_(self):
+    def _initialize(self):
         try:
             fixture_id = self._fixture.id()
             if not self._station_config.FIXTURE_SIM and fixture_id != self._station_config.STATION_NUMBER:
@@ -155,7 +163,8 @@ class SeacliffOffAxisStation(test_station.TestStation):
             self._fixture.set_tri_color('y')
             self._fixture.button_enable()
             self._fixture.vacuum(False)
-            self._fixture.unload()
+            if not self._station_config.FIXTURE_SIM and self.alert_handle(self._fixture.unload()) != 0:
+                raise SeacliffOffAxisStationError(f'Fail to init the fixture.')
             self._fixture.button_disable()
             self._fixture.set_tri_color('g')
             equ_res, equ_msg = self._equipment.initialize()
@@ -163,6 +172,9 @@ class SeacliffOffAxisStation(test_station.TestStation):
                 raise SeacliffOffAxisStationError(f'Fail to init the conoscope: {equ_msg}')
             self._operator_interface.print_to_console(f'Wait for testing...', 'green')
             self._operator_interface.update_root_config({'IsEnabled': 'True'})
+
+            self._pthr_monitor = threading.Thread(target=self._btn_monitor_thr, daemon=True)
+            self._pthr_monitor.start()
         except Exception as e:
             self._operator_interface.print_to_console(f'Fail to init station: {str(e)}', 'red')
 
@@ -186,34 +198,33 @@ class SeacliffOffAxisStation(test_station.TestStation):
             if self._is_running:
                 time.sleep(0.5)
                 continue
+            if not (os.path.exists(bak_dir) and os.path.exists(raw_dir) and os.path.samefile(bak_dir, raw_dir)):
+                time.sleep(0.5)
+                continue
+            cur_time = datetime.datetime.now().hour + datetime.datetime.now().minute / 60
+            if not (any([c1 <= cur_time <= c2 for c1, c2 in self._station_config.DATA_CLEAN_SCHEDULE]) and \
+                    os.path.exists(raw_dir)):
+                time.sleep(0.5)
+                continue
 
-                cur_time = datetime.datetime.now().hour + datetime.datetime.now().minute / 60
-                if not (any([c1 <= cur_time <= c2 for c1, c2 in self._station_config.DATA_CLEAN_SCHEDULE]) and \
-                        os.path.exists(raw_dir)):
-                    time.sleep(0.5)
-                    continue
+            # backup all the data automatically
 
-                # backup all the data automatically
-                if not (os.path.exists(bak_dir) and os.path.exists(raw_dir) and os.path.samefile(bak_dir, raw_dir)):
-                    time.sleep(0.5)
-                    continue
+            uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
+                           if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
+            # backup all the raw data which is created about 8 hours ago.
+            uut_raw_dir_old = [c for c, d in uut_raw_dir if
+                               time.time() - d > self._station_config.DATA_CLEAN_SAVED_MINUTES]
+            if len(uut_raw_dir_old) <= 0:
+                time.sleep(1)
+                continue
+            n1 = uut_raw_dir_old[-1]
+            try:
+                self.data_backup(os.path.join(raw_dir, n1), os.path.join(os.path.join(bak_dir, n1)))
 
-                uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
-                               if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
-                # backup all the raw data which is created about 8 hours ago.
-                uut_raw_dir_old = [c for c, d in uut_raw_dir if
-                                   time.time() - d > self._station_config.DATA_CLEAN_SAVED_MINUTES]
-                if len(uut_raw_dir_old) <= 0:
-                    time.sleep(1)
-                    continue
-                n1 = uut_raw_dir_old[-1]
-                try:
-                    self.data_backup(os.path.join(raw_dir, n1), os.path.join(os.path.join(bak_dir, n1)))
-
-                    shutil.rmtree(os.path.join(raw_dir, n1))
-                except Exception as e:
-                    ex_file_list.append(n1)
-                    self._operator_interface.print_to_console(f'Fail to backup file to {bak_dir}. Exp = {str(e)}')
+                shutil.rmtree(os.path.join(raw_dir, n1))
+            except Exception as e:
+                ex_file_list.append(n1)
+                self._operator_interface.print_to_console(f'Fail to backup file to {bak_dir}. Exp = {str(e)}')
 
     def close(self):
         self._closed = True
@@ -283,7 +294,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
             # noinspection PyBroadException
             try:
                 self._the_unit.screen_off()
-                self._fixture.unload()
+                self.alert_handle(self._fixture.unload())
             except Exception as e:
                 self._operator_interface.print_to_console(f"Release resource exception {str(e)}.\n", 'red')
             self._operator_interface.print_to_console('close the test_log for {}.\n'.format(serial_number))
@@ -341,7 +352,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
         power_on_trigger = False
         scan_sn = None
         running_status_bak = None
-        while not self._closed:
+        while not self._closed and self._fixture:
             time.sleep(20E-03)
             try:
                 if current_scan_mode is None or current_scan_mode != self._station_config.AUTO_SCAN_CODE:
@@ -364,16 +375,18 @@ class SeacliffOffAxisStation(test_station.TestStation):
                 if is_running:
                     continue
 
-                ready_status = self._fixture.is_ready()
-                if ready_status is None:
+                key_ret_info = self._fixture.is_ready()
+                if not isinstance(key_ret_info, tuple):
                     continue
+                ready_key, ready_code = key_ret_info
                 if self._station_config.IS_VERBOSE:
-                    print(f'Fixture signal {ready_status}...\n')
-                if ready_status == 0x00 and scan_sn and power_on_trigger:  # load DUT automatically and then screen on
+                    print(f'Fixture signal {key_ret_info}...\n')
+                # load DUT automatically and then screen on
+                if ready_key == 0x00 and ready_code == 0x00 and scan_sn and power_on_trigger:
                     self._is_screen_on_by_op = True
                     self._operator_interface.active_start_loop(scan_sn)
                     self._is_running = True
-                elif ready_status in [0x03, 0x01]:
+                elif ready_key in [0x03, 0x01]:
                     if self._station_config.IS_VERBOSE:
                         print(f'Try to change DUT status. {power_on_trigger}\n')
                     if not power_on_trigger:
@@ -396,6 +409,11 @@ class SeacliffOffAxisStation(test_station.TestStation):
                         self._fixture.power_on_button_status(True)
                         scan_sn = None
                         self._operator_interface.update_root_config({'sn': ''})
+                elif ready_key == 0 and ready_code in self._err_msg_list:
+                    self.alert_handle(ready_code)
+                else:
+                    self._operator_interface.print_to_console(f'Recv command not handled: {key_ret_info} \n')
+
             except Exception as e:
                 self._operator_interface.print_to_console(f'Fail to _btn_monitor_thr {str(e)}', 'red')
                 power_on_trigger = False
@@ -407,6 +425,14 @@ class SeacliffOffAxisStation(test_station.TestStation):
         if not self._station_config.AUTO_SCAN_CODE:
             self.is_ready_litup_outside()
         return True
+
+    def alert_handle(self, ready_code):
+        alert_res = ready_code
+        while alert_res in [4, 5]:
+            self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning', msgbtn=0)
+            alert_res = self.reset()
+        self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(alert_res)}.\n', 'red')
+        return alert_res
 
     def is_ready_litup_outside(self):
         ready = False
@@ -436,13 +462,6 @@ class SeacliffOffAxisStation(test_station.TestStation):
                     self._is_screen_on_by_op = True
                     ready = True
 
-                err_msg_list = {
-                    (0, 1): 'Axis Z running error',
-                    (0, 2): 'This command is cancel by operator',
-                    (0, 3): 'DUT transfer is timeout',
-                    (0, 4): 'Signal from sensor (Door/Grating) is error',
-                    (0, 5): 'Signal from sensor (pressing plate) is not triggered',
-                }
                 key_ret_info = self._fixture.is_ready()
                 if isinstance(key_ret_info, tuple):
                     ready_key, ready_code = key_ret_info
@@ -467,13 +486,10 @@ class SeacliffOffAxisStation(test_station.TestStation):
                             self._fixture.power_on_button_status(True)
                             timeout_for_dual = time.time()
 
-                    elif key_ret_info in err_msg_list:
-                        self._operator_interface.print_to_console(f'Please note: {err_msg_list[key_ret_info]}.\n', 'red')
-                        if ready_key == 0 and ready_code == 4:
-                            while ready_code != 0:
-                                self._operator_interface.operator_input(
-                                    'Hint', err_msg_list.get(key_ret_info), msg_type='warning', msgbtn=0)
-                                ready_code = self._fixture.reset()
+                    elif ready_key == 0 and ready_code in self._err_msg_list:
+                        self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(ready_code)}.\n', 'red')
+                        if ready_code == 4:
+                            self.alert_handle(ready_code)
                     else:
                         self._operator_interface.print_to_console(f'Recv command not handled: {key_ret_info} \n')
 
