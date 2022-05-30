@@ -430,8 +430,9 @@ class SeacliffOffAxisStation(test_station.TestStation):
         alert_res = ready_code
         while alert_res in [4, 5]:
             self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning', msgbtn=0)
-            alert_res = self.reset()
-        self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(alert_res)}.\n', 'red')
+            alert_res = self._fixture.reset()
+        if alert_res != 0:
+            self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(alert_res)}.\n', 'red')
         return alert_res
 
     def is_ready_litup_outside(self):

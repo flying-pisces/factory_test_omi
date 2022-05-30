@@ -235,7 +235,12 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             if not self._station_config.FIXTURE_SIM and len(port_err_message) > 0:
                 raise SeacliffOffAxis4StationError(f'Fail to find ports for fixture {";".join(port_err_message)}')
 
-        if self._station_config.IS_STATION_MASTER:
+            server = ThreadedTCPServer(self._station_config.STATION_MASTER_ADDR, ThreadedTCPRequestHandler)
+            server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+            server_thread = threading.Thread(target=server.serve_forever)
+            server_thread.daemon = True
+            server_thread.start()
+
             self._fixture.initialize(fixture_port=self.fixture_port,
                                      particle_port=self.fixture_particle_port)
 
@@ -273,12 +278,6 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         self._station_config.CAMERA_SN = conoscope_sn
         self._operator_interface.print_to_console("Initialize Camera SN = %s\n" % self._station_config.CAMERA_SN)
         if self._station_config.IS_STATION_MASTER:
-            server = ThreadedTCPServer(self._station_config.STATION_MASTER_ADDR, ThreadedTCPRequestHandler)
-            server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-            server_thread = threading.Thread(target=server.serve_forever)
-            server_thread.daemon = True
-            server_thread.start()
-
             equ_res, equ_msg = self._equipment.initialize()
             threading.Thread(target=self._fixture_query_thr, daemon=True).start()
             if self._station_config.IS_MULTI_STATION_MANAGER:
@@ -711,8 +710,9 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         while alert_res in [4, 5]:
             self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning',
                                                     msgbtn=0)
-            alert_res = self.reset()
-        self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(alert_res)}.\n', 'red')
+            alert_res = self._fixture.reset()
+        if alert_res != 0:
+            self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(alert_res)}.\n', 'red')
         return alert_res
 
     def render_pattern(self, station_index, test_pattern):
