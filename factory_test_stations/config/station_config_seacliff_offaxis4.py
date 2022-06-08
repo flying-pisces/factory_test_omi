@@ -254,10 +254,61 @@ TEST_PATTERNS = {
 CR_TEST_PATTERNS = ['W255', 'W000']
 CENTER_AT_POLE_AZI = 'P_0_0'
 
-SAVE_PNL_IF_FAIL = {
-    'LA': ['P1_W255_duv_15_0', 'P1_R255_duv_15_0', 'P1_G255_duv_15_0', 'P1_B255_duv_15_0'],
-    'RA': ['P1_W255_duv_15_180', 'P1_R255_duv_15_180', 'P1_G255_duv_15_180', 'P1_B255_duv_15_180'],
-}
+# SAVE_PNL_IF_FAIL = {
+#     'LA': ['P1_W255_duv_15_0', 'P1_R255_duv_15_0', 'P1_G255_duv_15_0', 'P1_B255_duv_15_0'],
+#     'RA': ['P1_W255_duv_15_180', 'P1_R255_duv_15_180', 'P1_G255_duv_15_180', 'P1_B255_duv_15_180'],
+# }
+
+EXT_CTRL_duv_ANY = [
+    {
+        'SPEC': (0, 0.015),
+        'Items': [f'P1_{c}_duv_15_{phy}' for c in ['W255', 'R255', 'G255', 'B255'] for phy in [0, 90, 180, 270]]
+    }]
+
+EXT_CTRL_Lv_ANY = [
+    {
+        'SPEC': (140, float('inf')),
+        'Items': [f'P1_W255_Lv_15_{c}' for c in [0, 180]]
+    },
+    {
+        'SPEC': (180, float('inf')),
+        'Items': [f'P1_W255_Lv_15_{c}' for c in [90, 270]]
+    },
+    {
+        'SPEC': (0.38, float('inf')),
+        'Items': [f'P1_W255_Lv_Proportion_15_{c}' for c in [0, 180]]
+    },
+    {
+        'SPEC': (0.47, float('inf')),
+        'Items': [f'P1_W255_Lv_Proportion_15_{c}' for c in [90, 270]]
+    }]
+
+EXT_CTRL_ASYM_duv = [
+    {
+        'SPEC': (0, 0.01),
+        'Items': [f'P1_{c}_duv_15_0' for c in ['W255', 'R255', 'G255', 'B255']]
+    },
+    {
+        'SPEC': (0, 0.01),
+        'Items': [f'P1_{c}_duv_15_180' for c in ['W255', 'R255', 'G255', 'B255']]
+    }]
+
+EXT_CTRL_duv_LR_ALL = [
+    {
+        'SPEC': (0, 0.007),
+        'Items': [f'P1_{c}_duv_15_0' for c in ['W255', 'R255', 'G255', 'B255']]
+    },
+    {
+        'SPEC': (0, 0.007),
+        'Items': [f'P1_{c}_duv_15_180' for c in ['W255', 'R255', 'G255', 'B255']]
+    }]
+
+EXT_CTRL_CR_ANY = [
+    {
+        'SPEC': (140, float('inf')),
+        'Items': [f'P1_CR_15_{c}' for c in [0, 90, 180, 270]]
+    }]
+
 
 BRIGHTNESS_AT_POLE_AZI = [(0, 0),
                          (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338),

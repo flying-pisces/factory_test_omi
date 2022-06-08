@@ -27,6 +27,7 @@ import serial
 import json
 import socketserver
 import urllib3
+import keyboard
 
 
 ms_client_list = {}
@@ -90,7 +91,7 @@ class SeacliffOffAxis4StationError(Exception):
 
 class SeacliffOffAxis4Station(test_station.TestStation):
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '1.1.1'
+        self._sw_version = '1.1.2'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
 
@@ -296,6 +297,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         if not equ_res:
             raise SeacliffOffAxis4StationError(f'Fail to init the conoscope: {equ_msg}')
         self._operator_interface.print_to_console(f'Wait for testing...', 'green')
+        if self._station_config.FIXTURE_SIM:
+            keyboard.add_hotkey('ctrl+q', self._fixture_btn_emulator, args=(self, None))
 
     def data_backup(self, source_path, target_path):
         if not os.path.exists(target_path):
@@ -346,9 +349,11 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 ex_file_list.append(n1)
                 self._operator_interface.print_to_console(f'Fail to backup file to {bak_dir}. Exp = {str(e)}')
 
-    def _fixture_btn_emulator(self, arg):
+    @staticmethod
+    def _fixture_btn_emulator(self, cmd):
         self._operator_interface.print_to_console(f'emulator signal for dual-start: {self._is_slot_under_testing}')
         if not self._is_slot_under_testing and self._fixture_query_command.empty():
+            self._fixture_query_command.put(('power_on', 'A'))
             self._fixture_query_command.put('dual_start')
 
     def __append_local_client_msg_q(self, cmd, args=None):
@@ -659,7 +664,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                                     self._the_unit[channel] = pancakeDut(sn, self._station_config, self._operator_interface)
                                 self._the_unit[channel].initialize(eth_addr=v['eth'], com_port=v['com'])
                             pw_res = self._the_unit[channel].screen_on(ignore_err=True)
-                            if pw_res is True:
+                            if self._station_config.DUT_SIM or pw_res is True:
                                 self._multi_station_dic[channel]['IsPWR'] = True
                                 self._update_sn(channel, sn)
                                 self._operator_interface.print_to_console(f'Set SN {sn} to slot_{channel}.')
@@ -711,7 +716,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning',
                                                     msgbtn=0)
             alert_res = self._fixture.reset()
-        if alert_res != 0:
+        if alert_res not in [0, None]:
             self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(alert_res)}.\n', 'red')
         return alert_res
 
@@ -813,39 +818,125 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
     def close_test(self, test_log):
         result_array = test_log.results_array()
-        save_pnl_dic = self._station_config.SAVE_PNL_IF_FAIL
         ui_msg = {
             'LA': 'L (左眼)',
-            'RA': 'R (右眼)'
+            'RA': 'R (右眼)',
+            'AA': 'L/R(左/右眼)',
+            'FAIL': 'FAIL'
         }
+
+        # based ERS provided by Vic
         test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', '')
-        self._overall_result = test_log.get_overall_result()
-        # modified the test result if ok_for_left/right
-        if not self._overall_result and set(ui_msg.keys()).issubset(save_pnl_dic.keys()):
-            save_pnl_dic_left = [result_array[c].did_pass() for c in save_pnl_dic['LA']]
-            save_pnl_dic_right = [result_array[c].did_pass() for c in save_pnl_dic['RA']]
-            ext_ctl_val = None
-            if (False in save_pnl_dic_left) and (False not in save_pnl_dic_right):
-                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'LA')
-                ext_ctl_val = 'LA'
-            elif (False not in save_pnl_dic_left) and (False in save_pnl_dic_right):
-                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'RA')
+        ext_ctrl_duv_any = self._station_config.EXT_CTRL_duv_ANY
+        ext_ctrl_lv_any = self._station_config.EXT_CTRL_Lv_ANY
+        ext_ctrl_asym_duv = self._station_config.EXT_CTRL_ASYM_duv
+        ext_ctrl_cr_duv = self._station_config.EXT_CTRL_CR_ANY
+        ext_ctrl_duv_lr_all = self._station_config.EXT_CTRL_duv_LR_ALL
+
+        all_spec_items = []
+        [all_spec_items.extend(c['Items']) for c in
+         ext_ctrl_duv_any + ext_ctrl_lv_any + ext_ctrl_asym_duv + ext_ctrl_cr_duv]
+
+        if any(result_array[c].get_measured_value() is None for c in all_spec_items):
+            raise test_station.TestStationProcessControlError(f'Fail to test this DUT. 测试产品失败， 请重新测试')
+
+        def ext_fail_check(array):
+            sub_items = []
+            for item in array:
+                lsl, usl = item.get('SPEC')
+                items = item.get('Items')
+                sub_items.append([lsl <= result_array[c].get_measured_value() <= usl for c in items])
+            return sub_items
+
+        def ext_value_check(array):
+            sub_items = []
+            for item in array:
+                items = item.get('Items')
+                sub_items.append([result_array[c].get_measured_value() for c in items])
+            return sub_items
+
+        duv_any_result = ext_fail_check(ext_ctrl_duv_any)
+        asym_duv_result = ext_fail_check(ext_ctrl_asym_duv)
+        lv_any_result = ext_fail_check(ext_ctrl_lv_any)
+        cr_duv_result = ext_fail_check(ext_ctrl_cr_duv)
+        duv_lr_all_result = ext_fail_check(ext_ctrl_duv_lr_all)
+        test_log.set_measured_value_by_name_ex('EXT_ANY_duv', np.array(duv_any_result).all())
+        test_log.set_measured_value_by_name_ex('EXT_ASYM_duv', np.array(asym_duv_result).all(axis=1).any())
+        test_log.set_measured_value_by_name_ex('EXT_RES_Lv', np.array(lv_any_result).all())
+        test_log.set_measured_value_by_name_ex('EXT_RES_CR', np.array(cr_duv_result).all())
+
+        ext_ctl_val = 'FAIL'
+        if (np.array(duv_any_result).all() and np.array(asym_duv_result).all(axis=1).any()
+                and np.array(lv_any_result).all() and np.array(cr_duv_result).all()):
+            # if Max duv =< 0.01 at all azimuth
+            ext_values = ext_value_check(ext_ctrl_duv_lr_all)
+            max_ext_values = np.array(ext_values).max(axis=1)
+            if np.array(asym_duv_result).all():
+                if np.array(duv_lr_all_result).all(axis=1)[0] and not np.array(duv_lr_all_result).all(axis=1)[1]:
+                    ext_ctl_val = 'AA'
+                    self._operator_interface.print_to_console(f'Max duv <= (to be verified)   at all  azimuth  Φ')
+                else:
+                    if max_ext_values[0] > max_ext_values[1]:
+                        ext_ctl_val = 'LA'
+                        self._operator_interface.print_to_console(
+                            f'Max duv {max_ext_values}  at azimuth  Φ 180 <  Max duv at  Φ  0 degree')
+                    else:
+                        ext_ctl_val = 'RA'
+                        self._operator_interface.print_to_console(
+                            f'Max duv {max_ext_values} at azimuth  Φ 180 >  Max duv at  Φ  0 degree')
+            # np.array(duv_any_result).all()
+            elif np.array(asym_duv_result).all(axis=1)[0] and not np.array(asym_duv_result).all(axis=1)[1]:
                 ext_ctl_val = 'RA'
+                self._operator_interface.print_to_console(
+                    f'Max duv {max_ext_values} <= (to be verified ) at  Φ  0 azimuth deg , Ok  for Right')
+            elif not np.array(asym_duv_result).all(axis=1)[0] and np.array(asym_duv_result).all(axis=1)[1]:
+                ext_ctl_val = 'LA'
+                self._operator_interface.print_to_console(
+                    f'Max duv {max_ext_values} <= (to be verified ) at Φ 180 azimuth deg , OK for left')
             else:
-                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'FAIL')
-                ext_ctl_val = 'FAIL'
-            if ext_ctl_val in ui_msg.keys():
-                test_log.get_overall_result()
-                self._overall_result = True
-                test_log._overall_did_pass = True
-                test_log._overall_error_code = 0
-                self._operator_interface.update_root_config({'ResultMsgEx': ui_msg[ext_ctl_val]})
-            if not self._overall_result and len([k for k, v in result_array.items()
-                                                 if v.get_measured_value() is None]) > 0:
                 raise test_station.TestStationProcessControlError(f'Fail to test this DUT. 测试产品失败， 请重新测试')
-        else:
-            test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'AA')
-            self._operator_interface.update_root_config({'ResultMsgEx': 'L/R(左/右眼)'})
+
+        test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', ext_ctl_val)
+        test_log.get_overall_result()
+        if ext_ctl_val in ['LA', 'RA', 'AA']:
+            self._overall_result = True
+            test_log._overall_did_pass = True
+            test_log._overall_error_code = 0
+        self._operator_interface.update_root_config({'ResultMsgEx': ui_msg.get(ext_ctl_val)})
+
+        # save_pnl_dic = self._station_config.SAVE_PNL_IF_FAIL
+        # ui_msg = {
+        #     'LA': 'L (左眼)',
+        #     'RA': 'R (右眼)'
+        # }
+        # test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', '')
+        # self._overall_result = test_log.get_overall_result()
+        # # modified the test result if ok_for_left/right
+        # if not self._overall_result and set(ui_msg.keys()).issubset(save_pnl_dic.keys()):
+        #     save_pnl_dic_left = [result_array[c].did_pass() for c in save_pnl_dic['LA']]
+        #     save_pnl_dic_right = [result_array[c].did_pass() for c in save_pnl_dic['RA']]
+        #     ext_ctl_val = None
+        #     if (False in save_pnl_dic_left) and (False not in save_pnl_dic_right):
+        #         test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'LA')
+        #         ext_ctl_val = 'LA'
+        #     elif (False not in save_pnl_dic_left) and (False in save_pnl_dic_right):
+        #         test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'RA')
+        #         ext_ctl_val = 'RA'
+        #     else:
+        #         test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'FAIL')
+        #         ext_ctl_val = 'FAIL'
+        #     if ext_ctl_val in ui_msg.keys():
+        #         test_log.get_overall_result()
+        #         self._overall_result = True
+        #         test_log._overall_did_pass = True
+        #         test_log._overall_error_code = 0
+        #         self._operator_interface.update_root_config({'ResultMsgEx': ui_msg[ext_ctl_val]})
+        #     if not self._overall_result and len([k for k, v in result_array.items()
+        #                                          if v.get_measured_value() is None]) > 0:
+        #         raise test_station.TestStationProcessControlError(f'Fail to test this DUT. 测试产品失败， 请重新测试')
+        # else:
+        #     test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'AA')
+        #     self._operator_interface.update_root_config({'ResultMsgEx': 'L/R(左/右眼)'})
 
         self._first_failed_test_result = test_log.get_first_failed_test_result()
         return self._overall_result, self._first_failed_test_result
