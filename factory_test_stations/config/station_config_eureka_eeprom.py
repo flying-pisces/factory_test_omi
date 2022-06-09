@@ -1,7 +1,12 @@
 """
 Release Note:
 ========================================================
-Version 1.0.0
+Version 0.0.2
+2022-6-9 elton<elton.tian@myzygroup.com>
+-1. Add test-item about vendor information
+
+========================================================
+Version 0.0.1
 2022-5-11 elton<elton.tian@myzygroup.com>
 -1. Init version for EEPROM-Eureka
 """
@@ -43,6 +48,7 @@ COMMAND_DISP_WRITE = "MIPI.Write"
 COMMAND_DISP_2832WRITE = "t.2832_MIPI_WRITE"
 COMMAND_DISP_VSYNC = "REFRESHRATE"
 COMMAND_DISP_GET_COLOR = "GetColor"
+COMMAND_VENDOR_INFO = 'GetVendor'
 
 COMMAND_NVM_WRITE_CNT = 'NVMWCNT'
 COMMAND_NVM_READ = 'NVMRead'
@@ -60,7 +66,7 @@ DUT_CHK_MODULE_INPLACE = False
 
 MIN_SPACE_REQUIRED = [('C:', 500)]
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\MER-132-43U3C(FQ0200080140).txt'
-CAMERA_VERIFY_ENABLE = True
+CAMERA_VERIFY_ENABLE = False
 CAMERA_EXPOSURE = 400000
 CAMERA_GAIN = 1.0
 
@@ -98,7 +104,7 @@ DISP_CHECKER_COLOR = (0, 0, 255)
 DISP_CHECKER_LOCATION = (25, 5)
 DISP_CHECKER_COUNT = 2
 
-NVM_WRITE_COUNT_MAX = 6
+NVM_WRITE_COUNT_MAX = 4
 # calibration required data. 1:  User input values, 2: Get data from json-file.
 USER_INPUT_CALIB_DATA = 0x100
 
@@ -130,7 +136,7 @@ CALIB_REQ_DATA = {
     'TemperatureWD': 41,
     'WhitePointGLR': 255,
     'WhitePointGLG': 244,
-    'WhitePointGLB': 240,
+    'WhitePointGLB': 241,
 }
 
 ##################################
@@ -168,5 +174,5 @@ DUT_SIM = True
 EQUIPMENT_SIM = True
 FIXTURE_SIM = True
 
-FULL_TREE_UI = False
+FULL_TREE_UI = True
 IS_STATION_ACTIVE = True

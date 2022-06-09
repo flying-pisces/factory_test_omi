@@ -187,6 +187,18 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         resp = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_MEASURE_BLU, resp)
 
+    def get_vendor_info(self):
+        """
+        Only for Eureka
+        @return:
+        """
+        self._write_serial_cmd(self._station_config.COMMAND_VENDOR_INFO)
+        resp = self._read_response()
+        recvobj = self._prase_respose(self._station_config.COMMAND_VENDOR_INFO, resp)
+        if recvobj is None or len(recvobj) == 0 or int(recvobj[0]) != 0x00:
+            raise DUTError('Fail to get vendor information.')
+        return tuple([int(x, 16) for x in recvobj[1:]])
+
     def display_color_check(self, color):
         norm_color = tuple([c / 255.0 for c in color])
         color1 = np.float32([[norm_color]])
@@ -609,7 +621,8 @@ class projectDut(object):
             pass
         if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image', 'nvm_read_statistics',
                     'nvm_write_data', '_get_color_ext', 'render_image', 'nvm_read_data', 'nvm_speed_mode',
-                    'get_module_inplace', 'nvm_get_ecc', 'read_color_sensor', 'display_color_check']:
+                    'get_module_inplace', 'nvm_get_ecc', 'read_color_sensor', 'display_color_check',
+                    'get_vendor_info']:
             return not_find
 
 
@@ -640,6 +653,8 @@ if __name__ == "__main__":
     station_config.COMMAND_NVM_WRITE = 'NVMWrite'
     station_config.COMMAND_SPEED_MODE = 'SET.B7MODE'
     station_config.DUT_ETH_PROXY = True
+    station_config.DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
+    station_config.COMMAND_VENDOR_INFO = 'GetVendor'
 
     import sys
     import types
@@ -666,6 +681,10 @@ if __name__ == "__main__":
         # the_unit.render_image(pics)
 
         the_unit.initialize(eth_addr=('192.168.21.132', 6000))
+        the_unit.screen_on()
+        the_unit.nvm_speed_mode('low')
+        the_unit.get_vendor_info()
+
         arr = the_unit.nvm_read_data()
 
         try:

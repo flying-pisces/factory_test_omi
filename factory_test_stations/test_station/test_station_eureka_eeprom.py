@@ -18,6 +18,7 @@ import collections
 import numpy as np
 import datetime
 import hardware_station_common
+from hardware_station_common.utils.io_utils import round_ex
 
 
 class EurekaEEPROMError(Exception):
@@ -310,9 +311,13 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._equip = test_equipment_eureka_eeprom.EurekaEEPROMEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.0.1'
+        self._sw_version = '0.0.2'
         self._eep_assistant = EEPStationAssistant()
         self._max_retries = 5
+        self._vendor_info_dic = {
+            6: 'sharp',
+            4: 'jdi',
+        }
 
     def initialize(self):
         if (self._station_config.DUT_SIM
@@ -322,7 +327,7 @@ class EurekaEEPROMStation(test_station.TestStation):
                 or self._station_config.USER_INPUT_CALIB_DATA not in [0x02]
                 or not self._station_config.CAMERA_VERIFY_ENABLE):
             self._operator_interface.operator_input('warn', 'Parameters should be configured correctly', 'warning')
-            raise
+            raise EurekaEEPROMError('Configuration Error.')
         try:
             self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
             if self._station_config.AUTO_CFG_COMPORTS:
@@ -336,8 +341,8 @@ class EurekaEEPROMStation(test_station.TestStation):
 
             if os.path.exists(self._station_config.CALIB_REQ_DATA_FILENAME):
                 shutil.rmtree(self._station_config.CALIB_REQ_DATA_FILENAME)
-        except:
-            self._operator_interface.operator_input(None, 'Fail to initialize test_station. ', 'error')
+        except Exception as e:
+            self._operator_interface.print_to_console(f'Fail to initialize test_station. {str(e)}', 'red')
             raise
 
     def close(self):
@@ -472,17 +477,22 @@ class EurekaEEPROMStation(test_station.TestStation):
                 the_unit.nvm_speed_mode(mode='low')
             self._operator_interface.print_to_console('read write count for nvram ...\n')
             write_status = the_unit.nvm_read_statistics()
+            vendor_info = the_unit.get_vendor_info()
             write_count = 0
             post_write_count = 0
             if self._station_config.DUT_SIM:
                 write_status = [0, 1]
                 post_write_count = 1
+                vendor_info = tuple([0]*3)
+                self._vendor_info_dic[0] = 'sim'
             if write_status is not None:
                 write_count = int(write_status[1])
                 post_write_count = write_count
                 test_log.set_measured_value_by_name_ex('PRE_WRITE_COUNTS', write_count)
+            if isinstance(vendor_info, tuple) and len(vendor_info) == 3 and vendor_info[0] in self._vendor_info_dic.keys():
+                test_log.set_measured_value_by_name_ex('VENDOR_INFO', self._vendor_info_dic[vendor_info[0]])
 
-            if (0 <= write_count < self._station_config.NVM_WRITE_COUNT_MAX) and judge_by_camera:
+            if  judge_by_camera:
                 self._operator_interface.print_to_console('read all data from eeprom ...\n')
 
                 var_data = dict(calib_data)  # type: dict
@@ -506,72 +516,90 @@ class EurekaEEPROMStation(test_station.TestStation):
                 self._operator_interface.print_to_console(f"WR_DATA:  \n --> {','.join(raw_data_cpy)} \n")
                 same_mem = [d1.upper() for d1 in raw_data] == [d2.upper() for d2 in raw_data_cpy]
                 if not same_mem and not self._station_config.NVM_WRITE_PROTECT:
-                    configuration_success_by_count = 1
-                    while configuration_success_by_count <= 3 and post_write_count <= write_count:
+                    if 0 <= write_count < self._station_config.NVM_WRITE_COUNT_MAX:
+                        configuration_success_by_count = 1
+                        while configuration_success_by_count <= 3 and post_write_count <= write_count:
+                            self._operator_interface.print_to_console(
+                                f'write configuration to eeprom ...{configuration_success_by_count} / 3\n')
+                            max_tries = 2
+                            write_tries = 1
+                            nvm_write_data_success = False
+                            while write_tries <= max_tries and not nvm_write_data_success:
+                                self._operator_interface.print_to_console(f'try to nvm_write {write_tries} / {max_tries}\n')
+                                try:
+                                    if self._station_config.NVM_EEC_READ:
+                                        the_unit.nvm_get_ecc()
+                                    the_unit.nvm_write_data(raw_data_cpy)
+                                    if self._station_config.NVM_EEC_READ:
+                                        the_unit.nvm_get_ecc()
+                                    nvm_write_data_success = True
+                                except Exception as e:
+                                    self._operator_interface.print_to_console(f'msg for write data: {str(e)} \n')
+                                    if write_tries == max_tries:
+                                        raise
+                                    else:
+                                        try:
+                                            the_unit.screen_off()
+                                            the_unit.screen_on()
+                                            if write_in_slow_mod:
+                                                the_unit.nvm_speed_mode(mode='low')
+                                            time.sleep(1)
+                                        except:
+                                            pass
+                                write_tries += 1
+
+                            self._operator_interface.print_to_console('screen off ...\n')
+                            the_unit.screen_off()
+
+                            # double check after flushing the NVRAM.
+                            self._operator_interface.print_to_console('screen on ...\n')
+                            the_unit.screen_on()
+                            if write_in_slow_mod:
+                                the_unit.nvm_speed_mode(mode='low')
+
+                            self._operator_interface.print_to_console('read write count for nvram ...\n')
+                            write_status = the_unit.nvm_read_statistics()
+                            if write_status is not None:
+                                post_write_count = int(write_status[1])
+                            configuration_success_by_count += 1
+                    else:
                         self._operator_interface.print_to_console(
-                            f'write configuration to eeprom ...{configuration_success_by_count} / 3\n')
-                        max_tries = 2
-                        write_tries = 1
-                        nvm_write_data_success = False
-                        while write_tries <= max_tries and not nvm_write_data_success:
-                            self._operator_interface.print_to_console(f'try to nvm_write {write_tries} / {max_tries}\n')
-                            try:
-                                if self._station_config.NVM_EEC_READ:
-                                    the_unit.nvm_get_ecc()
-                                the_unit.nvm_write_data(raw_data_cpy)
-                                if self._station_config.NVM_EEC_READ:
-                                    the_unit.nvm_get_ecc()
-                                nvm_write_data_success = True
-                            except Exception as e:
-                                self._operator_interface.print_to_console(f'msg for write data: {str(e)} \n')
-                                if write_tries == max_tries:
-                                    raise
-                                else:
-                                    try:
-                                        the_unit.screen_off()
-                                        the_unit.screen_on()
-                                        if write_in_slow_mod:
-                                            the_unit.nvm_speed_mode(mode='low')
-                                        time.sleep(1)
-                                    except:
-                                        pass
-                            write_tries += 1
-
-                        self._operator_interface.print_to_console('screen off ...\n')
-                        the_unit.screen_off()
-
-                        # double check after flushing the NVRAM.
-                        self._operator_interface.print_to_console('screen on ...\n')
-                        the_unit.screen_on()
-                        if write_in_slow_mod:
-                            the_unit.nvm_speed_mode(mode='low')
-
-                        self._operator_interface.print_to_console('read write count for nvram ...\n')
-                        write_status = the_unit.nvm_read_statistics()
-                        if write_status is not None:
-                            post_write_count = int(write_status[1])
-                        configuration_success_by_count += 1
+                            f'Exp: write times: {write_count} exceed max count: {self._station_config.NVM_WRITE_COUNT_MAX}\n')
                 else:
                     post_data_check = True
                     var_check_data = raw_data.copy()
                     self._operator_interface.print_to_console(f'write configuration protected ...MemCmp: {same_mem}\n')
                     # time.sleep(self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
-
-                test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_X', var_data.get('display_boresight_x'))
-                test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_Y', var_data.get('display_boresight_y'))
-                test_log.set_measured_value_by_name_ex('CFG_ROTATION', var_data.get('rotation'))
-                test_log.set_measured_value_by_name_ex('CFG_LV_W255', var_data.get('lv_W255'))
-                test_log.set_measured_value_by_name_ex('CFG_X_W255', var_data.get('x_W255'))
-                test_log.set_measured_value_by_name_ex('CFG_Y_W255', var_data.get('y_W255'))
-                test_log.set_measured_value_by_name_ex('CFG_LV_R255', var_data.get('lv_R255'))
-                test_log.set_measured_value_by_name_ex('CFG_X_R255', var_data.get('x_R255'))
-                test_log.set_measured_value_by_name_ex('CFG_Y_R255', var_data.get('y_R255'))
-                test_log.set_measured_value_by_name_ex('CFG_LV_G255', var_data.get('lv_G255'))
-                test_log.set_measured_value_by_name_ex('CFG_X_G255', var_data.get('x_G255'))
-                test_log.set_measured_value_by_name_ex('CFG_Y_G255', var_data.get('y_G255'))
-                test_log.set_measured_value_by_name_ex('CFG_LV_B255', var_data.get('lv_B255'))
-                test_log.set_measured_value_by_name_ex('CFG_X_B255', var_data.get('x_B255'))
-                test_log.set_measured_value_by_name_ex('CFG_Y_B255', var_data.get('y_B255'))
+                bor_x = var_data.get('display_boresight_x')
+                test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_X', bor_x, round_ex(bor_x, 3))
+                bor_y = var_data.get('display_boresight_y')
+                test_log.set_measured_value_by_name_ex('CFG_BORESIGHT_Y', bor_y, round_ex(bor_y, 3))
+                rot = var_data.get('rotation')
+                test_log.set_measured_value_by_name_ex('CFG_ROTATION', rot, round_ex(rot, 3))
+                lv_w255 = var_data.get('lv_W255')
+                test_log.set_measured_value_by_name_ex('CFG_LV_W255', lv_w255, round_ex(lv_w255, 0))
+                x_w255 = var_data.get('x_W255')
+                test_log.set_measured_value_by_name_ex('CFG_X_W255', x_w255, round_ex(x_w255, 4))
+                y_w255 = var_data.get('y_W255')
+                test_log.set_measured_value_by_name_ex('CFG_Y_W255', y_w255, round_ex(y_w255, 4))
+                lv_r255 = var_data.get('lv_R255')
+                test_log.set_measured_value_by_name_ex('CFG_LV_R255', lv_r255, round_ex(lv_r255, 0))
+                x_r255 = var_data.get('x_R255')
+                test_log.set_measured_value_by_name_ex('CFG_X_R255', x_r255, round_ex(x_r255, 4))
+                y_r255 = var_data.get('y_R255')
+                test_log.set_measured_value_by_name_ex('CFG_Y_R255', y_r255, round_ex(y_r255, 4))
+                lv_g255 = var_data.get('lv_G255')
+                test_log.set_measured_value_by_name_ex('CFG_LV_G255', lv_g255, round_ex(lv_g255, 0))
+                x_g255 = var_data.get('x_G255')
+                test_log.set_measured_value_by_name_ex('CFG_X_G255', x_g255, round_ex(x_g255, 4))
+                y_g255 = var_data.get('y_G255')
+                test_log.set_measured_value_by_name_ex('CFG_Y_G255', y_g255, round_ex(y_g255, 4))
+                lv_b255 = var_data.get('lv_B255')
+                test_log.set_measured_value_by_name_ex('CFG_LV_B255', lv_b255, round_ex(lv_b255, 0))
+                x_b255 = var_data.get('x_B255')
+                test_log.set_measured_value_by_name_ex('CFG_X_B255', x_b255, round_ex(x_b255, 4))
+                y_b255 = var_data.get('y_B255')
+                test_log.set_measured_value_by_name_ex('CFG_Y_B255', y_b255, round_ex(y_b255, 4))
 
                 test_log.set_measured_value_by_name_ex('CFG_TemperatureW', var_data.get('TemperatureW'))
                 test_log.set_measured_value_by_name_ex('CFG_TemperatureR', var_data.get('TemperatureR'))
@@ -648,10 +676,7 @@ class EurekaEEPROMStation(test_station.TestStation):
                                                        and all(resolution_chk_result.values()))
 
                 del data_from_nvram, raw_data_cpy, raw_data_cpy_cap, data_from_nvram_cap
-            elif write_count >= self._station_config.NVM_WRITE_COUNT_MAX:
-                self._operator_interface.print_to_console(
-                    f'Exp: write times: {write_count} exceed max count: {self._station_config.NVM_WRITE_COUNT_MAX}\n')
-            elif not judge_by_camera:
+            else:
                 self._operator_interface.print_to_console(f'fail to judge by Camera: {judge_by_camera}\n')
 
         except (EurekaEEPROMError, dut.DUTError, Exception) as e:

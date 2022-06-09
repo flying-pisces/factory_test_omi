@@ -6,7 +6,8 @@ STATION_LIMITS_ARRAYS = [
     ["DUT_POWER_ON_RES", True, True, 82],
     ["JUDGED_BY_CAM", True, True, 83],
 
-    ["PRE_WRITE_COUNTS", 0, 7, 1000],
+    ["PRE_WRITE_COUNTS", 0, 5, 1000],
+    ["VENDOR_INFO", None, None, 1001],
 
     # current setting for EEPROM
     ["CFG_BORESIGHT_X", None, None, 2001],
@@ -44,7 +45,7 @@ STATION_LIMITS_ARRAYS = [
     ['POST_DATA_CHECK', True, True, 3001],
     ['RESOLUTION_CHECK', True, True, 3002],
 
-    ["POST_WRITE_COUNTS", 0, 7, 5001],
+    ["POST_WRITE_COUNTS", 0, 5, 5001],
     ["WRITE_COUNTS_CHECK", True, True, 5002],
 ]
 
