@@ -1,6 +1,12 @@
 """
 Release Note:
 ========================================================
+Version 1.2.9
+2022-6-9 elton<elton.tian@myzygroup>
+-1. add test-item about error-string.
+-2. add functional for database management.
+
+========================================================
 Version 1.2.8
 2022-5-23 elton<elton.tian@myzygroup>
 -1. optimize algorithm for WhiteDot / RgbBoresight
@@ -115,7 +121,6 @@ SEQUENCE_RELATIVEPATH = r'C:\oculus\factory_test_omi\factory_test_stations\test_
 CONOSCOPE_DLL_PATH = r'C:\oculus\run\test_equipment'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_mot_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
-RAW_IMAGE_LOG_DIR_BAK = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
 # RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
 ##################################
 # serial number codes

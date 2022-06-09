@@ -304,7 +304,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.2.8{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.2.9{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -323,7 +323,7 @@ class seacliffmotStation(test_station.TestStation):
 
     def initialize(self):
         try:
-            self._operator_interface.print_to_console("Initializing Seacliff MOT station...{0}SP1\n"
+            self._operator_interface.print_to_console("Initializing Seacliff MOT station...{0}\n"
                                                       .format(self._sw_version))
             if self._station_config.AUTO_CFG_COMPORTS:
                 self.auto_find_com_ports()
@@ -375,6 +375,16 @@ class seacliffmotStation(test_station.TestStation):
         if hasattr(self._station_config, 'RAW_IMAGE_LOG_DIR_BAK'):
             bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.RAW_IMAGE_LOG_DIR_BAK)
         ex_file_list = []
+
+        def date_time_check(fn):
+            tm = None
+            try:
+                xx = fn[fn.rindex('_') + 1:]
+                tm = datetime.datetime.strptime(xx, '%Y%m%d-%H%M%S').timestamp()
+            except:
+                pass
+            return tm
+
         while not self._is_exit:
             if self._is_running:
                 time.sleep(0.5)
@@ -384,9 +394,11 @@ class seacliffmotStation(test_station.TestStation):
             if any([c1 <= cur_time <= c2 for c1, c2 in self._station_config.DATA_CLEAN_SCHEDULE]) and \
                     os.path.exists(raw_dir):
                 mask = ['.bin', '.json']
-                uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
+                uut_raw_dir = [(c, date_time_check(c)) for c in os.listdir(raw_dir)
                                if os.path.isdir(os.path.join(raw_dir, c))
-                               and len(list(Path(os.path.join(raw_dir, c)).rglob('*.bin'))) > 0]
+                               and os.path.exists(os.path.join(self._station_config.ROOT_DIR, 'factory-test_logs', f'{c}_P.log'))
+                               and len(list(Path(os.path.join(raw_dir, c)).rglob('*.bin'))) > 0
+                               and date_time_check(c)]
                 uut_raw_dir = [os.path.join(raw_dir, c) for c, d in uut_raw_dir if time.time() - d
                                > self._station_config.DATA_CLEAN_SAVED_MINUTES]
                 try:
@@ -403,29 +415,31 @@ class seacliffmotStation(test_station.TestStation):
                         clean_camera_file(uut_raw_dir[0])
                 except Exception as e:
                     self._operator_interface.print_to_console(f'Fail to delete the bin exp={str(e)}', 'red')
-                time.sleep(0.1)
+                time.sleep(0.02)
                 continue
 
             # backup all the data automatically
-            if not(os.path.exists(bak_dir) and os.path.exists(raw_dir) and os.path.samefile(bak_dir, raw_dir)):
+            if not(os.path.exists(bak_dir) and os.path.exists(raw_dir) and not os.path.samefile(bak_dir, raw_dir)):
                 time.sleep(0.5)
                 continue
 
-            uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
-                           if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
-            # backup all the raw data which is created about 8 hours ago.
-            uut_raw_dir_old = [c for c, d in uut_raw_dir if time.time() - d > self._station_config.DATA_CLEAN_SAVED_MINUTES_PNG]
-            if len(uut_raw_dir_old) <= 0:
-                time.sleep(1)
-                continue
-            n1 = uut_raw_dir_old[-1]
-            try:
-                self.data_backup(os.path.join(raw_dir, n1), os.path.join(os.path.join(bak_dir, n1)))
+            time.sleep(0.2)
 
-                shutil.rmtree(os.path.join(raw_dir, n1))
-            except Exception as e:
-                ex_file_list.append(n1)
-                self._operator_interface.print_to_console(f'Fail to backup file to {bak_dir}. Exp = {str(e)}')
+            # uut_raw_dir = [(c, date_time_check(c)) for c in os.listdir(raw_dir)
+            #                if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list and date_time_check(c)]
+            # # backup all the raw data which is created about 8 hours ago.
+            # uut_raw_dir_old = [c for c, d in uut_raw_dir if time.time() - d > self._station_config.DATA_CLEAN_SAVED_MINUTES_PNG]
+            # if len(uut_raw_dir_old) <= 0:
+            #     time.sleep(1)
+            #     continue
+            # n1 = uut_raw_dir_old[-1]
+            # try:
+            #     self.data_backup(os.path.join(raw_dir, n1), os.path.join(os.path.join(bak_dir, n1)))
+            #
+            #     shutil.rmtree(os.path.join(raw_dir, n1))
+            # except Exception as e:
+            #     ex_file_list.append(n1)
+            #     self._operator_interface.print_to_console(f'Fail to backup file to {bak_dir}. Exp = {str(e)}')
 
     def _close_fixture(self):
         if self._fixture is not None:
