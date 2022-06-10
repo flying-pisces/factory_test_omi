@@ -198,7 +198,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
             if self._is_running:
                 time.sleep(0.5)
                 continue
-            if not (os.path.exists(bak_dir) and os.path.exists(raw_dir) and os.path.samefile(bak_dir, raw_dir)):
+            if not (os.path.exists(bak_dir) and os.path.exists(raw_dir) and not os.path.samefile(bak_dir, raw_dir)):
                 time.sleep(0.5)
                 continue
             cur_time = datetime.datetime.now().hour + datetime.datetime.now().minute / 60
