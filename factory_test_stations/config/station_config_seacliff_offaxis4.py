@@ -1,6 +1,17 @@
 """
 Release Note:
 ========================================================
+Version 1.1.3
+2022-6-10 author<elton.tian@myzygroup.com>
+-1. fix algorithm bug for L/R OK
+-2. remove feature for auto-backup
+
+========================================================
+Version 1.1.2
+2022-6-8 author<elton.tian@myzygroup.com>
+-1. update judgement flow based <<Off axis Myzy  judgement new process flow.pptx>>
+
+========================================================
 Version 1.1.1
 2022-5-26 author<elton.tian@myzygroup.com>
 -1. add alarm information for grating

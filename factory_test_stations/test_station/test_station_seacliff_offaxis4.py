@@ -91,7 +91,7 @@ class SeacliffOffAxis4StationError(Exception):
 
 class SeacliffOffAxis4Station(test_station.TestStation):
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '1.1.2'
+        self._sw_version = '1.1.3'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
 
@@ -162,7 +162,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def initialize(self):
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
         self._operator_interface.update_root_config({'IsStartLoopFromKeyboard': 'false'})
         self._operator_interface.update_root_config(
         {
@@ -293,7 +293,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             equ_res, equ_msg = self._equipment.initialize()
             threading.Thread(target=self._station_slave_ctrl_thr, daemon=True).start()  # used for slave station.
             threading.Thread(target=self._http_local_client, daemon=True).start()
-        threading.Thread(target=self._auto_backup_thr, daemon=True).start()
+        # threading.Thread(target=self._auto_backup_thr, daemon=True).start()
         if not equ_res:
             raise SeacliffOffAxis4StationError(f'Fail to init the conoscope: {equ_msg}')
         self._operator_interface.print_to_console(f'Wait for testing...', 'green')
@@ -316,6 +316,16 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         if hasattr(self._station_config, 'ANALYSIS_RELATIVEPATH_BAK'):
             bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH_BAK, 'raw')
         ex_file_list = []
+
+        def date_time_check(fn):
+            tm = None
+            try:
+                xx = fn[fn.rindex('_') + 1:]
+                tm = datetime.datetime.strptime(xx, '%Y%m%d-%H%M%S').timestamp()
+            except:
+                pass
+            return tm
+
         while not USER_SHUTDOWN_STATION:
             if self._is_slot_under_testing:
                 time.sleep(0.5)
@@ -332,8 +342,10 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
             # backup all the data automatically
 
-            uut_raw_dir = [(c, os.path.getctime(os.path.join(raw_dir, c))) for c in os.listdir(raw_dir)
-                           if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list]
+            uut_raw_dir = [(c, date_time_check(c)) for c in os.listdir(raw_dir)
+                           if os.path.isdir(os.path.join(raw_dir, c))
+                           and date_time_check(c)
+                           and c not in ex_file_list]
             # backup all the raw data which is created about 8 hours ago.
             uut_raw_dir_old = [c for c, d in uut_raw_dir if
                                time.time() - d > self._station_config.DATA_CLEAN_SAVED_MINUTES]
@@ -344,7 +356,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             try:
                 self.data_backup(os.path.join(raw_dir, n1), os.path.join(os.path.join(bak_dir, n1)))
 
-                shutil.rmtree(os.path.join(raw_dir, n1))
+                # shutil.rmtree(os.path.join(raw_dir, n1))
             except Exception as e:
                 ex_file_list.append(n1)
                 self._operator_interface.print_to_console(f'Fail to backup file to {bak_dir}. Exp = {str(e)}')
@@ -872,7 +884,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             ext_values = ext_value_check(ext_ctrl_duv_lr_all)
             max_ext_values = np.array(ext_values).max(axis=1)
             if np.array(asym_duv_result).all():
-                if np.array(duv_lr_all_result).all(axis=1)[0] and not np.array(duv_lr_all_result).all(axis=1)[1]:
+                if np.array(duv_lr_all_result).all(axis=1)[0] and np.array(duv_lr_all_result).all(axis=1)[1]:
                     ext_ctl_val = 'AA'
                     self._operator_interface.print_to_console(f'Max duv <= (to be verified)   at all  azimuth  Φ')
                 else:

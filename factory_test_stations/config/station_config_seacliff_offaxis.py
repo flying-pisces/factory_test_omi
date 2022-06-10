@@ -1,6 +1,12 @@
 """
 Release Note:
 ========================================================
+Version 2.1.8
+2022-6-10 author<elton.tian@myzygroup.com>
+-1. fix algorithm bug for L/R OK
+-2. remove feature for auto-backup
+
+========================================================
 Version 2.1.7b1
 2022-6-6 author<elton.tian@myzygroup.com>
 -1. update judgement flow based <<Off axis Myzy  judgement new process flow.pptx>>
