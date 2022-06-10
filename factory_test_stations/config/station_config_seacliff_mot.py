@@ -4,7 +4,7 @@ Release Note:
 Version 1.2.9
 2022-6-9 elton<elton.tian@myzygroup>
 -1. add test-item about error-string.
--2. add functional for database management.
+-2. add feature about database management.
 
 ========================================================
 Version 1.2.8
