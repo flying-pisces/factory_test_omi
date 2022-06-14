@@ -19,6 +19,10 @@ import json
 import collections
 import math
 from hardware_station_common.utils.io_utils import round_ex
+import threading
+import shutil
+from pathlib import Path
+import datetime
 
 
 class seacliffmotStationError(Exception):
@@ -300,7 +304,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.2.6{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.2.9{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -314,6 +318,8 @@ class seacliffmotStation(test_station.TestStation):
         self._multi_lock = mp.Lock()
         self.fixture_port = None
         self.fixture_particle_port = None
+        self._is_exit = False
+        self._is_running = False
 
     def initialize(self):
         try:
@@ -338,11 +344,102 @@ class seacliffmotStation(test_station.TestStation):
             self._fixture.initialize(fixture_port=self.fixture_port,
                                      particle_port=self.fixture_particle_port,
                                      proxy_port=self._station_config.PROXY_ENDPOINT)
+
+            self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM = self._fixture.calib_zero_pos()
+            fixture_id = self._fixture.id()
+            if not self._station_config.FIXTURE_SIM and fixture_id != self._station_config.STATION_NUMBER:
+                raise seacliffmotStationError(
+                    f'Fixture Id is not set correctly {self._station_config.STATION_NUMBER} != FW: {fixture_id}')
+            self._operator_interface.print_to_console(
+                f'update distance between camera and datum: {self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM}\n')
             self._equipment.initialize()
             self._equipment.open()
+            threading.Thread(target=self._auto_backup_thr, daemon=True).start()
         except Exception as e:
             self._operator_interface.operator_input(None, str(e), 'error')
             raise
+
+    def data_backup(self, source_path, target_path):
+        if not os.path.exists(target_path):
+            os.makedirs(target_path)
+        if os.path.exists(source_path):
+            for root, dirs, files in os.walk(source_path):
+                for file in files:
+                    src_file = os.path.join(root, file)
+                    shutil.move(src_file, target_path)
+
+    # backup the raw data automatically
+    def _auto_backup_thr(self):
+        raw_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.RAW_IMAGE_LOG_DIR)
+        bak_dir = raw_dir
+        if hasattr(self._station_config, 'RAW_IMAGE_LOG_DIR_BAK'):
+            bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.RAW_IMAGE_LOG_DIR_BAK)
+        ex_file_list = []
+
+        def date_time_check(fn):
+            tm = None
+            try:
+                xx = fn[fn.rindex('_') + 1:]
+                tm = datetime.datetime.strptime(xx, '%Y%m%d-%H%M%S').timestamp()
+            except:
+                pass
+            return tm
+
+        while not self._is_exit:
+            if self._is_running:
+                time.sleep(0.5)
+                continue
+            # delete all the bin files automatically.
+            cur_time = datetime.datetime.now().hour + datetime.datetime.now().minute / 60
+            if any([c1 <= cur_time <= c2 for c1, c2 in self._station_config.DATA_CLEAN_SCHEDULE]) and \
+                    os.path.exists(raw_dir):
+                mask = ['.bin', '.json']
+                uut_raw_dir = [(c, date_time_check(c)) for c in os.listdir(raw_dir)
+                               if os.path.isdir(os.path.join(raw_dir, c))
+                               and os.path.exists(os.path.join(self._station_config.ROOT_DIR, 'factory-test_logs', f'{c}_P.log'))
+                               and len(list(Path(os.path.join(raw_dir, c)).rglob('*.bin'))) > 0
+                               and date_time_check(c)]
+                uut_raw_dir = [os.path.join(raw_dir, c) for c, d in uut_raw_dir if time.time() - d
+                               > self._station_config.DATA_CLEAN_SAVED_MINUTES]
+                try:
+                    def clean_camera_file(dirn):
+                        if not os.path.isdir(dirn):
+                            return
+                        for fn in os.listdir(dirn):
+                            tmp = os.path.join(dirn, fn)
+                            if os.path.isdir(tmp):
+                                clean_camera_file(tmp)
+                            elif os.path.splitext(tmp)[1] in mask:
+                                os.remove(tmp)
+                    if len(uut_raw_dir) > 0:
+                        clean_camera_file(uut_raw_dir[0])
+                except Exception as e:
+                    self._operator_interface.print_to_console(f'Fail to delete the bin exp={str(e)}', 'red')
+                time.sleep(0.02)
+                continue
+
+            # backup all the data automatically
+            if not(os.path.exists(bak_dir) and os.path.exists(raw_dir) and not os.path.samefile(bak_dir, raw_dir)):
+                time.sleep(0.5)
+                continue
+
+            time.sleep(0.2)
+
+            # uut_raw_dir = [(c, date_time_check(c)) for c in os.listdir(raw_dir)
+            #                if os.path.isdir(os.path.join(raw_dir, c)) and c not in ex_file_list and date_time_check(c)]
+            # # backup all the raw data which is created about 8 hours ago.
+            # uut_raw_dir_old = [c for c, d in uut_raw_dir if time.time() - d > self._station_config.DATA_CLEAN_SAVED_MINUTES_PNG]
+            # if len(uut_raw_dir_old) <= 0:
+            #     time.sleep(1)
+            #     continue
+            # n1 = uut_raw_dir_old[-1]
+            # try:
+            #     self.data_backup(os.path.join(raw_dir, n1), os.path.join(os.path.join(bak_dir, n1)))
+            #
+            #     shutil.rmtree(os.path.join(raw_dir, n1))
+            # except Exception as e:
+            #     ex_file_list.append(n1)
+            #     self._operator_interface.print_to_console(f'Fail to backup file to {bak_dir}. Exp = {str(e)}')
 
     def _close_fixture(self):
         if self._fixture is not None:
@@ -351,6 +448,7 @@ class seacliffmotStation(test_station.TestStation):
             self._fixture = None
 
     def close(self):
+        self._is_exit = True
         self._operator_interface.print_to_console("Close...\n")
         self._operator_interface.print_to_console("\there, I'm shutting the station down..\n")
         try:
@@ -407,8 +505,8 @@ class seacliffmotStation(test_station.TestStation):
                 disp_format = [(k, v) for k, v in exp_format_dic.items() if k in item]
                 if any(disp_format) and isinstance(value, float):
                     value_msg = round_ex(value, disp_format[0][1])
-
-            self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
+            if hasattr(self._operator_interface, 'update_test_value'):
+                self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def _do_test(self, serial_number, test_log):
         """
@@ -427,8 +525,8 @@ class seacliffmotStation(test_station.TestStation):
                          and not self._station_config.FIXTURE_SIM)
 
         self._query_dual_start()
-        if self._the_unit is None:
-            raise test_station.TestStationProcessControlError(f'Fail to query dual_start for DUT {serial_number}.')
+        # if self._the_unit is None:
+        #     raise test_station.TestStationProcessControlError(f'Fail to query dual_start for DUT {serial_number}.')
         self._probe_con_status = True
         if not self._station_config.FIXTURE_SIM:
             self._probe_con_status = self._fixture.query_probe_status() == 0
@@ -445,6 +543,7 @@ class seacliffmotStation(test_station.TestStation):
         self._temperature_dic = {}
         self._eep_data = {}
         try:
+            self._is_running = True
             self._operator_interface.print_to_console(f"Initialize Test condition.={cpu_count_used}/{cpu_count}.. \n")
             self._operator_interface.print_to_console(
                 "\n*********** Fixture at %s to load DUT ***************\n" % self.fixture_port)
@@ -702,6 +801,7 @@ class seacliffmotStation(test_station.TestStation):
             self._pool.join()
             self._pool = None
             self._the_unit = None
+            self._is_running = False
         del self._pool_alg_dic
         self._operator_interface.print_to_console(f'Finish------------{serial_number}-------\n')
         return self.close_test(test_log)
@@ -886,7 +986,7 @@ class seacliffmotStation(test_station.TestStation):
                         self._operator_interface.print_to_console(
                             'Cancel start signal from dual %s.\n' % timeout_for_dual)
                     self._the_unit.close()
-                    self._the_unit = None
+                    # self._the_unit = None
                 self._fixture.start_button_status(False)
                 time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                 self._fixture.power_on_button_status(False)

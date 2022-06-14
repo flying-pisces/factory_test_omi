@@ -1,6 +1,23 @@
 """
 Release Note:
 ========================================================
+Version 1.2.9
+2022-6-9 elton<elton.tian@myzygroup>
+-1. add test-item about error-string.
+-2. add feature about database management.
+
+========================================================
+Version 1.2.8
+2022-5-23 elton<elton.tian@myzygroup>
+-1. optimize algorithm for WhiteDot / RgbBoresight
+
+========================================================
+Version 1.2.7
+2022-5-12 elton<elton.tian@myzygroup>
+-1. add support for conoscope V2
+-2. active the ParticleCounter.
+
+========================================================
 Version 1.2.6
 2022-4-7 elton<elton.tian@myzygroup>
 -1. add test items for ratio
@@ -99,16 +116,21 @@ Version 1.1.0
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
-SEQUENCE_RELATIVEPATH = r'C:\oculus\run\seacliff_mot_run\test_station\test_equipment\algorithm'
-CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment_57'
+SEQUENCE_RELATIVEPATH = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm'
+# CONOSCOPE_DLL_PATH = r'C:\ORel\dist\test_equipment_57'
+CONOSCOPE_DLL_PATH = r'C:\oculus\run\test_equipment'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_mot_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
-RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
+# RAW_IMAGE_LOG_DIR = r'c:\ShareData\Oculus_RawData'
 ##################################
 # serial number codes
 #
 SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'PR0'  # Peak panel SN
+
+DATA_CLEAN_SCHEDULE = []  # [(6, 8)]
+DATA_CLEAN_SAVED_MINUTES = 60 * 10
+DATA_CLEAN_SAVED_MINUTES_PNG = 3600 * 24
 
 ##################################
 # Fixture parameters
@@ -189,6 +211,8 @@ COMMAND_LITUP_STATUS = 'CMD_POWERON_BUTTON'
 COMMAND_QUERY_TEMP = 'CMD_GET_TEMPERATURE'
 COMMAND_QUERY_DUT_TEMP = 'CMD_GET_DUT_TEMPERATURE'
 COMMAND_PROBE_BUTTON = 'CMD_PROBE_BUTTON'
+COMMAND_ZERO_POSIT = 'CMD_ZERO_POSIT'
+COMMAND_QUERY_TEMP_RANGE = (10, 60)
 
 COMMAND_USB_POWER_ON = "CMD_USB_POWER_ON"
 COMMAND_USB_POWER_OFF = "CMD_USB_POWER_OFF"
@@ -206,7 +230,7 @@ FIXTURE_ALIGNMENT_DLY = 18
 FIXTURE_MECH_STABLE_DLY = 0.05
 FIXTURE_SOCK_DLY = 0.05
 PARTICLE_COUNTER_TIMEOUT = 2
-FIXTURE_PARTICLE_COUNTER = False
+FIXTURE_PARTICLE_COUNTER = True
 
 # FIXTRUE_PARTICLE_ADDR_READ = 40006
 # FIXTRUE_PARTICLE_ADDR_START = 40003
@@ -250,7 +274,7 @@ DISTANCE_BETWEEN_CAMERA_AND_DATUM = 21950+18000
 # Test Equipment related parameters
 SORTED_EXPORT_LOG = False
 IS_PRINT_TO_LOG = False
-IS_VERBOSE = False # some path bug, temp set False and work on True later
+IS_VERBOSE = False  # some path bug, temp set False and work on True later
 CFG_PATH = r'..\Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
 
@@ -262,7 +286,11 @@ COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255
 DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 10
 
-VERSION_REVISION_EQUIPMENT = '72'
+VERSION_REVISION_EQUIPMENT = '87'
+VERSION_REVISION_LIST = {
+    'Conoscope': ['72'],
+    'ConoscopeV2': ['87'],
+}
 FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 
 # set sensor_temperature
@@ -305,6 +333,8 @@ SEQ_CAP_INIT_CONFIG = {
     "exposureTimeUs_FilterYa": 10,
     "exposureTimeUs_FilterYb": 10,
     "exposureTimeUs_FilterZ": 10,
+
+    "bSpectro": False,  # configuration for spectro
 }
 
 MEASURE_CAP_INIT_CONFIG = {
@@ -466,4 +496,5 @@ EQUIPMENT_SIM_CAPTURE_FROM_DIR = False
 DUT_SIM = True
 EQUIPMENT_SIM = True
 EQUIPMENT_WHEEL_SIM = True
+EQUIPMENT_SPECTRO_SIM = True
 FIXTURE_SIM = True

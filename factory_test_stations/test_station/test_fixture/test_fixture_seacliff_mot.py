@@ -211,7 +211,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
             self.unload()
             self.start_button_status(False)
             self.power_on_button_status(False)
-
             self._operator_interface.print_to_console(f"Fixture Initialized {kwargs}.\n")
             return True
 
@@ -478,6 +477,19 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if not success:
             raise seacliffmotFixtureError('fail to send command. %s' % response)
 
+    def calib_zero_pos(self):
+        """
+        query the module position
+        @return:
+        """
+        cmd = self._station_config.COMMAND_ZERO_POSIT
+        self._write_serial(cmd)
+        delimiter = r'ZERO_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?)'
+        response = self._read_response(rev_pattern=delimiter)
+        response = [self._re_space_sub.sub('', c) for c in response]
+        deters = self._parse_response(delimiter, response)
+        return int(deters[1])
+
     def module_pos(self):
         """
         query the module position
@@ -586,8 +598,9 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                                        timeout=self._station_config.FIXTURE_QUERY_TEMP_TIMEOUT)
         response = [self._re_space_sub.sub('', c) for c in response]
         deters = self._parse_response(delimiter, response)
-        if not (10 <= float(deters[1]) <= 60):
-            raise seacliffmotFixtureError(f'temperature {deters[1]} is over range [10, 60], does not make sense.')
+        temp_l, temp_h = self._station_config.COMMAND_QUERY_TEMP_RANGE
+        if not (temp_l <= float(deters[1]) <= temp_h):
+            raise seacliffmotFixtureError(f'temperature {deters[1]} is over range [{temp_l}, {temp_h}] does not make sense.')
         return float(deters[1])
 
     def load(self):

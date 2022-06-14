@@ -21,13 +21,8 @@ import scipy
 import matplotlib.pyplot as plt
 import matplotlib
 import csv
-
-try:
-    from test_station.test_equipment.Conoscope import Conoscope
-except:
-    from Conoscope import Conoscope
-finally:
-    pass
+import importlib
+import sys
 
 
 class seacliffmotEquipmentError(Exception):
@@ -44,13 +39,12 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         self.name = "eldim"
         self._verbose = station_config.IS_VERBOSE
         self._station_config = station_config
-        Conoscope.DLL_PATH = self._station_config.CONOSCOPE_DLL_PATH
-        Conoscope.VERSION_REVISION = self._station_config.VERSION_REVISION_EQUIPMENT
-        self._device = Conoscope(self._station_config.EQUIPMENT_SIM, self._station_config.EQUIPMENT_WHEEL_SIM)
+
         self._error_message = self.name + "is out of work"
         self._version = None
         self._config = None
         self._open = None
+        self._conoscope = None
 
     ## Eldim specific return.
     def _log(self, ret, functionName):
@@ -124,27 +118,6 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
     def is_ready(self):
         pass
 
-    ########### Measure ###########
-    def __check_ae_finish(self):
-        # wait for the measurement is done
-        bDone = False
-        aeExpo = 0
-        while bDone is not True:
-            ret = self._device.CmdMeasureAEStatus()
-            aeState = ret["state"]
-            if aeExpo != ret["exposureTimeUs"]:
-                aeExpo = ret["exposureTimeUs"]
-                if self._verbose:
-                    print("  state = {0} ({1} us)".format(aeState, aeExpo))
-            if (aeState == Conoscope.MeasureAEState.MeasureAEState_Done) or \
-                    (aeState == Conoscope.MeasureAEState.MeasureAEState_Error) or \
-                    (aeState == Conoscope.MeasureAEState.MeasureAEState_Cancel):
-                bDone = True
-                if self._verbose:
-                    print("  state = {0} ({1} us)".format(aeState, ret["exposureTimeUs"]))
-            else:
-                time.sleep(0.1)
-
     def __check_seq_finish(self):
         done = False
         processStateCurrent = None
@@ -152,7 +125,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         self._operator_interface.print_to_console("wait for the sequence to be finished.\n")
         while done is False:
             ret = self._device.CmdCaptureSequenceStatus()
-            processState = ret['state']
+            processState = int(ret['state'].value)
             processStep = ret['currentSteps']
             processNbSteps = ret['nbSteps']
 
@@ -164,11 +137,11 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                 processStateCurrent = processState
                 processStepCurrent = processStep
 
-            if processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Error:
+            if processState == 7:  # Conoscope.CaptureSequenceState.CaptureSequenceState_Error:
                 done = True
                 if self._verbose:
                     print("Error happened")
-            elif processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Done:
+            elif processState == 6:  # conoscope.Conoscope.CaptureSequenceState.CaptureSequenceState_Done:
                 done = True
                 if self._verbose:
                     print("Process Done")
@@ -236,8 +209,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
             # assert the initialize status is correct.
             ret = self._device.CmdCaptureSequenceStatus()
             processState = ret['state']
-            if not (processState == Conoscope.CaptureSequenceState.CaptureSequenceState_NotStarted or
-                    processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Done):
+            if int(processState.value) not in [0, 6]:  # CaptureSequenceState_NotStarted , CaptureSequenceState_Done
                 raise seacliffmotEquipmentError('Fail to CmdMeasureSequence.{0}'.format(processState))
 
             captureSequenceConfig = self._station_config.SEQ_CAP_INIT_CONFIG.copy()
@@ -256,177 +228,31 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
                 seacliffmotEquipmentError('Fail to CmdCaptureSequence.')
             self.__check_seq_finish()
             del captureSequenceConfig
-        elif isinstance(exposure_cfg, int):
-            setupConfig = self._station_config.MEASURE_CAP_INIT_CONFIG.copy()
-
-            setupConfig["eFilter"] = setup_cfg[0]  # self._device.Filter.Yb.value,
-            setupConfig["eNd"] = setup_cfg[1]  # self._device.Nd.Nd_3.value,
-            setupConfig["eIris"] = setup_cfg[2]  # self._device.Iris.aperture_2mm.value
-
-            ret = self._device.CmdSetup(setupConfig)
-            self._log(ret, "CmdSetup")
-            if ret['Error'] != 0:
-                seacliffmotEquipmentError('Fail to CmdSetup.')
-
-            ret = self._device.CmdSetupStatus()
-            self._log(ret, "CmdSetupStatus")
-            if ret['Error'] != 0:
-                raise seacliffmotEquipmentError('Fail to CmdSetupStatus.')
-
-            # equipment_sim
-            if self._station_config.EQUIPMENT_SIM:
-                fns = [c for c in file_names if re.match('{0}.*_filt_.*_raw_.*'.format(filename_prepend),
-                                                         os.path.basename(c), re.I)]
-                if len(fns) > 0:
-                    self._operator_interface.print_to_console('update capture dummy {0}.\n'.format(fns[-1]))
-                    self._device.CmdSetDebugConfig({'dummyRawImagePath': fns[-1]})
-
-            measureConfig = {"exposureTimeUs": exposure_cfg,
-                             "nbAcquisition": 1}
-            if not self._station_config.TEST_AUTO_EXPOSURE:
-                ret = self._device.CmdMeasure(measureConfig)
-                self._log(ret, "CmdMeasure")
-                if ret['Error'] != 0:
-                    raise seacliffmotEquipmentError('Fail to CmdMeasure.')
-            else:
-                #  measureAE
-                ret = self._device.CmdMeasureAEStatus()
-                aeState = ret['state']
-                if not (aeState == Conoscope.MeasureAEState.MeasureAEState_NotStarted or
-                        aeState == Conoscope.MeasureAEState.MeasureAEState_Done):
-                    raise seacliffmotEquipmentError('Fail to CmdMeasureAE.{0}'.format(aeState))
-                ret = self._device.CmdMeasureAE(measureConfig)
-                self._log(ret, "CmdMeasureAEStatus")
-                self.__check_ae_finish()
-            # only export raw while not in emulated mode.
-            if (not self._station_config.EQUIPMENT_SIM) and self._station_config.TEST_SEQ_SAVE_CAPTURE:
-                ret = self._device.CmdExportRaw()
-                self._log(ret, "CmdExportRaw")
-                if ret['Error'] != 0:
-                    raise seacliffmotEquipmentError('Fail to CmdExportRaw.')
-            # export processed data.
-            ret = self._device.CmdExportProcessed()
-            self._log(ret, "CmdExportProcessed")
-            if ret['Error'] != 0:
-                raise seacliffmotEquipmentError('Fail to CmdExportProcessed.')
-
-    def measure_and_export(self, measuretype):
-        if measuretype == 0:
-            self.__perform_capture()
-        elif measuretype == 1:
-            self._perform_capture_sequence()
         else:
-            self._operator_interface.print_to_console("TestType Setting is Wrong \n{0}\n".format(self._error_message))
-        return
-
-    def __perform_capture(self):
-        setupConfig = {"sensorTemperature": 25.0,
-                       "eFilter": self._device.Filter.Yb.value,
-                       "eNd": self._device.Nd.Nd_3.value,
-                       "eIris": self._device.Iris.aperture_2mm.value}
-        ret = self._device.CmdSetup(setupConfig)
-        self._log(ret, "CmdSetup")
-
-        ret = self._device.CmdSetupStatus()
-        self._log(ret, "CmdSetupStatus")
-
-        measureConfig = {"exposureTimeUs": 100000,
-                         "nbAcquisition": 1}
-
-        ret = self._device.CmdMeasure(measureConfig)
-        self._log(ret, "CmdMeasure")
-
-        ret = self._device.CmdExportRaw()
-        self._log(ret, "CmdExportRaw")
-
-        ret = self._device.CmdExportProcessed()
-        self._log(ret, "CmdExportProcessed")
-
-        # change capture path
-
-        # config = {"capturePath": "./CaptureFolder2"}
-        # ret = self._device.CmdSetConfig(config)
-        # self._log(ret, "CmdSetup")
-        #
-        # setupConfig = {"sensorTemperature": 25.0,
-        #                "eFilter": self._device.Filter.Xz.value,
-        #                "eNd": self._device.Nd.Nd_1.value,
-        #                "eIris": self._device.Iris.aperture_02.value}
-        # ret = self._device.CmdSetup(setupConfig)
-        # self._log(ret, "CmdSetup")
-        #
-        # ret = self._device.CmdSetupStatus()
-        # self._log(ret, "CmdSetupStatus")
-        #
-        # measureConfig = {"exposureTimeUs": 90000,
-        #                  "nbAcquisition": 1}
-        #
-        # ret = self._device.CmdMeasure(measureConfig)
-        # self._log(ret, "CmdMeasure")
-        #
-        # ret = self._device.CmdExportRaw()
-        # self._log(ret, "CmdExportRaw")
-        #
-        # ret = self._device.CmdExportProcessed()
-        # self._log(ret, "CmdExportProcessed")
-        # return
-
-    def __perform_capture_sequence(self):
-        # check capture sequence
-        ret = self._device.CmdGetCaptureSequence()
-        self._log(ret, "CmdGetCaptureSequence")
-
-        captureSequenceConfig = {"sensorTemperature": 24.0,
-                                 "bWaitForSensorTemperature": False,
-                                 "eNd": Conoscope.Nd.Nd_1.value,
-                                 "eIris": Conoscope.Iris.aperture_4mm.value,
-                                 "exposureTimeUs": 12000,
-                                 "nbAcquisition": 1,
-                                 "bAutoExposure": False,
-                                 "bUseExpoFile": False}
-
-        ret = self._device.CmdCaptureSequence(captureSequenceConfig)
-        self._log(ret, "CmdCaptureSequence")
-
-        # wait for the end of the processing
-        done = False
-
-        processStateCurrent = None
-        processStepCurrent = None
-
-        self._operator_interface.print_to_console("wait for the sequence to be finished.\n")
-
-        while done is False:
-            ret = self._device.CmdCaptureSequenceStatus()
-            # LogFunction(ret, "CmdCaptureSequenceStatus")
-
-            processState = ret['state']
-            processStep = ret['currentSteps']
-            processNbSteps = ret['nbSteps']
-
-            if (processStateCurrent is None) or (processStateCurrent != processState) or (
-                    processStepCurrent != processStep):
-                if self._verbose:
-                    print("  step {0}/{1} state {2}".format(processStep, processNbSteps, processState))
-
-                processStateCurrent = processState
-                processStepCurrent = processStep
-
-            if processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Error:
-                done = True
-                if self._verbose:
-                    print("Error happened")
-            elif processState == Conoscope.CaptureSequenceState.CaptureSequenceState_Done:
-                done = True
-                if self._verbose:
-                    print("Process Done")
-
-            if done is False:
-                time.sleep(1)
-            return
+            raise seacliffmotEquipmentError(f'Not support for this config. {exposure_cfg}')
 
     ########### Export ###########
     def initialize(self):
+        conoscope_pth = r'test_station\test_equipment'
+        assert hasattr(self._station_config, 'VERSION_REVISION_LIST'), 'Please update config to support multi conoscope'
+        try:
+            eq_list = [(k, v) for k, v in self._station_config.VERSION_REVISION_LIST.items()
+                       if self._station_config.VERSION_REVISION_EQUIPMENT in v]
+            if len(eq_list) > 0:
+                cono, __ = eq_list[0]
+                sys.path.append(conoscope_pth)
+                self._conoscope = importlib.import_module(cono)
+                self._conoscope.Conoscope.DLL_PATH = self._station_config.CONOSCOPE_DLL_PATH
+                self._conoscope.Conoscope.VERSION_REVISION = self._station_config.VERSION_REVISION_EQUIPMENT
+                self._device = self._conoscope.Conoscope(emulate_camera=self._station_config.EQUIPMENT_SIM,
+                                                         emulate_wheel=self._station_config.EQUIPMENT_WHEEL_SIM,
+                                                         emulate_spectro=self._station_config.EQUIPMENT_SPECTRO_SIM)
+        except ModuleNotFoundError as e:
+            raise seacliffmotEquipmentError(f'Except: {str(e)}, PATH: {conoscope_pth}')
+        except Exception as e:
+            self._operator_interface.print_to_console(f'Fail to init conoscope. {str(e)}')
+            raise seacliffmotEquipmentError(f'Fail to init {str(e)}')
+
         self.get_config()
         self._operator_interface.print_to_console("Initializing Seacliff MOT Equipment \n")
 
@@ -553,7 +379,8 @@ class MotAlgorithmHelper(object):
         #         scenters.append(list(stat['Centroid']))
         #         sMajorAxisLength.append(stat['MajorAxisLength'])
         #         sMinorAxisLength.append(stat['MinorAxisLength'])
-        for stat in [c for c in stats if c['MajorAxisLength'] >= axis_length_thresh]:
+        for stat in [c for c in stats
+                     if c['MajorAxisLength'] >= axis_length_thresh and c['MinorAxisLength'] >= axis_length_thresh]:
             scenters.append(list(stat['Centroid']))
             sMajorAxisLength.append(stat['MajorAxisLength'])
             sMinorAxisLength.append(stat['MinorAxisLength'])
@@ -1665,12 +1492,13 @@ class MotAlgorithmHelper(object):
         scenters = []
         sMajorAxisLength = []
         sMinorAxisLength = []
-
-        for i, stat in enumerate(stats):
-            if stat['MajorAxisLength'] >= Length_thresh:
-                scenters.append(list(stat['Centroid']))
-                sMajorAxisLength.append(stat['MajorAxisLength'])
-                sMinorAxisLength.append(stat['MinorAxisLength'])
+        for stat in [c for c in stats
+                     if c['MajorAxisLength'] >= Length_thresh and c['MinorAxisLength'] >= Length_thresh]:
+            # if stat['MajorAxisLength'] >= Length_thresh:
+            # modified by elton 20220521
+            scenters.append(list(stat['Centroid']))
+            sMajorAxisLength.append(stat['MajorAxisLength'])
+            sMinorAxisLength.append(stat['MinorAxisLength'])
 
         # print('num stats 0 / 1'.format(len(scenters), len(stats)))
         num_dots = len(scenters)
@@ -2084,19 +1912,23 @@ class MotAlgorithmHelper(object):
         masked_tristim = XYZ[:, :, 1] * mask
 
         Lumiance_thresh = 10
+        Lumiance_thresh_blue = 30
         Length_thresh = 10
-        Img = cv2.inRange(masked_tristim, Lumiance_thresh, 255) // 255
+        Img3 = cv2.inRange(masked_tristim, Lumiance_thresh, 255)
+        Img2 = cv2.inRange(XYZ[:, :, 2] * mask, 0, Lumiance_thresh_blue)
+        Img = cv2.bitwise_and(Img3, Img2) // 255
         Img = label(Img, connectivity=2)
         statsRG = regionprops(Img)
         scentersRG = []
         sMajorAxisLengthRG = []
         sMinorAxisLengthRG = []
         statsRG = sorted(statsRG, key=lambda c: c['centroid'])
-        for i, stat in enumerate(statsRG):
-            if stat['MajorAxisLength'] >= Length_thresh:
-                scentersRG.append(list(stat['centroid']))
-                sMajorAxisLengthRG.append(stat['MajorAxisLength'])
-                sMinorAxisLengthRG.append(stat['MinorAxisLength'])
+
+        for stat in [c for c in statsRG
+                     if c['MajorAxisLength'] >= Length_thresh and c['MinorAxisLength'] >= Length_thresh]:
+            scentersRG.append(list(stat['centroid']))
+            sMajorAxisLengthRG.append(stat['MajorAxisLength'])
+            sMinorAxisLengthRG.append(stat['MinorAxisLength'])
 
         if self._verbose:
             print('num stats {0} / {1}'.format(len(scentersRG), len(statsRG)))
@@ -2134,20 +1966,19 @@ class MotAlgorithmHelper(object):
             centroidRG[i, 0] = meanx + int(scentersRG[i][1])
 
         masked_tristim = XYZ[:, :, 2] * mask
-        Lumiance_thresh = 30
         Length_thresh = 50
-        Img = cv2.inRange(masked_tristim, Lumiance_thresh, 255) // 255
+        Img = cv2.inRange(masked_tristim, Lumiance_thresh_blue, 255) // 255
         Img = label(Img, connectivity=2)
         statsB = regionprops(Img)
         scentersB = []
         sMajorAxisLengthB = []
         sMinorAxisLengthB = []
 
-        for i, stat in enumerate(statsB):
-            if stat['MajorAxisLength'] >= Length_thresh:
-                scentersB.append(list(stat['centroid']))
-                sMajorAxisLengthB.append(stat['MajorAxisLength'])
-                sMinorAxisLengthB.append(stat['MinorAxisLength'])
+        for stat in [c for c in statsB
+                     if c['MajorAxisLength'] >= Length_thresh and c['MinorAxisLength'] >= Length_thresh]:
+            scentersB.append(list(stat['centroid']))
+            sMajorAxisLengthB.append(stat['MajorAxisLength'])
+            sMinorAxisLengthB.append(stat['MinorAxisLength'])
 
         if self._verbose:
             print('num stats {0} / {1}'.format(len(scentersB), len(statsB)))
@@ -2490,7 +2321,19 @@ def print_to_console(self, msg):
     pass
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    import sys
+    import types
+
+    sys.path.append(r'..\..')
+    import station_config
+
+    station_config.load_station('seacliff_mot')
+    station_config.print_to_console = types.MethodType(print_to_console, station_config)
+    the_unit = seacliffmotEquipment(station_config, station_config)
+    the_unit.initialize()
+
+    the_unit.close()
     import sys
     sys.path.append("../../")
     import types
