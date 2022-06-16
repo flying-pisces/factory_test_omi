@@ -12,7 +12,7 @@ import string
 import win32process
 import win32event
 import pywintypes
-import cv as cv2
+import cv2
 import pprint
 import math
 import select
