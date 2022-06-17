@@ -13,9 +13,8 @@ import string
 import win32process
 import win32event
 import pywintypes
-import cv as cv2
 import pprint
-import math
+import cv2
 import select
 import hardware_station_common.test_station.dut
 
@@ -126,7 +125,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
                 if self._verbose:
                     print(f'DUT {self.serial_number} Initialised COM = {kwargs}. ')
         except Exception as e:
-            raise DUTError(f'Unable to open DUT with {kwargs}, Exp={str(e)}')
+            raise EurekaDUTError(f'Unable to open DUT with {kwargs}, Exp={str(e)}')
         return True
 
     def screen_on(self, ignore_err=False):
@@ -136,7 +135,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         while retries <= 5 and not self.is_screen_poweron:
             recvobj = self._power_on()
             if recvobj is None:
-                raise DUTError("Exit power_on because can't receive any data from dut.")
+                raise EurekaDUTError("Exit power_on because can't receive any data from dut.")
             if recvobj[0] == '0000':
                 self.is_screen_poweron = True
             else:
@@ -147,7 +146,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
             if ignore_err:
                 return recvobj
             else:
-                raise DUTError(f"Exit power_on because rev err msg. retries = {retries}, Msg = {recvobj}")
+                raise EurekaDUTError(f"Exit power_on because rev err msg. retries = {retries}, Msg = {recvobj}")
         return self.is_screen_poweron
 
     def screen_off(self):
@@ -159,23 +158,22 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         self._operator_interface.print_to_console("Turn Off display................\n")
         if self.is_screen_poweron:
             self._power_off()
-        self._operator_interface.print_to_console("Closing DUT by the communication interface.\n")
-        if self._serial_port is not None:
-            self._serial_port.close()
-            self._serial_port = None
+        # self._operator_interface.print_to_console("Closing DUT by the communication interface.\n")
+        # if self._serial_port is not None:
+        #     self._serial_port.close()
+        #     self._serial_port = None
         self.is_screen_poweron = False
 
-    def get_color_ext(self, internal_or_external):
-        """
-
-        @type internal_or_external: bool
-        """
-        recvobj = self._get_color_ext(internal_or_external)
+    def module_name(self):
+        # $C.Module.name    $P.Module.name, 0000, Holder
+        self._write_serial_cmd(f'{self._station_config.COMMAND_MODULE_NAME}')
+        response = self._read_response()
+        recvobj = self._prase_respose(self._station_config.COMMAND_MODULE_NAME, response)
         if recvobj is None:
-            raise DUTError("Exit get_color because can't receive any data from dut.")
+            raise EurekaDUTError("Fail module_name because can't receive any data from dut.")
         if int(recvobj[0]) != 0x00:
-            raise DUTError("Exit get_color because rev err msg. Msg = {}".format(recvobj))
-        return tuple([int(x, 16) for x in recvobj[1:]])
+            raise EurekaDUTError("Exit module_name because rev err msg. Msg = {}".format(recvobj))
+        return recvobj[1]
 
     def get_measure_blu(self):
         """
@@ -187,41 +185,32 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         resp = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_MEASURE_BLU, resp)
 
-    def display_color_check(self, color):
-        norm_color = tuple([c / 255.0 for c in color])
-        color1 = np.float32([[norm_color]])
-        hsv = cv2.cvtColor(color1, cv2.COLOR_RGB2HSV)
-        h, s, v = tuple(hsv[0, 0, :])
-        self._operator_interface.print_to_console('COLOR: = {},{},{}\n'.format(h, s, v))
-        return (self._station_config.DISP_CHECKER_L_HsvH <= h <= self._station_config.DISP_CHECKER_H_HsvH and
-                self._station_config.DISP_CHECKER_L_HsvS <= s <= self._station_config.DISP_CHECKER_H_HsvS)
-
     def display_color(self, color=(255, 255, 255)):  # (r,g,b)
         if self.is_screen_poweron:
             recvobj = self._setColor(color)
             if recvobj is None:
-                raise DUTError("Exit display_color because can't receive any data from dut.")
+                raise EurekaDUTError("Exit display_color because can't receive any data from dut.")
             if int(recvobj[0]) != 0x00:
-                raise DUTError("Exit display_color because rev err msg. Msg = {0}".format(recvobj))
+                raise EurekaDUTError("Exit display_color because rev err msg. Msg = {0}".format(recvobj))
         time.sleep(0.025)
 
     def display_image(self, image, is_ddr_data=False):
         if self.is_screen_poweron:
             recvobj = self.__showImage(image, is_ddr_data)
             if recvobj is None:
-                raise DUTError("Exit disp_image because can't receive any data from dut.")
+                raise EurekaDUTError("Exit disp_image because can't receive any data from dut.")
             if int(recvobj[0]) != 0x00:
-                raise DUTError("Exit disp_image because rev err msg. Msg = {0}".format(recvobj))
+                raise EurekaDUTError("Exit disp_image because rev err msg. Msg = {0}".format(recvobj))
         time.sleep(0.025)
 
     def vsync_microseconds(self):
         recvobj = self._vsyn_time()
         if recvobj is None:
-            raise DUTError("Exit display_color because can't receive any data from dut.")
+            raise EurekaDUTError("Exit display_color because can't receive any data from dut.")
         grpt = re.match(r'(\d*[\.]?\d*)', recvobj[1])
         grpf = re.match(r'(\d*[\.]?\d*)', recvobj[2])
         if grpf is None or grpt is None:
-            raise DUTError("Exit display_color because rev err msg. Msg = {0}".format(recvobj))
+            raise EurekaDUTError("Exit display_color because rev err msg. Msg = {0}".format(recvobj))
         return float(grpt.group(0))
 
     def get_version(self, uname='mcu'):
@@ -260,14 +249,14 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         recvobj = self._reboot()
         self.is_screen_poweron = False
         if recvobj is None:
-            raise DUTError("Fail to reboot because can't receive any data from dut.")
+            raise EurekaDUTError("Fail to reboot because can't receive any data from dut.")
         if int(recvobj[0]) != 0x00:
-            raise DUTError("Fail to reboot because rev err msg. Msg = {0}".format(recvobj))
+            raise EurekaDUTError("Fail to reboot because rev err msg. Msg = {0}".format(recvobj))
         response = []
         while True:
             dt = datetime.datetime.now()
             if (dt - sw).total_seconds() > delay_seconds:
-                raise DUTError('Fail to reboot because waiting msg timeout {0:4f}s. '.format((dt - sw).total_seconds()))
+                raise EurekaDUTError('Fail to reboot because waiting msg timeout {0:4f}s. '.format((dt - sw).total_seconds()))
             line_in = self._serial_port.readline()
             if line_in == b'':
                 time.sleep(1)
@@ -279,7 +268,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
                 pprint.pprint(response)
             recvobj = self._prase_respose('System OK', response)
             if int(recvobj[0]) != 0x00:
-                raise DUTError("Fail to reboot because rev err msg. Msg = {0}".format(recvobj))
+                raise EurekaDUTError("Fail to reboot because rev err msg. Msg = {0}".format(recvobj))
             if self._verbose:
                 print('Reboot system successfully . Elapse time {0:4f} s.'.format((dt - sw).total_seconds()))
             break
@@ -302,7 +291,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
                 pass
             retries += 1
         if not success:
-            raise DUTError('Fail to read write count. = {0}'.format(recv_obj))
+            raise EurekaDUTError('Fail to read write count. = {0}'.format(recv_obj))
         return recv_obj
 
     def nvm_write_data(self, data_array):
@@ -316,7 +305,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         resp = self._read_response(timeout=10)
         recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_WRITE, resp)
         if int(recv_obj[0]) != 0x00:
-            raise DUTError('Fail to nvm write data = {0}'.format(recv_obj))
+            raise EurekaDUTError('Fail to nvm write data = {0}'.format(recv_obj))
         return recv_obj
 
     def nvm_read_data(self, data_len=70):
@@ -340,7 +329,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
                 pass
             retries += 1
         if not success:
-            raise DUTError('Fail to read write count. = {0}'.format(recv_obj))
+            raise EurekaDUTError('Fail to read write count. = {0}'.format(recv_obj))
         return recv_obj
 
     def nvm_speed_mode(self, mode='normal'):
@@ -378,7 +367,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
                 pass
             retries += 1
         if not success:
-            raise DUTError('Fail to read get ecc. = {0}'.format(recv_obj))
+            raise EurekaDUTError('Fail to read get ecc. = {0}'.format(recv_obj))
         return recv_obj
 
     def get_module_inplace(self):
@@ -396,7 +385,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
             except:
                 pass
         if not success:
-            raise DUTError('Fail to read get_module_inplace = {0}'.format(recv_obj))
+            raise EurekaDUTError('Fail to read get_module_inplace = {0}'.format(recv_obj))
         return recv_obj
 
     def _timeout_execute(self, cmd, timeout=0):
@@ -419,7 +408,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
                 try:
                     win32process.TerminateProcess(handle[0], 0)
                 except pywintypes.error as e:
-                    raise DUTError('exectue {0} timeout :{1}'.format(cmd, e))
+                    raise EurekaDUTError('exectue {0} timeout :{1}'.format(cmd, e))
                 if rc == win32event.WAIT_OBJECT_0:
                     res = win32process.GetExitCodeProcess(handle[0])
             else:
@@ -427,7 +416,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         finally:
             os.chdir(cwd)
         if res != 0:
-            raise DUTError('fail to exec {0} res :{1}'.format(cmd, res))
+            raise EurekaDUTError('fail to exec {0} res :{1}'.format(cmd, res))
         return res
 
     def _write_serial_cmd(self, command):
@@ -488,7 +477,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
             return None
         values = respstr.split(self._spliter)
         if len(values) == 1:
-            raise DUTError('display ctrl rev data format error. <- {0}'.format(respstr))
+            raise EurekaDUTError('display ctrl rev data format error. <- {0}'.format(respstr))
         return values[1:]
 
     def _power_on(self):
@@ -528,20 +517,6 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_DISP_SETCOLOR, response)
 
-    def _MIPI_read(self, reg, typ):
-        command = '{0},{1},{2}'.format(self._station_config.COMMAND_DISP_READ, reg, typ)
-        self._write_serial_cmd(command)
-        # time.sleep(1)
-        response = self._read_response()
-        return self._prase_respose(self._station_config.COMMAND_DISP_READ, response)
-
-    def _MIPI_write(self, reg, typ, val):
-        command = '{0},{1},{2},{3}'.format(self._station_config.COMMAND_DISP_WRITE, reg, typ, val)
-        self._write_serial_cmd(command)
-        # time.sleep(1)
-        response = self._read_response()
-        return self._prase_respose(self._station_config.COMMAND_DISP_WRITE, response)
-
     def _reboot(self):
         cmd = 'Reboot'
         if hasattr(self._station_config, 'COMMAND_REBOOT'):
@@ -549,33 +524,6 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         self._write_serial_cmd(cmd)
         response = self._read_response()
         return self._prase_respose(cmd, response)
-
-    def _get_color_ext(self, internal_or_external):
-        internal_external_dic = {
-            True: 'INTERNAL',
-            False: 'EXTERNAL'
-        }
-        cmd = '{0},{1}'.format(self._station_config.COMMAND_DISP_GET_COLOR, internal_external_dic[internal_or_external])
-        self._write_serial_cmd(cmd)
-        response = self._read_response()
-        return self._prase_respose(cmd, response)
-
-    def read_color_sensor(self):
-        self._write_serial_cmd(self._station_config.COMMAND_DISP_GETCOLOR)
-        response = self._read_response()
-        rev = self._prase_respose(self._station_config.COMMAND_DISP_GETCOLOR, response)
-        if int(rev[0]) != 0:
-            raise DUTError('Read color sensor failed. \n')
-        return tuple([int(x, 16) for x in rev[1:]])
-
-    def display_color_check(self, color):
-        norm_color = tuple([c / 255.0 for c in color])
-        color1 = np.float32([[norm_color]])
-        hsv = cv2.cvtColor(color1, cv2.COLOR_RGB2HSV)
-        h, s, v = tuple(hsv[0, 0, :])
-        self._operator_interface.print_to_console('COLOR: = {},{},{}\n'.format(h, s, v))
-        return (self._station_config.DISP_CHECKER_L_HsvH <= h <= self._station_config.DISP_CHECKER_H_HsvH and
-                self._station_config.DISP_CHECKER_L_HsvS <= s <= self._station_config.DISP_CHECKER_H_HsvS)
 
     # </editor-fold>
 
@@ -609,7 +557,7 @@ class projectDut(object):
             pass
         if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image', 'nvm_read_statistics',
                     'nvm_write_data', '_get_color_ext', 'render_image', 'nvm_read_data', 'nvm_speed_mode',
-                    'get_module_inplace', 'nvm_get_ecc', 'read_color_sensor', 'display_color_check']:
+                    'get_module_inplace', 'nvm_get_ecc', 'read_color_sensor', 'display_color_check', '']:
             return not_find
 
 
@@ -620,7 +568,7 @@ if __name__ == "__main__":
     station_config = cfgstub()
     station_config.DUT_COMPORT = "COM14"
     station_config.DUT_RENDER_ONE_IMAGE_TIMEOUT = 0
-    station_config.COMMAND_DISP_HELP = "$c.help"
+    station_config.COMMAND_DISP_HELP = "help"
     station_config.COMMAND_DISP_VERSION_GRP = ['mcu', 'hw', 'fpga']
     station_config.COMMAND_DISP_VERSION = "Version"
     station_config.COMMAND_DISP_GETBOARDID = "getBoardID"
@@ -630,15 +578,18 @@ if __name__ == "__main__":
     station_config.COMMAND_DISP_RESET = "Reset"
     station_config.COMMAND_DISP_SETCOLOR = "SetColor"
     station_config.COMMAND_DISP_SHOWIMAGE = "ShowImage"
-    station_config.COMMAND_DISP_READ = "MIPI.Read"
-    station_config.COMMAND_DISP_WRITE = "MIPI.Write"
-    station_config.COMMAND_DISP_2832WRITE = "t.2832_MIPI_WRITE"
     station_config.COMMAND_DISP_VSYNC = "REFRESHRATE"
 
     station_config.COMMAND_NVM_WRITE_CNT = 'NVMWCNT'
     station_config.COMMAND_NVM_READ = 'NVMRead'
     station_config.COMMAND_NVM_WRITE = 'NVMWrite'
     station_config.COMMAND_SPEED_MODE = 'SET.B7MODE'
+    station_config.COMMAND_MODULE_NAME = 'Module.name'
+    station_config.COMMAND_MODULE_OUT = 'Module.Out'
+    station_config.COMMAND_GET_MODULE_INPLACE = 'GET.MODULE.INPLACE'
+    station_config.COMMAND_DUAL_DISABLE = 'DISABLE.STARTBTN'
+
+    station_config.DUT_ETH_PROXY = True
 
     import sys
     import types
@@ -649,7 +600,7 @@ if __name__ == "__main__":
     station_config.IS_VERBOSE = True
 
     # the_unit = projectDut(station_config, station_config, station_config)
-    the_unit = pancakeDut(station_config, station_config, station_config)
+    the_unit = EurekaDut(station_config, station_config, station_config)
 
     for idx in range(0, 2):
 
@@ -664,7 +615,9 @@ if __name__ == "__main__":
         print('pic - count {0}'.format(len(pics)))
         # the_unit.render_image(pics)
 
-        the_unit.initialize()
+        the_unit.initialize(com_port='COM1', eth_addr=('192.168.21.132', 6000))
+        the_unit.module_name()
+        the_unit.module_out()
         arr = the_unit.nvm_read_data()
 
         try:

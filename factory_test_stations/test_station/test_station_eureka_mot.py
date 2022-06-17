@@ -4,7 +4,7 @@ import psutil
 import test_station.test_fixture.test_fixture_eureka_mot as test_fixture_eureka_mot
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 import test_station.test_equipment.test_equipment_eureka_mot as test_equipment_eureka_mot
-from test_station.dut.dut_eureka import EurekaDut, projectDut, EurekaDUTError
+from test_station.dut.eureka_dut import EurekaDut, projectDut, EurekaDUTError
 import time
 import os
 import types
