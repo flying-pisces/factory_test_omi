@@ -10,3 +10,4 @@ pythonnet==2.3.0
 singledispatch==3.4.0.3
 six==1.11.0
 tornado==5.0.2
+suds-py3==1.4.5.0 
