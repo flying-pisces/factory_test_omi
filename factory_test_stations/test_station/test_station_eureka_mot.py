@@ -320,6 +320,24 @@ class EurekaMotStation(test_station.TestStation):
         self.fixture_particle_port = None
         self._is_exit = False
         self._is_running = False
+        self._err_msg_list = {
+            1: 'Axis X running error / X轴电机运动异常',
+            2: 'Axis Y running error / Y轴电机运动异常',
+            3: 'Axis A running error / A轴电机运动异常',
+            4: 'Axis Z running error / Z轴电机运动异常',
+            5: 'Signal from sensor (pressing plate) is not triggered / DUT盖板未盖上',
+            6: 'Signal from sensor (Grating) is not triggered / 安全光栅信号被触发',
+            7: 'Signal from sensor (Fixture Door) is not triggered / 治具门未关闭',
+            8: 'This command is cancel by operator / 用户取消',
+            9: 'Fixture is under warning status / 治具报警状态',
+            10: 'Signal from sensor (DUT Door) is not triggered / DUT门气缸异常',
+            11: 'Signal from sensor (Axis Z for equipment) is not triggered / Z轴相机支持气缸信号异常',
+            12: 'Signal from sensor (Hold DUT on) is not triggered / DUT 夹紧信号异常',
+            13: 'Signal from sensor (Raise DUT up or down) is not triggered / DUT升降信号异常',
+            14: 'Signal from sensor (DUT pogo pin) is not triggered / DUT Pogo Pin 气缸信号异常',
+            15: 'Signal from sensor (DUT Door) is not triggered / DUT 开门信号异常',
+            16: 'Warning for vacuum / 真空吸信号异常',
+        }
 
     def initialize(self):
         try:
@@ -352,6 +370,17 @@ class EurekaMotStation(test_station.TestStation):
                     f'Fixture Id is not set correctly {self._station_config.STATION_NUMBER} != FW: {fixture_id}')
             self._operator_interface.print_to_console(
                 f'update distance between camera and datum: {self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM}\n')
+
+            self._fixture.start_button_status(True)
+            self._fixture.power_on_button_status(True)
+            self._fixture.vacuum(False)
+            self.alert_handle(self._fixture.unload_dut(), [1, 2, 3, 4, 5, 6])
+            self._fixture.unload()
+            if not self._station_config.FIXTURE_SIM and self.alert_handle(self._fixture.unload()) != 0:
+                raise EurekaMotStationError(f'Fail to init the fixture.')
+            self._fixture.start_button_status(True)
+            self._fixture.power_on_button_status(True)
+
             self._equipment.initialize()
             self._equipment.open()
             threading.Thread(target=self._auto_backup_thr, daemon=True).start()
@@ -878,6 +907,15 @@ class EurekaMotStation(test_station.TestStation):
     def is_ready(self):
         return True
 
+    def alert_handle(self, ready_code, reset_need_code=[1, 2, 3, 4, 6]):
+        alert_res = ready_code
+        while alert_res in reset_need_code:
+            self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning', msgbtn=0)
+            alert_res = self._fixture.reset()
+        if alert_res not in [0, None]:
+            self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(alert_res)}.\n', 'red')
+        return alert_res
+
     def _query_dual_start(self):
         serial_number = self._latest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
@@ -928,50 +966,49 @@ class EurekaMotStation(test_station.TestStation):
                 if (hasattr(self._station_config, 'DUT_LOAD_WITHOUT_OPERATOR')
                         and self._station_config.DUT_LOAD_WITHOUT_OPERATOR is True):
                     self._fixture.load()
-                    ready_status = 0
+                    key_ret_info = (0, 0)
                 else:
-                    ready_status = self._fixture.is_ready()
-                if ready_status is not None:
-                    if ready_status == 0x00:  # load DUT automatically and then screen on
-                        ready = True  # Start to test.
-                        self._is_screen_on_by_op = True
-                        if self._retries_screen_on == 0:
-                            self._the_unit.screen_on()
-                        self._the_unit.display_color((255, 0, 0))
+                    key_ret_info = self._fixture.is_ready()
+                if not isinstance(key_ret_info, tuple):
+                    continue
+                ready_key, ready_code = key_ret_info
+
+                if ready_key == 0x00 and ready_code == 0x00:  # load DUT automatically and then screen on
+                    ready = True  # Start to test.
+                    self._is_screen_on_by_op = True
+                    if self._retries_screen_on == 0:
+                        self._fixture.load_dut()
+                        self._the_unit.screen_on()
+                    self._the_unit.display_color((255, 0, 0))
+                    self._fixture.power_on_button_status(False)
+                    time.sleep(self._station_config.FIXTURE_SOCK_DLY)
+                    alignment_result = self._fixture.alignment(self._latest_serial_number)
+                    if isinstance(alignment_result, tuple):
+                        self._module_left_or_right = str(alignment_result[4]).upper()
+                        self._is_alignment_success = True
+
+                elif ready_key in [0x02, 0x03]:
+                    self._operator_interface.print_to_console('Try to lit up DUT.\n')
+
+                    # power the dut on normally.
+                    if power_on_trigger:
+                        self._the_unit.screen_off()
+                        power_on_trigger = False
+                        self._fixture.power_on_button_status(True)
+                        self._fixture.start_button_status(False)
+                    else:
+                        self._the_unit.screen_on()
                         self._fixture.power_on_button_status(False)
                         time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-                        alignment_result = self._fixture.alignment(self._latest_serial_number)
-                        if isinstance(alignment_result, tuple):
-                            self._module_left_or_right = str(alignment_result[4]).upper()
-                            self._is_alignment_success = True
-
-                    elif ready_status == 0x03 or ready_status == 0x02:
-                        self._operator_interface.print_to_console('Try to lit up DUT.\n')
+                        self._fixture.start_button_status(True)
                         self._retries_screen_on += 1
-                        # power the dut on normally.
-                        if power_on_trigger:
-                            self._the_unit.screen_off()
-                            # self._the_unit.reboot()  # Reboot
-                        self._the_unit.screen_on()
                         power_on_trigger = True
-                        # check the color sensor
-                        timeout_for_dual = timeout_for_btn_idle
-                        color_check_result = True
-                        if self._station_config.DISP_CHECKER_ENABLE:
-                            color_check_result = False
-                            color = self._the_unit.get_color_ext(False)
-                            if self._the_unit.display_color_check(color):
-                                color_check_result = True
-                            if color_check_result:
-                                self._fixture.power_on_button_status(False)
-                                time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-                                self._fixture.start_button_status(True)
-                        else:
-                            self._fixture.power_on_button_status(False)
-                            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-                            self._fixture.start_button_status(True)
-                    elif ready_status == 0x01:
-                        self._is_cancel_test_by_op = True  # Cancel test.
+                    # check the color sensor
+                    timeout_for_dual = timeout_for_btn_idle
+
+                elif ready_key == 0x01:
+                    self._is_cancel_test_by_op = True  # Cancel test.
+
                 time.sleep(0.1)
                 timeout_for_dual -= 1
         except (EurekaMotStationError, EurekaDUTError, RuntimeError) as e:
@@ -988,7 +1025,8 @@ class EurekaMotStation(test_station.TestStation):
                         self._operator_interface.print_to_console(
                             'Cancel start signal from dual %s.\n' % timeout_for_dual)
                     self._the_unit.close()
-                    # self._the_unit = None
+                    self.alert_handle(self._fixture.unload_dut())
+
                 self._fixture.start_button_status(False)
                 time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                 self._fixture.power_on_button_status(False)

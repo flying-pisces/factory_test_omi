@@ -167,14 +167,18 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         self._alignment_pos = None
 
     def is_ready(self):
-        if self._serial_port is not None:
-            resp = self._read_response(0.5)
+        if self._serial_port is not None and self._fixture_mutex.acquire(blocking=False):
+            resp = self._read_response(0.1, end_delimiter=self._end_delimiter_auto_response)
+            self._fixture_mutex.release()
             if resp:
-                btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d', 0: r'BUTTON:0'}
+                btn_dic = {3: r'PowerOn_Button:(\d+)',
+                           2: r'BUTTON_Right:(\d+)',
+                           1: r'BUTTON_Left:(\d+)',
+                           0: r'BUTTON:(\d+)'}
                 for key, item in btn_dic.items():
-                    items = list(filter(lambda r: re.match(item, r, re.I | re.S), resp))
+                    items = list(filter(lambda r: re.search(item, r, re.I | re.S), resp))
                     if items:
-                        return key
+                        return key, int(re.search(item, items[0], re.I | re.S).group(1))
 
     def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing EurekaMot Fixture\n")
@@ -206,11 +210,11 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         if not self._serial_port:
             raise EurekaMotFixtureError(f'Unable to open fixture port: {kwargs}')
         else:  # disable the buttons automatically
-            self.start_button_status(True)
-            self.power_on_button_status(True)
-            self.unload()
-            self.start_button_status(False)
-            self.power_on_button_status(False)
+            # self.start_button_status(True)
+            # self.power_on_button_status(True)
+            # self.unload()
+            # self.start_button_status(False)
+            # self.power_on_button_status(False)
             self._operator_interface.print_to_console(f"Fixture Initialized {kwargs}.\n")
             return True
 
@@ -421,14 +425,12 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             raise EurekaMotFixtureError('fail to send command. %s' % response)
 
     def reset(self):
-        """
-        fixture reset
-        @return:
-        """
         self._write_serial(self._station_config.COMMAND_RESET)
-        response = self._read_response(timeout=10)
-        if int(self._parse_response(r'RESET:(\d+)', response).group(1)) != 0:
-            raise EurekaMotFixtureError('fail to send command. %s' % response)
+        response = self.read_response()
+        val = int(self._prase_response(r'LOAD:(\d+)', response).group(1))
+        if val == 0x00:
+            time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
+        return val
 
     def mov_abs_xy_wrt_alignment(self, x, y):
         """
@@ -626,6 +628,41 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         response = self._read_response(rev_pattern=rev_pattern, timeout=self._station_config.FIXTURE_UNLOAD_DLY)
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
             raise EurekaMotFixtureError('fail to send command. %s' % response)
+
+    def load_dut(self):
+        """
+        get version number
+        @return:
+        """
+        with self._fixture_mutex:
+            self._write_serial(f'{self._station_config.COMMAND_DUT_LOAD}')
+            response = self.read_response()
+        return self._prase_response('DUTLOAD:(\d+)', response).group(1)
+
+    def unload_dut(self):
+        """
+        get version number
+        @return:
+        """
+        with self._fixture_mutex:
+            self._write_serial(f'{self._station_config.COMMAND_DUT_UNLOAD}')
+            response = self.read_response()
+        return self._prase_response('DUTUNLOAD:(\d+)', response).group(1)
+
+    def vacuum(self, on):
+        """
+        get version number
+        @return:
+        """
+        vacuum_dict = {
+            True: ('ON', r'VACUUM_ON:(\d+)'),
+            False: ('OFF', r'VACUUM_OFF:(\d+)'),
+        }
+        cmd = vacuum_dict[on]
+        with self._fixture_mutex:
+            self._write_serial(f'{self._station_config.COMMAND_VACUUM_CTRL}:{cmd[0]}')
+            response = self.read_response()
+        return self._prase_response(cmd[1], response).group(1)
 
     def alignment(self, serial_number):
         self._alignment_pos = None
