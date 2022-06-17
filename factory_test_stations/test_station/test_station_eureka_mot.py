@@ -374,12 +374,11 @@ class EurekaMotStation(test_station.TestStation):
             self._fixture.start_button_status(True)
             self._fixture.power_on_button_status(True)
             self._fixture.vacuum(False)
-            self.alert_handle(self._fixture.unload_dut(), [1, 2, 3, 4, 5, 6])
-            self._fixture.unload()
+            self.alert_handle(self._fixture.unload_dut())
             if not self._station_config.FIXTURE_SIM and self.alert_handle(self._fixture.unload()) != 0:
                 raise EurekaMotStationError(f'Fail to init the fixture.')
-            self._fixture.start_button_status(True)
-            self._fixture.power_on_button_status(True)
+            self._fixture.start_button_status(False)
+            self._fixture.power_on_button_status(False)
 
             self._equipment.initialize()
             self._equipment.open()
@@ -821,8 +820,9 @@ class EurekaMotStation(test_station.TestStation):
                 self._pool.close()
                 self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')
                 self._operator_interface.print_to_console('Please wait...')
+                self.alert_handle(self._fixture.unload())
                 self._the_unit.close()
-                self._fixture.unload()
+                self.alert_handle(self._fixture.unload_dut())
             except:
                 pass
             while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
@@ -907,9 +907,9 @@ class EurekaMotStation(test_station.TestStation):
     def is_ready(self):
         return True
 
-    def alert_handle(self, ready_code, reset_need_code=[1, 2, 3, 4, 6]):
+    def alert_handle(self, ready_code):
         alert_res = ready_code
-        while alert_res in reset_need_code:
+        while alert_res in [6, 7]:
             self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning', msgbtn=0)
             alert_res = self._fixture.reset()
         if alert_res not in [0, None]:
@@ -934,7 +934,7 @@ class EurekaMotStation(test_station.TestStation):
         self._probe_con_status = False
         timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
                                     else self._station_config.TIMEOUT_FOR_BTN_IDLE)
-        timeout_for_dual = timeout_for_btn_idle
+        timeout_for_dual = time.time()
         try:
             self._fixture.flush_data()
             self._fixture.power_on_button_status(False)
@@ -947,13 +947,15 @@ class EurekaMotStation(test_station.TestStation):
                                       eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
             self._the_unit.nvm_speed_mode(mode='normal')
             self._operator_interface.print_to_console("Initialize DUT... \n")
-            while timeout_for_dual > 0:
+            tm_current = timeout_for_dual
+            while tm_current - timeout_for_dual <= timeout_for_btn_idle:
                 if ready or self._is_cancel_test_by_op:
                     break
                 msg_prompt = 'Load DUT, and then Press PowerOn-Btn (Lit up) in %s S...'
                 if power_on_trigger:
                     msg_prompt = 'Press Dual-Btn(Load)/PowerOn-Btn(Re Lit up)  in %s S...'
-                self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow')
+                tm_data = timeout_for_btn_idle - (tm_current - timeout_for_dual)
+                self._operator_interface.prompt(msg_prompt % int(tm_data), 'yellow')
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
                     self._is_alignment_success = True
@@ -977,8 +979,9 @@ class EurekaMotStation(test_station.TestStation):
                     ready = True  # Start to test.
                     self._is_screen_on_by_op = True
                     if self._retries_screen_on == 0:
-                        self._fixture.load_dut()
+                        self.alert_handle(self._fixture.load_dut())
                         self._the_unit.screen_on()
+                    self._fixture.vacuum(False)
                     self._the_unit.display_color((255, 0, 0))
                     self._fixture.power_on_button_status(False)
                     time.sleep(self._station_config.FIXTURE_SOCK_DLY)
@@ -996,21 +999,23 @@ class EurekaMotStation(test_station.TestStation):
                         power_on_trigger = False
                         self._fixture.power_on_button_status(True)
                         self._fixture.start_button_status(False)
+                        timeout_for_dual = time.time()
                     else:
+                        if self._retries_screen_on == 0:
+                            self.alert_handle(self._fixture.load_dut())
+                            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                         self._the_unit.screen_on()
                         self._fixture.power_on_button_status(False)
-                        time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                         self._fixture.start_button_status(True)
                         self._retries_screen_on += 1
                         power_on_trigger = True
-                    # check the color sensor
-                    timeout_for_dual = timeout_for_btn_idle
+                        timeout_for_dual = time.time()
 
                 elif ready_key == 0x01:
                     self._is_cancel_test_by_op = True  # Cancel test.
 
-                time.sleep(0.1)
-                timeout_for_dual -= 1
+                time.sleep(0.01)
+                tm_current = time.time()
         except (EurekaMotStationError, EurekaDUTError, RuntimeError) as e:
             self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
@@ -1024,8 +1029,10 @@ class EurekaMotStation(test_station.TestStation):
                     else:
                         self._operator_interface.print_to_console(
                             'Cancel start signal from dual %s.\n' % timeout_for_dual)
-                    self._the_unit.close()
-                    self.alert_handle(self._fixture.unload_dut())
+
+                    # self.alert_handle(self._fixture.unload())
+                    # self._the_unit.close()
+                    # self.alert_handle(self._fixture.unload_dut())
 
                 self._fixture.start_button_status(False)
                 time.sleep(self._station_config.FIXTURE_SOCK_DLY)

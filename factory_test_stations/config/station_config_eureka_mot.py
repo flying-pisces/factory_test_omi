@@ -34,9 +34,9 @@ DATA_CLEAN_SAVED_MINUTES_PNG = 3600 * 24
 # Fixture parameters
 # Fixture commands
 PROXY_COMMUNICATION_PATH = r"C:\vision\Release\vision.exe"
-IS_PROXY_COMMUNICATION = False
-PROXY_ENDPOINT = 8000
-FIXTURE_COMPORT = "COM1" #
+IS_PROXY_COMMUNICATION = True
+PROXY_ENDPOINT = 8099
+FIXTURE_COMPORT = "COM10" #
 FIXTURE_PARTICLE_COMPORT = "COM1" #
 FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = "COM1" #
@@ -127,11 +127,12 @@ DUT_LITUP_OUTSIDE = True
 TIMEOUT_FOR_BTN_IDLE = 20
 FIXTURE_LOAD_DLY = 10
 FIXTURE_UNLOAD_DLY = 20
+FIXTURE_RESET_DLY = 45
 FIXTURE_ALIGNMENT_DLY = 18
 FIXTURE_MECH_STABLE_DLY = 0.05
 FIXTURE_SOCK_DLY = 0.05
 PARTICLE_COUNTER_TIMEOUT = 2
-FIXTURE_PARTICLE_COUNTER = True
+FIXTURE_PARTICLE_COUNTER = False
 
 # FIXTRUE_PARTICLE_ADDR_READ = 40006
 # FIXTRUE_PARTICLE_ADDR_START = 40003
@@ -175,7 +176,7 @@ DISTANCE_BETWEEN_CAMERA_AND_DATUM = 21950+18000
 # Test Equipment related parameters
 SORTED_EXPORT_LOG = False
 IS_PRINT_TO_LOG = False
-IS_VERBOSE = False  # some path bug, temp set False and work on True later
+IS_VERBOSE = True  # some path bug, temp set False and work on True later
 CFG_PATH = r'..\Cfg'
 TESTTYPE = 0 # for Capture and 1 for CaptureSequence. No other values should be set.
 
@@ -274,47 +275,15 @@ ANALYSIS_GRP_DISTORTION_PRIMARY = ['Y']
 #                                   pattern named with right, should be render to left-module.
 # Sunny
 TEST_ITEM_PATTERNS = [
-    {'name': 'PW255', 'pattern': 22, 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
-    {'name': 'W255', 'pattern': 22, 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
-    {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'W000', 'pattern': 23, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'RGB', 'pattern': 0, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'R255', 'pattern': 24, 'setup': (7, 0, 3), 'exposure': (144900, 980852, 468134, 980852, 980852)},
-    {'name': 'G255', 'pattern': 25, 'setup': (7, 0, 3), 'exposure': (300935, 980852, 345533, 178334, 980852)},
-    {'name': 'B255', 'pattern': 26, 'setup': (7, 0, 3), 'exposure': (980852, 156050, 980852, 980852, 167184)},
-    {'name': 'GreenContrast', 'pattern': (2, 1), 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'WhiteContrast', 'pattern': (4, 3), 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'GreenSharpness', 'pattern': 5, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'GreenDistortion', 'pattern': (7, 6), 'setup': (7, 0, 3), 'exposure': (378967, 980852, 434700, 222917, 980852)},  #, 'oi_mode': 2},
-    {'name': 'WhiteDot7', 'pattern': (8, 9), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
-    {'name': 'WhiteDot8', 'pattern': (10, 11), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
-    {'name': 'WhiteDot9', 'pattern': (12, 13), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
-    {'name': 'WhiteDot10', 'pattern': (14, 15), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
-    {'name': 'WhiteDot11', 'pattern': (16, 17), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
-    {'name': 'WhiteDot12', 'pattern': (18, 19), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
-    {'name': 'RGBBoresight', 'pattern': (20, 21), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
-]
-# Genius
-TEST_ITEM_PATTERNS1 = [
-    {'name': 'PW255', 'pattern': 22, 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
-    {'name': 'W255', 'pattern': 22, 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
-    {'name': 'G127', 'pattern': (127, 127, 127), 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'W000', 'pattern': 23, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'RGB', 'pattern': 0, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'R255', 'pattern': 24, 'setup': (7, 0, 3), 'exposure': (122601, 980852, 401251, 980852, 980852)},
-    {'name': 'G255', 'pattern': 25, 'setup': (7, 0, 3), 'exposure': (278651, 980852, 278651, 167184, 980852)},
-    {'name': 'B255', 'pattern': 26, 'setup': (7, 0, 3), 'exposure': (980852, 122601, 980852, 980852, 122601)},
-    {'name': 'GreenContrast', 'pattern': (2, 1), 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'WhiteContrast', 'pattern': (4, 3), 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'GreenSharpness', 'pattern': 5, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'GreenDistortion', 'pattern': (7, 6), 'setup': (7, 0, 3), 'exposure': (378967, 980852, 434700, 222917, 980852), 'oi_mode': 2},
-    {'name': 'WhiteDot7', 'pattern': (8, 9), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
-    {'name': 'WhiteDot8', 'pattern': (10, 11), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
-    {'name': 'WhiteDot9', 'pattern': (12, 13), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
-    {'name': 'WhiteDot10', 'pattern': (14, 15), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
-    {'name': 'WhiteDot11', 'pattern': (16, 17), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
-    {'name': 'WhiteDot12', 'pattern': (18, 19), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
-    {'name': 'RGBBoresight', 'pattern': (20, 21), 'setup': (7, 0, 3), 'exposure': (89167, 111466, 167184, 156050, 111466)},
+    {'name': 'W255', 'pattern': 0, 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'W000', 'pattern': 1, 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'R255', 'pattern': 2, 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'G255', 'pattern': 3, 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'B255', 'pattern': 4, 'setup': (7, 0, 3), 'exposure': '5000'},
+    {'name': 'RGBBoresight', 'pattern': (5, 6), 'setup': (7, 0, 3), 'exposure': (144900, 980852, 468134, 980852, 980852)},
+    {'name': 'WhiteDot7', 'pattern': (7, 8), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'WhiteDot8', 'pattern': (9, 10), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'WhiteDot9', 'pattern': (11, 12), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
 ]
 
 TEST_ITEM_PATTERNS_VERIFIED = {'PW255': ('WhitePointGLR', 'WhitePointGLG', 'WhitePointGLB')}
@@ -326,28 +295,6 @@ TEST_ITEM_POS = [
                              # ('PW255', None, []),
                              ]
      },
-    # {'name': 'normal', 'pos': (0, 0, 15000),
-    #  'pattern': ['W255', 'G127', 'W000', 'RGB', 'R255', 'G255', 'B255', 'GreenContrast', 'WhiteContrast',
-    #              'GreenSharpness', 'GreenDistortion']
-    #  },
-    # {'name': 'extendedz', 'pos': (0, 0, 27000),
-    #  'pattern': ['W255', 'GreenDistortion']
-    #  },
-    # {'name': 'blemish', 'pos': (0, 0, 5000),
-    #  'pattern': ['W255']
-    #  },
-    # {'name': 'extendedxpos', 'pos': (5071, 0, 16124),
-    #  'pattern': ['W255']
-    #  },
-    # {'name': 'extendedxneg', 'pos': (-5071, 0, 16124),
-    #  'pattern': ['W255']
-    #  },
-    # {'name': 'extendedypos', 'pos': (0, 5071, 16124),
-    #  'pattern': ['W255']
-    #  },
-    # {'name': 'extendedyneg', 'pos': (0, -5071, 16124),
-    #  'pattern': ['W255']
-    #  },
 ]
 
 DATA_AT_POLE_AZI = [(-10.0, 0.0), (-20.0, 0.0), (-30.0, 0.0),
@@ -394,8 +341,8 @@ AUTO_CVT_BGR_IMAGE_FROM_XYZ = False
 AUTO_SAVE_2_TXT = False
 AUTO_SAVE_PROCESSED_PNG = True
 EQUIPMENT_SIM_CAPTURE_FROM_DIR = False
-DUT_SIM = True
-EQUIPMENT_SIM = True
-EQUIPMENT_WHEEL_SIM = True
-EQUIPMENT_SPECTRO_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
+EQUIPMENT_WHEEL_SIM = False
+EQUIPMENT_SPECTRO_SIM = False
+FIXTURE_SIM = False

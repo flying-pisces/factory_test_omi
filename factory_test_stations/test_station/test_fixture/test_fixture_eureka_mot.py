@@ -13,7 +13,7 @@ from pymodbus.register_read_message import ReadHoldingRegistersResponse
 from pymodbus.constants import Defaults
 import time
 import ctypes
-
+import threading
 import hardware_station_common.test_station.test_fixture
 import hardware_station_common.test_station.dut
 
@@ -165,6 +165,8 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         self._PTB_Power_Status = None
         self._USB_Power_Status = None
         self._alignment_pos = None
+        self._fixture_mutex = threading.Lock()
+        self._end_delimiter_auto_response = '^_^'
 
     def is_ready(self):
         if self._serial_port is not None and self._fixture_mutex.acquire(blocking=False):
@@ -219,11 +221,9 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             return True
 
     def _write_serial(self, input_bytes):
-        """
-        @param input_bytes: fixture command without \r\n
-        @type input_bytes: str
-        """
+        self._serial_port.flush()
         if self._verbose:
+            print("flushed")
             print('writing: ' + input_bytes)
         cmd = '{0}\r\n'.format(input_bytes)
         self._serial_port.flush()
@@ -238,29 +238,26 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         if self._serial_port is not None:
             self._serial_port.flush()
 
-    def _read_response(self, timeout=10, ignore_non_error=True, rev_pattern=None):
+    def _read_response(self, timeout=10, end_delimiter='@_@'):
         msg = ''
         tim = time.time()
-        while time.time() - tim < timeout:
+        while (not re.search(end_delimiter, msg, re.IGNORECASE)
+               and (time.time() - tim < timeout)):
             line_in = self._serial_port.readline()
             if line_in != b'':
                 msg = msg + line_in.decode()
-            if (re.search(self._end_delimiter, msg, re.IGNORECASE) and
-                    ((rev_pattern is None) or re.search(rev_pattern, msg, re.IGNORECASE))):
-                break
         response = msg.strip().splitlines()
         if self._verbose:
             if len(response) > 1:
                 pprint.pprint(response)
-            else:
+            elif end_delimiter not in [self._end_delimiter_auto_response]:
                 print('Fail to read any data in {0} seconds. '.format(timeout))
-        if not ignore_non_error and response is None:
-            raise EurekaMotFixtureError('reading data time out ->. ')
         return response
 
     def help(self):
-        self._write_serial(self._station_config.COMMAND_HELP)
-        response = self._read_response(5, ignore_non_error=False)
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_HELP)
+            response = self._read_response(5)
         return response
 
     def id(self):
@@ -268,8 +265,9 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         get fixture id, it will raise an exception while Id is not saved to the E2PROM
         @return:
         """
-        self._write_serial(self._station_config.COMMAND_ID)
-        response = self._read_response()
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_ID)
+            response = self._read_response()
         return self._parse_response(r'ID:(.+)', response).group(1)
 
     def version(self):
@@ -277,8 +275,9 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         get version number
         @return:
         """
-        self._write_serial(self._station_config.COMMAND_VERSION)
-        response = self._read_response()
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_VERSION)
+            response = self._read_response()
         return self._parse_response(r'VERSION:(.+)', response).group(1)
 
     def close(self):
@@ -360,17 +359,6 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
     ######################
     # Fixture control
     ######################
-    def unlock_servo_axis(self, axis):
-        """
-        @type axis : str
-        @return:
-        """
-        cmd = ('{0}:{1}'.format('CMD_SERVO_POWEROFF', axis), r'ServoPowerOFF_\w:\d*')
-        self._write_serial(cmd[0])
-        response = self._read_response(rev_pattern=cmd[1])
-        if int(self._parse_response(cmd[1], response).group(1)) != 0:
-            raise EurekaMotFixtureError('fail to send command. %s' % response)
-
     def power_on_button_status(self, on):
         """
         @type on : bool
@@ -382,8 +370,9 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             False: (self._station_config.COMMAND_BUTTON_LITUP_DISABLE, r'PowerOnButton_DISABLE:(\d+)'),
         }
         cmd = status_dic[on]
-        self._write_serial(cmd[0])
-        response = self._read_response(rev_pattern=cmd[1])
+        with self._fixture_mutex:
+            self._write_serial(cmd[0])
+            response = self._read_response()
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
             raise EurekaMotFixtureError('fail to send command. %s' % response)
 
@@ -393,8 +382,9 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         @return:
         """
         cmd = (self._station_config.COMMAND_LITUP_STATUS, r'POWERON_BUTTON:(\d+)')
-        self._write_serial(cmd[0])
-        response = self._read_response(rev_pattern=cmd[1])
+        with self._fixture_mutex:
+            self._write_serial(cmd[0])
+            response = self._read_response()
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
             raise EurekaMotFixtureError('fail to send command. %s' % response)
 
@@ -404,8 +394,9 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         @return:
         """
         cmd = (self._station_config.COMMAND_PROBE_BUTTON, r'Probe_BUTTON:(\d+)')
-        self._write_serial(cmd[0])
-        response = self._read_response(rev_pattern=cmd[1])
+        with self._fixture_mutex:
+            self._write_serial(cmd[0])
+            response = self._read_response()
         return int(self._parse_response(cmd[1], response).group(1))
 
     def start_button_status(self, on):
@@ -419,15 +410,16 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             False: (self._station_config.COMMAND_BUTTON_DISABLE, r'START_BUTTON_DISABLE:(\d+)'),
         }
         cmd = status_dic[on]
-        self._write_serial(cmd[0])
-        response = self._read_response(rev_pattern=cmd[1])
+        with self._fixture_mutex:
+            self._write_serial(cmd[0])
+            response = self._read_response()
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
             raise EurekaMotFixtureError('fail to send command. %s' % response)
 
     def reset(self):
         self._write_serial(self._station_config.COMMAND_RESET)
-        response = self.read_response()
-        val = int(self._prase_response(r'LOAD:(\d+)', response).group(1))
+        response = self._read_response(timeout=self._station_config.FIXTURE_RESET_DLY)
+        val = int(self._parse_response(r'reset:(\d+)', response).group(1))
         if val == 0x00:
             time.sleep(self._station_config.FIXTURE_PTB_OFF_TIME)
         return val
@@ -468,9 +460,10 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         response = None
         rev_pattern = r'MODULE_MOVE:(\d+)'
         while retries <= 5 and not success:
-            self._write_serial(cmd_mov)
-            response = self._read_response(timeout=20, rev_pattern=rev_pattern)
-            rev_code = int(self._parse_response(rev_pattern, response).group(1))
+            with self._fixture_mutex:
+                self._write_serial(cmd_mov)
+                response = self._read_response(timeout=20)
+                rev_code = int(self._parse_response(rev_pattern, response).group(1))
             if rev_code == 0:
                 success = True
             elif rev_code != 31:  # add retry for errcode 31
@@ -485,9 +478,10 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         @return:
         """
         cmd = self._station_config.COMMAND_ZERO_POSIT
-        self._write_serial(cmd)
-        delimiter = r'ZERO_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?)'
-        response = self._read_response(rev_pattern=delimiter)
+        with self._fixture_mutex:
+            self._write_serial(cmd)
+            delimiter = r'ZERO_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?)'
+            response = self._read_response()
         response = [self._re_space_sub.sub('', c) for c in response]
         deters = self._parse_response(delimiter, response)
         return int(deters[1])
@@ -498,9 +492,10 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         @return:
         """
         cmd = self._station_config.COMMAND_MODULE_POSIT
-        self._write_serial(cmd)
-        delimiter = r'MODULE_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?)'
-        response = self._read_response(rev_pattern=delimiter)
+        with self._fixture_mutex:
+            self._write_serial(cmd)
+            delimiter = r'MODULE_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?),([+-]?[0-9]*(?:\.[0-9]*)?)'
+            response = self._read_response()
         response = [self._re_space_sub.sub('', c) for c in response]
         deters = self._parse_response(delimiter, response)
         return int(deters[1]), int(deters[2]), math.degrees(math.asin(float(deters[3]) / self._rotate_scale))
@@ -511,9 +506,10 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         @return:
         """
         cmd = self._station_config.COMMAND_CAMERA_POSIT
-        self._write_serial(cmd)
-        delimiter = r'CAMERA_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?)'
-        response = self._read_response(delimiter)
+        with self._fixture_mutex:
+            self._write_serial(cmd)
+            delimiter = r'CAMERA_POSIT:([+-]?[0-9]*(?:\.[0-9]*)?)'
+            response = self._read_response()
         response = [self._re_space_sub.sub('', c) for c in response]
         return (self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM
                 - int(self._parse_response(delimiter, response).group(1)))
@@ -538,9 +534,10 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         """
         z0 = self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM - z
         cmd_mov = '{0}:{1}'.format(self._station_config.COMMAND_CAMERA_MOVE, z0)
-        self._write_serial(cmd_mov)
-        rev_pattern = r'CAMERA_MOVE:(\d+)'
-        response = self._read_response(timeout=10 * 1000, rev_pattern=rev_pattern)
+        with self._fixture_mutex:
+            self._write_serial(cmd_mov)
+            rev_pattern = r'CAMERA_MOVE:(\d+)'
+        response = self._read_response(timeout=10 * 1000)
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
             raise EurekaMotFixtureError('fail to send command. %s' % response)
 
@@ -567,9 +564,10 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             TriColorStatus.BUZZER: 'buzzer',
         }
         cmd = '{0}:{1}'.format(self._station_config.COMMAND_STATUS_LIGHT_ON, switch[status])
-        self._write_serial(cmd)
-        rev_pattern = r'StatusLight_ON:(\d+)'
-        response = self._read_response(rev_pattern=rev_pattern)
+        with self._fixture_mutex:
+            self._write_serial(cmd)
+            rev_pattern = r'StatusLight_ON:(\d+)'
+            response = self._read_response()
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
             raise EurekaMotFixtureError('fail to send command. %s' % response)
 
@@ -579,9 +577,10 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         @return:
         """
         cmd = self._station_config.COMMAND_STATUS_LIGHT_OFF
-        self._write_serial(cmd)
-        rev_pattern = r'StatusLight_OFF:(\d+)'
-        response = self._read_response(rev_pattern=rev_pattern)
+        with self._fixture_mutex:
+            self._write_serial(cmd)
+            rev_pattern = r'StatusLight_OFF:(\d+)'
+            response = self._read_response()
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
             raise EurekaMotFixtureError('fail to send command. %s' % response)
 
@@ -594,10 +593,10 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             QueryTempParts.EquipmentAmbient: self._station_config.COMMAND_QUERY_TEMP,
             QueryTempParts.UUTNearBy: self._station_config.COMMAND_QUERY_DUT_TEMP,
         }
-        self._write_serial(cmd.get(parts))
-        delimiter = r'Get(?:DUT)?Temperature:([+-]?[0-9]*(?:\.[0-9]*)?)'
-        response = self._read_response(rev_pattern=delimiter,
-                                       timeout=self._station_config.FIXTURE_QUERY_TEMP_TIMEOUT)
+        with self._fixture_mutex:
+            self._write_serial(cmd.get(parts))
+            delimiter = r'Get(?:DUT)?Temperature:([+-]?[0-9]*(?:\.[0-9]*)?)'
+            response = self._read_response(timeout=self._station_config.FIXTURE_QUERY_TEMP_TIMEOUT)
         response = [self._re_space_sub.sub('', c) for c in response]
         deters = self._parse_response(delimiter, response)
         temp_l, temp_h = self._station_config.COMMAND_QUERY_TEMP_RANGE
@@ -611,11 +610,11 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         @return:
         """
         self._alignment_pos = None
-        self._write_serial(self._station_config.COMMAND_LOAD)
-        rev_pattern = r'LOAD:(\d+)'
-        response = self._read_response(timeout=self._station_config.FIXTURE_LOAD_DLY, rev_pattern=rev_pattern)
-        if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise EurekaMotFixtureError('fail to send command. %s' % response)
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_LOAD)
+            rev_pattern = r'LOAD:(\d+)'
+            response = self._read_response(timeout=self._station_config.FIXTURE_LOAD_DLY)
+        return int(self._parse_response(rev_pattern, response).group(1))
 
     def unload(self):
         """
@@ -623,31 +622,33 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         @return:
         """
         self._alignment_pos = None
-        self._write_serial(self._station_config.COMMAND_UNLOAD)
-        rev_pattern = r'UNLOAD:(\d+)'
-        response = self._read_response(rev_pattern=rev_pattern, timeout=self._station_config.FIXTURE_UNLOAD_DLY)
-        if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise EurekaMotFixtureError('fail to send command. %s' % response)
+        with self._fixture_mutex:
+            self._write_serial(self._station_config.COMMAND_UNLOAD)
+            rev_pattern = r'UNLOAD:(\d+)'
+            response = self._read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
+        return int(self._parse_response(rev_pattern, response).group(1))
 
     def load_dut(self):
         """
         get version number
         @return:
         """
+        rev_pattern = r'DUTLOAD:(\d+)'
         with self._fixture_mutex:
             self._write_serial(f'{self._station_config.COMMAND_DUT_LOAD}')
-            response = self.read_response()
-        return self._prase_response('DUTLOAD:(\d+)', response).group(1)
+            response = self._read_response()
+        return int(self._parse_response(rev_pattern, response).group(1))
 
     def unload_dut(self):
         """
         get version number
         @return:
         """
+        rev_pattern = r'DUTUNLOAD:(\d+)'
         with self._fixture_mutex:
             self._write_serial(f'{self._station_config.COMMAND_DUT_UNLOAD}')
-            response = self.read_response()
-        return self._prase_response('DUTUNLOAD:(\d+)', response).group(1)
+            response = self._read_response()
+        return int(self._parse_response(rev_pattern, response).group(1))
 
     def vacuum(self, on):
         """
@@ -661,14 +662,14 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
         cmd = vacuum_dict[on]
         with self._fixture_mutex:
             self._write_serial(f'{self._station_config.COMMAND_VACUUM_CTRL}:{cmd[0]}')
-            response = self.read_response()
-        return self._prase_response(cmd[1], response).group(1)
+            response = self._read_response()
+        return self._parse_response(cmd[1], response).group(1)
 
     def alignment(self, serial_number):
         self._alignment_pos = None
         self._write_serial('{0}:{1}'.format(self._station_config.COMMAND_ALIGNMENT, serial_number))
         rev_pattern = r'ALIGNMENT:([\+|\-|\,|\w]+)'
-        response = self._read_response(timeout=self._station_config.FIXTURE_ALIGNMENT_DLY, rev_pattern=rev_pattern)
+        response = self._read_response(timeout=self._station_config.FIXTURE_ALIGNMENT_DLY)
         if self._parse_response(rev_pattern, response).group(1).upper().find(r'ERROR') >= 0:
             return
 
@@ -811,7 +812,7 @@ if __name__ == "__main__":
 
     try:
         the_unit = EurekaMotFixture(station_config, station_config)
-        the_unit.initialize()
+        the_unit.initialize(fixture_port='com10', particle_port='com9', proxy_port=8099)
         for idx in range(0, 100):
             print('Loop ---> {}'.format(idx))
             try:
