@@ -33,6 +33,7 @@ AUTO_CFG_COMPORTS = True
 DUT_COMPORT = "COM14"  #
 DUT_ETH_PROXY = True
 DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
+FIXTURE_ETH_ADDR = ('192.168.21.132', 7000)
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu', 'hw', 'fpga']
@@ -62,7 +63,6 @@ DUT_NVRAM_WRITE_TIMEOUT = 10
 NVM_WRITE_PROTECT = False
 NVM_EEC_READ = True
 NVM_WRITE_SLOW_MOD = True
-DUT_CHK_MODULE_INPLACE = False
 
 MIN_SPACE_REQUIRED = [('C:', 500)]
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\MER-132-43U3C(FQ0200080140).txt'
@@ -170,7 +170,7 @@ FACEBOOK_IT_ENABLED = False
 
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
-DUT_SIM = False
+DUT_SIM = True
 EQUIPMENT_SIM = False
 FIXTURE_SIM = True
 

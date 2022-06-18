@@ -15,6 +15,7 @@ import win32event
 import pywintypes
 import pprint
 import cv2
+import math
 import select
 import hardware_station_common.test_station.dut
 
@@ -158,10 +159,10 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         self._operator_interface.print_to_console("Turn Off display................\n")
         if self.is_screen_poweron:
             self._power_off()
-        # self._operator_interface.print_to_console("Closing DUT by the communication interface.\n")
-        # if self._serial_port is not None:
-        #     self._serial_port.close()
-        #     self._serial_port = None
+        self._operator_interface.print_to_console("Closing DUT by the communication interface.\n")
+        if self._serial_port is not None:
+            self._serial_port.close()
+            self._serial_port = None
         self.is_screen_poweron = False
 
     def module_name(self):
@@ -370,24 +371,6 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
             raise EurekaDUTError('Fail to read get ecc. = {0}'.format(recv_obj))
         return recv_obj
 
-    def get_module_inplace(self):
-        retries = 1
-        recv_obj = None
-        success = False
-        while retries < 5 and not success:
-            try:
-                cmd = self._station_config.COMMAND_GET_MODULE_INPLACE
-                self._write_serial_cmd(cmd)
-                response = self._read_response()
-                recv_obj = self._prase_respose(cmd, response)
-                if int(recv_obj[0]) == 0:
-                    success = True
-            except:
-                pass
-        if not success:
-            raise EurekaDUTError('Fail to read get_module_inplace = {0}'.format(recv_obj))
-        return recv_obj
-
     def _timeout_execute(self, cmd, timeout=0):
         if timeout == 0:
             timeout = win32event.INFINITE
@@ -557,7 +540,7 @@ class projectDut(object):
             pass
         if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image', 'nvm_read_statistics',
                     'nvm_write_data', '_get_color_ext', 'render_image', 'nvm_read_data', 'nvm_speed_mode',
-                    'get_module_inplace', 'nvm_get_ecc', 'read_color_sensor', 'display_color_check', '']:
+                    'get_module_inplace', 'nvm_get_ecc', 'read_color_sensor', 'display_color_check']:
             return not_find
 
 

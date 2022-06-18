@@ -1,5 +1,5 @@
 import hardware_station_common.test_station.test_fixture
-import serial
+import socket
 
 import test_station.test_fixture.gxipy as gx
 from PIL import Image
@@ -15,6 +15,14 @@ class EurekaEEPROMFixtureErr(Exception):
         self._msg = msg
 
 
+class EurekaEEPROMFixtureSIM(object):
+    def __getattr__(self, item):
+        def not_find(*args, **kwargs):
+            pass
+        if item in ['initialize', 'close', 'unload', 'is_ready', 'get_module_inplace']:
+            return not_find
+
+
 class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.TestFixture):
     """
         class for Eureka EEPROM Fixture
@@ -26,29 +34,37 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
         self._camera_sn = None
         self._camera = None  # type: gx.Device
         self._verbose = station_config.IS_VERBOSE
-        self._serial_port: serial.Serial = None
+
+        self._sock: socket.socket = None
+        self._sock_addr: tuple = None
+        self._max_len_per_package = 1024
+        self._r_inputs = set()
 
     def is_ready(self):
         pass
 
     def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing Eureka EEPROM Fixture\n")
-        self._serial_port = kwargs.get('sp')
-        if self._station_config.CAMERA_VERIFY_ENABLE:
-            self._device_manager = gx.DeviceManager()
-            dev_num, dev_info_list = self._device_manager.update_device_list()
-            dev_list = [c for c in dev_info_list if c.get('model_name') == 'MER-132-43U3C']
-            if len(dev_list) != 0x01:
-                raise EurekaEEPROMFixtureErr('Fail to init instrument. cam = {0}'.format(len(dev_list)))
-            self._camera_sn = dev_list[0].get('sn')
-            self._operator_interface.print_to_console('Camera for verification. sn = {0}\n'.format(self._camera_sn))
-            self._camera = self._device_manager.open_device_by_sn(dev_list[0].get('sn'))
-            cfg_file = os.path.basename(os.path.join(self._station_config.CAMERA_CONFIG_FILE))
-            self._operator_interface.print_to_console('Init camera from configuration file = {0}\n'.format(cfg_file))
-            self._camera.import_config_file(self._station_config.CAMERA_CONFIG_FILE, True)
-            self._camera.TriggerMode.set(gx.GxSwitchEntry.OFF)
-            self._camera.ExposureTime.set(self._station_config.CAMERA_EXPOSURE)
-            self._camera.Gain.set(self._station_config.CAMERA_GAIN)
+        self._sock_addr = kwargs.get('ipaddr')
+        self._device_manager = gx.DeviceManager()
+        dev_num, dev_info_list = self._device_manager.update_device_list()
+        dev_list = [c for c in dev_info_list if c.get('model_name') == 'MER-132-43U3C']
+        if len(dev_list) != 0x01:
+            raise EurekaEEPROMFixtureErr('Fail to init instrument. cam = {0}'.format(len(dev_list)))
+        self._camera_sn = dev_list[0].get('sn')
+        self._operator_interface.print_to_console('Camera for verification. sn = {0}\n'.format(self._camera_sn))
+        self._camera = self._device_manager.open_device_by_sn(dev_list[0].get('sn'))
+        cfg_file = os.path.basename(os.path.join(self._station_config.CAMERA_CONFIG_FILE))
+        self._operator_interface.print_to_console('Init camera from configuration file = {0}\n'.format(cfg_file))
+        self._camera.import_config_file(self._station_config.CAMERA_CONFIG_FILE, True)
+        self._camera.TriggerMode.set(gx.GxSwitchEntry.OFF)
+        self._camera.ExposureTime.set(self._station_config.CAMERA_EXPOSURE)
+        self._camera.Gain.set(self._station_config.CAMERA_GAIN)
+
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        self._sock.connect(self._sock_addr)
 
     def close(self):
         self._operator_interface.print_to_console("Closing Eureka EEPROM Fixture\n")
@@ -92,20 +108,40 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
             self._camera.stream_off()
             return cv_image
 
-    def _write_serial_cmd(self, command):
+    def _write_command(self, command):
         cmd = '$c.{}\r\n'.format(command)
         if self._verbose:
             print('send command ----------> {0}'.format(cmd))
 
-        self._serial_port.flush()
-        self._serial_port.write(cmd.encode('utf-8'))
+        self._sock.sendall(cmd.encode('utf-8'))
+
+    def readline(self, timeout=0.05):
+        import io
+        import select
+        self._sock.settimeout(timeout)
+        data = b''
+        try:
+            readable, writeable, exceptional = select.select([self._sock], [], [], timeout)
+            if readable or writeable or exceptional:
+                for s in readable:
+                    try:
+                        d2 = s.recv(self._max_len_per_package)
+                        if isinstance(d2, bytes):
+                            data += d2
+                    except:
+                        pass
+        except io.BlockingIOError as e:
+            data = None
+
+        self._sock.settimeout(None)
+        return data
 
     def _read_response(self, timeout=5):
         tim = time.time()
         msg = ''
         while (not re.search(self._end_delimiter, msg, re.IGNORECASE)
                and (time.time() - tim < timeout)):
-            line_in = self._serial_port.readline()
+            line_in = self.readline()
             if line_in != b'':
                 msg = msg + line_in.decode()
         response = msg.splitlines(keepends=False)
@@ -115,18 +151,19 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
 
     def unload(self):
         # $C.Module.Out   $P.Module.Out,0000
-        self._write_serial_cmd(f'{self._station_config.COMMAND_MODULE_OUT}')
+        self._write_command(f'{self._station_config.COMMAND_MODULE_OUT}')
         response = self._read_response()
         recvobj = self._prase_respose(self._station_config.COMMAND_MODULE_OUT, response)
         if recvobj is None:
             raise EurekaEEPROMFixtureErr("Fail module_out because can't receive any data from dut.")
         if int(recvobj[0]) != 0x00:
             raise EurekaEEPROMFixtureErr("Exit module_out because rev err msg. Msg = {}".format(recvobj))
+        time.sleep(2.5)
         return recvobj[0]
 
     def disable_dual_btn(self):
         # $C.DISABLE.STARTBTN   $P.DISABLE.STARTBTN,0000
-        self._write_serial_cmd(f'{self._station_config.COMMAND_DUAL_DISABLE}')
+        self._write_command(f'{self._station_config.COMMAND_DUAL_DISABLE}')
         response = self._read_response()
         recvobj = self._prase_respose(self._station_config.COMMAND_DUAL_DISABLE, response)
         if recvobj is None:
@@ -134,3 +171,21 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
         if int(recvobj[0]) != 0x00:
             raise EurekaEEPROMFixtureErr("Exit disable_dual_btn because rev err msg. Msg = {}".format(recvobj))
         return recvobj[0]
+
+    def get_module_inplace(self):
+        retries = 1
+        recv_obj = None
+        success = False
+        while retries < 5 and not success:
+            try:
+                cmd = self._station_config.COMMAND_GET_MODULE_INPLACE
+                self._write_command(cmd)
+                response = self._read_response()
+                recv_obj = self._prase_respose(cmd, response)
+                if int(recv_obj[0]) == 0:
+                    success = True
+            except:
+                pass
+        if not success:
+            raise EurekaEEPROMFixtureErr('Fail to read get_module_inplace = {0}'.format(recv_obj))
+        return recv_obj

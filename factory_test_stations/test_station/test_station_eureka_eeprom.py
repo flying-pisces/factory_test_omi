@@ -273,7 +273,12 @@ class EurekaEEPROMStation(test_station.TestStation):
             sys.stdout = self
             sys.stderr = self
             sys.stdin = None
-        self._fixture = test_fixture_eeprom.EurekaEEPROMFixture(station_config, operator_interface)
+        self._fixture = test_fixture_eeprom.EurekaEEPROMFixtureSIM()
+        if not self._station_config.FIXTURE_SIM:
+            self._fixture = test_fixture_eeprom.EurekaEEPROMFixture(station_config, operator_interface)
+        else:
+            self._station_config.CAMERA_VERIFY_ENABLE = False
+
         self._equip = test_equipment_eureka_eeprom.EurekaEEPROMEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
@@ -281,7 +286,6 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._eep_assistant = EEPStationAssistant()
         self._max_retries = 5
         self._module_type = None
-        self._communication_proxy = None
         self._vendor_info_dic = {
             6: 'sharp',
             4: 'jdi',
@@ -301,9 +305,8 @@ class EurekaEEPROMStation(test_station.TestStation):
         #     raise EurekaEEPROMError('Configuration Error.')
         try:
             self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
-            self._communication_proxy = DutEthernetCommunicationProxy(ipaddr=self._station_config.DUT_ETH_PROXY_ADDR)
 
-            self._fixture.initialize(sp=self._communication_proxy)
+            self._fixture.initialize(ipaddr=self._station_config.FIXTURE_ETH_ADDR)
             while True:
                 alert_res = self._fixture.unload()
                 if alert_res in [0, None]:
@@ -350,7 +353,6 @@ class EurekaEEPROMStation(test_station.TestStation):
         the_unit = EurekaDut(serial_number, self._station_config, self._operator_interface)
         if self._station_config.DUT_SIM:
             the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
-
         write_in_slow_mod = False
         if hasattr(self._station_config, 'NVM_WRITE_SLOW_MOD') and self._station_config.NVM_WRITE_SLOW_MOD:
             write_in_slow_mod = True
@@ -387,8 +389,6 @@ class EurekaEEPROMStation(test_station.TestStation):
         try:
             the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
                                 eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
-            the_unit._serial_port = self._communication_proxy
-
             recv_obj = the_unit.screen_on(ignore_err=True)
             if recv_obj is True or self._station_config.DUT_SIM:
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', 0)
@@ -402,13 +402,11 @@ class EurekaEEPROMStation(test_station.TestStation):
             self._operator_interface.print_to_console('Start to query holder position. ')
             retries_query = 1
             module_inplace = False
-            if not hasattr(self._station_config, 'DUT_CHK_MODULE_INPLACE'):
+            if self._station_config.FIXTURE_SIM:
                 module_inplace = True
-            else:
-                module_inplace = not self._station_config.DUT_CHK_MODULE_INPLACE
             while not module_inplace and retries_query <= 10:
                 self._operator_interface.print_to_console(f'Please push the holder into the carbinet. {retries_query}\n')
-                rev_obj = the_unit.get_module_inplace()
+                rev_obj = self._fixture.get_module_inplace()
                 if rev_obj is not None:
                     module_inplace = int(rev_obj[1]) == 1
                 if module_inplace:
