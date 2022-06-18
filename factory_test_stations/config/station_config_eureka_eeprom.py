@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 0.0.3
+2022-6-20 elton<elton.tian@myzygroup.com>
+-1. Debug with tester.
+
+========================================================
 Version 0.0.2
 2022-6-9 elton<elton.tian@myzygroup.com>
 -1. Add test-item about vendor information
@@ -50,6 +55,7 @@ COMMAND_DISP_VSYNC = "REFRESHRATE"
 COMMAND_VENDOR_INFO = 'GetVendor'
 COMMAND_MODULE_NAME = 'Module.name'
 COMMAND_MODULE_OUT = 'Module.Out'
+COMMAND_MODULE_IN = 'Module.In'
 COMMAND_NVM_WRITE_CNT = 'NVMWCNT'
 COMMAND_NVM_READ = 'NVMRead'
 COMMAND_NVM_WRITE = 'NVMWrite'
@@ -63,6 +69,7 @@ DUT_NVRAM_WRITE_TIMEOUT = 10
 NVM_WRITE_PROTECT = False
 NVM_EEC_READ = True
 NVM_WRITE_SLOW_MOD = True
+DUT_LOAD_WITHOUT_OPERATOR = True
 
 MIN_SPACE_REQUIRED = [('C:', 500)]
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\MER-132-43U3C(FQ0200080140).txt'
@@ -170,9 +177,9 @@ FACEBOOK_IT_ENABLED = False
 
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
-DUT_SIM = True
+DUT_SIM = False
 EQUIPMENT_SIM = False
-FIXTURE_SIM = True
+FIXTURE_SIM = False
 
 FULL_TREE_UI = True
 IS_STATION_ACTIVE = True

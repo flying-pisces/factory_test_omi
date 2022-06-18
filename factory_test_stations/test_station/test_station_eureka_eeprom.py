@@ -13,7 +13,6 @@ import os
 import sys
 import time
 import json
-import Pmw
 import shutil
 import collections
 import numpy as np
@@ -282,7 +281,7 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._equip = test_equipment_eureka_eeprom.EurekaEEPROMEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.0.2'
+        self._sw_version = '0.0.3'
         self._eep_assistant = EEPStationAssistant()
         self._max_retries = 5
         self._module_type = None
@@ -389,18 +388,14 @@ class EurekaEEPROMStation(test_station.TestStation):
         try:
             the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
                                 eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
-            recv_obj = the_unit.screen_on(ignore_err=True)
-            if recv_obj is True or self._station_config.DUT_SIM:
-                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', 0)
-                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_RES', True)
-            elif isinstance(recv_obj, list):
-                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', recv_obj[1])
-                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_RES', False)
-                raise EurekaEEPROMError(f'Unable to power on DUT. {str(recv_obj)}')
 
             post_data_check = False
             self._operator_interface.print_to_console('Start to query holder position. ')
             retries_query = 1
+
+            if self._station_config.DUT_LOAD_WITHOUT_OPERATOR:
+                self._fixture.load()
+
             module_inplace = False
             if self._station_config.FIXTURE_SIM:
                 module_inplace = True
@@ -416,6 +411,16 @@ class EurekaEEPROMStation(test_station.TestStation):
             if not module_inplace:
                 raise test_station.TestStationProcessControlError(f'Fail to check position for DUT {serial_number}.')
 
+            recv_obj = the_unit.screen_on(ignore_err=True)
+            if recv_obj is True or self._station_config.DUT_SIM:
+                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', 0)
+                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_RES', True)
+            elif isinstance(recv_obj, list):
+                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', recv_obj[1])
+                test_log.set_measured_value_by_name_ex('DUT_POWER_ON_RES', False)
+                raise EurekaEEPROMError(f'Unable to power on DUT. {str(recv_obj)}')
+
+            self._fixture.disable_dual_btn()
             # TODO: capture the image to determine the status of DUT.
             self._operator_interface.print_to_console('image capture and verification ...\n')
             judge_by_camera = False
@@ -467,7 +472,7 @@ class EurekaEEPROMStation(test_station.TestStation):
             if isinstance(vendor_info, tuple) and len(vendor_info) == 3 and vendor_info[0] in self._vendor_info_dic.keys():
                 test_log.set_measured_value_by_name_ex('VENDOR_INFO', self._vendor_info_dic[vendor_info[0]])
 
-            if  judge_by_camera:
+            if judge_by_camera:
                 self._operator_interface.print_to_console('read all data from eeprom ...\n')
 
                 var_data = dict(calib_data)  # type: dict
@@ -502,11 +507,7 @@ class EurekaEEPROMStation(test_station.TestStation):
                             while write_tries <= max_tries and not nvm_write_data_success:
                                 self._operator_interface.print_to_console(f'try to nvm_write {write_tries} / {max_tries}\n')
                                 try:
-                                    if self._station_config.NVM_EEC_READ:
-                                        the_unit.nvm_get_ecc()
                                     the_unit.nvm_write_data(raw_data_cpy)
-                                    if self._station_config.NVM_EEC_READ:
-                                        the_unit.nvm_get_ecc()
                                     nvm_write_data_success = True
                                 except Exception as e:
                                     self._operator_interface.print_to_console(f'msg for write data: {str(e)} \n')
@@ -658,13 +659,13 @@ class EurekaEEPROMStation(test_station.TestStation):
             self._operator_interface.print_to_console(f"Non-parametric Test Failure, {str(e)}\n")
         finally:
             try:
+                the_unit.close()
                 while True:
                     alert_res = self._fixture.unload()
                     if alert_res in [0, None]:
                         break
                     self._operator_interface.operator_input(
                         'Hint', self._err_msg_list.get(alert_res), msg_type='warning', msgbtn=0)
-                the_unit.close()
             except Exception as e:
                 self._operator_interface.print_to_console(f'Fail to close test. {str(e)}')
         return self.close_test(test_log)

@@ -34,6 +34,9 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
         self._camera_sn = None
         self._camera = None  # type: gx.Device
         self._verbose = station_config.IS_VERBOSE
+        self._start_delimiter = "$"
+        self._end_delimiter = '\r\n'
+        self._spliter = ','
 
         self._sock: socket.socket = None
         self._sock_addr: tuple = None
@@ -46,20 +49,22 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
     def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing Eureka EEPROM Fixture\n")
         self._sock_addr = kwargs.get('ipaddr')
-        self._device_manager = gx.DeviceManager()
-        dev_num, dev_info_list = self._device_manager.update_device_list()
-        dev_list = [c for c in dev_info_list if c.get('model_name') == 'MER-132-43U3C']
-        if len(dev_list) != 0x01:
-            raise EurekaEEPROMFixtureErr('Fail to init instrument. cam = {0}'.format(len(dev_list)))
-        self._camera_sn = dev_list[0].get('sn')
-        self._operator_interface.print_to_console('Camera for verification. sn = {0}\n'.format(self._camera_sn))
-        self._camera = self._device_manager.open_device_by_sn(dev_list[0].get('sn'))
-        cfg_file = os.path.basename(os.path.join(self._station_config.CAMERA_CONFIG_FILE))
-        self._operator_interface.print_to_console('Init camera from configuration file = {0}\n'.format(cfg_file))
-        self._camera.import_config_file(self._station_config.CAMERA_CONFIG_FILE, True)
-        self._camera.TriggerMode.set(gx.GxSwitchEntry.OFF)
-        self._camera.ExposureTime.set(self._station_config.CAMERA_EXPOSURE)
-        self._camera.Gain.set(self._station_config.CAMERA_GAIN)
+        if self._station_config.CAMERA_VERIFY_ENABLE:
+            self._device_manager = gx.DeviceManager()
+            dev_num, dev_info_list = self._device_manager.update_device_list()
+            self._operator_interface.print_to_console(f'Cameras : ==> {[c.get("model_name") for c in dev_info_list]}')
+            dev_list = [c for c in dev_info_list if c.get('model_name') == 'MER2-160-227U3C']
+            if len(dev_list) != 0x01:
+                raise EurekaEEPROMFixtureErr('Fail to init instrument. cam = {0}'.format(len(dev_list)))
+            self._camera_sn = dev_list[0].get('sn')
+            self._operator_interface.print_to_console('Camera for verification. sn = {0}\n'.format(self._camera_sn))
+            self._camera = self._device_manager.open_device_by_sn(dev_list[0].get('sn'))
+            cfg_file = os.path.basename(os.path.join(self._station_config.CAMERA_CONFIG_FILE))
+            self._operator_interface.print_to_console('Init camera from configuration file = {0}\n'.format(cfg_file))
+            self._camera.import_config_file(self._station_config.CAMERA_CONFIG_FILE, True)
+            self._camera.TriggerMode.set(gx.GxSwitchEntry.OFF)
+            self._camera.ExposureTime.set(self._station_config.CAMERA_EXPOSURE)
+            self._camera.Gain.set(self._station_config.CAMERA_GAIN)
 
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -149,23 +154,49 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
             print('rev command <---------- {0}'.format(response))
         return response
 
+    def _parse_respose(self, command, response):
+        if self._verbose:
+            print("command : {0},,,{1}".format(command, response))
+        if response is None:
+            return None
+        cmd1 = command.split(self._spliter)[0]
+        respstr = ''.join(response)
+        if cmd1.upper() not in respstr.upper():
+            return None
+        values = respstr.split(self._spliter)
+        if len(values) == 1:
+            raise EurekaEEPROMFixtureErr('display ctrl rev data format error. <- {0}'.format(respstr))
+        return values[1:]
+
     def unload(self):
         # $C.Module.Out   $P.Module.Out,0000
         self._write_command(f'{self._station_config.COMMAND_MODULE_OUT}')
         response = self._read_response()
-        recvobj = self._prase_respose(self._station_config.COMMAND_MODULE_OUT, response)
+        recvobj = self._parse_respose(self._station_config.COMMAND_MODULE_OUT, response)
         if recvobj is None:
             raise EurekaEEPROMFixtureErr("Fail module_out because can't receive any data from dut.")
         if int(recvobj[0]) != 0x00:
             raise EurekaEEPROMFixtureErr("Exit module_out because rev err msg. Msg = {}".format(recvobj))
-        time.sleep(2.5)
-        return recvobj[0]
+        time.sleep(1.5)
+        return int(recvobj[0])
+
+    def load(self):
+        # $C.Module.In   $P.Module.In,0000
+        self._write_command(f'{self._station_config.COMMAND_MODULE_IN}')
+        response = self._read_response()
+        recvobj = self._parse_respose(self._station_config.COMMAND_MODULE_IN, response)
+        if recvobj is None:
+            raise EurekaEEPROMFixtureErr("Fail module_out because can't receive any data from dut.")
+        if int(recvobj[0]) != 0x00:
+            raise EurekaEEPROMFixtureErr("Exit module_out because rev err msg. Msg = {}".format(recvobj))
+        time.sleep(1.5)
+        return int(recvobj[0])
 
     def disable_dual_btn(self):
         # $C.DISABLE.STARTBTN   $P.DISABLE.STARTBTN,0000
         self._write_command(f'{self._station_config.COMMAND_DUAL_DISABLE}')
         response = self._read_response()
-        recvobj = self._prase_respose(self._station_config.COMMAND_DUAL_DISABLE, response)
+        recvobj = self._parse_respose(self._station_config.COMMAND_DUAL_DISABLE, response)
         if recvobj is None:
             raise EurekaEEPROMFixtureErr("Fail disable_dual_btn because can't receive any data from dut.")
         if int(recvobj[0]) != 0x00:
@@ -181,7 +212,7 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
                 cmd = self._station_config.COMMAND_GET_MODULE_INPLACE
                 self._write_command(cmd)
                 response = self._read_response()
-                recv_obj = self._prase_respose(cmd, response)
+                recv_obj = self._parse_respose(cmd, response)
                 if int(recv_obj[0]) == 0:
                     success = True
             except:

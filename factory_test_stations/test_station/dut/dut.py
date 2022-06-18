@@ -187,18 +187,6 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         resp = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_MEASURE_BLU, resp)
 
-    def get_vendor_info(self):
-        """
-        Only for Eureka
-        @return:
-        """
-        self._write_serial_cmd(self._station_config.COMMAND_VENDOR_INFO)
-        resp = self._read_response()
-        recvobj = self._prase_respose(self._station_config.COMMAND_VENDOR_INFO, resp)
-        if recvobj is None or len(recvobj) == 0 or int(recvobj[0]) != 0x00:
-            raise DUTError('Fail to get vendor information.')
-        return tuple([int(x, 16) for x in recvobj[1:]])
-
     def display_color_check(self, color):
         norm_color = tuple([c / 255.0 for c in color])
         color1 = np.float32([[norm_color]])
@@ -624,7 +612,6 @@ if __name__ == "__main__":
     station_config.COMMAND_SPEED_MODE = 'SET.B7MODE'
     station_config.DUT_ETH_PROXY = True
     station_config.DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
-    station_config.COMMAND_VENDOR_INFO = 'GetVendor'
 
     import sys
     import types

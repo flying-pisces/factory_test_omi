@@ -280,10 +280,10 @@ TEST_ITEM_PATTERNS = [
     {'name': 'R255', 'pattern': 2, 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'G255', 'pattern': 3, 'setup': (7, 0, 3), 'exposure': '5000'},
     {'name': 'B255', 'pattern': 4, 'setup': (7, 0, 3), 'exposure': '5000'},
-    {'name': 'RGBBoresight', 'pattern': (5, 6), 'setup': (7, 0, 3), 'exposure': (144900, 980852, 468134, 980852, 980852)},
-    {'name': 'WhiteDot7', 'pattern': (7, 8), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
-    {'name': 'WhiteDot8', 'pattern': (9, 10), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
-    {'name': 'WhiteDot9', 'pattern': (11, 12), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'RGBBoresight', 'pattern': (6, 5), 'setup': (7, 0, 3), 'exposure': (144900, 980852, 468134, 980852, 980852)},
+    {'name': 'WhiteDot7', 'pattern': (8, 7), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'WhiteDot8', 'pattern': (10, 9), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
+    {'name': 'WhiteDot9', 'pattern': (12, 11), 'setup': (7, 0, 3), 'exposure': (111466, 144900, 211768, 167184, 144900)},
 ]
 
 TEST_ITEM_PATTERNS_VERIFIED = {'PW255': ('WhitePointGLR', 'WhitePointGLG', 'WhitePointGLB')}
@@ -291,7 +291,7 @@ TEST_ITEM_PATTERNS_VERIFIED = {'PW255': ('WhitePointGLR', 'WhitePointGLG', 'Whit
 TEST_ITEM_POS = [
     {'name': 'normal', 'pos': (0, 0, 15000),
      'pattern': ['W255', 'RGBBoresight'],
-     'condition_A_patterns':[('WhiteDot', 'pattern', ['WhiteDot10', 'WhiteDot11', 'WhiteDot12']),
+     'condition_A_patterns':[('WhiteDot', 'pattern', ['WhiteDot7', 'WhiteDot8', 'WhiteDot9']),
                              # ('PW255', None, []),
                              ]
      },

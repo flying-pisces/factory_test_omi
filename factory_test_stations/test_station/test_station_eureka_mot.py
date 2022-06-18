@@ -374,9 +374,9 @@ class EurekaMotStation(test_station.TestStation):
             self._fixture.start_button_status(True)
             self._fixture.power_on_button_status(True)
             self._fixture.vacuum(False)
-            self.alert_handle(self._fixture.unload_dut())
             if not self._station_config.FIXTURE_SIM and self.alert_handle(self._fixture.unload()) != 0:
                 raise EurekaMotStationError(f'Fail to init the fixture.')
+            self.alert_handle(self._fixture.unload_dut())
             self._fixture.start_button_status(False)
             self._fixture.power_on_button_status(False)
 
@@ -955,6 +955,8 @@ class EurekaMotStation(test_station.TestStation):
                 if power_on_trigger:
                     msg_prompt = 'Press Dual-Btn(Load)/PowerOn-Btn(Re Lit up)  in %s S...'
                 tm_data = timeout_for_btn_idle - (tm_current - timeout_for_dual)
+
+                tm_current = time.time()
                 self._operator_interface.prompt(msg_prompt % int(tm_data), 'yellow')
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
@@ -982,9 +984,10 @@ class EurekaMotStation(test_station.TestStation):
                         self.alert_handle(self._fixture.load_dut())
                         self._the_unit.screen_on()
                     self._fixture.vacuum(False)
-                    self._the_unit.display_color((255, 0, 0))
                     self._fixture.power_on_button_status(False)
+                    self._the_unit.display_color((0, 0, 0))
                     time.sleep(self._station_config.FIXTURE_SOCK_DLY)
+
                     alignment_result = self._fixture.alignment(self._latest_serial_number)
                     if isinstance(alignment_result, tuple):
                         self._module_left_or_right = str(alignment_result[4]).upper()
@@ -1014,8 +1017,10 @@ class EurekaMotStation(test_station.TestStation):
                 elif ready_key == 0x01:
                     self._is_cancel_test_by_op = True  # Cancel test.
 
+                elif ready_key == 0 and ready_code != 0:
+                    self.alert_handle(ready_code)
+
                 time.sleep(0.01)
-                tm_current = time.time()
         except (EurekaMotStationError, EurekaDUTError, RuntimeError) as e:
             self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console('exception msg %s.\n' % str(e))

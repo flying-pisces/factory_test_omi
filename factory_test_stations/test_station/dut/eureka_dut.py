@@ -14,7 +14,6 @@ import win32process
 import win32event
 import pywintypes
 import pprint
-import cv2
 import math
 import select
 import hardware_station_common.test_station.dut
@@ -175,6 +174,18 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         if int(recvobj[0]) != 0x00:
             raise EurekaDUTError("Exit module_name because rev err msg. Msg = {}".format(recvobj))
         return recvobj[1]
+
+    def get_vendor_info(self):
+        """
+        Vendor information
+        @return:
+        """
+        self._write_serial_cmd(self._station_config.COMMAND_VENDOR_INFO)
+        resp = self._read_response()
+        recvobj = self._prase_respose(self._station_config.COMMAND_VENDOR_INFO, resp)
+        if recvobj is None or len(recvobj) == 0 or int(recvobj[0]) != 0x00:
+            raise EurekaDUTError('Fail to get vendor information.')
+        return tuple([int(x, 16) for x in recvobj[1:]])
 
     def get_measure_blu(self):
         """
@@ -352,13 +363,13 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         response = self._read_response()
         return self._prase_respose(self._station_config.COMMAND_SPEED_MODE, response)
 
-    def nvm_get_ecc(self):
+    def get_module_inplace(self):
         retries = 1
         recv_obj = None
         success = False
         while retries < 5 and not success:
             try:
-                cmd = self._station_config.COMMAND_GETB5ECC
+                cmd = self._station_config.COMMAND_GET_MODULE_INPLACE
                 self._write_serial_cmd(cmd)
                 response = self._read_response()
                 recv_obj = self._prase_respose(cmd, response)
@@ -366,9 +377,8 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
                     success = True
             except:
                 pass
-            retries += 1
         if not success:
-            raise EurekaDUTError('Fail to read get ecc. = {0}'.format(recv_obj))
+            raise EurekaDUTError('Fail to read get_module_inplace = {0}'.format(recv_obj))
         return recv_obj
 
     def _timeout_execute(self, cmd, timeout=0):
@@ -540,7 +550,7 @@ class projectDut(object):
             pass
         if item in ['screen_on', 'screen_off', 'display_color', 'reboot', 'display_image', 'nvm_read_statistics',
                     'nvm_write_data', '_get_color_ext', 'render_image', 'nvm_read_data', 'nvm_speed_mode',
-                    'get_module_inplace', 'nvm_get_ecc', 'read_color_sensor', 'display_color_check']:
+                    'get_module_inplace', 'read_color_sensor', 'display_color_check', 'get_vendor_info']:
             return not_find
 
 
@@ -567,7 +577,7 @@ if __name__ == "__main__":
     station_config.COMMAND_NVM_READ = 'NVMRead'
     station_config.COMMAND_NVM_WRITE = 'NVMWrite'
     station_config.COMMAND_SPEED_MODE = 'SET.B7MODE'
-    station_config.COMMAND_MODULE_NAME = 'Module.name'
+    station_config.COMMAND_VENDOR_INFO = 'GetVendor'
     station_config.COMMAND_MODULE_OUT = 'Module.Out'
     station_config.COMMAND_GET_MODULE_INPLACE = 'GET.MODULE.INPLACE'
     station_config.COMMAND_DUAL_DISABLE = 'DISABLE.STARTBTN'
