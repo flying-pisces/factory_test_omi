@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.1.4
+2022-6-20 author<elton.tian@myzygroup.com>
+-1. Remove W255_duv in the judgement spec for L/R/U module
+
+========================================================
 Version 1.1.3
 2022-6-10 author<elton.tian@myzygroup.com>
 -1. fix algorithm bug for L/R OK

@@ -26,5 +26,5 @@ class projectstationFixture(hardware_station_common.test_station.test_fixture.Te
                     'is_ready', 'power_on_button_status', 'start_button_status', 'query_temp',
                     'mov_abs_xy_wrt_alignment', 'mov_camera_z_wrt_alignment', 'query_probe_status',
                     'particle_counter_state', 'version', 'particle_counter_read_val', 'mov_abs_xy_wrt_dut',
-                    'ca_postion_z', 'calib_zero_pos', 'id', 'set_tri_color' ]:
+                    'ca_postion_z', 'calib_zero_pos', 'id', 'set_tri_color', 'vacuum']:
             return not_find

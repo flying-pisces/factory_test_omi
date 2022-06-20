@@ -91,7 +91,7 @@ class SeacliffOffAxis4StationError(Exception):
 
 class SeacliffOffAxis4Station(test_station.TestStation):
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '1.1.3'
+        self._sw_version = '1.1.4'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
 
@@ -882,6 +882,12 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                 and np.array(lv_any_result).all() and np.array(cr_duv_result).all()):
             # if Max duv =< 0.01 at all azimuth
             ext_values = ext_value_check(ext_ctrl_duv_lr_all)
+
+            # remove W255-duv
+            ext_values = np.array(ext_values)[:, 1:]
+            duv_lr_all_result = np.array(duv_lr_all_result)[:, 1:]
+            asym_duv_result = np.array(asym_duv_result)[:, 1:]
+
             max_ext_values = np.array(ext_values).max(axis=1)
             if np.array(asym_duv_result).all():
                 if np.array(duv_lr_all_result).all(axis=1)[0] and np.array(duv_lr_all_result).all(axis=1)[1]:
