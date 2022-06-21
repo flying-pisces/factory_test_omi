@@ -58,7 +58,7 @@ SHOP_FLOOR_BAK_DIR_FILTER = f'*_{STATION_ID}_*.log'
 SF_URL = 'http://192.168.100.96:8012/InLotWS/Service/P5385InLotWS.asmx?WSDL'
 SF_LOADER_URL = 'http://192.168.100.96:8012/LoaderWS/Service/SummaryLoader.asmx?WSDL'
 SF_MAIL_URL = 'http://192.168.100.96:8011/MailWS/GseoWS.asmx?WSDL'
-MES_CHK_OFFLINE: dict
+MES_CHK_OFFLINE: dict = {}
 
 
 class ShopFloorError(Exception):
@@ -603,34 +603,38 @@ def save_results_from_logs(log_file_path, log_upload_after_test=False):
     return save_result_res, web_res_msg
 
 
-logger = logging.getLogger()
-if not logger.hasHandlers():
-    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-    DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
-    log_fn = time.strftime('%Y_%m_%d', time.localtime(time.time()))
+def initialize(station_config):
+    global MES_CHK_OFFLINE, _ex_shop_floor
+    logger = logging.getLogger()
+    if MES_CHK_OFFLINE.get('Actived') is None:
+        LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+        DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+        log_fn = time.strftime('%Y_%m_%d', time.localtime(time.time()))
 
-    formatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
-    chlr = logging.StreamHandler()
-    chlr.setFormatter(logging.Formatter('%(levelname)s      %(message)s'))
-    chlr.setLevel('INFO')
-    fn = os.path.join(os.path.curdir, '../shop_floor_interface/logs',
-                                      'sf_i_{0}_{1}_{2}.log'.format(MACHINE_TYPE, STATION_ID, log_fn))
-    log_dir = os.path.dirname(fn)
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-        os.chmod(log_dir, 0o777)
-    fhlr = logging.FileHandler(fn)
-    fhlr.setFormatter(formatter)
-    logger.setLevel('INFO')
-    logger.addHandler(chlr)
-    logger.addHandler(fhlr)
+        formatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
+        chlr = logging.StreamHandler()
+        chlr.setFormatter(logging.Formatter('%(levelname)s      %(message)s'))
+        chlr.setLevel('INFO')
+        fn = os.path.join(os.path.curdir, '../shop_floor_interface/logs',
+                                          'sf_i_{0}_{1}_{2}.log'.format(MACHINE_TYPE, STATION_ID, log_fn))
+        log_dir = os.path.dirname(fn)
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+            os.chmod(log_dir, 0o777)
+        fhlr = logging.FileHandler(fn)
+        fhlr.setFormatter(formatter)
+        logger.setLevel('INFO')
+        logger.addHandler(chlr)
+        logger.addHandler(fhlr)
 
-    _ex_shop_floor = ShopFloor_genius(MACHINE_TYPE, STATION_ID)  # type: ShopFloor_genius
+        _ex_shop_floor = ShopFloor_genius(MACHINE_TYPE, STATION_ID)  # type: ShopFloor_genius
 
-    daemon_thr = threading.Thread(target=daemon_upload, args=())
-    daemon_thr.setDaemon(True)
-    daemon_thr.start()
-    MES_CHK_OFFLINE = {}
+        daemon_thr = threading.Thread(target=daemon_upload, args=())
+        daemon_thr.setDaemon(True)
+        daemon_thr.start()
+        MES_CHK_OFFLINE = {
+            'Actived': True,
+        }
 
 
 if __name__ == '__main__':

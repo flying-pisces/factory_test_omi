@@ -25,7 +25,7 @@ import stat
 # import hardware_station_common.test_station.test_log
 # MES_CHK_OFFLINE: dict
 # MES_CTRL_PWD = 'MES123'
-MES_IN_LOT_CTRL = False  # required by Haha. 1/11/2021
+# MES_IN_LOT_CTRL = False  # required by Haha. 1/11/2021
 
 SF_LOADER_URL = 'http://10.96.16.7:8100/api/MesTransferBind/'
 SF_MESDATA_URL = 'http://10.96.16.7:8100/api/MesData/'
@@ -374,7 +374,7 @@ def ok_to_test(serial):
         if len(mac_interfaces) <= 0:
             raise ShopFloorError(f'获取机台MAC地址异常 {MAC_ID_FILER}')
         _ex_shop_floor._mac_id = mac_interfaces[0].get('mac')
-        if MES_IN_LOT_CTRL:
+        if MES_CHK_OFFLINE['in_lot_ctrl']:
             validate_res = _ex_shop_floor.load_dut(serial)
             if validate_res is None or isinstance(validate_res, str):
                 raise ShopFloorError(f'Fail to OK_TO_TEST, Return {validate_res}')
@@ -468,9 +468,9 @@ def save_results_from_logs(log_file_path):
             raise ShopFloorError(f'Fail to save results. Return {save_feedback}')
         if save_feedback['Status']:
             ShopFloor_sunny.logger.info('上传测试结果完成' + '=' * 30)
-            if (not MES_IN_LOT_CTRL) or MES_CHK_OFFLINE.get('mes_chk_offline'):
+            if (not MES_CHK_OFFLINE['in_lot_ctrl']) or MES_CHK_OFFLINE.get('mes_chk_offline'):
                 save_result_res = True
-                ShopFloor_sunny.logger.error(f'离线状态， 数据不过站. MES_IN_LOT_CTRL: {MES_IN_LOT_CTRL}')
+                ShopFloor_sunny.logger.error(f"离线状态， 数据不过站. MES_IN_LOT_CTRL: {MES_CHK_OFFLINE['in_lot_ctrl']}")
             else:
                 res = 0 if overall_result == 'PASS' else 1
                 ab_res = _ex_shop_floor.unload_dut(uut_sn=uut_sn, test_times=test_times, test_result=res)
@@ -506,57 +506,26 @@ def save_results_from_logs(log_file_path):
 
 
 def initialize(station_config):
-    global _ex_shop_floor, MES_CHK_OFFLINE
-
-    logger = logging.getLogger('mes-logger')
-    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-    DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
-    log_fn = time.strftime('%Y_%m_%d', time.localtime(time.time()))
-    formatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
-    log_dir = os.path.join(os.path.curdir, '../shop_floor_interface/LOGS')
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-        os.chmod(log_dir, 0o777)
-
-    fn = os.path.join(log_dir, 'SFI_{0}_{1}_{2}.log'.format(MACHINE_TYPE, STATION_ID, log_fn))
-    fhlr = logging.FileHandler(fn, encoding='utf-8')
-    fhlr.setFormatter(formatter)
-    logger.setLevel('DEBUG')
-    logger.addHandler(fhlr)
-    logger.debug('-----------Shop Floor Interface === MES ------------------------Initialised.')
-    # MES_CHK_OFFLINE = {}
-    _ex_shop_floor = ShopFloor_sunny(MACHINE_TYPE, STATION_ID)  # type: ShopFloor_sunny
-    MES_CHK_OFFLINE['mes_chk_offline'] = False
-
-
-if __name__ == '__main__':
-    global _ex_shop_floor
-    # import requests
-    import collections
-    from lxml import etree
-
-    # from hardware_station_common.test_station.test_log.shop_floor_interface.shop_floor import ShopFloor
-    # from hardware_station_common.test_station.test_log import TestRecord
-    logging.info('----------------------------')
-    logging.debug('+' * 20)
-    serial_number = '3B09B13CBC0005'
-    initialize(None)
-    logging.info('----------------------------{0}'.format(serial_number))
-    if ok_to_test(serial_number)[0]:
-        save_results_from_logs(r'C:\oculus\run\shop_floor_interface\3B09B13CBC0005_seacliff_eeprom-02_20211118-192212_P.log')
-        pass
-    else:
-        print('Fail to OK_TO_TEST.')
-    pass
-    # _ex_shop_floor._mac_id = get_mac_id()[0].get('mac')
-    #
-    # station_lists = _ex_shop_floor.show_station_list()
-    # da = sf.get_test_results(uut_sn)
-    # cur_station = sf.show_current_station(uut_sn)
-    # sf.get_test_results('sample')
-    # sf.show_current_station('sample')
-    # sa = _ex_shop_floor.validate_AAB(serial_number)
-    # _ex_shop_floor.insert_AAB_result(serial_number, sa['TestTimes'], 2)
-    #
-    # sa = _ex_shop_floor.validate_AAB(serial_number)
-    # _ex_shop_floor.insert_AAB_result(serial_number, sa['TestTimes'], 1)
+    global _ex_shop_floor, MES_CHK_OFFLINE, STATION_ID
+    if MES_CHK_OFFLINE.get('actived') is None:
+        logger = logging.getLogger('mes-logger')
+        LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+        DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+        log_fn = time.strftime('%Y_%m_%d', time.localtime(time.time()))
+        formatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
+        log_dir = os.path.join(os.path.curdir, '../shop_floor_interface/LOGS')
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+            os.chmod(log_dir, 0o777)
+        STATION_ID = f'{station_config.STATION_TYPE}_{station_config.STATION_NUMBER}'
+        fn = os.path.join(log_dir, 'SFI_{0}_{1}_{2}.log'.format(MACHINE_TYPE, STATION_ID, log_fn))
+        fhlr = logging.FileHandler(fn, encoding='utf-8')
+        fhlr.setFormatter(formatter)
+        logger.setLevel('DEBUG')
+        logger.addHandler(fhlr)
+        logger.debug('-----------Shop Floor Interface === MES ------------------------Initialised.')
+        # MES_CHK_OFFLINE = {}
+        _ex_shop_floor = ShopFloor_sunny(MACHINE_TYPE, STATION_ID)  # type: ShopFloor_sunny
+        MES_CHK_OFFLINE['mes_chk_offline'] = False
+        MES_CHK_OFFLINE['actived'] = True
+        MES_CHK_OFFLINE['in_lot_ctrl'] = station_config.MES_IN_LOT_CTRL
