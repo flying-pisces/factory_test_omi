@@ -743,11 +743,11 @@ class EurekaMotStation(test_station.TestStation):
 
                     rel_pattern_name = pattern_name
                     if pattern_name in self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX.keys():
-                        ref_patterns = ['W255', 'RGBBoresight']
+                        ref_patterns = ['W255', 'R255', 'G255', 'B255', 'RGBBoresight']
                         ref_pattern = self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX[pattern_name]
                         exp_data = tuple([self._exported_parametric[f'{pos_name}_{c}'] for c in ref_patterns])
                         self._gl_W255[f'{pos_name}_{pattern_name}'] = \
-                            test_equipment_eureka_mot.MotAlgorithmHelper.calc_gl_for_brightdot(*exp_data,
+                            test_equipment_eureka_mot.MotAlgorithmHelper.calc_gl_for_brightdot_v2(*exp_data,
                                  module_temp=self._temperature_dic[f'{pos_name}_{pattern_name}'])
                         self._operator_interface.print_to_console(
                             f"\ncalc gray level from W/R/G/B --> {self._gl_W255[f'{pos_name}_{pattern_name}']['GL']}\n")

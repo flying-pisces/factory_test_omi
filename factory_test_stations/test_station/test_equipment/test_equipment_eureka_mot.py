@@ -510,15 +510,24 @@ class MotAlgorithmHelper(object):
         # startdirr = 'C:\Users\xiaobotian\Desktop\FMOT\MOT data\20200704 MOT data\C3-LH0007_SEACLIFF_MOT-01_20200703-235556\19043959\20200703_235715_nd_0_iris_5_X_float.bin'
         ModuleTemp = module_temp
         TargetTemp = 47
-        dLum_R = -0.02253
-        dColor_x_R = 0.000121
-        dColor_y_R = -0.00047
-        dLum_G = -0.01266
-        dColor_x_G = 0.000733
-        dColor_y_G = -0.00103
-        dLum_B = -0.01019
-        dColor_x_B = -0.000012
-        dColor_y_B = -0.00016
+        # dLum_R = -0.02253
+        # dColor_x_R = 0.000121
+        # dColor_y_R = -0.00047
+        # dLum_G = -0.01266
+        # dColor_x_G = 0.000733
+        # dColor_y_G = -0.00103
+        # dLum_B = -0.01019
+        # dColor_x_B = -0.000012
+        # dColor_y_B = -0.00016
+        dLum_R = 0
+        dColor_x_R = 0
+        dColor_y_R = 0
+        dLum_G = 0
+        dColor_x_G = 0
+        dColor_y_G = 0
+        dLum_B = 0
+        dColor_x_B = 0
+        dColor_y_B = 0
 
         coeff = {
             'r': (dLum_R, dColor_x_R, dColor_y_R),
@@ -564,18 +573,19 @@ class MotAlgorithmHelper(object):
             with open(os.path.join(dirr, f_name), 'rb') as fin:
                 I = np.frombuffer(fin.read(), dtype=np.float32)
             image_in = np.reshape(I, (col, row)).T
-            image_in = np.rot90(image_in, 3)
-            image_in = np.flip(image_in, 0)
+            # image_in = np.rot90(image_in, 3)
+            # image_in = np.flip(image_in, 0)
+            image_in = np.flipud(image_in)
 
             image_in = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ.append(image_in)
             del image_in, I
 
         XYZ = np.stack(XYZ, axis=2)
-        XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
-        XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
-        XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
-        del XYZ_1D, XYZ_1D_ColorCorrected,
+        # XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
+        # XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
+        # XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
+        # del XYZ_1D, XYZ_1D_ColorCorrected,
         ## Save parametric data
         # Create viewing masks
         col_deg_arr = np.tile(x_angle_arr, (row, 1))
@@ -634,7 +644,7 @@ class MotAlgorithmHelper(object):
         y_deg = 0
         col_ind = np.nonzero(np.abs(x_angle_arr - x_deg) == np.min(np.abs(x_angle_arr - x_deg)))[1][0]
         row_ind = np.nonzero(np.abs(y_angle_arr - y_deg) == np.min(np.abs(y_angle_arr - y_deg)))[1][0]
-        stats_summary = np.empty((2, 100), np.object)
+        stats_summary = np.empty((2, 100), object)
         stats_summary[0, k] = 'dir'
         stats_summary[1, k] = os.path.join(dirr, fnamebase)
         k = k + 1
@@ -650,15 +660,15 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'OnAxis y'
         stats_summary[1, k] = y_smoothed_masked[row_ind, col_ind]
         k = k + 1
-        stats_summary[0, k] = 'OnAxis Lum at 47C'
-        stats_summary[1, k] = Lum_masked_TargetTemp[row_ind, col_ind]
-        k = k + 1
-        stats_summary[0, k] = 'OnAxis x at 47C'
-        stats_summary[1, k] = x_smoothed_masked_TargetTemp[row_ind, col_ind]
-        k = k + 1
-        stats_summary[0, k] = 'OnAxis y at 47C'
-        stats_summary[1, k] = y_smoothed_masked_TargetTemp[row_ind, col_ind]
-        k += 1
+        # stats_summary[0, k] = 'OnAxis Lum at 47C'
+        # stats_summary[1, k] = Lum_masked_TargetTemp[row_ind, col_ind]
+        # k = k + 1
+        # stats_summary[0, k] = 'OnAxis x at 47C'
+        # stats_summary[1, k] = x_smoothed_masked_TargetTemp[row_ind, col_ind]
+        # k = k + 1
+        # stats_summary[0, k] = 'OnAxis y at 47C'
+        # stats_summary[1, k] = y_smoothed_masked_TargetTemp[row_ind, col_ind]
+        # k += 1
         del Lum_masked, Lum_masked_TargetTemp,
         del colsOfMaxes, rowsOfMaxes, y_angle_arr, x_angle_arr
         del x_smoothed_masked, x_smoothed_masked_TargetTemp, y_smoothed_masked_TargetTemp, y_smoothed_masked
@@ -669,9 +679,12 @@ class MotAlgorithmHelper(object):
         # luminance and color drift per degree
         ModuleTemp = module_temp
         TargetTemp = 47
-        dLum = -0.01135
-        dColor_x = -0.00051
-        dColor_y = -0.00058
+        # dLum = -0.01135
+        # dColor_x = -0.00051
+        # dColor_y = -0.00058
+        dLum = 0.0
+        dColor_x = 0.0
+        dColor_y = 0.0
         # Color offsite is used for MOT correlation
         Color_x_offsite = 0
         Color_y_offsite = 0
@@ -694,18 +707,19 @@ class MotAlgorithmHelper(object):
             print(f'Read bin files named {fnamebase}\n')
         XYZ = []
         for c in XYZ_t:
-            image_in = np.rot90(c.T, 3)
-            image_in = np.flip(image_in, 0)
+            # image_in = np.rot90(c.T, 3)
+            # image_in = np.flip(image_in, 0)
+            image_in = np.flipud(c.T)
             image_in = cv2.filter2D(image_in, -1, MotAlgorithmHelper._kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ.append(image_in)
             del image_in
         del XYZ_t
         XYZ = np.stack(XYZ, axis=2)
 
-        XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
-        XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
-        XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
-        del XYZ_1D, XYZ_1D_ColorCorrected
+        # XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
+        # XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
+        # XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
+        # del XYZ_1D, XYZ_1D_ColorCorrected
 
         ## Save parametric data
         # Create viewing masks
@@ -1146,11 +1160,11 @@ class MotAlgorithmHelper(object):
             # hold off
             tmp_histo = XYZ[:, :, 1]
             tmp_histo = tmp_histo * chromaticity_mask
-            nbins = np.int(np.round((np.max(tmp_histo) - np.min(tmp_histo)) / 5))
+            nbins = np.int32(np.round((np.max(tmp_histo) - np.min(tmp_histo)) / 5))
             plt.subplot(2, 2, 4)
             cc = tmp_histo[tmp_histo != 0]
             weights = np.ones_like(cc) / float(len(cc))
-            rst = plt.hist(cc, density=True, range=(np.int(np.min(cc)), np.max(cc)), weights=weights,
+            rst = plt.hist(cc, density=True, range=(np.int32(np.min(cc)), np.max(cc)), weights=weights,
                           bins=nbins, histtype='bar', edgecolor='b', stacked=False)
             plt.xlabel('Luminance (nits)')
             plt.ylabel('Percentage')
@@ -1219,12 +1233,12 @@ class MotAlgorithmHelper(object):
             # hold off
             tmp_histo = Delta_uv_prime_smoothed_masked
             tmp_histo = tmp_histo * chromaticity_mask
-            nbins = np.int(np.round((np.max(tmp_histo) - np.min(tmp_histo)) / 0.0005))
+            nbins = np.int32(np.round((np.max(tmp_histo) - np.min(tmp_histo)) / 0.0005))
             plt.subplot(2, 2, 4)
             cc = tmp_histo[tmp_histo != 0]
             weights = np.ones_like(cc) / float(len(tmp_histo))
             rst = plt.hist(cc, density=True, bins=nbins, histtype='bar', edgecolor='b', weights=weights,
-                           range=[np.int(np.min(cc)), np.max(cc)])
+                           range=[np.int32(np.min(cc)), np.max(cc)])
             plt.gca().yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(np.sum(rst[0]), decimals=0, symbol=None))
             plt.gca().yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(np.sum(rst[0]) / 20))
             plt.gca().xaxis.get_major_formatter().set_powerlimits((0, 1))
@@ -1281,18 +1295,30 @@ class MotAlgorithmHelper(object):
         # % set color drift coefficients
         TargetTemp = 47
         #1115
-        dLum_W = -0.01135
-        dColor_x_W = -0.00051
-        dColor_y_W = -0.00058
-        dLum_R = -0.01601
+        dLum_W = 0
+        dColor_x_W = 0
+        dColor_y_W = 0
+        dLum_R = 0
         dColor_x_R = 0
-        dColor_y_R = -0.00033
-        dLum_G = -0.00977
-        dColor_x_G = 0.00061
-        dColor_y_G = -0.00074
-        dLum_B = -0.00873
+        dColor_y_R = 0
+        dLum_G = 0
+        dColor_x_G = 0
+        dColor_y_G = 0
+        dLum_B = 0
         dColor_x_B = 0
         dColor_y_B = 0
+        # dLum_W = -0.01135
+        # dColor_x_W = -0.00051
+        # dColor_y_W = -0.00058
+        # dLum_R = -0.01601
+        # dColor_x_R = 0
+        # dColor_y_R = -0.00033
+        # dLum_G = -0.00977
+        # dColor_x_G = 0.00061
+        # dColor_y_G = -0.00074
+        # dLum_B = -0.00873
+        # dColor_x_B = 0
+        # dColor_y_B = 0
 
         x_w = 0.3127 - (TargetTemp - ModuleTemp) * dColor_x_W
         y_w = 0.329 - (TargetTemp - ModuleTemp) * dColor_y_W
@@ -1308,16 +1334,16 @@ class MotAlgorithmHelper(object):
         # Temp_B = B255_stats_summary["Module Temperature"]
 
         Y_w = W255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_W) * dLum_W)
-        Y_r = WRGBBoresight_stats_summary["R_Lum_corrected"] * (1 + (ModuleTemp - Temp_R) * dLum_R)
-        Y_g = WRGBBoresight_stats_summary["G_Lum_corrected"] * (1 + (ModuleTemp - Temp_G) * dLum_G)
-        Y_b = WRGBBoresight_stats_summary["B_Lum_corrected"] * (1 + (ModuleTemp - Temp_B) * dLum_B)
+        Y_r = WRGBBoresight_stats_summary["R_Lum"] * (1 + (ModuleTemp - Temp_R) * dLum_R)
+        Y_g = WRGBBoresight_stats_summary["G_Lum"] * (1 + (ModuleTemp - Temp_G) * dLum_G)
+        Y_b = WRGBBoresight_stats_summary["B_Lum"] * (1 + (ModuleTemp - Temp_B) * dLum_B)
 
-        x_r = WRGBBoresight_stats_summary["R_x_corrected"] + (ModuleTemp - Temp_R) * dColor_x_R
-        y_r = WRGBBoresight_stats_summary["R_y_corrected"] + (ModuleTemp - Temp_R) * dColor_y_R
-        x_g = WRGBBoresight_stats_summary["G_x_corrected"] + (ModuleTemp - Temp_G) * dColor_x_G
-        y_g = WRGBBoresight_stats_summary["G_y_corrected"] + (ModuleTemp - Temp_G) * dColor_y_G
-        x_b = WRGBBoresight_stats_summary["B_x_corrected"] + (ModuleTemp - Temp_B) * dColor_x_B
-        y_b = WRGBBoresight_stats_summary["B_y_corrected"] + (ModuleTemp - Temp_B) * dColor_y_B
+        x_r = WRGBBoresight_stats_summary["R_x"] + (ModuleTemp - Temp_R) * dColor_x_R
+        y_r = WRGBBoresight_stats_summary["R_y"] + (ModuleTemp - Temp_R) * dColor_y_R
+        x_g = WRGBBoresight_stats_summary["G_x"] + (ModuleTemp - Temp_G) * dColor_x_G
+        y_g = WRGBBoresight_stats_summary["G_y"] + (ModuleTemp - Temp_G) * dColor_y_G
+        x_b = WRGBBoresight_stats_summary["B_x"] + (ModuleTemp - Temp_B) * dColor_x_B
+        y_b = WRGBBoresight_stats_summary["B_y"] + (ModuleTemp - Temp_B) * dColor_y_B
         Y_rgb_measure = [Y_r, Y_g, Y_b]
 
         w255 = np.array([Y_w * x_w / y_w, Y_w, Y_w * (1 - x_w - y_w) / y_w])
@@ -1331,7 +1357,88 @@ class MotAlgorithmHelper(object):
         # Lum for Red, Green and Blue for D65
         Lum_after = Y_rgb / np.max(Y_scale)
         Gamma = 2.2
-        gray_levels = np.round(np.power(Lum_after / Lum_before, 1 / Gamma) * 255).astype(np.int)
+        gray_levels = np.round(np.power(Lum_after / Lum_before, 1 / Gamma) * 255).astype(np.int32)
+
+        return {'GL': gray_levels,
+                'x_w': x_w,
+                'y_w': y_w,
+                'ModuleTemp': ModuleTemp}
+
+    @staticmethod
+    def calc_gl_for_brightdot_v2(W255_stats_summary,
+                              R255_stats_summary,
+                              G255_stats_summary,
+                              B255_stats_summary,
+                              RGBBoresight_stats_summary,
+                              module_temp=30):
+        # % load temperature of whitedot pattern
+        ModuleTemp = module_temp
+        # % set color drift coefficients
+        TargetTemp = 47
+        # 1115
+        dLum_W = 0
+        dColor_x_W = 0
+        dColor_y_W = 0
+        dLum_R = 0
+        dColor_x_R = 0
+        dColor_y_R = 0
+        dLum_G = 0
+        dColor_x_G = 0
+        dColor_y_G = 0
+        dLum_B = 0
+        dColor_x_B = 0
+        dColor_y_B = 0
+        # dLum_W = -0.01135
+        # dColor_x_W = -0.00051
+        # dColor_y_W = -0.00058
+        # dLum_R = -0.01601
+        # dColor_x_R = 0
+        # dColor_y_R = -0.00033
+        # dLum_G = -0.00977
+        # dColor_x_G = 0.00061
+        # dColor_y_G = -0.00074
+        # dLum_B = -0.00873
+        # dColor_x_B = 0
+        # dColor_y_B = 0
+
+        x_w = 0.3127 - (TargetTemp - ModuleTemp) * dColor_x_W
+        y_w = 0.329 - (TargetTemp - ModuleTemp) * dColor_y_W
+        # 1115
+        Temp_W = W255_stats_summary["Module Temperature"]
+        Temp_R = R255_stats_summary["Module Temperature"]
+        Temp_G = G255_stats_summary["Module Temperature"]
+        Temp_B = B255_stats_summary["Module Temperature"]
+
+        # Temp_W = W255_stats_summary["Module Temperature"]
+        # Temp_R = R255_stats_summary["Module Temperature"]
+        # Temp_G = G255_stats_summary["Module Temperature"]
+        # Temp_B = B255_stats_summary["Module Temperature"]
+
+        Y_w = W255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_W) * dLum_W)
+        Y_r = R255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_R) * dLum_R)
+        Y_g = G255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_G) * dLum_G)
+        Y_b = B255_stats_summary["OnAxis Lum"] * (1 + (ModuleTemp - Temp_B) * dLum_B)
+
+        x_r = R255_stats_summary["OnAxis x"] + (ModuleTemp - Temp_R) * dColor_x_R
+        y_r = R255_stats_summary["OnAxis y"] + (ModuleTemp - Temp_R) * dColor_y_R
+        x_g = G255_stats_summary["OnAxis x"] + (ModuleTemp - Temp_G) * dColor_x_G
+        y_g = G255_stats_summary["OnAxis y"] + (ModuleTemp - Temp_G) * dColor_y_G
+        x_b = B255_stats_summary["OnAxis x"] + (ModuleTemp - Temp_B) * dColor_x_B
+        y_b = B255_stats_summary["OnAxis y"] + (ModuleTemp - Temp_B) * dColor_y_B
+        Y_rgb_measure = [Y_r, Y_g, Y_b]
+
+        w255 = np.array([Y_w * x_w / y_w, Y_w, Y_w * (1 - x_w - y_w) / y_w])
+        m = np.array([[x_r / y_r, x_g / y_g, x_b / y_b],
+                      [1, 1, 1],
+                      [(1 - x_r - y_r) / y_r, (1 - x_g - y_g) / y_g, (1 - x_b - y_b) / y_b]])
+        Y_rgb = np.dot(np.linalg.pinv(m), w255)
+        Y_scale = Y_rgb / Y_rgb_measure
+        # Lum for R255, G255, B255
+        Lum_before = Y_rgb_measure
+        # Lum for Red, Green and Blue for D65
+        Lum_after = Y_rgb / np.max(Y_scale)
+        Gamma = 2.2
+        gray_levels = np.round(np.power(Lum_after / Lum_before, 1 / Gamma) * 255).astype(np.int32)
 
         return {'GL': gray_levels,
                 'x_w': x_w,
@@ -1354,7 +1461,7 @@ class MotAlgorithmHelper(object):
     @staticmethod
     def ind2sub(array_shape, xind):
         if isinstance(xind, np.ndarray):
-            ind = xind.astype(np.int)
+            ind = xind.astype(np.int32)
         elif isinstance(xind, np.int64):
             ind = np.array([xind])
         else:
@@ -1383,16 +1490,17 @@ class MotAlgorithmHelper(object):
             print(f'Read bin files named {fnamebase}\n')
         for image_in in XYZ_t:
             # Z = Z'        #Removed for viewing to match DUT orientation
-            image_in = np.rot90(image_in.T, 3)
-            image_in = cv2.flip(image_in, 0)
+            # image_in = np.rot90(image_in.T, 3)
+            # image_in = cv2.flip(image_in, 0)
+            image_in = np.flipud(image_in.T)
             # image_in = cv2.rotate(image_in, 0)  # Implement flip for viewing to match DUT orientation
             image_in = cv2.filter2D(image_in, -1, MotAlgorithmHelper._kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ.append(image_in)
         XYZ = np.stack(XYZ, axis=2)
-        XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
-        XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
-        XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
-        del XYZ_1D, XYZ_1D_ColorCorrected, image_in, XYZ_t
+        # XYZ_1D = np.reshape(XYZ, (self._row * self._col, 3))
+        # XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
+        # XYZ = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
+        # del XYZ_1D, XYZ_1D_ColorCorrected, image_in, XYZ_t
         return XYZ
 
     def white_dot_pattern_parametric_export(self, XYZ_W, GL, x_w, y_w, temp_w,
@@ -1410,9 +1518,12 @@ class MotAlgorithmHelper(object):
         # y_w = 0.3290  # color y for D65
         n_dots = 21
         # XYZ_W = np.ones((3, 3, 3))
-        dLum_W = -0.01135
-        dColor_x_W = -0.00051
-        dColor_y_W = -0.00058
+        # dLum_W = 0
+        # dColor_x_W = 0
+        # dColor_y_W = 0
+        dLum_W = 0
+        dColor_x_W = 0
+        dColor_y_W = 0
         Lum_W = XYZ_W[:, :, 1] * (1 + (ModuleTemp - Temp_W)*dLum_W)
         Color_x_W = XYZ_W[:, :, 0] / (XYZ_W[:, :, 0] + XYZ_W[:, :, 1] + XYZ_W[:, :, 2]) + (ModuleTemp-Temp_W)*dColor_x_W
         Color_y_W = XYZ_W[:, :, 1] / (XYZ_W[:, :, 0] + XYZ_W[:, :, 1] + XYZ_W[:, :, 2]) + (ModuleTemp-Temp_W)*dColor_y_W
@@ -1445,8 +1556,9 @@ class MotAlgorithmHelper(object):
         XYZ_smooth = []
         XYZ_t = [MotAlgorithmHelper.read_image_raw(os.path.join(dirr, c)) for c in filename]
         for image_in in XYZ_t:
-            image_in = np.rot90(image_in.T, 3)
-            image_in = np.flip(image_in, 0)
+            # image_in = np.rot90(image_in.T, 3)
+            # image_in = np.flip(image_in, 0)
+            image_in = np.flipud(image_in.T)
             # image_in = cv2.rotate(image_in, 0)
             XYZ.append(image_in)
             image_in_smooth = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
@@ -1456,12 +1568,12 @@ class MotAlgorithmHelper(object):
         XYZ = np.stack(XYZ, axis=2)
 
         XYZ_smooth = np.stack(XYZ_smooth, axis=2)
-        XYZ_1D = np.reshape(XYZ_smooth, (self._row * self._col, 3))
-        XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
-        XYZ_smooth = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
+        # XYZ_1D = np.reshape(XYZ_smooth, (self._row * self._col, 3))
+        # XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
+        # XYZ_smooth = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
 
         Y = XYZ[:, :, 1]
-        del XYZ_1D, XYZ, XYZ_1D_ColorCorrected
+        # del XYZ_1D, XYZ, XYZ_1D_ColorCorrected
 
         # Create array of angle rings to display
         angle_arr = np.linspace(0, 2 * np.pi, 361)
@@ -1535,7 +1647,7 @@ class MotAlgorithmHelper(object):
         I = np.lexsort(centroid.T[:1, :])
         Centroid = centroid[I, :]
 
-        Centroid2 = np.empty(Centroid.shape, np.object)
+        Centroid2 = np.empty(Centroid.shape, object)
         for i in range(0, n_dots):
             Centroid_temp = Centroid[i * n_dots:(i + 1) * n_dots, :]
             I = np.lexsort(Centroid_temp.T[:2, :])
@@ -1559,12 +1671,12 @@ class MotAlgorithmHelper(object):
         dxdy_WP_output_corrected = []
 
         if Size[0] == n_dots ** 2:
-            Lum = np.empty((n_dots ** 2,), dtype=np.object)
-            Color_x = np.empty(Lum.shape, dtype=np.object)
-            Color_y = np.empty(Lum.shape, dtype=np.object)
-            Color_x_corrected = np.empty(Lum.shape, dtype=np.object)
-            Lum_corrected = np.empty(Lum.shape, dtype=np.object)
-            Color_y_corrected = np.empty(Lum.shape, dtype=np.object)
+            Lum = np.empty((n_dots ** 2,), dtype=object)
+            Color_x = np.empty(Lum.shape, dtype=object)
+            Color_y = np.empty(Lum.shape, dtype=object)
+            Color_x_corrected = np.empty(Lum.shape, dtype=object)
+            Lum_corrected = np.empty(Lum.shape, dtype=object)
+            Color_y_corrected = np.empty(Lum.shape, dtype=object)
 
             for i in range(0, n_dots ** 2):
                 d = 25
@@ -1622,9 +1734,9 @@ class MotAlgorithmHelper(object):
             Color_x_255 = Color_x_2Dq_corrected[40, 40]
             Color_y_255 = Color_y_2Dq_corrected[40, 40]
 
-            Lum2Dq_corrected = Lum2Dq_corrected*Lum_W[3000, 3000]/Lum_255
-            Color_x_2Dq_corrected = Color_x_2Dq_corrected+Color_x_W[3000, 3000]-Color_x_255
-            Color_y_2Dq_corrected = Color_y_2Dq_corrected+Color_y_W[3000, 3000]-Color_y_255
+            # Lum2Dq_corrected = Lum2Dq_corrected*Lum_W[3000, 3000]/Lum_255
+            # Color_x_2Dq_corrected = Color_x_2Dq_corrected+Color_x_W[3000, 3000]-Color_x_255
+            # Color_y_2Dq_corrected = Color_y_2Dq_corrected+Color_y_W[3000, 3000]-Color_y_255
 
             dx = Color_x_2Dq - x_w
             dy = Color_y_2Dq - y_w
@@ -1761,51 +1873,51 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'WP255 y'
         stats_summary[1, k] = Color_y_255
         k = k + 1
-        stats_summary[0, k] = 'WP R Quest Algo'
+        stats_summary[0, k] = 'WP R Quest Alg'
         stats_summary[1, k] = GL[0]
         k = k + 1
-        stats_summary[0, k] = 'WP G Quest Algo'
+        stats_summary[0, k] = 'WP G Quest Alg'
         stats_summary[1, k] = GL[1]
         k = k + 1
-        stats_summary[0, k] = 'WP B Quest Algo'
+        stats_summary[0, k] = 'WP B Quest Alg'
         stats_summary[1, k] = GL[2]
         k = k + 1
-        stats_summary[0, k] = 'WP Lum Quest Algo'
+        stats_summary[0, k] = 'WP Lum Quest Alg'
         stats_summary[1, k] = Lum_WP_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP x  Quest Algo'
+        stats_summary[0, k] = 'WP x  Quest Alg'
         stats_summary[1, k] = Color_WP_x_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP y  Quest Algo'
+        stats_summary[0, k] = 'WP y  Quest Alg'
         stats_summary[1, k] = Color_WP_y_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP R Seacliff Algo'
+        stats_summary[0, k] = 'WP R Arcata Algorithm'
         stats_summary[1, k] = R_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP G Seacliff Algo'
+        stats_summary[0, k] = 'WP G Arcata Algorithm'
         stats_summary[1, k] = G_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP B Seacliff Algo'
+        stats_summary[0, k] = 'WP B Arcata Algorithm'
         stats_summary[1, k] = B_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP Lum Seacliff Algo'
+        stats_summary[0, k] = 'WP Lum Arcata Algorithm'
         stats_summary[1, k] = Lum_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP x Seacliff Algo'
+        stats_summary[0, k] = 'WP x Arcata Algorithm'
         stats_summary[1, k] = Color_x_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP y Seacliff Algo'
+        stats_summary[0, k] = 'WP y Arcata Algorithm'
         stats_summary[1, k] = Color_y_output_corrected
         k = k + 1
-        stats_summary[0, k] = 'WP R to DDIC'
-        stats_summary[1, k] = RGB_output2DDIC[0]
-        k = k + 1
-        stats_summary[0, k] = 'WP G to DDIC'
-        stats_summary[1, k] = RGB_output2DDIC[1]
-        k = k + 1
-        stats_summary[0, k] = 'WP B to DDIC'
-        stats_summary[1, k] = RGB_output2DDIC[2]
-        k = k + 1
+        # stats_summary[0, k] = 'WP R to DDIC'
+        # stats_summary[1, k] = RGB_output2DDIC[0]
+        # k = k + 1
+        # stats_summary[0, k] = 'WP G to DDIC'
+        # stats_summary[1, k] = RGB_output2DDIC[1]
+        # k = k + 1
+        # stats_summary[0, k] = 'WP B to DDIC'
+        # stats_summary[1, k] = RGB_output2DDIC[2]
+        # k = k + 1
 
         del XYZ_W,
         del Lum_WP_output, Color_WP_x_output, Color_WP_y_output, dxdy_WP_output, Lum_WP_output_corrected,
@@ -1827,25 +1939,44 @@ class MotAlgorithmHelper(object):
         ##Load module temperature
         ModuleTemp = module_temp
         TargetTemp = 47
-        dLum_R = -0.01601
+        # dLum_R = -0.01601
+        # dColor_x_R = 0
+        # dColor_y_R = -0.00033
+        # dLum_G = -0.00977
+        # dColor_x_G = 0.00061
+        # dColor_y_G = -0.00074
+        # dLum_B = -0.00873
+        # dColor_x_B = 0
+        # dColor_y_B = 0
+        dLum_R = 0
         dColor_x_R = 0
-        dColor_y_R = -0.00033
-        dLum_G = -0.00977
-        dColor_x_G = 0.00061
-        dColor_y_G = -0.00074
-        dLum_B = -0.00873
+        dColor_y_R = 0
+        dLum_G = 0
+        dColor_x_G = 0
+        dColor_y_G = 0
+        dLum_B = 0
         dColor_x_B = 0
         dColor_y_B = 0
+
         #1115 add.correction coefficients for R, G, B luminance and color offsite
-        Ratio_R = 0.8980
-        dColorx_R_offsite = -0.0099
-        dColory_R_offsite = 0.0013
-        Ratio_G = 0.9027
-        dColorx_G_offsite = -0.0041
-        dColory_G_offsite = -0.0022
-        Ratio_B = 0.9693
-        dColorx_B_offsite = 0.0034
-        dColory_B_offsite = 0.0021
+        # Ratio_R = 0.8980
+        # dColorx_R_offsite = -0.0099
+        # dColory_R_offsite = 0.0013
+        # Ratio_G = 0.9027
+        # dColorx_G_offsite = -0.0041
+        # dColory_G_offsite = -0.0022
+        # Ratio_B = 0.9693
+        # dColorx_B_offsite = 0.0034
+        # dColory_B_offsite = 0.0021
+        Ratio_R = 1
+        dColorx_R_offsite = 0
+        dColory_R_offsite = 0
+        Ratio_G = 1
+        dColorx_G_offsite = 0
+        dColory_G_offsite = 0
+        Ratio_B = 1
+        dColorx_B_offsite = 0
+        dColory_B_offsite = 0
         cam_fov = 60
         mask_fov = 30
         row = 6001
@@ -1882,7 +2013,8 @@ class MotAlgorithmHelper(object):
         XYZ_t = [MotAlgorithmHelper.read_image_raw(os.path.join(dirr, c)) for c in filename]
 
         for c in XYZ_t:
-            image_in = np.rot90(c.T, 3)
+            # image_in = np.rot90(c.T, 3)
+            image_in = c.T
             XYZ.append(image_in)
             image_in_smooth = cv2.filter2D(image_in, -1, kernel, borderType=cv2.BORDER_CONSTANT)
             XYZ_smooth.append(image_in_smooth)
@@ -1890,10 +2022,10 @@ class MotAlgorithmHelper(object):
 
         XYZ = np.stack(XYZ, axis=2)
         XYZ_smooth = np.stack(XYZ_smooth, axis=2)
-        XYZ_1D = np.reshape(XYZ_smooth, (self._row * self._col, 3))
-        XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
-        XYZ_smooth = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
-        del XYZ_t, XYZ_1D, XYZ_1D_ColorCorrected,
+        # XYZ_1D = np.reshape(XYZ_smooth, (self._row * self._col, 3))
+        # XYZ_1D_ColorCorrected = self._ColorMatrix_.dot(XYZ_1D.T)
+        # XYZ_smooth = np.reshape(XYZ_1D_ColorCorrected.T, (self._row, self._col, 3))
+        # del XYZ_t, XYZ_1D, XYZ_1D_ColorCorrected,
         Y = XYZ[:, :, 1]
         # Create array of angle rings to display
         angle_arr = np.linspace(0, 2 * np.pi, 361)
@@ -1945,10 +2077,10 @@ class MotAlgorithmHelper(object):
 
             scenter = scentersRG[i]
             scentery = scentersRG[i][1]
-            scentera = np.int(np.floor(scentersRG[i][1] - d))
-            scenterb = np.int(np.floor(scentersRG[i][1] + d))
-            scenterc = np.int(np.floor(scentersRG[i][0] - d))
-            scenterd = np.int(np.floor(scentersRG[i][0] + d))
+            scentera = np.int32(np.floor(scentersRG[i][1] - d))
+            scenterb = np.int32(np.floor(scentersRG[i][1] + d))
+            scenterc = np.int32(np.floor(scentersRG[i][0] - d))
+            scenterd = np.int32(np.floor(scentersRG[i][0] + d))
             im = Y[scenterc:scenterd + 1, scentera:scenterb + 1]
             [rows, cols] = im.shape
             x = np.ones((rows, 1)) * np.arange(1, cols + 1)  # # Matrix with each pixel set to its x coordinate
@@ -1976,7 +2108,7 @@ class MotAlgorithmHelper(object):
         sMinorAxisLengthB = []
 
         for stat in [c for c in statsB
-                     if c['MajorAxisLength'] >= Length_thresh and c['MinorAxisLength'] >= Length_thresh]:
+                     if c['MajorAxisLength'] >= Length_thresh ]:
             scentersB.append(list(stat['centroid']))
             sMajorAxisLengthB.append(stat['MajorAxisLength'])
             sMinorAxisLengthB.append(stat['MinorAxisLength'])
@@ -2062,8 +2194,8 @@ class MotAlgorithmHelper(object):
         Lxy = np.empty((centroidColor.shape[0], 5))
         for i in range(0, Size[0]):
             # fix the index about center.
-            y_coord = np.fix(centroidColor[i, 1]).astype(np.int)
-            x_coord = np.fix(centroidColor[i, 0]).astype(np.int)
+            y_coord = np.fix(centroidColor[i, 1]).astype(np.int32)
+            x_coord = np.fix(centroidColor[i, 0]).astype(np.int32)
 
             Lxy[i, 0] = XYZ_smooth[y_coord, x_coord, 1]
             Lxy[i, 1] = little_x_smoothed[y_coord, x_coord]
@@ -2080,7 +2212,7 @@ class MotAlgorithmHelper(object):
         for i in range(0, Size[0]):
             if Lxy[i, 1] > 0.6:
                 LxyR = np.concatenate((LxyR, [Lxy[i, :]]))
-            if Lxy[i, 2] > 0.55:
+            if Lxy[i, 2] > 0.6:
                 LxyG = np.concatenate((LxyG, [Lxy[i, :]]))
             if Lxy[i, 1] < 0.2 and Lxy[i, 2] < 0.1:
                 LxyB = np.concatenate((LxyB, [Lxy[i, :]]))
@@ -2123,10 +2255,10 @@ class MotAlgorithmHelper(object):
         Display_center[1] = 0.4563 * (Image_center[1] - row_ind[0])
 
         d = 400
-        rt1 = np.int(np.fix(Image_center[1]) - d)
-        rt2 = np.int(np.fix(Image_center[1]) + d)
-        rt3 = np.int(np.fix(Image_center[0]) - d)
-        rt4 = np.int(np.fix(Image_center[0]) + d)
+        rt1 = np.int32(np.fix(Image_center[1]) - d)
+        rt2 = np.int32(np.fix(Image_center[1]) + d)
+        rt3 = np.int32(np.fix(Image_center[0]) - d)
+        rt4 = np.int32(np.fix(Image_center[0]) + d)
 
         # figure,imagesc(I)
 
@@ -2222,24 +2354,24 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'R_y'
         stats_summary[1, k] = R_y
         #1115 add
-        k = k + 1
-        stats_summary[0, k] = 'R_Lum_corrected'
-        stats_summary[1, k] = R_Lum_corrected
-        k = k + 1
-        stats_summary[0, k] = 'R_x_corrected'
-        stats_summary[1, k] = R_x_corrected
-        k = k + 1
-        stats_summary[0, k] = 'R_y_corrected'
-        stats_summary[1, k] = R_y_corrected
-        k = k + 1
-        stats_summary[0, k] = 'R_Lum at 47C'
-        stats_summary[1, k] = R_Lum_TargetTemp
-        k = k + 1
-        stats_summary[0, k] = 'R_x at 47C'
-        stats_summary[1, k] = R_x_TargetTemp
-        k = k + 1
-        stats_summary[0, k] = 'R_y at 47C'
-        stats_summary[1, k] = R_y_TargetTemp
+        # k = k + 1
+        # stats_summary[0, k] = 'R_Lum_corrected'
+        # stats_summary[1, k] = R_Lum_corrected
+        # k = k + 1
+        # stats_summary[0, k] = 'R_x_corrected'
+        # stats_summary[1, k] = R_x_corrected
+        # k = k + 1
+        # stats_summary[0, k] = 'R_y_corrected'
+        # stats_summary[1, k] = R_y_corrected
+        # k = k + 1
+        # stats_summary[0, k] = 'R_Lum at 47C'
+        # stats_summary[1, k] = R_Lum_TargetTemp
+        # k = k + 1
+        # stats_summary[0, k] = 'R_x at 47C'
+        # stats_summary[1, k] = R_x_TargetTemp
+        # k = k + 1
+        # stats_summary[0, k] = 'R_y at 47C'
+        # stats_summary[1, k] = R_y_TargetTemp
         k = k + 1
         stats_summary[0, k] = 'G_Lum'
         stats_summary[1, k] = G_Lum
@@ -2250,24 +2382,24 @@ class MotAlgorithmHelper(object):
         stats_summary[0, k] = 'G_y'
         stats_summary[1, k] = G_y
         k = k + 1
-        stats_summary[0, k] = 'G_Lum_corrected'
-        stats_summary[1, k] = G_Lum_corrected
-        k = k + 1
-        stats_summary[0, k] = 'G_x_corrected'
-        stats_summary[1, k] = G_x_corrected
-        k = k + 1
-        stats_summary[0, k] = 'G_y_corrected'
-        stats_summary[1, k] = G_y_corrected
-        k = k + 1
-        stats_summary[0, k] = 'G_Lum at 47C'
-        stats_summary[1, k] = G_Lum_TargetTemp
-        k = k + 1
-        stats_summary[0, k] = 'G_x at 47C'
-        stats_summary[1, k] = G_x_TargetTemp
-        k = k + 1
-        stats_summary[0, k] = 'G_y at 47C'
-        stats_summary[1, k] = G_y_TargetTemp
-        k = k + 1
+        # stats_summary[0, k] = 'G_Lum_corrected'
+        # stats_summary[1, k] = G_Lum_corrected
+        # k = k + 1
+        # stats_summary[0, k] = 'G_x_corrected'
+        # stats_summary[1, k] = G_x_corrected
+        # k = k + 1
+        # stats_summary[0, k] = 'G_y_corrected'
+        # stats_summary[1, k] = G_y_corrected
+        # k = k + 1
+        # stats_summary[0, k] = 'G_Lum at 47C'
+        # stats_summary[1, k] = G_Lum_TargetTemp
+        # k = k + 1
+        # stats_summary[0, k] = 'G_x at 47C'
+        # stats_summary[1, k] = G_x_TargetTemp
+        # k = k + 1
+        # stats_summary[0, k] = 'G_y at 47C'
+        # stats_summary[1, k] = G_y_TargetTemp
+        # k = k + 1
         stats_summary[0, k] = 'B_Lum'
         stats_summary[1, k] = B_Lum
         k = k + 1
@@ -2278,24 +2410,24 @@ class MotAlgorithmHelper(object):
         stats_summary[1, k] = B_y
         k = k + 1
         #1115 Add
-        stats_summary[0, k] = 'B_Lum_corrected'
-        stats_summary[1, k] = B_Lum_corrected
-        k = k + 1
-        stats_summary[0, k] = 'B_x_corrected'
-        stats_summary[1, k] = B_x_corrected
-        k = k + 1
-        stats_summary[0, k] = 'B_y_corrected'
-        stats_summary[1, k] = B_y_corrected
-        k = k + 1
-        stats_summary[0, k] = 'B_Lum at 47C'
-        stats_summary[1, k] = B_Lum_TargetTemp
-        k = k + 1
-        stats_summary[0, k] = 'B_x at 47C'
-        stats_summary[1, k] = B_x_TargetTemp
-        k = k + 1
-        stats_summary[0, k] = 'B_y at 47C'
-        stats_summary[1, k] = B_y_TargetTemp
-        k = k + 1
+        # stats_summary[0, k] = 'B_Lum_corrected'
+        # stats_summary[1, k] = B_Lum_corrected
+        # k = k + 1
+        # stats_summary[0, k] = 'B_x_corrected'
+        # stats_summary[1, k] = B_x_corrected
+        # k = k + 1
+        # stats_summary[0, k] = 'B_y_corrected'
+        # stats_summary[1, k] = B_y_corrected
+        # k = k + 1
+        # stats_summary[0, k] = 'B_Lum at 47C'
+        # stats_summary[1, k] = B_Lum_TargetTemp
+        # k = k + 1
+        # stats_summary[0, k] = 'B_x at 47C'
+        # stats_summary[1, k] = B_x_TargetTemp
+        # k = k + 1
+        # stats_summary[0, k] = 'B_y at 47C'
+        # stats_summary[1, k] = B_y_TargetTemp
+        # k = k + 1
         stats_summary[0, k] = 'DispCen_x_cono'
         stats_summary[1, k] = Image_center[0] + 1
         k = k + 1
@@ -2363,7 +2495,7 @@ if __name__ == '__main__':
     wd_bin_re = '*_WhiteDot_*_X_float.bin'
     COLORMATRIX_COEFF = [[0.9941, -0.0076, -0.0066], [0.0009, 0.9614, -0.0025], [-0.0021, 0.0020, 0.9723]]
     aa = MotAlgorithmHelper(COLORMATRIX_COEFF, is_verbose=False, save_plots=True)
-    raw_data_dir = r"c:\ShareData\Oculus_RawData\003_seacliff_mot-06_20210811-093524"
+    raw_data_dir = r"C:\ShareData\Oculus_RawData\005L_eureka_mot-0001_20220621-182943"
     bins = tuple([glob.glob(os.path.join(raw_data_dir, c))
                   for c in [w_bin_re, r_bin_re, g_bin_re, b_bin_re, br_bin_re, wd_bin_re]])
 
@@ -2382,20 +2514,21 @@ if __name__ == '__main__':
     w255_result = aa.color_pattern_parametric_export_W255(
         xfilename=os.path.join(raw_data_dir, w_bin), ModuleLR='R', module_temp=m_temp['W255'])
     end_time.append(time.time())
-    # r255_result = aa.color_pattern_parametric_export_RGB('r', module_temp=m_temp['R255'],
-    #                                                      xfilename=os.path.join(raw_data_dir, r_bin))
-    # end_time.append(time.time())
-    # g255_result = aa.color_pattern_parametric_export_RGB('g', module_temp=m_temp['G255'],
-    #                                                      xfilename=os.path.join(raw_data_dir, g_bin))
-    # end_time.append(time.time())
-    # b255_result = aa.color_pattern_parametric_export_RGB('b', module_temp=m_temp['B255'],
-    #                                                      xfilename=os.path.join(raw_data_dir, b_bin))
-    # end_time.append(time.time())
+    r255_result = aa.color_pattern_parametric_export_RGB('r', module_temp=m_temp['R255'],
+                                                         xfilename=os.path.join(raw_data_dir, r_bin))
+    end_time.append(time.time())
+    g255_result = aa.color_pattern_parametric_export_RGB('g', module_temp=m_temp['G255'],
+                                                         xfilename=os.path.join(raw_data_dir, g_bin))
+    end_time.append(time.time())
+    b255_result = aa.color_pattern_parametric_export_RGB('b', module_temp=m_temp['B255'],
+                                                         xfilename=os.path.join(raw_data_dir, b_bin))
+    end_time.append(time.time())
     boresight_result = aa.rgbboresight_parametric_export(module_temp=m_temp['RGBBoresight'],
         xfilename=os.path.join(raw_data_dir, br_bin))
     end_time.append(time.time())
 
     # np.save('data.npy', [w255_result, r255_result, g255_result, b255_result, boresight_result])
+    #
     # w255_result, r255_result, g255_result, b255_result, boresight_result = np.load('data.npy', allow_pickle=True)
 
     # distortion_result = aa.distortion_centroid_parametric_export(
@@ -2403,13 +2536,15 @@ if __name__ == '__main__':
 
     XYZ_W = aa.white_dot_pattern_w255_read(os.path.join(raw_data_dir, w_bin))
     end_time.append(time.time())
-    gl_whitedot = aa.calc_gl_for_brightdot(w255_result, boresight_result, module_temp=m_temp['WhiteDot'])
+    # gl_whitedot = aa.calc_gl_for_brightdot(w255_result, boresight_result, module_temp=m_temp['WhiteDot'])
+
+    gl_whitedot = aa.calc_gl_for_brightdot_v2(w255_result, r255_result, g255_result, b255_result, boresight_result, module_temp=m_temp['WhiteDot'])
     whitedot_result = aa.white_dot_pattern_parametric_export(XYZ_W,
                         gl_whitedot['GL'], gl_whitedot['x_w'], gl_whitedot['y_w'], temp_w=m_temp['W255'],
                         module_temp=m_temp['WhiteDot'],
                         xfilename=os.path.join(raw_data_dir, wd_bin))
     end_time.append(time.time())
-    raw_data = [w255_result, boresight_result, whitedot_result]
+    raw_data = [w255_result, r255_result, g255_result, b255_result, boresight_result, whitedot_result]
     if not os.path.exists(os.path.join(raw_data_dir, 'exp')):
         os.makedirs(os.path.join(raw_data_dir, 'exp'))
     with open(os.path.join(raw_data_dir, 'exp', f'export.txt'), 'a', newline='') as f:
