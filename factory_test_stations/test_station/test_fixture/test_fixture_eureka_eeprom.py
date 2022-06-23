@@ -220,3 +220,13 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
         if not success:
             raise EurekaEEPROMFixtureErr('Fail to read get_module_inplace = {0}'.format(recv_obj))
         return recv_obj
+
+    def get_board_id(self):
+        self._write_command(self._station_config.COMMAND_DISP_GETBOARDID)
+        response = self._read_response()
+        recvobj = self._parse_respose(self._station_config.COMMAND_DISP_GETBOARDID, response)
+        if recvobj is None:
+            raise EurekaEEPROMFixtureErr("Fail get_board_id because can't receive any data from dut.")
+        if int(recvobj[0]) != 0x00:
+            raise EurekaEEPROMFixtureErr("Exit get_board_id because rev err msg. Msg = {}".format(recvobj))
+        return recvobj[1]

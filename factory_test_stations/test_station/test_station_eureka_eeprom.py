@@ -306,6 +306,10 @@ class EurekaEEPROMStation(test_station.TestStation):
             self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
 
             self._fixture.initialize(ipaddr=self._station_config.FIXTURE_ETH_ADDR)
+            fixture_id = self._fixture.get_board_id()
+            if not self._station_config.FIXTURE_SIM and fixture_id != self._station_config.STATION_NUMBER:
+                raise EurekaEEPROMError(
+                    f'Fixture Id is not set correctly {self._station_config.STATION_NUMBER} != FW: {fixture_id}')
             while True:
                 alert_res = self._fixture.unload()
                 if alert_res in [0, None]:
