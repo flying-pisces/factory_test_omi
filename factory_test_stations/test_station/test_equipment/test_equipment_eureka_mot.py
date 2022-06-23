@@ -2251,8 +2251,8 @@ class MotAlgorithmHelper(object):
         col_ind = np.array(np.nonzero(np.abs(x_angle_arr - x_deg) == np.min(np.abs(x_angle_arr - x_deg))))
         row_ind = np.array(np.nonzero(np.abs(y_angle_arr - y_deg) == np.min(np.abs(y_angle_arr - y_deg))))
         Display_center = np.empty(Image_center.shape)
-        Display_center[0] = 0.4563 * (Image_center[0] - col_ind[0])
-        Display_center[1] = 0.4563 * (Image_center[1] - row_ind[0])
+        Display_center[0] = 0.524 * (Image_center[0] - col_ind[0])
+        Display_center[1] = 0.524 * (Image_center[1] - row_ind[0])
 
         d = 400
         rt1 = np.int32(np.fix(Image_center[1]) - d)

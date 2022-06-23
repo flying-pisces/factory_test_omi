@@ -822,7 +822,8 @@ class EurekaMotStation(test_station.TestStation):
                 self._operator_interface.print_to_console('Please wait...')
                 self.alert_handle(self._fixture.unload())
                 self._the_unit.close()
-                self.alert_handle(self._fixture.unload_dut())
+                if not self._station_config.DUT_LOAD_WITHOUT_OPERATOR:
+                    self.alert_handle(self._fixture.unload_dut())
             except:
                 pass
             while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
@@ -968,8 +969,9 @@ class EurekaMotStation(test_station.TestStation):
                     continue
 
                 if (hasattr(self._station_config, 'DUT_LOAD_WITHOUT_OPERATOR')
-                        and self._station_config.DUT_LOAD_WITHOUT_OPERATOR is True):
-                    self._fixture.load()
+                        and self._station_config.DUT_LOAD_WITHOUT_OPERATOR is True
+                        and self._fixture.load_dut() == 0):
+                    self.alert_handle(self._fixture.load())
                     key_ret_info = (0, 0)
                 else:
                     key_ret_info = self._fixture.is_ready()
@@ -985,6 +987,7 @@ class EurekaMotStation(test_station.TestStation):
                         self._the_unit.screen_on()
                     self._fixture.vacuum(False)
                     self._fixture.power_on_button_status(False)
+                    self._fixture.start_button_status(False)                                        
                     self._the_unit.display_color((0, 0, 0))
                     time.sleep(self._station_config.FIXTURE_SOCK_DLY)
 
@@ -993,15 +996,15 @@ class EurekaMotStation(test_station.TestStation):
                         self._module_left_or_right = str(alignment_result[4]).upper()
                         self._is_alignment_success = True
 
-                elif ready_key in [0x02, 0x03]:
+                elif ready_key in [0x01, 0x03]:
                     self._operator_interface.print_to_console('Try to lit up DUT.\n')
 
                     # power the dut on normally.
                     if power_on_trigger:
                         self._the_unit.screen_off()
                         power_on_trigger = False
-                        self._fixture.power_on_button_status(True)
                         self._fixture.start_button_status(False)
+                        self._fixture.power_on_button_status(True)
                         timeout_for_dual = time.time()
                     else:
                         if self._retries_screen_on == 0:
@@ -1014,7 +1017,7 @@ class EurekaMotStation(test_station.TestStation):
                         power_on_trigger = True
                         timeout_for_dual = time.time()
 
-                elif ready_key == 0x01:
+                elif ready_key == 0x02:
                     self._is_cancel_test_by_op = True  # Cancel test.
 
                 elif ready_key == 0 and ready_code != 0:
