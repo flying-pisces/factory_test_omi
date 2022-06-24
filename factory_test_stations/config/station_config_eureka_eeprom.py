@@ -70,6 +70,7 @@ NVM_WRITE_PROTECT = False
 NVM_EEC_READ = True
 NVM_WRITE_SLOW_MOD = True
 DUT_LOAD_WITHOUT_OPERATOR = True
+TIMEOUT_FOR_BTN_IDLE = 10
 
 MIN_SPACE_REQUIRED = [('C:', 500)]
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\MER-132-43U3C(FQ0200080140).txt'

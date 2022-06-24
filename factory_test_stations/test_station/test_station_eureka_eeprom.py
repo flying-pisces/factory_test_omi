@@ -395,7 +395,6 @@ class EurekaEEPROMStation(test_station.TestStation):
 
             post_data_check = False
             self._operator_interface.print_to_console('Start to query holder position. ')
-            retries_query = 1
 
             if self._station_config.DUT_LOAD_WITHOUT_OPERATOR:
                 self._fixture.load()
@@ -403,15 +402,20 @@ class EurekaEEPROMStation(test_station.TestStation):
             module_inplace = False
             if self._station_config.FIXTURE_SIM:
                 module_inplace = True
-            while not module_inplace and retries_query <= 10:
-                self._operator_interface.print_to_console(f'Please push the holder into the carbinet. {retries_query}\n')
+
+            timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
+                                    else self._station_config.TIMEOUT_FOR_BTN_IDLE)
+            timeout_for_dual = time.time()
+            tm_current = timeout_for_dual
+            while not module_inplace and (tm_current - timeout_for_dual) <= timeout_for_btn_idle:
+                tm_data = timeout_for_btn_idle - (tm_current - timeout_for_dual)
+                self._operator_interface.print_to_console(f'Please push the holder into the carbinet. {tm_data}\n')
                 rev_obj = self._fixture.get_module_inplace()
                 if rev_obj is not None:
                     module_inplace = int(rev_obj[1]) == 1
-                if module_inplace:
-                    continue
                 time.sleep(1)
-                retries_query += 1
+                tm_current = time.time()
+
             if not module_inplace:
                 raise test_station.TestStationProcessControlError(f'Fail to check position for DUT {serial_number}.')
 
