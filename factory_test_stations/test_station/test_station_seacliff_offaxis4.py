@@ -28,7 +28,7 @@ import json
 import socketserver
 import urllib3
 import keyboard
-
+import tempfile
 
 ms_client_list = {}
 ms_receive_message_queue = Queue()
@@ -459,9 +459,12 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         self._work_flow_ctrl_event.release()
                     if cmd == 'MovToPosAck':
                         self._work_flow_ctrl_event.release()
+                    elif cmd == 'SaveToMESAck':
+                        self._work_flow_ctrl_event.release()
                     elif cmd == 'FinishTestAck':
                         # TODO:
                         # 等待关闭DUT与MES 数据上传
+                        self._is_slot_under_testing = False
                         self._work_flow_ctrl_event.release()
                     elif cmd == 'start_loop' and isinstance(cmd1, str):
                         self._operator_interface.print_to_console(f'Receive Start Loop: {cmd1}')
@@ -494,6 +497,13 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                         if station_index is None:
                             self._operator_interface.print_to_console(
                                 f'Fail to find {ip} for this master station', 'red')
+                        elif cmd == 'SaveToMES':
+                            __, fp = tempfile.mkstemp(text=True)
+                            with open(fp, 'w') as f:
+                                f.writelines(arg1)
+                            sf_res = self._shop_floor.save_results(fp)
+
+                            self.send_command(station_index, 'SaveToMESAck', sf_res)
                         elif cmd == 'FinishTest':
                             self._multi_station_dic[station_index]['IsRunning'] = False
                             self._the_unit[station_index].screen_off()
@@ -587,7 +597,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     print(f'fixture query command: {cmd}\n')
                 if isinstance(cmd, str) and re.match('StatusChangeMaster', cmd, re.I):
                     for channel, v in self._multi_station_dic.items():
-                        self.send_command(channel, 'StatusChangeMaster', json.dumps(self._station_status, indent=2))
+                        if v['IsActive']:
+                            self.send_command(channel, 'StatusChangeMaster', json.dumps(self._station_status, indent=2))
 
                 elif isinstance(cmd, str) and re.match('pwron_status:[A|B]_(?:true|false)', cmd, re.I | re.S):
                     cmd1 = cmd.split(':')[1].split('_')[0]
@@ -958,6 +969,52 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
         self._first_failed_test_result = test_log.get_first_failed_test_result()
         return self._overall_result, self._first_failed_test_result
+
+    def test_unit(self, serial_num):
+        """
+           abstract interface for Testing A Unit
+             this function should contain only code that is common to all projects
+             return overall pass/fail result and overall error code
+        """
+        test_logs_directory = os.path.join(self._station_config.ROOT_DIR, "factory-test_logs")
+        station_id = ("%s-%s" % (self._station_config.STATION_TYPE, self._station_config.STATION_NUMBER))
+        testlog = test_station.test_log.TestRecord(serial_num, logs_dir=test_logs_directory, station_id=("%s" % station_id))
+        if self.workorder is not None:
+            testlog.set_user_metadata_dict({'work_order': self.workorder})  # add work order to log file
+        self._operator_interface.print_to_console("Checking Unit %s...\n" % serial_num)
+        testlog.load_limits(self._station_config)
+
+        # Here's where the specialized station code is called:
+        (self._overall_result, self._first_failing_test_result) = self._do_test(serial_num, testlog)
+        # stuff like submit?
+        # if successful submission is required for pass, check that here based on a flag
+
+        testlog.end_test()
+        try:
+            testlog.print_to_csvfile()
+            if hasattr(self._station_config, 'CSV_SUMMARY_DIR') and self._station_config.CSV_SUMMARY_DIR is not None:
+                if not os.path.isdir(self._station_config.CSV_SUMMARY_DIR):
+                    hsc_utils.os_utils.mkdir_p(self._station_config.CSV_SUMMARY_DIR)
+                csv_basename = "{0}_{1}_summary.csv".format(station_id, hsc_utils.io_utils.datestamp())
+                csv_summary_file = os.path.join(self._station_config.CSV_SUMMARY_DIR, csv_basename)
+                hsc_utils.io_utils.append_results_log_to_csv(testlog, csv_summary_file, print_measurements_only=True)
+        except Exception as e:
+            self._operator_interface.print_to_console(f"WARNING: unable to write to test log file {str(e)}")
+            raise test_station.TestStationProcessControlError('fail to save test log.')
+
+        if self._station_config.FACEBOOK_IT_ENABLED:
+            self._operator_interface.print_to_console("saving results to shopfloor system.\n")
+            with open(testlog.get_file_path(), 'r') as f:
+                log_data = f.readlines()
+            self.__append_local_client_msg_q('SaveToMES', log_data)
+            self._work_flow_ctrl_event.acquire()
+            if self._work_flow_ctrl_event_err_msg is not None:
+                self._operator_interface.print_to_console("[WARNING] Process Control Error for %s\n" % serial_num,
+                                                          'yellow')
+                raise test_station.TestStationProcessControlError(f'fail to save result. {self._work_flow_ctrl_event_err_msg}')
+
+        self._operator_interface.print_to_console("Testing Unit %s Complete\n" % serial_num)
+        return self._overall_result, self._first_failing_test_result
 
     def validate_sn(self, serial_num):
         return test_station.TestStation.validate_sn(self, serial_num)
