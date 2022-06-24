@@ -2212,7 +2212,7 @@ class MotAlgorithmHelper(object):
         for i in range(0, Size[0]):
             if Lxy[i, 1] > 0.6:
                 LxyR = np.concatenate((LxyR, [Lxy[i, :]]))
-            if Lxy[i, 2] > 0.6:
+            if Lxy[i, 2] > 0.55:
                 LxyG = np.concatenate((LxyG, [Lxy[i, :]]))
             if Lxy[i, 1] < 0.2 and Lxy[i, 2] < 0.1:
                 LxyB = np.concatenate((LxyB, [Lxy[i, :]]))
