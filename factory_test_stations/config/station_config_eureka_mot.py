@@ -197,20 +197,20 @@ FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 
 # set sensor_temperature
 TEST_SENSOR_TEMPERATURE = 25.0
-TEST_CPU_COUNT = 1
+TEST_CPU_COUNT = 5
 
 # config
 CAM_INIT_CONFIG = {
     "exportFormat": 0,
     "AEMinExpoTimeUs": 10,
     "AEMaxExpoTimeUs": 9985000,
-    "AEExpoTimeGranularityUs": 11146,
+    "AEExpoTimeGranularityUs": 11111,
     "AELevelPercent": 80.0,
 
-    "AEMeasAreaHeight": 0,
-    "AEMeasAreaWidth": 0,
-    "AEMeasAreaX": 0,
-    "AEMeasAreaY": 0,
+    "AEMeasAreaHeight": 2000,
+    "AEMeasAreaWidth": 2000,
+    "AEMeasAreaX": 2992,
+    "AEMeasAreaY": 2000,
 
     "bUseRoi": False,
     "RoiXLeft": 0,

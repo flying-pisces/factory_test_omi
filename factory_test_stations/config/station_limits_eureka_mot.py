@@ -24,9 +24,9 @@ STATION_LIMITS_ARRAYS = [
     # ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_PW255", True, True, 10008],
 
     ["UUT_TEMPERATURE_normal_W255", None, None, 11001],
-    # ["UUT_TEMPERATURE_normal_R255", None, None, 11002],
-    # ["UUT_TEMPERATURE_normal_G255", None, None, 11003],
-    # ["UUT_TEMPERATURE_normal_B255", None, None, 11004],
+    ["UUT_TEMPERATURE_normal_R255", None, None, 11002],
+    ["UUT_TEMPERATURE_normal_G255", None, None, 11003],
+    ["UUT_TEMPERATURE_normal_B255", None, None, 11004],
     ["UUT_TEMPERATURE_normal_RGBBoresight", None, None, 11005],
     # ["UUT_TEMPERATURE_normal_GreenDistortion", None, None, 11006],
     ["UUT_TEMPERATURE_normal_WhiteDot", None, None, 11007],
