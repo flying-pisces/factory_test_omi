@@ -91,7 +91,7 @@ class SeacliffOffAxis4StationError(Exception):
 
 class SeacliffOffAxis4Station(test_station.TestStation):
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '1.1.4'
+        self._sw_version = '1.1.5'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
 
@@ -162,7 +162,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def initialize(self):
-        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}SP1\n")
         self._operator_interface.update_root_config({'IsStartLoopFromKeyboard': 'false'})
         self._operator_interface.update_root_config(
         {
@@ -366,6 +366,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
         self._operator_interface.print_to_console(f'emulator signal for dual-start: {self._is_slot_under_testing}')
         if not self._is_slot_under_testing and self._fixture_query_command.empty():
             self._fixture_query_command.put(('power_on', 'A'))
+            self._fixture_query_command.put(('power_on', 'B'))
             self._fixture_query_command.put('dual_start')
 
     def __append_local_client_msg_q(self, cmd, args=None):
@@ -501,8 +502,8 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                             __, fp = tempfile.mkstemp(text=True)
                             with open(fp, 'w') as f:
                                 f.writelines(arg1)
+                            self._operator_interface.print_to_console(f'Try to save Data CH:{station_index} to MES. ')
                             sf_res = self._shop_floor.save_results(fp)
-
                             self.send_command(station_index, 'SaveToMESAck', sf_res)
                         elif cmd == 'FinishTest':
                             self._multi_station_dic[station_index]['IsRunning'] = False
@@ -647,8 +648,9 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                     for channel, v in self._multi_station_dic.items():
                         if v['IsActive']:
                             self._update_sn(channel, None)
-                            web_scanner_id = self._station_config.SUB_STATION_INFO[channel]['WebScannerId']
-                            self._web_request_cmd(self._station_config.WEB_SCAN_CLR, web_scanner_id)
+                            if self._multi_station_dic[channel]['IsAutoScanCode'] and self._station_config.AUTO_SCAN_USE_WEB_SCAN:
+                                web_scanner_id = self._station_config.SUB_STATION_INFO[channel]['WebScannerId']
+                                self._web_request_cmd(self._station_config.WEB_SCAN_CLR, web_scanner_id)
                     self._is_major_ctrl_under_testing = False
                 elif isinstance(cmd, tuple) and len(cmd) == 2 and cmd[0] == 'power_on':
                     channel = cmd[1].upper()
@@ -931,6 +933,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             self._overall_result = True
             test_log._overall_did_pass = True
             test_log._overall_error_code = 0
+        self._operator_interface.print_to_console(f'-------------------------------> {ext_ctl_val} \n')
         self._operator_interface.update_root_config({'ResultMsgEx': ui_msg.get(ext_ctl_val)})
 
         # save_pnl_dic = self._station_config.SAVE_PNL_IF_FAIL
@@ -1003,7 +1006,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             raise test_station.TestStationProcessControlError('fail to save test log.')
 
         if self._station_config.FACEBOOK_IT_ENABLED:
-            self._operator_interface.print_to_console("saving results to shopfloor system.\n")
+            self._operator_interface.print_to_console(f"saving results to shopfloor system. {serial_num}\n")
             with open(testlog.get_file_path(), 'r') as f:
                 log_data = f.readlines()
             self.__append_local_client_msg_q('SaveToMES', log_data)

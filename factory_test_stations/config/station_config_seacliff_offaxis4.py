@@ -3,7 +3,7 @@ Release Note:
 ========================================================
 Version 1.1.5
 2022-6-24 author<elton.tian@myzygroup.com>
--1. * MES interface for multi-station.
+-1. fix: MES interface for multi-station.
 
 ========================================================
 Version 1.1.4
