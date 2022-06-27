@@ -207,10 +207,10 @@ CAM_INIT_CONFIG = {
     "AEExpoTimeGranularityUs": 11111,
     "AELevelPercent": 80.0,
 
-    "AEMeasAreaHeight": 2000,
-    "AEMeasAreaWidth": 2000,
-    "AEMeasAreaX": 2992,
-    "AEMeasAreaY": 2000,
+    "AEMeasAreaHeight": 200,
+    "AEMeasAreaWidth": 192,
+    "AEMeasAreaX": 3872,
+    "AEMeasAreaY": 2900,
 
     "bUseRoi": False,
     "RoiXLeft": 0,
