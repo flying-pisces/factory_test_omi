@@ -195,7 +195,6 @@ class EEPStationAssistant(object):
 
     def decode_raw_data(self, raw_data):
         """
-
         @type raw_data: list
         """
         var_data = {}
@@ -321,6 +320,13 @@ class seacliffmotStation(test_station.TestStation):
         self._is_exit = False
         self._is_running = False
         self._station_sn = None
+        self._err_msg_list = {
+            1: 'Axis Z running error',
+            2: 'This command is cancel by operator',
+            3: 'DUT transfer is timeout',
+            4: 'Signal from sensor (Door/Grating) is error',
+            5: 'Signal from sensor (pressing plate) is not triggered',
+        }
 
     def initialize(self):
         try:
@@ -507,10 +513,12 @@ class seacliffmotStation(test_station.TestStation):
                 self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def _do_test(self, serial_number, test_log):
+
         """
 
         @type test_log: test_station.test_log.test_log
         """
+
         msg0 = 'info --> lit up: {0}, emulator_dut: {1}, emulator_equip: {2}, emulator_fixture: {3},' \
                ' particle:{4}, dut_checker:{5} ver: {6}\n' .format(
                 self._station_config.DUT_LITUP_OUTSIDE, self._station_config.DUT_SIM,
@@ -777,7 +785,7 @@ class seacliffmotStation(test_station.TestStation):
             self._operator_interface.operator_input('Fixture Error, Restart Software !!!', str(e), msg_type='error')
             os._exit(1)
         except seacliffmotStationError as e:
-            self._operator_interface.operator_input(None, str(e), msg_type='error')
+            # self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console(str(e))
         except (Exception, BaseException) as e:
             self._operator_interface.operator_input(None, f'Error: {str(e)} \n', msg_type='error')
@@ -879,125 +887,6 @@ class seacliffmotStation(test_station.TestStation):
         self._operator_interface.prompt('', 'SystemButtonFace')
         return True
 
-    def _query_dual_start(self):
-        serial_number = self._latest_serial_number
-        self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
-        self._the_unit = pancakeDut(serial_number, self._station_config, self._operator_interface)
-        if hasattr(self._station_config, 'DUT_SIM') and self._station_config.DUT_SIM:
-            self._the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
-
-        # TODO:  Initialized the DUT Simply
-        ready = False
-        power_on_trigger = False
-        self._retries_screen_on = 0
-        self._is_screen_on_by_op = False
-        self._is_cancel_test_by_op = False
-        self._is_alignment_success = False
-        self._module_left_or_right = None
-        self._probe_con_status = False
-        timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
-                                    else self._station_config.TIMEOUT_FOR_BTN_IDLE)
-        timeout_for_dual = timeout_for_btn_idle
-        try:
-            self._fixture.flush_data()
-            self._fixture.power_on_button_status(False)
-            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-            self._fixture.start_button_status(False)
-            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-            self._fixture.power_on_button_status(True)
-            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-            self._the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
-                                      eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
-            self._the_unit.nvm_speed_mode(mode='normal')
-            self._operator_interface.print_to_console("Initialize DUT... \n")
-            while timeout_for_dual > 0:
-                if ready or self._is_cancel_test_by_op:
-                    break
-                msg_prompt = 'Load DUT, and then Press PowerOn-Btn (Lit up) in %s S...'
-                if power_on_trigger:
-                    msg_prompt = 'Press Dual-Btn(Load)/PowerOn-Btn(Re Lit up)  in %s S...'
-                self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow')
-                if self._station_config.FIXTURE_SIM:
-                    self._is_screen_on_by_op = True
-                    self._is_alignment_success = True
-                    self._module_left_or_right = 'R'
-                    self._fixture._alignment_pos = (0, 0, 0, 0)
-                    self._the_unit.screen_on()
-                    ready = True
-                    continue
-
-                if (hasattr(self._station_config, 'DUT_LOAD_WITHOUT_OPERATOR')
-                        and self._station_config.DUT_LOAD_WITHOUT_OPERATOR is True):
-                    self._fixture.load()
-                    ready_status = 0
-                else:
-                    ready_status = self._fixture.is_ready()
-                if ready_status is not None:
-                    if ready_status == 0x00:  # load DUT automatically and then screen on
-                        ready = True  # Start to test.
-                        self._is_screen_on_by_op = True
-                        if self._retries_screen_on == 0:
-                            self._the_unit.screen_on()
-                        self._the_unit.display_color((255, 0, 0))
-                        self._fixture.power_on_button_status(False)
-                        time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-                        alignment_result = self._fixture.alignment(self._latest_serial_number)
-                        if isinstance(alignment_result, tuple):
-                            self._module_left_or_right = str(alignment_result[4]).upper()
-                            self._is_alignment_success = True
-
-                    elif ready_status == 0x03 or ready_status == 0x02:
-                        self._operator_interface.print_to_console('Try to lit up DUT.\n')
-                        self._retries_screen_on += 1
-                        # power the dut on normally.
-                        if power_on_trigger:
-                            self._the_unit.screen_off()
-                            # self._the_unit.reboot()  # Reboot
-                        self._the_unit.screen_on()
-                        power_on_trigger = True
-                        # check the color sensor
-                        timeout_for_dual = timeout_for_btn_idle
-                        color_check_result = True
-                        if self._station_config.DISP_CHECKER_ENABLE:
-                            color_check_result = False
-                            color = self._the_unit.get_color_ext(False)
-                            if self._the_unit.display_color_check(color):
-                                color_check_result = True
-                            if color_check_result:
-                                self._fixture.power_on_button_status(False)
-                                time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-                                self._fixture.start_button_status(True)
-                        else:
-                            self._fixture.power_on_button_status(False)
-                            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-                            self._fixture.start_button_status(True)
-                    elif ready_status == 0x01:
-                        self._is_cancel_test_by_op = True  # Cancel test.
-                time.sleep(0.1)
-                timeout_for_dual -= 1
-        except (seacliffmotStationError, DUTError, RuntimeError) as e:
-            self._operator_interface.operator_input(None, str(e), msg_type='error')
-            self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
-        finally:
-            # noinspection PyBroadException
-            try:
-                if not ready:
-                    if not self._is_cancel_test_by_op:
-                        self._operator_interface.print_to_console(
-                            'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
-                    else:
-                        self._operator_interface.print_to_console(
-                            'Cancel start signal from dual %s.\n' % timeout_for_dual)
-                    self._the_unit.close()
-                    # self._the_unit = None
-                self._fixture.start_button_status(False)
-                time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-                self._fixture.power_on_button_status(False)
-            except Exception as e:
-                self._operator_interface.operator_input(None, str(e), msg_type='error')
-                self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
-            self._operator_interface.prompt('', 'SystemButtonFace')
-
     def _query_dual_start_check(self):
         serial_number = self._latest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
@@ -1034,16 +923,17 @@ class seacliffmotStation(test_station.TestStation):
                     self._is_alignment_success = True
                     self._module_left_or_right = 'R'
                     self._fixture._alignment_pos = (0, 0, 0, 0)
+                    ready = True
                     continue
 
-                if (hasattr(self._station_config, 'DUT_LOAD_WITHOUT_OPERATOR')
-                        and self._station_config.DUT_LOAD_WITHOUT_OPERATOR is True):
+                if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR]:
                     self._fixture.load()
-                    ready_status = 0
+                    ready_ret_val = (0, 0)
                 else:
-                    ready_status = self._fixture.is_ready()
-                if ready_status is not None:
-                    if ready_status == 0x00:  # load DUT automatically and then screen on
+                    ready_ret_val = self._fixture.is_ready()
+                if isinstance(ready_ret_val, tuple):
+                    ready_status, ready_code = ready_ret_val
+                    if ready_status == 0x00 and ready_code == 0x00:  # load DUT automatically and then screen on
                         ready = True  # Start to test.
                         self._the_unit.display_color((255, 0, 0))
                         self._fixture.power_on_button_status(False)
@@ -1063,11 +953,19 @@ class seacliffmotStation(test_station.TestStation):
                         self._the_unit.screen_on()
                         self._is_screen_on_by_op = True
                         power_on_trigger = True
+
+                    elif ready_status == 0x00 and ready_code in [0x01]:
+                        self._fixture.unload()
+
                     elif ready_status == 0x01:
                         self._is_cancel_test_by_op = True  # Cancel test.
+                    if ready_code in self._err_msg_list:
+                        self._operator_interface.print_to_console(
+                            f'Please note: {self._err_msg_list.get(ready_code)}.\n', 'red')
+
                 time.sleep(0.1)
         except (seacliffmotStationError, DUTError, RuntimeError) as e:
-            self._operator_interface.operator_input(None, str(e), msg_type='error')
+            # self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
         finally:
             # noinspection PyBroadException
@@ -1079,8 +977,9 @@ class seacliffmotStation(test_station.TestStation):
                 self._fixture.start_button_status(False)
                 self._fixture.power_on_button_status(False)
             except Exception as e:
-                self._operator_interface.operator_input(None, str(e), msg_type='error')
+                # self._operator_interface.operator_input(None, str(e), msg_type='error')
                 self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
+        self._operator_interface.prompt('', 'SystemButtonFace')
 
     def _is_ready_check(self):
         serial_number = self._latest_serial_number
@@ -1096,18 +995,13 @@ class seacliffmotStation(test_station.TestStation):
             while not ready:
                 msg_prompt = 'Load DUT, and then Press PowerOn-Btn (Lit up) in %s S...'
                 self._operator_interface.prompt(msg_prompt % int(time.time() - timeout_for_dual), 'yellow')
-                if self._station_config.FIXTURE_SIM:
-                    ready = False
-                    continue
-
-                if (hasattr(self._station_config, 'DUT_LOAD_WITHOUT_OPERATOR')
-                        and self._station_config.DUT_LOAD_WITHOUT_OPERATOR is True):
-                    ready_status = 0
+                if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR, self._station_config.FIXTURE_SIM]:
+                    ready_status = (0x03, 00)
                 else:
                     ready_status = self._fixture.is_ready()
-                if ready_status is not None:
-                    if ready_status == 0x00:  # load DUT automatically and then screen on
-                       ready = True
+                if isinstance(ready_status, tuple) and ready_status[0] == 0x03:
+                    # load DUT automatically and then screen on
+                    ready = True
                 time.sleep(0.05)
         except Exception as e:
             self._operator_interface.print_to_console(f'Exception _query_dual_start_v2 ----> {str(e)}')

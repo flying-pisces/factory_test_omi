@@ -170,11 +170,14 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if self._serial_port is not None:
             resp = self._read_response(0.5)
             if resp:
-                btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d', 0: r'BUTTON:0'}
+                btn_dic = {3: r'PowerOn_Button:(\d+)',
+                           2: r'BUTTON_LEFT:(\d+)',
+                           1: r'BUTTON_RIGHT:(\d+)',
+                           0: r'BUTTON:(\d+)'}
                 for key, item in btn_dic.items():
-                    items = list(filter(lambda r: re.match(item, r, re.I | re.S), resp))
+                    items = list(filter(lambda r: re.search(item, r, re.I | re.S), resp))
                     if items:
-                        return key
+                        return key, int(re.search(item, items[0], re.I | re.S).group(1))
 
     def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing seacliff_mot Fixture\n")
