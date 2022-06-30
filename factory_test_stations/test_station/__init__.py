@@ -15,3 +15,4 @@
 # from test_station_seacliff_offaxis import *
 # from test_station_eureka_eeprom import *
 # from test_station_eureka_mot import *
+# from test_station_eureka_motpr import *
