@@ -320,6 +320,7 @@ class seacliffmotStation(test_station.TestStation):
         self.fixture_particle_port = None
         self._is_exit = False
         self._is_running = False
+        self._station_sn = None
 
     def initialize(self):
         try:
@@ -346,10 +347,7 @@ class seacliffmotStation(test_station.TestStation):
                                      proxy_port=self._station_config.PROXY_ENDPOINT)
 
             self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM = self._fixture.calib_zero_pos()
-            fixture_id = self._fixture.id()
-            if not self._station_config.FIXTURE_SIM and fixture_id != self._station_config.STATION_NUMBER:
-                raise seacliffmotStationError(
-                    f'Fixture Id is not set correctly {self._station_config.STATION_NUMBER} != FW: {fixture_id}')
+            self._station_sn = self._fixture.id()
             self._operator_interface.print_to_console(
                 f'update distance between camera and datum: {self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM}\n')
             self._equipment.initialize()
@@ -554,6 +552,7 @@ class seacliffmotStation(test_station.TestStation):
             test_log.set_measured_value_by_name_ex = types.MethodType(self.chk_and_set_measured_value_by_name, test_log)
 
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
+            test_log.set_measured_value_by_name_ex('STATION_SN', self._station_sn)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
             equip_version = self._equipment.version()
             if isinstance(equip_version, dict):
