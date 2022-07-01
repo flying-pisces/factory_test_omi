@@ -303,7 +303,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.2.9{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.2.10{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -321,11 +321,12 @@ class seacliffmotStation(test_station.TestStation):
         self._is_running = False
         self._station_sn = None
         self._err_msg_list = {
-            1: 'Axis Z running error',
-            2: 'This command is cancel by operator',
-            3: 'DUT transfer is timeout',
-            4: 'Signal from sensor (Door/Grating) is error',
-            5: 'Signal from sensor (pressing plate) is not triggered',
+            1: 'Axis X running error',
+            2: 'Axis Y running error',
+            3: 'Axis A running error',
+            4: 'Axis Z running error',
+            5: 'Signal from sensor (Pressing plate) is not triggered',
+            15: 'Signal from sensor ( Door ) is error',
         }
 
     def initialize(self):
@@ -798,7 +799,7 @@ class seacliffmotStation(test_station.TestStation):
                 self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')
                 self._operator_interface.print_to_console('Please wait...')
                 self._the_unit.close()
-                self._fixture.unload()
+                self.alert_handle(self._fixture.unload)
             except:
                 pass
             while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
@@ -927,7 +928,7 @@ class seacliffmotStation(test_station.TestStation):
                     continue
 
                 if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR]:
-                    self._fixture.load()
+                    self.alert_handle(self._fixture.load)
                     ready_ret_val = (0, 0)
                 else:
                     ready_ret_val = self._fixture.is_ready()
@@ -954,14 +955,16 @@ class seacliffmotStation(test_station.TestStation):
                         self._is_screen_on_by_op = True
                         power_on_trigger = True
 
-                    elif ready_status == 0x00 and ready_code in [0x01]:
-                        self._fixture.unload()
+                    elif ready_status == 0x00 and ready_code in [5, 15]:
+                        self._operator_interface.print_to_console(f'Msg: {self._err_msg_list.get(ready_code)}.\n')
+                        self.alert_handle(ready_code)
 
                     elif ready_status == 0x01:
                         self._is_cancel_test_by_op = True  # Cancel test.
-                    if ready_code in self._err_msg_list:
+                    elif ready_status == 0x00 and ready_code in self._err_msg_list:
                         self._operator_interface.print_to_console(
                             f'Please note: {self._err_msg_list.get(ready_code)}.\n', 'red')
+                        self.alert_handle(ready_code)
 
                 time.sleep(0.1)
         except (seacliffmotStationError, DUTError, RuntimeError) as e:
@@ -980,6 +983,21 @@ class seacliffmotStation(test_station.TestStation):
                 # self._operator_interface.operator_input(None, str(e), msg_type='error')
                 self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
         self._operator_interface.prompt('', 'SystemButtonFace')
+
+    def alert_handle(self, func):
+        if not isinstance(func, int):
+            alert_res = func()
+        else:
+            alert_res = func
+        while alert_res not in [0x00, None]:
+            if alert_res in [1, 2, 3, 4]:
+                self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning')
+                alert_res = self._fixture.reset()
+            if alert_res in [5, 15, None]:
+                self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(alert_res)}.\n', 'red')
+                self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning')
+                alert_res = self._fixture.unload()
+        return alert_res
 
     def _is_ready_check(self):
         serial_number = self._latest_serial_number

@@ -429,9 +429,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         @return:
         """
         self._write_serial(self._station_config.COMMAND_RESET)
-        response = self._read_response(timeout=10)
-        if int(self._parse_response(r'RESET:(\d+)', response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+        response = self._read_response(timeout=30)
+        return int(self._parse_response(r'RESET:(\d+)', response).group(1))
 
     def mov_abs_xy_wrt_alignment(self, x, y):
         """
@@ -615,8 +614,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(self._station_config.COMMAND_LOAD)
         rev_pattern = r'LOAD:(\d+)'
         response = self._read_response(timeout=self._station_config.FIXTURE_LOAD_DLY, rev_pattern=rev_pattern)
-        if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+        return int(self._parse_response(rev_pattern, response).group(1))
 
     def unload(self):
         """
@@ -627,8 +625,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(self._station_config.COMMAND_UNLOAD)
         rev_pattern = r'UNLOAD:(\d+)'
         response = self._read_response(rev_pattern=rev_pattern, timeout=self._station_config.FIXTURE_UNLOAD_DLY)
-        if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+        return int(self._parse_response(rev_pattern, response).group(1))
 
     def alignment(self, serial_number):
         self._alignment_pos = None
