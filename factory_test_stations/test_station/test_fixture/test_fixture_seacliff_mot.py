@@ -209,11 +209,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if not self._serial_port:
             raise seacliffmotFixtureError(f'Unable to open fixture port: {kwargs}')
         else:  # disable the buttons automatically
-            self.start_button_status(True)
-            self.power_on_button_status(True)
-            self.unload()
-            self.start_button_status(False)
-            self.power_on_button_status(False)
             self._operator_interface.print_to_console(f"Fixture Initialized {kwargs}.\n")
             return True
 

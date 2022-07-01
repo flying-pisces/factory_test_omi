@@ -353,6 +353,12 @@ class seacliffmotStation(test_station.TestStation):
                                      particle_port=self.fixture_particle_port,
                                      proxy_port=self._station_config.PROXY_ENDPOINT)
 
+            self._fixture.start_button_status(True)
+            self._fixture.power_on_button_status(True)
+            self.alert_handle(self._fixture.unload)
+            self._fixture.start_button_status(False)
+            self._fixture.power_on_button_status(False)
+
             self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM = self._fixture.calib_zero_pos()
             self._station_sn = self._fixture.id()
             self._operator_interface.print_to_console(
