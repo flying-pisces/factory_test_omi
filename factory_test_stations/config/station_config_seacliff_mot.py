@@ -1,6 +1,13 @@
 """
 Release Note:
 ========================================================
+Version 1.2.10
+2022-7-2 elton<elton.tian@myzygroup>
+-1. Add test item for station-SN to record the serial-number about fixture.
+-2. Remove timeout for loading the DUT to fixture.
+-3. Remove redundant blank character in the log/csv.
+
+========================================================
 Version 1.2.9
 2022-6-9 elton<elton.tian@myzygroup>
 -1. add test-item about error-string.
