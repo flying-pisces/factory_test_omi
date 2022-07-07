@@ -2,10 +2,12 @@
 Release Note:
 ========================================================
 Version 1.2.10
-2022-7-2 elton<elton.tian@myzygroup>
+2022-7-14 elton<elton.tian@myzygroup>
 -1. Add test item for station-SN to record the serial-number about fixture.
--2. Remove timeout for loading the DUT to fixture.
+-2. Change the test CT calculation method
 -3. Remove redundant blank character in the log/csv.
+-4. Save logs even fatal error.
+-5. upgrade sdk version about CameraV2 to 88.
 
 ========================================================
 Version 1.2.9
@@ -322,7 +324,7 @@ CAM_INIT_CONFIG = {
     "RoiXRight": 6001,
     "RoiYTop": 0,
     "RoiYBottom": 6001,
-    'cxpLinkConfig': 0,
+    'cxpLinkConfig': 1,
 }
 
 SEQ_CAP_INIT_CONFIG = {

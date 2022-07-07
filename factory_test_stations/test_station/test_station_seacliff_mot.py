@@ -1,3 +1,4 @@
+# -*- encoding:utf-8 -*-
 from typing import Callable
 import hardware_station_common.test_station.test_station as test_station
 import psutil
@@ -320,6 +321,7 @@ class seacliffmotStation(test_station.TestStation):
         self._is_exit = False
         self._is_running = False
         self._station_sn = None
+        self._fatal_error_restart_msg = None
         self._err_msg_list = {
             1: 'Axis X running error',
             2: 'Axis Y running error',
@@ -774,8 +776,8 @@ class seacliffmotStation(test_station.TestStation):
             self.data_export(serial_number, capture_path, test_log)
             del config, patterns_in_testing
         except test_equipment_seacliff_mot.seacliffmotEquipmentError as e:
+            self._operator_interface.print_to_console(f'Taprisiot Error: {str(e)}\n')
             try:
-                self._operator_interface.print_to_console(str(e))
                 self._operator_interface.print_to_console('Reset taprisiot automatically by command.\n')
                 self._equipment.reset()
                 self._equipment.close()
@@ -783,22 +785,14 @@ class seacliffmotStation(test_station.TestStation):
                 self._equipment.open()
             except BaseException as e2:
                 self._operator_interface.print_to_console(f'Taprisiot Error E2: {str(e2)}\n')
-            finally:
-                self._operator_interface.print_to_console(f'Taprisiot Error: {str(e)}\n')
-                self._operator_interface.operator_input('Taprisiot Error, Restart Software !!!', str(e), msg_type='error')
-            os._exit(1)
+            self._fatal_error_restart_msg = f'Taprisiot --> {str(e)}'
         except test_fixture_seacliff_mot.seacliffmotFixtureError as e:
             self._operator_interface.print_to_console(f'Fixture Error: {str(e)}\n')
-            self._operator_interface.operator_input('Fixture Error, Restart Software !!!', str(e), msg_type='error')
-            os._exit(1)
+            self._fatal_error_restart_msg = f'Fixture Error --> {str(e)}'
         except seacliffmotStationError as e:
-            # self._operator_interface.operator_input(None, str(e), msg_type='error')
-            self._operator_interface.print_to_console(str(e))
-        except (Exception, BaseException) as e:
-            self._operator_interface.operator_input(None, f'Error: {str(e)} \n', msg_type='error')
-            raise
-        except:
-            self._operator_interface.operator_input(None, f'Please connect with myzy firstly.', msg_type='error')
+            self._operator_interface.print_to_console(f'Station Error: {str(e)}\n')
+        except Exception as e:
+            self._fatal_error_restart_msg = f'Please contact with MYZY --> {str(e)}'
         finally:
             try:
                 self._pool.close()
@@ -806,8 +800,8 @@ class seacliffmotStation(test_station.TestStation):
                 self._operator_interface.print_to_console('Please wait...')
                 self._the_unit.close()
                 self.alert_handle(self._fixture.unload)
-            except:
-                pass
+            except Exception as e:
+                self._operator_interface.print_to_console(f'Error --> {str(e)}\n')
             while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
                 self._operator_interface.wait(1, '.')
             self._operator_interface.wait(0, '\n')
@@ -818,6 +812,8 @@ class seacliffmotStation(test_station.TestStation):
             self._is_running = False
         del self._pool_alg_dic
         self._operator_interface.print_to_console(f'Finish------------{serial_number}-------\n')
+        if self._fatal_error_restart_msg is not None:
+            self._operator_interface.print_to_console(f'Exception ===>------{self._fatal_error_restart_msg}\n')
         return self.close_test(test_log)
 
     def do_pattern_parametric_export(self, pos_name, pattern_name, capture_path, test_log):
@@ -888,6 +884,8 @@ class seacliffmotStation(test_station.TestStation):
         return test_station.TestStation.validate_sn(self, serial_num)
 
     def is_ready(self):
+        if self._fatal_error_restart_msg is not None:
+            raise test_station.TestStationSerialNumberError(f'须重启软件:{self._fatal_error_restart_msg}')
         if not self._is_ready_check():
             self._operator_interface.print_to_console(f'--------------------> {self._latest_serial_number}\n')
             raise test_station.TestStationSerialNumberError('Station not ready.')
