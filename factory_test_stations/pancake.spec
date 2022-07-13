@@ -7,6 +7,7 @@ import re
 import ntpath
 import time
 import glob
+import UIDep
 ########################################FIGURE OUT WHAT TO BUILD##################
 build_target = None
 if len(sys.argv) < 3:
@@ -33,7 +34,7 @@ def getrootdir():
 
 def get_datas():
      working_dir = os.getcwd()
-     datas = [('config\\*%s*.py'%build_target_station,'config')]
+     datas = [('config\\*%s.py'%build_target_station,'config')]
 
      if len(glob.glob('shop_floor_interface\\*.py')) > 0:
         datas.append(('shop_floor_interface\\*.py','..\\shop_floor_interface\\'))
@@ -45,6 +46,10 @@ def get_datas():
      if len(glob.glob('test_station\\test_equipment\\algorithm\\*.json')) > 0:
         datas.append(('test_station\\test_equipment\\algorithm\\*.json',
                 '.\\test_station\\test_equipment\\algorithm\\'))
+     datas.append((os.path.join(os.path.dirname(UIDep.__file__), '*.dll'), 'UIDep'))
+     datas.append((os.path.join(os.path.dirname(UIDep.__file__), '*.txt'), '.'))
+     datas.append((os.path.join(os.path.dirname(UIDep.__file__), '*.png'), '.'))
+
      return datas
 
 ########################################Application setup############################

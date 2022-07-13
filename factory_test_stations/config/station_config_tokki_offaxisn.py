@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.0.1
+2022-7-13 elton<elton.tian@myzygroup.com>
+-1. Update spec based ERS <<Myzy-Eureka Off-axis Station ERS v0.3>>
+
+========================================================
 Version 1.0.0
 2022-2-18 elton<elton.tian@myzygroup.com>
 -1. Init version for OffAxisN
@@ -173,10 +178,10 @@ Resolution_Bin_X = 360
 Resolution_Bin_Y = 360
 
 TEST_POSITIONS = [('P1', (0, 0), ["W255", "W000", "R255", "G255", "B255"]),
-                 ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-                 ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
-                 ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
-                 ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"]),
+                 # ('P2', (1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+                 # ('P4', (0, -1500), ['W255', "W000", "R255", "G255", "B255"]),
+                 # ('P6', (-1500, 0), ['W255', "W000", "R255", "G255", "B255"]),
+                 # ('P8', (0, 1500), ['W255', "W000", "R255", "G255", "B255"]),
                  ]
 
 TEST_PATTERNS = {
@@ -232,6 +237,57 @@ SAVE_PNL_IF_FAIL = {
     'RA': [],
 }
 
+# 20220713
+EXT_CTRL_duv_ANY = [
+    {
+        'SPEC': (0, 0.015),
+        'Items': [f'P1_{c}_duv_15_{phy}' for c in ['W255', 'R255', 'G255', 'B255'] for phy in [0, 90, 180, 270]]
+    }]
+
+EXT_CTRL_Lv_ANY = [
+    {
+        'SPEC': (140, float('inf')),
+        'Items': [f'P1_W255_Lv_15_{c}' for c in [0, 180]]
+    },
+    {
+        'SPEC': (180, float('inf')),
+        'Items': [f'P1_W255_Lv_15_{c}' for c in [90, 270]]
+    },
+    {
+        'SPEC': (0.38, float('inf')),
+        'Items': [f'P1_W255_Lv_Proportion_15_{c}' for c in [0, 180]]
+    },
+    {
+        'SPEC': (0.47, float('inf')),
+        'Items': [f'P1_W255_Lv_Proportion_15_{c}' for c in [90, 270]]
+    }]
+
+EXT_CTRL_ASYM_duv = [
+    {
+        'SPEC': (0, 0.01),
+        'Items': [f'P1_{c}_duv_15_0' for c in ['W255', 'R255', 'G255', 'B255']]
+    },
+    {
+        'SPEC': (0, 0.01),
+        'Items': [f'P1_{c}_duv_15_180' for c in ['W255', 'R255', 'G255', 'B255']]
+    }]
+
+EXT_CTRL_duv_LR_ALL = [
+    {
+        'SPEC': (0, 0.007),
+        'Items': [f'P1_{c}_duv_15_0' for c in ['W255', 'R255', 'G255', 'B255']]
+    },
+    {
+        'SPEC': (0, 0.007),
+        'Items': [f'P1_{c}_duv_15_180' for c in ['W255', 'R255', 'G255', 'B255']]
+    }]
+
+EXT_CTRL_CR_ANY = [
+    {
+        'SPEC': (140, float('inf')),
+        'Items': [f'P1_CR_15_{c}' for c in [0, 90, 180, 270]]
+    }]
+
 BRIGHTNESS_AT_POLE_AZI = [(0, 0),
                          (30, 0), (30, 22), (30, 45), (30, 90), (30, 135), (30, 180), (30, 225), (30, 270), (30, 315), (30, 68), (30, 112), (30, 158), (30, 202), (30, 248), (30, 292), (30, 338),
                          (10, 0), (10, 22), (10, 45), (10, 90), (10, 135), (10, 180), (10, 225), (10, 270), (10, 315), (10, 68), (10, 112), (10, 158), (10, 202), (10, 248), (10, 292), (10, 338),
@@ -269,8 +325,8 @@ SW_TITLE = 'FactoryTestOMI - OFFAXIS'
 DATA_COLLECT_ONLY = False
 EQUIPMENT_DEMO_DATABASE = r'C:\ShareData\OffAxis'
 
-DUT_SIM = False
+DUT_SIM = True
 CAMERA_SN = "1525410258"
 # CAMERA_SN = 'Demo'
-EQUIPMENT_SIM = False
-FIXTURE_SIM = False
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True
