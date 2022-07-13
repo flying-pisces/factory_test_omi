@@ -46,7 +46,7 @@ DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
 AUTO_CFG_COMPORTS = False
 FIXTURE_PARTICLE_COMPORT_FILTER = 'VID:PID=0403:6001'
 
-SW_VERSION_SUFFIX = 'G'
+SW_VERSION_SUFFIX = ''
 SPEC_VERSION = '0000'
 
 COMMAND_DISP_HELP = "$c.help"
@@ -170,7 +170,7 @@ DISTANCE_BETWEEN_CAMERA_AND_DATUM_dict = {
     'seacliff_mot-07': 23020+14000,
 }
 
-DISTANCE_BETWEEN_CAMERA_AND_DATUM = 21950+18000
+DISTANCE_BETWEEN_CAMERA_AND_DATUM = 0
 
 ##################################
 # Test Equipment related parameters
@@ -188,10 +188,10 @@ COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255
 DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 10
 
-VERSION_REVISION_EQUIPMENT = '87'
+VERSION_REVISION_EQUIPMENT = '88'
 VERSION_REVISION_LIST = {
     'Conoscope': ['72'],
-    'ConoscopeV2': ['87'],
+    'ConoscopeV2': ['87', '88'],
 }
 FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 
@@ -217,7 +217,7 @@ CAM_INIT_CONFIG = {
     "RoiXRight": 6001,
     "RoiYTop": 0,
     "RoiYBottom": 6001,
-    'cxpLinkConfig': 0,
+    'cxpLinkConfig': 1,
 }
 
 SEQ_CAP_INIT_CONFIG = {

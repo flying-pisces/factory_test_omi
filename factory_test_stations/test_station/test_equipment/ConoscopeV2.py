@@ -11,7 +11,7 @@ CONOSCOPE_LIB_NAME = "ConoscopeLib_TaprisiotRetrofit.dll"
 
 class Conoscope:
     DLL_PATH = '.'
-    VERSION_REVISION = 87
+    VERSION_REVISION = 88
 
     class Filter(Enum):
         BK7 = 0
