@@ -46,6 +46,7 @@ class EurekaMotEquipment(hardware_station_common.test_station.test_equipment.Tes
         self._config = None
         self._open = None
         self._conoscope = None
+        self._quit = False
 
     ## Eldim specific return.
     def _log(self, ret, functionName):
@@ -114,6 +115,7 @@ class EurekaMotEquipment(hardware_station_common.test_station.test_equipment.Tes
         return self._log(ret, "CmdClose")
 
     def kill(self):
+        self._quit = True
         self._device.QuitApplication()
 
     def is_ready(self):
@@ -124,7 +126,7 @@ class EurekaMotEquipment(hardware_station_common.test_station.test_equipment.Tes
         processStateCurrent = None
         processStepCurrent = None
         self._operator_interface.print_to_console("wait for the sequence to be finished.\n")
-        while done is False:
+        while not done and not self._quit:
             ret = self._device.CmdCaptureSequenceStatus()
             processState = int(ret['state'].value)
             processStep = ret['currentSteps']
