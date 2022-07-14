@@ -1485,6 +1485,13 @@ class MotAlgorithmHelper(object):
 
         Lumiance_thresh = 10
         Length_thresh = 10
+
+        # add by Elton to solve the issue for WhiteDot Pattern 26011
+        #ker = np.ones((3, 3))
+        #ker = ker / np.sum(ker)
+        #Imgx = cv2.filter2D(masked_tristim, -1, ker, borderType=cv2.BORDER_CONSTANT)
+        #Img = cv2.inRange(Imgx, 10, 255) // 255
+
         Img = cv2.inRange(masked_tristim, 10, 255) // 255
         # figure,imagesc(x_angle_arr,y_angle_arr,Img)
         Img = label(Img, connectivity=2)
@@ -2362,7 +2369,7 @@ if __name__ == '__main__':
     wd_bin_re = '*_WhiteDot_*_X_float.bin'
     COLORMATRIX_COEFF = [[0.9941, -0.0076, -0.0066], [0.0009, 0.9614, -0.0025], [-0.0021, 0.0020, 0.9723]]
     aa = MotAlgorithmHelper(COLORMATRIX_COEFF, is_verbose=False, save_plots=True)
-    raw_data_dir = r"c:\ShareData\Oculus_RawData\003_seacliff_mot-06_20210811-093524"
+    raw_data_dir = r"c:\ShareData\Oculus_RawData\232QQM1D6C01XR_seacliff_mot-0007_20220712-165721"
     bins = tuple([glob.glob(os.path.join(raw_data_dir, c))
                   for c in [w_bin_re, r_bin_re, g_bin_re, b_bin_re, br_bin_re, wd_bin_re]])
 
