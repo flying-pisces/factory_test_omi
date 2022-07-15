@@ -342,7 +342,7 @@ class EurekaMotStation(test_station.TestStation):
 
     def initialize(self):
         try:
-            self._operator_interface.print_to_console("Initializing Eureka MOT station...{0}\n"
+            self._operator_interface.print_to_console("Initializing Eureka MOT station...{0}SP2\n"
                                                       .format(self._sw_version))
             if self._station_config.AUTO_CFG_COMPORTS:
                 self.auto_find_com_ports()
@@ -366,11 +366,12 @@ class EurekaMotStation(test_station.TestStation):
             self._fixture.start_button_status(True)
             self._fixture.power_on_button_status(True)
             self._fixture.vacuum(False)
-            if not self._station_config.FIXTURE_SIM and self.alert_handle(self._fixture.unload()) != 0:
+            if not self._station_config.FIXTURE_SIM and self.alert_handle(self._fixture.unload) != 0:
                 raise EurekaMotStationError(f'Fail to init the fixture.')
-            self.alert_handle(self._fixture.unload_dut())
+            self.alert_handle(self._fixture.unload_dut)
             self._fixture.start_button_status(False)
             self._fixture.power_on_button_status(False)
+            self._fixture.vacuum(False)
             self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM = self._fixture.calib_zero_pos()
             self._station_sn = self._fixture.id()
             self._operator_interface.print_to_console(
@@ -806,11 +807,14 @@ class EurekaMotStation(test_station.TestStation):
             try:
                 self._pool.close()
                 self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')
-                self._operator_interface.print_to_console('Please wait...')
-                self.alert_handle(self._fixture.unload())
+                self._operator_interface.print_to_console(
+                    f'Please wait...-->{self._station_config.DUT_LOAD_WITHOUT_OPERATOR}.\n')
+                self.alert_handle(self._fixture.unload)
                 self._the_unit.close()
-                if not self._station_config.DUT_LOAD_WITHOUT_OPERATOR:
-                    self.alert_handle(self._fixture.unload_dut())
+                if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR]:
+                    self._fixture.vacuum(True)
+                else:
+                    self.alert_handle(self._fixture.unload_dut)
             except Exception as e:
                 self._operator_interface.print_to_console(f'Error --> {str(e)}\n')
             while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
@@ -933,7 +937,7 @@ class EurekaMotStation(test_station.TestStation):
             self._is_screen_on_by_op = True
             power_on_trigger = True
             timeout_for_dual = time.time()
-            while not ready:
+            while not ready and not self._is_exit:
                 if self._is_cancel_test_by_op:
                     break
 
@@ -950,7 +954,6 @@ class EurekaMotStation(test_station.TestStation):
                     continue
 
                 if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR]:
-                    self.alert_handle(self._fixture.load_dut)
                     self.alert_handle(self._fixture.load)
                     ready_ret_val = (0, 0)
                 else:
@@ -1012,18 +1015,25 @@ class EurekaMotStation(test_station.TestStation):
         self._operator_interface.prompt('', 'SystemButtonFace')
 
     def alert_handle(self, func):
-        import inspect
-        if inspect.isfunction(func):
+        if callable(func):
             alert_res = func()
         else:
             alert_res = func
-        while alert_res not in [0x00, None]:
+        while alert_res not in [0x00, None] and not self._is_exit:
             if alert_res in [6, 7]:
                 self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning')
                 alert_res = self._fixture.reset()
+                self._is_cancel_test_by_op = True
             else:
-                self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(alert_res)}.\n', 'red')
-                alert_res = func()
+                self._operator_interface.print_to_console(
+                    f'Please note --> {alert_res}: {self._err_msg_list.get(alert_res)}.\n', 'red')
+                if callable(func):
+                    self._operator_interface.operator_input(
+                        'Hint', f'Please note --> {alert_res}: {self._err_msg_list.get(alert_res)}.\n',
+                        msg_type='warning')
+                    alert_res = func()
+                else:
+                    break
         return alert_res
 
     def _is_ready_check(self):

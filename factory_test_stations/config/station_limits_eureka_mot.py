@@ -15,9 +15,9 @@ STATION_LIMITS_ARRAYS = [
     ["DUT_AlignmentSuccess", True, True, 100],
 
     ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_W255", True, True, 10001],
-    # ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_R255", True, True, 10002],
-    # ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_G255", True, True, 10003],
-    # ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_B255", True, True, 10004],
+    ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_R255", True, True, 10002],
+    ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_G255", True, True, 10003],
+    ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_B255", True, True, 10004],
     ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_RGBBoresight", True, True, 10005],
     # ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_GreenDistortion", True, True, 10006],
     ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_WhiteDot", True, True, 10007],

@@ -1,6 +1,12 @@
 """
 Release Note:
 ========================================================
+Version 1.0.1
+2022-7-15 elton<elton.tian@myzygroup.com>
+-1. Optimize test sequence
+-2. update sdk about conoscope to v88
+
+========================================================
 Version 1.0.0
 2022-6-14 elton<elton.tian@myzygroup.com>
 -1. Init version for E-MOT
@@ -46,7 +52,7 @@ DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
 AUTO_CFG_COMPORTS = False
 FIXTURE_PARTICLE_COMPORT_FILTER = 'VID:PID=0403:6001'
 
-SW_VERSION_SUFFIX = ''
+SW_VERSION_SUFFIX = 'G'
 SPEC_VERSION = '0000'
 
 COMMAND_DISP_HELP = "$c.help"
