@@ -678,6 +678,11 @@ class SeacliffOffAxisStation(test_station.TestStation):
                 databaseFileName = os.path.join(db_dir, fns[0])
                 self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
                 self._equipment.set_database(databaseFileName)
+                # update the serial number for all the patterns in the ttxm
+                meas_list = self._equipment.get_measurement_list()
+                for c in meas_list:
+                    self._equipment.update_measurement_info(c['Measurement ID'], {'Description': serial_number})
+                self._equipment.clear_registration()
 
             self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
             self._fixture.mov_abs_xy(pos[0], pos[1])
@@ -702,10 +707,14 @@ class SeacliffOffAxisStation(test_station.TestStation):
                     pre_color = color_code
                     self._operator_interface.print_to_console('Set DUT To Color: {}.\n'.format(pre_color))
                 use_camera = not self._station_config.EQUIPMENT_SIM
+                x_sn = serial_number
                 if not use_camera:
                     self._equipment.clear_registration()
+                    xx = [c.get('Pattern') for c in self._equipment.get_measurement_list()
+                          if c.get('Measurement Setup') == pattern]
+                    x_sn = xx[-1] if len(xx) > 0 else ''
                 analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, True)
-                self._operator_interface.print_to_console("Sequence run step  {}.\n".format(analysis))
+                self._operator_interface.print_to_console(f"Sequence run step Analysis: {analysis}  ---> SN/P: {x_sn}.")
                 analysis_result_dic[pattern] = analysis_result
                 del analysis_result
 

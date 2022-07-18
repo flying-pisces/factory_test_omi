@@ -144,6 +144,12 @@ class SeacliffOffAxis4Equipment(hardware_station_common.test_station.test_equipm
             pprint.pprint(result)
         return result
 
+    def update_measurement_info(self, measurement_name, meas_info):
+        result = self._device.EditMeasurementInfo(measurement_name, json.dumps(meas_info))
+        if self._verbose:
+            pprint.pprint(result)
+        return result
+
     ########### NEW SEQUENCING FUNCTIONS ###########
 
     def sequence_run_all(self, useCamera, saveImages):
