@@ -281,10 +281,11 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._equip = test_equipment_eureka_eeprom.EurekaEEPROMEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.0.3'
+        self._sw_version = '0.0.4'
         self._eep_assistant = EEPStationAssistant()
         self._max_retries = 5
         self._module_type = None
+        self._station_sn = None
         self._vendor_info_dic = {
             6: 'sharp',
             4: 'jdi',
@@ -306,10 +307,7 @@ class EurekaEEPROMStation(test_station.TestStation):
             self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
 
             self._fixture.initialize(ipaddr=self._station_config.FIXTURE_ETH_ADDR)
-            fixture_id = self._fixture.get_board_id()
-            if not self._station_config.FIXTURE_SIM and fixture_id != self._station_config.STATION_NUMBER:
-                raise EurekaEEPROMError(
-                    f'Fixture Id is not set correctly {self._station_config.STATION_NUMBER} != FW: {fixture_id}')
+            self._station_sn = self._fixture.get_board_id()
             while True:
                 alert_res = self._fixture.unload()
                 if alert_res in [0, None]:
@@ -353,43 +351,46 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._overall_errorcode = ''
         self._operator_interface.print_to_console('waiting user to input the parameters...\n')
         test_log.set_measured_value_by_name_ex = types.MethodType(self.chk_and_set_measured_value_by_name, test_log)
-        the_unit = EurekaDut(serial_number, self._station_config, self._operator_interface)
-        if self._station_config.DUT_SIM:
-            the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
-        write_in_slow_mod = False
-        if hasattr(self._station_config, 'NVM_WRITE_SLOW_MOD') and self._station_config.NVM_WRITE_SLOW_MOD:
-            write_in_slow_mod = True
-        calib_data = None  # self._station_config.CALIB_REQ_DATA
-        var_check_data = None
         try:
-            if self._station_config.USER_INPUT_CALIB_DATA == 0x100:
-                calib_data = self._station_config.CALIB_REQ_DATA
-            elif self._station_config.USER_INPUT_CALIB_DATA == 0x02:
+            the_unit = EurekaDut(serial_number, self._station_config, self._operator_interface)
+            if self._station_config.DUT_SIM:
+                the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
+
+            test_log.set_measured_value_by_name_ex('STATION_SN', self._station_sn)
+            write_in_slow_mod = False
+            if hasattr(self._station_config, 'NVM_WRITE_SLOW_MOD') and self._station_config.NVM_WRITE_SLOW_MOD:
+                write_in_slow_mod = True
+            calib_data = None  # self._station_config.CALIB_REQ_DATA
+            var_check_data = None
+            try:
+                if self._station_config.USER_INPUT_CALIB_DATA == 0x100:
+                    calib_data = self._station_config.CALIB_REQ_DATA
+                elif self._station_config.USER_INPUT_CALIB_DATA == 0x02:
+                    calib_data = None
+                    calib_data_json_fn = os.path.join(self._station_config.CALIB_REQ_DATA_FILENAME,
+                                                      f'eeprom_session_miz_{serial_number}.json')
+                    if os.path.exists(calib_data_json_fn):
+                        with open(f'{calib_data_json_fn}', 'r') as json_file:
+                            calib_data = json.load(json_file)
+                            eep_keys = set(self._eep_assistant._eeprom_map_group.keys())
+                            if not eep_keys.issubset(calib_data.keys()):
+                                msg = f'unable to parse all the items from input items.\n'
+                                self._operator_interface.print_to_console(f'{eep_keys}\n')
+                                calib_data = None
+                                self._operator_interface.operator_input(None, msg, msg_type='error')
+            except Exception as e:
                 calib_data = None
-                calib_data_json_fn = os.path.join(self._station_config.CALIB_REQ_DATA_FILENAME,
-                                                  f'eeprom_session_miz_{serial_number}.json')
-                if os.path.exists(calib_data_json_fn):
-                    with open(f'{calib_data_json_fn}', 'r') as json_file:
-                        calib_data = json.load(json_file)
-                        eep_keys = set(self._eep_assistant._eeprom_map_group.keys())
-                        if not eep_keys.issubset(calib_data.keys()):
-                            msg = f'unable to parse all the items from input items.\n'
-                            self._operator_interface.print_to_console(f'{eep_keys}\n')
-                            calib_data = None
-                            self._operator_interface.operator_input(None, msg, msg_type='error')
-        except Exception as e:
-            calib_data = None
-            pass
+                pass
 
-        if calib_data is None:
-            self._operator_interface.operator_input(None, f'unable to get enough information for {serial_number}.\n')
-            raise test_station.TestStationProcessControlError(f'unable to get enough information for DUT {serial_number}.')
+            if calib_data is None:
+                self._operator_interface.operator_input(None, f'unable to get enough information for {serial_number}.\n')
+                raise test_station.TestStationProcessControlError(f'unable to get enough information for DUT {serial_number}.')
 
-        self._operator_interface.print_to_console("Start write data to DUT. %s\n" % the_unit.serial_number)
+            self._operator_interface.print_to_console("Start write data to DUT. %s\n" % the_unit.serial_number)
 
-        test_log.set_measured_value_by_name_ex('MODULE_TYPE', self._module_type)
-        test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
-        try:
+            test_log.set_measured_value_by_name_ex('MODULE_TYPE', self._module_type)
+            test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
+
             the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
                                 eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
 
@@ -403,7 +404,7 @@ class EurekaEEPROMStation(test_station.TestStation):
             if self._station_config.FIXTURE_SIM:
                 module_inplace = True
 
-            timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
+            timeout_for_btn_idle = (30 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
                                     else self._station_config.TIMEOUT_FOR_BTN_IDLE)
             timeout_for_dual = time.time()
             tm_current = timeout_for_dual

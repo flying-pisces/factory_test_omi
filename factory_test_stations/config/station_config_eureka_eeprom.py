@@ -1,6 +1,12 @@
 """
 Release Note:
 ========================================================
+Version 0.0.4
+2022-7-20 elton<elton.tian@myzygroup.com>
+-1. Add Station_SN to csv.
+-2. Unload loader if fail to power on.
+
+========================================================
 Version 0.0.3
 2022-6-20 elton<elton.tian@myzygroup.com>
 -1. Debug with tester.
@@ -30,7 +36,7 @@ CALIB_REQ_DATA_FILENAME = r'C:\oculus\run\eureka_eeprom\session_data'
 # serial number codes
 #
 SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = '^[\w]{13,14}$'
+SERIAL_NUMBER_MODEL_NUMBER = r'^2G\w{12}$'
 
 ##################################
 # Fixture parameters
@@ -70,7 +76,7 @@ NVM_WRITE_PROTECT = False
 NVM_EEC_READ = True
 NVM_WRITE_SLOW_MOD = True
 DUT_LOAD_WITHOUT_OPERATOR = True
-TIMEOUT_FOR_BTN_IDLE = 10
+TIMEOUT_FOR_BTN_IDLE = 50
 
 MIN_SPACE_REQUIRED = [('C:', 500)]
 CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\MER-132-43U3C(FQ0200080140).txt'

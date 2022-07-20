@@ -1,11 +1,12 @@
 CURRENT_FW_VERSION = 1001
 
 STATION_LIMITS_ARRAYS = [
-    ["MODULE_TYPE", None, None, 78],
+    ['STATION_SN', None, None, 78],
     ["SW_VERSION", None, None, 79],
     ["DUT_POWER_ON_INFO", None, None, 81],
     ["DUT_POWER_ON_RES", True, True, 82],
     ["JUDGED_BY_CAM", True, True, 83],
+    ["MODULE_TYPE", None, None, 84],
 
     ["PRE_WRITE_COUNTS", 0, 5, 1000],
     ["VENDOR_INFO", None, None, 1001],
