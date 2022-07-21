@@ -65,7 +65,7 @@ SF_LOADER_URL = 'http://192.168.100.96:8012/LoaderWS/Service/SummaryLoader.asmx?
 SF_MAIL_URL = 'http://192.168.100.96:8011/MailWS/GseoWS.asmx?WSDL'
 MES_CHK_OFFLINE = {}
 
-SW_VERSION = '1.2.6'
+SW_VERSION = '1.2.9'
 
 class ShopFloorError(Exception):
     pass
@@ -88,6 +88,7 @@ class ShopFloor_genius(object):
             'ENDTIME': 'End_Time',
             'OVERALLRESULT': 'Overall_Result',
             'OVERALLERRORCODE': '',
+            'OVERALL_ERRORSTRING': 'Overall_ErrorString',
 
             "ELAPSED_SECONDS": "elapsed_seconds",
             "SW_VERSION": "SW_VERSION",
@@ -521,10 +522,11 @@ def tkinter_showinfo(msg):
     root.destroy()
 
 def initialize(station_config):
-    global _ex_shop_floor, MES_CHK_OFFLINE
+    global _ex_shop_floor, MES_CHK_OFFLINE, STATION_ID
     logger = logging.getLogger()
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
     DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+    STATION_ID = f'{station_config.STATION_TYPE}_{station_config.STATION_NUMBER}'
     log_fn = time.strftime('%Y_%m_%d', time.localtime(time.time()))
 
     formatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
