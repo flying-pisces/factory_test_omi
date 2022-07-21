@@ -594,9 +594,11 @@ class MotAlgorithmHelper(object):
         # calculate color uniformity
         x_smoothed = mask * (XYZ[:, :, 0]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
         x_smoothed[np.isnan(x_smoothed)] = 0
+        x_smoothed[np.isinf(x_smoothed)] = 0
         x_smoothed = x_smoothed + Color_x_offsite
         y_smoothed = mask * (XYZ[:, :, 1]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
         y_smoothed[np.isnan(y_smoothed)] = 0
+        y_smoothed[np.isinf(y_smoothed)] = 0
         y_smoothed = y_smoothed + Color_y_offsite
 
         tmp_XYZ = mask * XYZ[:, :, 1]
@@ -725,16 +727,20 @@ class MotAlgorithmHelper(object):
         # calculate color uniformity
         x_smoothed = mask * (XYZ[:, :, 0]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
         x_smoothed[np.isnan(x_smoothed)] = 0
+        x_smoothed[np.isinf(x_smoothed)] = 0
         x_smoothed = x_smoothed + Color_x_offsite
         y_smoothed = mask * (XYZ[:, :, 1]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
         y_smoothed[np.isnan(y_smoothed)] = 0
+        y_smoothed[np.isinf(y_smoothed)] = 0
         y_smoothed = y_smoothed + Color_y_offsite
 
         # Perform CIE and RGB color calculations and mask to disp_fov
         u_prime_smoothed = mask * (4 * XYZ[:, :, 0]) / (XYZ[:, :, 0] + 15 * XYZ[:, :, 1] + 3 * XYZ[:, :, 2])
         u_prime_smoothed[np.isnan(u_prime_smoothed)] = 0
+        u_prime_smoothed[np.isinf(u_prime_smoothed)] = 0
         v_prime_smoothed = mask * (9 * XYZ[:, :, 1]) / (XYZ[:, :, 0] + 15 * XYZ[:, :, 1] + 3 * XYZ[:, :, 2])
         v_prime_smoothed[np.isnan(v_prime_smoothed)] = 0
+        v_prime_smoothed[np.isinf(v_prime_smoothed)] = 0
 
         tmp_XYZ = XYZ[:, :, 1] * mask
         XYZ_mask = np.zeros((self._row, self._col))
@@ -2040,15 +2046,19 @@ class MotAlgorithmHelper(object):
         # Perform CIE and RGB color calculations and mask to disp_fov
         little_x = mask * (XYZ[:, :, 0]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
         little_x[np.isnan(little_x)] = 0
+        little_x[np.isinf(little_x)] = 0
         little_y = mask * (XYZ[:, :, 1]) / (XYZ[:, :, 0] + XYZ[:, :, 1] + XYZ[:, :, 2])
         little_y[np.isnan(little_y)] = 0
+        little_y[np.isinf(little_y)] = 0
 
         little_x_smoothed = mask * (XYZ_smooth[:, :, 0]) / (
                 XYZ_smooth[:, :, 0] + XYZ_smooth[:, :, 1] + XYZ_smooth[:, :, 2])
         little_x_smoothed[np.isnan(little_x_smoothed)] = 0
+        little_x_smoothed[np.isinf(little_x_smoothed)] = 0
         little_y_smoothed = mask * (XYZ_smooth[:, :, 1]) / (
                 XYZ_smooth[:, :, 0] + XYZ_smooth[:, :, 1] + XYZ_smooth[:, :, 2])
         little_y_smoothed[np.isnan(little_y_smoothed)] = 0
+        little_y_smoothed[np.isinf(little_y_smoothed)] = 0
 
         # figure,subplot(1,2,1),imagesc(little_x)caxis([0.1,0.7])
         # title('Color x')
