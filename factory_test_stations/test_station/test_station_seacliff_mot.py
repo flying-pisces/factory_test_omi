@@ -1,3 +1,4 @@
+# -*- encoding:utf-8 -*-
 from typing import Callable
 import hardware_station_common.test_station.test_station as test_station
 import psutil
@@ -195,7 +196,6 @@ class EEPStationAssistant(object):
 
     def decode_raw_data(self, raw_data):
         """
-
         @type raw_data: list
         """
         var_data = {}
@@ -304,7 +304,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.2.9{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.2.10{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -320,6 +320,16 @@ class seacliffmotStation(test_station.TestStation):
         self.fixture_particle_port = None
         self._is_exit = False
         self._is_running = False
+        self._station_sn = None
+        self._fatal_error_restart_msg = None
+        self._err_msg_list = {
+            1: 'Axis X running error',
+            2: 'Axis Y running error',
+            3: 'Axis A running error',
+            4: 'Axis Z running error',
+            5: 'Signal from sensor (Pressing plate) is not triggered',
+            15: 'Signal from sensor ( Door ) is error',
+        }
 
     def initialize(self):
         try:
@@ -345,11 +355,14 @@ class seacliffmotStation(test_station.TestStation):
                                      particle_port=self.fixture_particle_port,
                                      proxy_port=self._station_config.PROXY_ENDPOINT)
 
+            self._fixture.start_button_status(True)
+            self._fixture.power_on_button_status(True)
+            self.alert_handle(self._fixture.unload)
+            self._fixture.start_button_status(False)
+            self._fixture.power_on_button_status(False)
+
             self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM = self._fixture.calib_zero_pos()
-            fixture_id = self._fixture.id()
-            if not self._station_config.FIXTURE_SIM and fixture_id != self._station_config.STATION_NUMBER:
-                raise seacliffmotStationError(
-                    f'Fixture Id is not set correctly {self._station_config.STATION_NUMBER} != FW: {fixture_id}')
+            self._station_sn = self._fixture.id()
             self._operator_interface.print_to_console(
                 f'update distance between camera and datum: {self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM}\n')
             self._equipment.initialize()
@@ -509,10 +522,12 @@ class seacliffmotStation(test_station.TestStation):
                 self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
 
     def _do_test(self, serial_number, test_log):
+
         """
 
         @type test_log: test_station.test_log.test_log
         """
+
         msg0 = 'info --> lit up: {0}, emulator_dut: {1}, emulator_equip: {2}, emulator_fixture: {3},' \
                ' particle:{4}, dut_checker:{5} ver: {6}\n' .format(
                 self._station_config.DUT_LITUP_OUTSIDE, self._station_config.DUT_SIM,
@@ -524,7 +539,7 @@ class seacliffmotStation(test_station.TestStation):
                          and self._station_config.QUERY_DUT_TEMP_PER_PATTERN
                          and not self._station_config.FIXTURE_SIM)
 
-        self._query_dual_start()
+        self._query_dual_start_check()
         # if self._the_unit is None:
         #     raise test_station.TestStationProcessControlError(f'Fail to query dual_start for DUT {serial_number}.')
         self._probe_con_status = True
@@ -554,6 +569,7 @@ class seacliffmotStation(test_station.TestStation):
             test_log.set_measured_value_by_name_ex = types.MethodType(self.chk_and_set_measured_value_by_name, test_log)
 
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
+            test_log.set_measured_value_by_name_ex('STATION_SN', self._station_sn)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
             equip_version = self._equipment.version()
             if isinstance(equip_version, dict):
@@ -760,8 +776,8 @@ class seacliffmotStation(test_station.TestStation):
             self.data_export(serial_number, capture_path, test_log)
             del config, patterns_in_testing
         except test_equipment_seacliff_mot.seacliffmotEquipmentError as e:
+            self._operator_interface.print_to_console(f'Taprisiot Error: {str(e)}\n')
             try:
-                self._operator_interface.print_to_console(str(e))
                 self._operator_interface.print_to_console('Reset taprisiot automatically by command.\n')
                 self._equipment.reset()
                 self._equipment.close()
@@ -769,31 +785,23 @@ class seacliffmotStation(test_station.TestStation):
                 self._equipment.open()
             except BaseException as e2:
                 self._operator_interface.print_to_console(f'Taprisiot Error E2: {str(e2)}\n')
-            finally:
-                self._operator_interface.print_to_console(f'Taprisiot Error: {str(e)}\n')
-                self._operator_interface.operator_input('Taprisiot Error, Restart Software !!!', str(e), msg_type='error')
-            os._exit(1)
+            self._fatal_error_restart_msg = f'Taprisiot --> {str(e)}'
         except test_fixture_seacliff_mot.seacliffmotFixtureError as e:
             self._operator_interface.print_to_console(f'Fixture Error: {str(e)}\n')
-            self._operator_interface.operator_input('Fixture Error, Restart Software !!!', str(e), msg_type='error')
-            os._exit(1)
+            self._fatal_error_restart_msg = f'Fixture Error --> {str(e)}'
         except seacliffmotStationError as e:
-            self._operator_interface.operator_input(None, str(e), msg_type='error')
-            self._operator_interface.print_to_console(str(e))
-        except (Exception, BaseException) as e:
-            self._operator_interface.operator_input(None, f'Error: {str(e)} \n', msg_type='error')
-            raise
-        except:
-            self._operator_interface.operator_input(None, f'Please connect with myzy firstly.', msg_type='error')
+            self._operator_interface.print_to_console(f'Station Error: {str(e)}\n')
+        except Exception as e:
+            self._fatal_error_restart_msg = f'Please contact with MYZY --> {str(e)}'
         finally:
             try:
                 self._pool.close()
                 self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')
                 self._operator_interface.print_to_console('Please wait...')
                 self._the_unit.close()
-                self._fixture.unload()
-            except:
-                pass
+                self.alert_handle(self._fixture.unload)
+            except Exception as e:
+                self._operator_interface.print_to_console(f'Error --> {str(e)}\n')
             while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
                 self._operator_interface.wait(1, '.')
             self._operator_interface.wait(0, '\n')
@@ -804,6 +812,8 @@ class seacliffmotStation(test_station.TestStation):
             self._is_running = False
         del self._pool_alg_dic
         self._operator_interface.print_to_console(f'Finish------------{serial_number}-------\n')
+        if self._fatal_error_restart_msg is not None:
+            self._operator_interface.print_to_console(f'Exception ===>------{self._fatal_error_restart_msg}\n')
         return self.close_test(test_log)
 
     def do_pattern_parametric_export(self, pos_name, pattern_name, capture_path, test_log):
@@ -874,16 +884,21 @@ class seacliffmotStation(test_station.TestStation):
         return test_station.TestStation.validate_sn(self, serial_num)
 
     def is_ready(self):
+        if self._fatal_error_restart_msg is not None:
+            raise test_station.TestStationSerialNumberError(f'须重启软件:{self._fatal_error_restart_msg}')
+        if not self._is_ready_check():
+            self._operator_interface.print_to_console(f'--------------------> {self._latest_serial_number}\n')
+            raise test_station.TestStationSerialNumberError('Station not ready.')
+        self._operator_interface.prompt('', 'SystemButtonFace')
         return True
 
-    def _query_dual_start(self):
+    def _query_dual_start_check(self):
         serial_number = self._latest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
         self._the_unit = pancakeDut(serial_number, self._station_config, self._operator_interface)
         if hasattr(self._station_config, 'DUT_SIM') and self._station_config.DUT_SIM:
             self._the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
 
-        # TODO:  Initialized the DUT Simply
         ready = False
         power_on_trigger = False
         self._retries_screen_on = 0
@@ -892,49 +907,39 @@ class seacliffmotStation(test_station.TestStation):
         self._is_alignment_success = False
         self._module_left_or_right = None
         self._probe_con_status = False
-        timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
-                                    else self._station_config.TIMEOUT_FOR_BTN_IDLE)
-        timeout_for_dual = timeout_for_btn_idle
         try:
-            self._fixture.flush_data()
-            self._fixture.power_on_button_status(False)
-            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-            self._fixture.start_button_status(False)
-            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-            self._fixture.power_on_button_status(True)
-            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             self._the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
                                       eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
             self._the_unit.nvm_speed_mode(mode='normal')
             self._operator_interface.print_to_console("Initialize DUT... \n")
-            while timeout_for_dual > 0:
-                if ready or self._is_cancel_test_by_op:
+            self._the_unit.screen_on()
+            self._fixture.power_on_button_status(False)
+            self._fixture.start_button_status(True)
+            self._is_screen_on_by_op = True
+            power_on_trigger = True
+            timeout_for_dual = time.time()
+            while not ready:
+                if self._is_cancel_test_by_op:
                     break
-                msg_prompt = 'Load DUT, and then Press PowerOn-Btn (Lit up) in %s S...'
-                if power_on_trigger:
-                    msg_prompt = 'Press Dual-Btn(Load)/PowerOn-Btn(Re Lit up)  in %s S...'
-                self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow')
+                msg_prompt = 'Press Dual-Btn(Load)/PowerOn-Btn(Re Lit up)  in %s S...'
+                self._operator_interface.prompt(msg_prompt % int(time.time() - timeout_for_dual), 'yellow')
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
                     self._is_alignment_success = True
                     self._module_left_or_right = 'R'
                     self._fixture._alignment_pos = (0, 0, 0, 0)
-                    self._the_unit.screen_on()
                     ready = True
                     continue
 
-                if (hasattr(self._station_config, 'DUT_LOAD_WITHOUT_OPERATOR')
-                        and self._station_config.DUT_LOAD_WITHOUT_OPERATOR is True):
-                    self._fixture.load()
-                    ready_status = 0
+                if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR]:
+                    self.alert_handle(self._fixture.load)
+                    ready_ret_val = (0, 0)
                 else:
-                    ready_status = self._fixture.is_ready()
-                if ready_status is not None:
-                    if ready_status == 0x00:  # load DUT automatically and then screen on
+                    ready_ret_val = self._fixture.is_ready()
+                if isinstance(ready_ret_val, tuple):
+                    ready_status, ready_code = ready_ret_val
+                    if ready_status == 0x00 and ready_code == 0x00:  # load DUT automatically and then screen on
                         ready = True  # Start to test.
-                        self._is_screen_on_by_op = True
-                        if self._retries_screen_on == 0:
-                            self._the_unit.screen_on()
                         self._the_unit.display_color((255, 0, 0))
                         self._fixture.power_on_button_status(False)
                         time.sleep(self._station_config.FIXTURE_SOCK_DLY)
@@ -948,52 +953,82 @@ class seacliffmotStation(test_station.TestStation):
                         self._retries_screen_on += 1
                         # power the dut on normally.
                         if power_on_trigger:
+                            self._is_screen_on_by_op = False
                             self._the_unit.screen_off()
-                            # self._the_unit.reboot()  # Reboot
                         self._the_unit.screen_on()
+                        self._is_screen_on_by_op = True
                         power_on_trigger = True
-                        # check the color sensor
-                        timeout_for_dual = timeout_for_btn_idle
-                        color_check_result = True
-                        if self._station_config.DISP_CHECKER_ENABLE:
-                            color_check_result = False
-                            color = self._the_unit.get_color_ext(False)
-                            if self._the_unit.display_color_check(color):
-                                color_check_result = True
-                            if color_check_result:
-                                self._fixture.power_on_button_status(False)
-                                time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-                                self._fixture.start_button_status(True)
-                        else:
-                            self._fixture.power_on_button_status(False)
-                            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-                            self._fixture.start_button_status(True)
+
+                    elif ready_status == 0x00 and ready_code in [5, 15]:
+                        self._operator_interface.print_to_console(f'Msg: {self._err_msg_list.get(ready_code)}.\n')
+                        self.alert_handle(ready_code)
+
                     elif ready_status == 0x01:
                         self._is_cancel_test_by_op = True  # Cancel test.
+                    elif ready_status == 0x00 and ready_code in self._err_msg_list:
+                        self._operator_interface.print_to_console(
+                            f'Please note: {self._err_msg_list.get(ready_code)}.\n', 'red')
+                        self.alert_handle(ready_code)
+
                 time.sleep(0.1)
-                timeout_for_dual -= 1
         except (seacliffmotStationError, DUTError, RuntimeError) as e:
-            self._operator_interface.operator_input(None, str(e), msg_type='error')
+            # self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
         finally:
             # noinspection PyBroadException
             try:
                 if not ready:
-                    if not self._is_cancel_test_by_op:
-                        self._operator_interface.print_to_console(
-                            'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
-                    else:
-                        self._operator_interface.print_to_console(
-                            'Cancel start signal from dual %s.\n' % timeout_for_dual)
+                    self._operator_interface.print_to_console('Cancel start signal from dual.\n')
                     self._the_unit.close()
                     # self._the_unit = None
                 self._fixture.start_button_status(False)
-                time.sleep(self._station_config.FIXTURE_SOCK_DLY)
                 self._fixture.power_on_button_status(False)
             except Exception as e:
-                self._operator_interface.operator_input(None, str(e), msg_type='error')
+                # self._operator_interface.operator_input(None, str(e), msg_type='error')
                 self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
-            self._operator_interface.prompt('', 'SystemButtonFace')
+        self._operator_interface.prompt('', 'SystemButtonFace')
+
+    def alert_handle(self, func):
+        if not isinstance(func, int):
+            alert_res = func()
+        else:
+            alert_res = func
+        while alert_res not in [0x00, None]:
+            if alert_res in [1, 2, 3, 4]:
+                self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning')
+                alert_res = self._fixture.reset()
+            if alert_res in [5, 15, None]:
+                self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(alert_res)}.\n', 'red')
+                self._operator_interface.operator_input('Hint', self._err_msg_list.get(alert_res), msg_type='warning')
+                alert_res = self._fixture.unload()
+        return alert_res
+
+    def _is_ready_check(self):
+        serial_number = self._latest_serial_number
+        self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
+        ready = False
+        timeout_for_dual = time.time()
+        try:
+            self._fixture.flush_data()
+            self._fixture.power_on_button_status(False)
+            self._fixture.start_button_status(False)
+            self._fixture.power_on_button_status(True)
+            time.sleep(self._station_config.FIXTURE_SOCK_DLY)
+            while not ready:
+                msg_prompt = 'Load DUT, and then Press PowerOn-Btn (Lit up) in %s S...'
+                self._operator_interface.prompt(msg_prompt % int(time.time() - timeout_for_dual), 'yellow')
+                if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR, self._station_config.FIXTURE_SIM]:
+                    ready_status = (0x03, 00)
+                else:
+                    ready_status = self._fixture.is_ready()
+                if isinstance(ready_status, tuple) and ready_status[0] == 0x03:
+                    # load DUT automatically and then screen on
+                    ready = True
+                time.sleep(0.05)
+        except Exception as e:
+            self._operator_interface.print_to_console(f'Exception _query_dual_start_v2 ----> {str(e)}')
+
+        return ready
 
     def data_export(self, serial_number, capture_path, test_log):
         """

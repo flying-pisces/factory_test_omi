@@ -170,11 +170,14 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if self._serial_port is not None:
             resp = self._read_response(0.5)
             if resp:
-                btn_dic = {3: r'PowerOn_Button:\d', 2: r'BUTTON_LEFT:\d', 1: r'BUTTON_RIGHT:\d', 0: r'BUTTON:0'}
+                btn_dic = {3: r'PowerOn_Button:(\d+)',
+                           2: r'BUTTON_LEFT:(\d+)',
+                           1: r'BUTTON_RIGHT:(\d+)',
+                           0: r'BUTTON:(\d+)'}
                 for key, item in btn_dic.items():
-                    items = list(filter(lambda r: re.match(item, r, re.I | re.S), resp))
+                    items = list(filter(lambda r: re.search(item, r, re.I | re.S), resp))
                     if items:
-                        return key
+                        return key, int(re.search(item, items[0], re.I | re.S).group(1))
 
     def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing seacliff_mot Fixture\n")
@@ -206,11 +209,6 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         if not self._serial_port:
             raise seacliffmotFixtureError(f'Unable to open fixture port: {kwargs}')
         else:  # disable the buttons automatically
-            self.start_button_status(True)
-            self.power_on_button_status(True)
-            self.unload()
-            self.start_button_status(False)
-            self.power_on_button_status(False)
             self._operator_interface.print_to_console(f"Fixture Initialized {kwargs}.\n")
             return True
 
@@ -426,9 +424,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         @return:
         """
         self._write_serial(self._station_config.COMMAND_RESET)
-        response = self._read_response(timeout=10)
-        if int(self._parse_response(r'RESET:(\d+)', response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+        response = self._read_response(timeout=30)
+        return int(self._parse_response(r'RESET:(\d+)', response).group(1))
 
     def mov_abs_xy_wrt_alignment(self, x, y):
         """
@@ -612,8 +609,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(self._station_config.COMMAND_LOAD)
         rev_pattern = r'LOAD:(\d+)'
         response = self._read_response(timeout=self._station_config.FIXTURE_LOAD_DLY, rev_pattern=rev_pattern)
-        if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+        return int(self._parse_response(rev_pattern, response).group(1))
 
     def unload(self):
         """
@@ -624,8 +620,7 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(self._station_config.COMMAND_UNLOAD)
         rev_pattern = r'UNLOAD:(\d+)'
         response = self._read_response(rev_pattern=rev_pattern, timeout=self._station_config.FIXTURE_UNLOAD_DLY)
-        if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+        return int(self._parse_response(rev_pattern, response).group(1))
 
     def alignment(self, serial_number):
         self._alignment_pos = None
