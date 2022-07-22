@@ -164,17 +164,6 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
             self._serial_port = None
         self.is_screen_poweron = False
 
-    def module_name(self):
-        # $C.Module.name    $P.Module.name, 0000, Holder
-        self._write_serial_cmd(f'{self._station_config.COMMAND_MODULE_NAME}')
-        response = self._read_response()
-        recvobj = self._prase_respose(self._station_config.COMMAND_MODULE_NAME, response)
-        if recvobj is None:
-            raise EurekaDUTError("Fail module_name because can't receive any data from dut.")
-        if int(recvobj[0]) != 0x00:
-            raise EurekaDUTError("Exit module_name because rev err msg. Msg = {}".format(recvobj))
-        return recvobj[1]
-
     def get_vendor_info(self):
         """
         Vendor information

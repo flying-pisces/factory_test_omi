@@ -19,7 +19,7 @@ class EurekaEEPROMFixtureSIM(object):
     def __getattr__(self, item):
         def not_find(*args, **kwargs):
             pass
-        if item in ['initialize', 'close', 'unload', 'is_ready', 'get_module_inplace']:
+        if item in ['initialize', 'close', 'unload', 'is_ready', 'get_module_inplace', 'module_name']:
             return not_find
 
 
@@ -229,4 +229,15 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
             raise EurekaEEPROMFixtureErr("Fail get_board_id because can't receive any data from dut.")
         if int(recvobj[0]) != 0x00:
             raise EurekaEEPROMFixtureErr("Exit get_board_id because rev err msg. Msg = {}".format(recvobj))
+        return recvobj[1]
+
+    def module_name(self):
+        # $C.Module.name    $P.Module.name, 0000, Holder
+        self._write_command(f'{self._station_config.COMMAND_MODULE_NAME}')
+        response = self._read_response()
+        recvobj = self._parse_respose(self._station_config.COMMAND_MODULE_NAME, response)
+        if recvobj is None:
+            raise EurekaEEPROMFixtureErr("Fail module_name because can't receive any data.")
+        if int(recvobj[0]) != 0x00:
+            raise EurekaEEPROMFixtureErr("Exit module_name because rev err msg. Msg = {}".format(recvobj))
         return recvobj[1]

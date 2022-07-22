@@ -281,7 +281,7 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._equip = test_equipment_eureka_eeprom.EurekaEEPROMEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.0.4'
+        self._sw_version = '0.0.5'
         self._eep_assistant = EEPStationAssistant()
         self._max_retries = 5
         self._module_type = None
@@ -295,19 +295,20 @@ class EurekaEEPROMStation(test_station.TestStation):
         }
 
     def initialize(self):
-        # if (self._station_config.DUT_SIM
-        #         or self._station_config.EQUIPMENT_SIM
-        #         or self._station_config.FIXTURE_SIM
-        #         or self._station_config.NVM_WRITE_PROTECT
-        #         or self._station_config.USER_INPUT_CALIB_DATA not in [0x02]
-        #         or not self._station_config.CAMERA_VERIFY_ENABLE):
-        #     self._operator_interface.operator_input('warn', 'Parameters should be configured correctly', 'warning')
-        #     raise EurekaEEPROMError('Configuration Error.')
+        if (self._station_config.DUT_SIM
+                or self._station_config.EQUIPMENT_SIM
+                or self._station_config.FIXTURE_SIM
+                or self._station_config.NVM_WRITE_PROTECT
+                or self._station_config.USER_INPUT_CALIB_DATA not in [0x02]
+                or not self._station_config.CAMERA_VERIFY_ENABLE):
+            self._operator_interface.operator_input('warn', 'Parameters should be configured correctly', 'warning')
+            raise EurekaEEPROMError('Configuration Error.')
         try:
             self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
 
             self._fixture.initialize(ipaddr=self._station_config.FIXTURE_ETH_ADDR)
             self._station_sn = self._fixture.get_board_id()
+            self._module_type = self._fixture.module_name()
             while True:
                 alert_res = self._fixture.unload()
                 if alert_res in [0, None]:
