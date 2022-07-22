@@ -295,10 +295,10 @@ COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255
 DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 10
 
-VERSION_REVISION_EQUIPMENT = '87'
+VERSION_REVISION_EQUIPMENT = '88'
 VERSION_REVISION_LIST = {
     'Conoscope': ['72'],
-    'ConoscopeV2': ['87'],
+    'ConoscopeV2': ['87', '88'],
 }
 FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 

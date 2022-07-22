@@ -1603,10 +1603,12 @@ class MotAlgorithmHelper(object):
 
         masked_tristim = Y * mask
         max_XYZ_val = np.max(masked_tristim)
+        # add by Elton to solve the issue for WhiteDot Pattern 26011
+        masked_tristim = cv2.GaussianBlur(masked_tristim, (5, 5), 3)
 
-        Lumiance_thresh = 10
+        Lumiance_thresh = 15
         Length_thresh = 10
-        Img = cv2.inRange(masked_tristim, 10, 255) // 255
+        Img = cv2.inRange(masked_tristim, Lumiance_thresh, 255) // 255
         # figure,imagesc(x_angle_arr,y_angle_arr,Img)
         Img = label(Img, connectivity=2)
         stats = regionprops(Img)
@@ -1623,6 +1625,20 @@ class MotAlgorithmHelper(object):
 
         # print('num stats 0 / 1'.format(len(scenters), len(stats)))
         num_dots = len(scenters)
+
+        if self._save_plots:
+            cen = np.array(scenters)
+            plt.figure()
+            plt.title(f'WhiteDot_cp{num_dots}')
+            plt.xlim(np.min(cen[:, 1])-100, np.max(cen[:, 1])+100)
+            plt.ylim(np.min(cen[:, 0])-100, np.max(cen[:, 0])+100)
+            plt.imshow(Img)
+            plt.scatter(cen[:, 1], cen[:, 0], c='red', s=1)
+            plt.tight_layout()
+            if not os.path.exists(os.path.join(dirr, self._exp_dir)):
+                os.makedirs(os.path.join(dirr, self._exp_dir))
+            plt.savefig(os.path.join(dirr, self._exp_dir, fnamebase + '(cp).png'))
+            plt.clf()
 
         a = np.nonzero(np.array(sMajorAxisLength) < Length_thresh)
         b = np.nonzero(np.array(sMinorAxisLength) > 50)

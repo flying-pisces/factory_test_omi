@@ -2,9 +2,10 @@
 Release Note:
 ========================================================
 Version 1.0.1
-2022-7-15 elton<elton.tian@myzygroup.com>
+2022-7-22 elton<elton.tian@myzygroup.com>
 -1. Optimize test sequence
 -2. update sdk about conoscope to v88
+-3. Optimize algorithm parameters to fix WhiteDot Issue.
 
 ========================================================
 Version 1.0.0
