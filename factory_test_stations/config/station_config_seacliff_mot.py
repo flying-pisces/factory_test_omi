@@ -1,6 +1,12 @@
 """
 Release Note:
 ========================================================
+Version 1.2.11
+2022-7-26 elton<elton.tian@myzygroup>
+-1. Remove lit-up outside, test loop start by dual-start button.
+-2. Update algorithm [improve thresh value & gauss filter] to fix issue about ERR_26011.
+
+========================================================
 Version 1.2.10
 2022-7-14 elton<elton.tian@myzygroup>
 -1. Add test item for station-SN to record the serial-number about fixture.
