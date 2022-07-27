@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.0.2
+2022-7-27 elton<elton.tian@myzygroup.com>
+-1. Optimize test sequence
+
+========================================================
 Version 1.0.1
 2022-7-22 elton<elton.tian@myzygroup.com>
 -1. Optimize test sequence

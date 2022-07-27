@@ -304,7 +304,7 @@ class EurekaMotStation(test_station.TestStation):
         self._equipment = test_equipment_eureka_mot.EurekaMotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.0.1{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}SP3"
+        self._sw_version = f"1.0.2{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}SP1"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -915,7 +915,6 @@ class EurekaMotStation(test_station.TestStation):
             self._the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
 
         ready = False
-        power_on_trigger = False
         self._retries_screen_on = 0
         self._is_screen_on_by_op = False
         self._is_cancel_test_by_op = False
@@ -930,87 +929,36 @@ class EurekaMotStation(test_station.TestStation):
             self._the_unit.nvm_speed_mode(mode='normal')
             self._operator_interface.print_to_console("Initialize DUT... \n")
             self.alert_handle(self._fixture.load_dut)
-            self._the_unit.screen_on()
-            self._fixture.power_on_button_status(False)
-            self._fixture.start_button_status(True)
+
+            if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR, ]:
+                self.alert_handle(self._fixture.load)
+
             self._fixture.vacuum(False)
+            self._retries_screen_on += 1
+            self._the_unit.screen_on()
             self._is_screen_on_by_op = True
-            power_on_trigger = True
-            timeout_for_dual = time.time()
-            while not ready and not self._is_exit:
-                if self._is_cancel_test_by_op:
-                    break
 
-                msg_prompt = 'Press Dual-Btn(Load)/PowerOn-Btn(Re Lit up)  in %s S...'
-
-                self._operator_interface.prompt(msg_prompt % int(time.time() - timeout_for_dual), 'yellow')
-                if self._station_config.FIXTURE_SIM:
-                    self._is_screen_on_by_op = True
+            if self._station_config.FIXTURE_SIM:
+                self._is_alignment_success = True
+                self._module_left_or_right = 'R'
+                self._fixture._alignment_pos = (0, 0, 0, 0)
+                ready = True
+            else:
+                self._the_unit.display_color((0, 0, 0))
+                alignment_result = self._fixture.alignment(self._latest_serial_number)
+                if isinstance(alignment_result, tuple):
+                    self._module_left_or_right = str(alignment_result[4]).upper()
                     self._is_alignment_success = True
-                    self._module_left_or_right = 'R'
-                    self._fixture._alignment_pos = (0, 0, 0, 0)
-
                     ready = True
-                    continue
-
-                if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR]:
-                    self.alert_handle(self._fixture.load)
-                    ready_ret_val = (0, 0)
-                else:
-                    ready_ret_val = self._fixture.is_ready()
-                if isinstance(ready_ret_val, tuple):
-
-                    ready_status, ready_code = ready_ret_val
-
-                    if ready_status == 0x00 and ready_code == 0x00:  # load DUT automatically and then screen on
-                        ready = True  # Start to test.
-                        self._the_unit.display_color((0, 0, 0))
-
-                        self._fixture.power_on_button_status(False)
-
-                        time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-
-                        alignment_result = self._fixture.alignment(self._latest_serial_number)
-                        if isinstance(alignment_result, tuple):
-                            self._module_left_or_right = str(alignment_result[4]).upper()
-                            self._is_alignment_success = True
-
-                    elif ready_status in [0x01, 0x03]:
-                        self._operator_interface.print_to_console('Try to lit up DUT.\n')
-                        self._retries_screen_on += 1
-                        # power the dut on normally.
-                        if power_on_trigger:
-                            self._is_screen_on_by_op = False
-                            self._the_unit.screen_off()
-
-                        self._the_unit.screen_on()
-                        self._is_screen_on_by_op = True
-
-                        power_on_trigger = True
-
-                    elif ready_status == 0x02:
-                        self._is_cancel_test_by_op = True  # Cancel test.
-
-                    elif ready_status == 0x00 and ready_code in self._err_msg_list:
-                        self._operator_interface.print_to_console(
-                            f'Please note: {self._err_msg_list.get(ready_code)}.\n', 'red')
-                        self.alert_handle(ready_code)
-
-                time.sleep(0.1)
         except (EurekaMotStationError, EurekaDUTError, RuntimeError) as e:
-            # self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
         finally:
             # noinspection PyBroadException
             try:
                 if not ready:
-                    self._operator_interface.print_to_console('Cancel start signal from dual.\n')
                     self._the_unit.close()
-                    # self._the_unit = None
                 self._fixture.start_button_status(False)
-                self._fixture.power_on_button_status(False)
             except Exception as e:
-                # self._operator_interface.operator_input(None, str(e), msg_type='error')
                 self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
         self._operator_interface.prompt('', 'SystemButtonFace')
 
@@ -1043,20 +991,27 @@ class EurekaMotStation(test_station.TestStation):
         timeout_for_dual = time.time()
         try:
             self._fixture.flush_data()
-            self._fixture.power_on_button_status(False)
-            self._fixture.start_button_status(False)
-            self._fixture.power_on_button_status(True)
+            self._fixture.start_button_status(True)
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             while not ready:
                 msg_prompt = 'Load DUT, and then Press PowerOn-Btn (Lit up) in %s S...'
                 self._operator_interface.prompt(msg_prompt % int(time.time() - timeout_for_dual), 'yellow')
                 if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR, self._station_config.FIXTURE_SIM]:
-                    ready_status = (0x03, 00)
+                    ready_status = (0x00, 00)
                 else:
                     ready_status = self._fixture.is_ready()
-                if isinstance(ready_status, tuple) and ready_status[0] == 0x03:
-                    # load DUT automatically and then screen on
-                    ready = True
+                if isinstance(ready_status, tuple) and len(ready_status) == 0x02:
+                    ready_status, ready_code = ready_status
+                    if ready_status in [0x00] and ready_code == 0:
+                        # load DUT automatically and then screen on
+                        ready = True
+                    elif ready_status == 0x00 and ready_code in self._err_msg_list:
+                        self._operator_interface.print_to_console(
+                            f'Please note: {self._err_msg_list.get(ready_code)}.\n', 'red')
+                        self.alert_handle(ready_code)
+                    elif ready_status == 0x02:
+                        self._operator_interface.print_to_console('Cancel testing...')
+                        break
                 time.sleep(0.05)
         except Exception as e:
             self._operator_interface.print_to_console(f'Exception _query_dual_start_v2 ----> {str(e)}')

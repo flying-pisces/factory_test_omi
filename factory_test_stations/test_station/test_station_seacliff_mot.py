@@ -900,7 +900,6 @@ class seacliffmotStation(test_station.TestStation):
             self._the_unit = projectDut(serial_number, self._station_config, self._operator_interface)
 
         ready = False
-        power_on_trigger = False
         self._retries_screen_on = 0
         self._is_screen_on_by_op = False
         self._is_cancel_test_by_op = False
@@ -920,11 +919,17 @@ class seacliffmotStation(test_station.TestStation):
 
             self._the_unit.display_color((255, 0, 0))
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
-            alignment_result = self._fixture.alignment(self._latest_serial_number)
-            if isinstance(alignment_result, tuple):
-                self._module_left_or_right = str(alignment_result[4]).upper()
+            if self._station_config.FIXTURE_SIM:
                 self._is_alignment_success = True
+                self._module_left_or_right = 'R'
+                self._fixture._alignment_pos = (0, 0, 0, 0)
                 ready = True
+            else:
+                alignment_result = self._fixture.alignment(self._latest_serial_number)
+                if isinstance(alignment_result, tuple):
+                    self._module_left_or_right = str(alignment_result[4]).upper()
+                    self._is_alignment_success = True
+                    ready = True
 
         except (seacliffmotStationError, DUTError, RuntimeError) as e:
             # self._operator_interface.operator_input(None, str(e), msg_type='error')
@@ -981,6 +986,9 @@ class seacliffmotStation(test_station.TestStation):
                     elif ready_status == 0x00 and ready_code in self._err_msg_list:
                         self._operator_interface.print_to_console(f'Please note: {self._err_msg_list.get(ready_code)}.\n', 'red')
                         self.alert_handle(ready_code)
+                    elif ready_status == 0x01:
+                        self._operator_interface.print_to_console('Cancel testing...')
+                        break
                 time.sleep(0.05)
         except Exception as e:
             self._operator_interface.print_to_console(f'Exception _query_dual_start_v2 ----> {str(e)}')
