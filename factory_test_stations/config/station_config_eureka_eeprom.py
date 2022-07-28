@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 0.0.5
+2022-7-28 elton<elton.tian@myzygroup.com>
+-1. Add support MES data from local csv.
+
+========================================================
 Version 0.0.4
 2022-7-20 elton<elton.tian@myzygroup.com>
 -1. Add Station_SN to csv.
@@ -120,7 +125,7 @@ DISP_CHECKER_COUNT = 2
 
 NVM_WRITE_COUNT_MAX = 4
 # calibration required data. 1:  User input values, 2: Get data from json-file.
-USER_INPUT_CALIB_DATA = 0x100
+USER_INPUT_CALIB_DATA = 0x02
 
 CALIB_REQ_DATA = {
     'display_boresight_x': 0.3180896059721896,
