@@ -95,6 +95,7 @@ class EurekaMotEquipment(hardware_station_common.test_station.test_equipment.Tes
     ########### Equipment Operation ###########
     def open(self):
         ret = self._device.CmdOpen()
+        self._quit = False
         self._open = self._log(ret, "CmdOpen")
         if self._verbose:
            print("Open Status is \n{0}\n".format(str(self._open)))
@@ -107,6 +108,7 @@ class EurekaMotEquipment(hardware_station_common.test_station.test_equipment.Tes
         return self._log(ret, "CmdReset")
 
     def close(self):
+        self._quit = True
         ret = self._device.CmdClose()
         if self._verbose:
             self._operator_interface.print_to_console("Open Status is \n{0}\n".format(str(self._log(ret, "CmdClose"))))
@@ -115,7 +117,6 @@ class EurekaMotEquipment(hardware_station_common.test_station.test_equipment.Tes
         return self._log(ret, "CmdClose")
 
     def kill(self):
-        self._quit = True
         self._device.QuitApplication()
 
     def is_ready(self):
