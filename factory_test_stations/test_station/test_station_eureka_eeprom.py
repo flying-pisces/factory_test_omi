@@ -4,7 +4,7 @@ import test_station.test_equipment.test_equipment_eureka_eeprom as test_equipmen
 import hardware_station_common.utils.gui_utils as gui_utils
 import tkinter as tk
 from test_station.dut.eureka_dut import EurekaDut, EurekaDUTError, DutEthernetCommunicationProxy
-from test_station.dut.project_dut import projectDut
+from test_station.dut.eureka_dut import projectDut
 import pprint
 import types
 import ctypes
@@ -305,6 +305,7 @@ class EurekaEEPROMStation(test_station.TestStation):
             raise EurekaEEPROMError('Configuration Error.')
         try:
             self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
+            self._operator_interface.update_root_config({'ShowLogin': 'False', 'IsUsrLogin': 'True'})
 
             self._fixture.initialize(ipaddr=self._station_config.FIXTURE_ETH_ADDR)
             self._station_sn = self._fixture.get_board_id()
@@ -316,7 +317,6 @@ class EurekaEEPROMStation(test_station.TestStation):
                 self._operator_interface.operator_input(
                     'Hint', self._err_msg_list.get(alert_res), msg_type='warning', msgbtn=0)
             self._equip.initialize()
-
             self._operator_interface.print_to_console(f'Query module type : {self._module_type} \n')
             if os.path.exists(self._station_config.CALIB_REQ_DATA_FILENAME):
                 shutil.rmtree(self._station_config.CALIB_REQ_DATA_FILENAME)

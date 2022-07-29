@@ -40,7 +40,7 @@ CALIB_REQ_DATA_FILENAME = r'C:\oculus\run\eureka_eeprom\session_data'
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
+SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = r'^2G\w{12}$'
 
 ##################################
@@ -125,7 +125,7 @@ DISP_CHECKER_COUNT = 2
 
 NVM_WRITE_COUNT_MAX = 4
 # calibration required data. 1:  User input values, 2: Get data from json-file.
-USER_INPUT_CALIB_DATA = 0x02
+USER_INPUT_CALIB_DATA = 0x100
 
 CALIB_REQ_DATA = {
     'display_boresight_x': 0.3180896059721896,
@@ -161,7 +161,8 @@ CALIB_REQ_DATA = {
 ##################################
 # shopfloor
 #
-SHOPFLOOR_SYSTEM = 'Foxlink'
+SHOPFLOOR_SYSTEM = 'auto_mes_eureka'
+SHOPFLOOR_DIR = r'C:\Oculus\run\shop_floor_interface'
 # Will we be enforcing shopfloor routing?
 ENFORCE_SHOPFLOOR_ROUTING = False
 # does the shopfloor use work orders?
@@ -185,13 +186,13 @@ STATION_NUMBER = '0000'
 
 #####
 ### Facebook_IT Enable boolean
-FACEBOOK_IT_ENABLED = False
+FACEBOOK_IT_ENABLED = True
 
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
-DUT_SIM = False
-EQUIPMENT_SIM = False
-FIXTURE_SIM = False
+DUT_SIM = True
+EQUIPMENT_SIM = True
+FIXTURE_SIM = True
 
 FULL_TREE_UI = True
 IS_STATION_ACTIVE = True

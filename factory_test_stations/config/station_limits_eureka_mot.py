@@ -1,6 +1,7 @@
 CURRENT_FW_VERSION = 1001
 
 STATION_LIMITS_ARRAYS = [
+    ["STATION_SN", None, None, 78],
     ["SW_VERSION", None, None, 79],
     ["EQUIP_VERSION", None, None, 80],
     ['SPEC_VERSION', None, None, 81],

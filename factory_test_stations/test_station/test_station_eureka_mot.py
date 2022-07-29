@@ -342,6 +342,7 @@ class EurekaMotStation(test_station.TestStation):
 
     def initialize(self):
         try:
+            self._operator_interface.update_root_config({'ShowLogin': 'False', 'IsUsrLogin': 'True'})
             self._operator_interface.print_to_console("Initializing Eureka MOT station...{0}SP2\n"
                                                       .format(self._sw_version))
             if self._station_config.AUTO_CFG_COMPORTS:

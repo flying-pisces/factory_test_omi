@@ -19,7 +19,8 @@ class EurekaEEPROMFixtureSIM(object):
     def __getattr__(self, item):
         def not_find(*args, **kwargs):
             pass
-        if item in ['initialize', 'close', 'unload', 'is_ready', 'get_module_inplace', 'module_name']:
+        if item in ['initialize', 'close', 'unload', 'is_ready', 'get_module_inplace', 'module_name',
+                    'load', 'get_board_id', 'disable_dual_btn', 'CheckImage']:
             return not_find
 
 
