@@ -689,7 +689,7 @@ class SeacliffOffAxisStation(test_station.TestStation):
 
             center_item = self._station_config.CENTER_AT_POLE_AZI
             lv_cr_items = {}
-            lv_all_items = {}
+            export_all_items = {}
             for pattern in pos_patterns:
                 if pattern not in self._station_config.TEST_PATTERNS:
                     self._operator_interface.print_to_console("Can't find pattern {} for position {}.\n"
@@ -786,7 +786,14 @@ class SeacliffOffAxisStation(test_station.TestStation):
                         duv_dic = dict(zip(keys, duvs))
                         u_dic.update(us_dic)
                         v_dic.update(vs_dic)
-                    lv_all_items[f'{posIdx}_{pattern}'] = lv_dic
+                    export_all_items[f'{posIdx}_{pattern}'] = {
+                        'lv': lv_dic,
+                        'cx': cx_dic,
+                        'cy': cy_dic,
+                        "u'": u_dic,
+                        "v'": v_dic,
+                        "du'v'": duv_dic,
+                    }
                 # endregion
 
                 # region Normal Test Item.
@@ -875,59 +882,61 @@ class SeacliffOffAxisStation(test_station.TestStation):
                 for export_posIdx, export_raw_data_patterns in self._station_config.EXPORT_RAW_DATA_PATTERN.items():
                     if posIdx != export_posIdx or len(export_raw_data_patterns) <= 0:
                         continue
-                    export_raw_data = np.empty(
-                        (len(self._station_config.EXPORT_RAW_DATA_PATTERN_POLE),
-                         len(self._station_config.EXPORT_RAW_DATA_PATTERN_AZI) * len(export_raw_data_patterns) + 1),
-                        np.float)
-                    export_raw_data[:, 0] = self._station_config.EXPORT_RAW_DATA_PATTERN_POLE.copy()
-                    for pattern_idx, exp_raw_data_pattern in enumerate(export_raw_data_patterns):
-                        export_raw_keys = {}
-                        for aziIdx, azi_item in enumerate(self._station_config.EXPORT_RAW_DATA_PATTERN_AZI):
-                            pname, azi = azi_item
-                            export_raw_keys = []
-                            for pole in self._station_config.EXPORT_RAW_DATA_PATTERN_POLE:
-                                if pole == 0:
-                                    export_raw_keys.append(f'P_0_0')
-                                elif pole > 0:
-                                    export_raw_keys.append(f'P_{pole}_{azi}')
-                                else:
-                                    export_raw_keys.append(f'P_{-pole}_{azi + 180}')
-                            export_raw_values = [lv_all_items[f'{posIdx}_{exp_raw_data_pattern}'].get(c) for c in
-                                                 export_raw_keys]
-                            export_raw_data[:, pattern_idx * len(
-                                self._station_config.EXPORT_RAW_DATA_PATTERN_AZI) + aziIdx + 1] = export_raw_values
-                    try:
-                        uni_file_name = re.sub('_x.log', '', test_log.get_filename())
-                        bak_dir = os.path.join(self._station_config.ROOT_DIR,
-                                               self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
-                        raw_data_dir = os.path.join(bak_dir, uni_file_name)
-                        if not os.path.exists(raw_data_dir):
-                            hsc_utils.mkdir_p(raw_data_dir)
 
-                        export_fn = test_log.get_filename().replace('_x.log', f'_raw_export_{posIdx}.csv')
-                        with open(os.path.join(raw_data_dir, export_fn), 'w') as f:
-                            header = ','
-                            header2 = ','
-                            header3 = 'Theta,'
-                            subItems = ','.join(['' for c in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
-                            subItem2s = ','.join([c for c, d in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
-                            subItem3s = ','.join(
-                                [f'Phi = {d}' for c, d in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
-                            header += ','.join([f'{c}{subItems}' for c in export_raw_data_patterns])
-                            header2 += ','.join([f'{subItem2s}' for c in export_raw_data_patterns])
-                            header3 += ','.join([f'{subItem3s}' for c in export_raw_data_patterns])
-                            data_items = [header, header2, header3]
+                    for key in ["lv", "cx", "cy", "u'", "v'", "du'v'"]:
+                        export_raw_data = np.empty(
+                            (len(self._station_config.EXPORT_RAW_DATA_PATTERN_POLE),
+                             len(self._station_config.EXPORT_RAW_DATA_PATTERN_AZI) * len(export_raw_data_patterns) + 1),
+                            np.float)
+                        export_raw_data[:, 0] = self._station_config.EXPORT_RAW_DATA_PATTERN_POLE.copy()
+                        for pattern_idx, exp_raw_data_pattern in enumerate(export_raw_data_patterns):
+                            export_raw_keys = {}
+                            for aziIdx, azi_item in enumerate(self._station_config.EXPORT_RAW_DATA_PATTERN_AZI):
+                                pname, azi = azi_item
+                                export_raw_keys = []
+                                for pole in self._station_config.EXPORT_RAW_DATA_PATTERN_POLE:
+                                    if pole == 0:
+                                        export_raw_keys.append(f'P_0_0')
+                                    elif pole > 0:
+                                        export_raw_keys.append(f'P_{pole}_{azi}')
+                                    else:
+                                        export_raw_keys.append(f'P_{-pole}_{azi + 180}')
+                                export_raw_values = [export_all_items[f'{posIdx}_{exp_raw_data_pattern}'][key].get(c) for c in
+                                                     export_raw_keys]
+                                export_raw_data[:, pattern_idx * len(
+                                    self._station_config.EXPORT_RAW_DATA_PATTERN_AZI) + aziIdx + 1] = export_raw_values
+                        try:
+                            uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+                            bak_dir = os.path.join(self._station_config.ROOT_DIR,
+                                                   self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
+                            raw_data_dir = os.path.join(bak_dir, uni_file_name)
+                            if not os.path.exists(raw_data_dir):
+                                hsc_utils.mkdir_p(raw_data_dir)
 
-                            for x in range(export_raw_data.shape[0]):
-                                data_items.append(','.join([f'{c}' for c in export_raw_data[x, :]]))
+                            export_fn = f"{test_log.get_filename().split('_')[0]}_raw_export_{posIdx}_{key}.csv"
+                            with open(os.path.join(raw_data_dir, export_fn), 'w') as f:
+                                header = ','
+                                header2 = ','
+                                header3 = 'Theta,'
+                                subItems = ','.join(['' for c in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
+                                subItem2s = ','.join([c for c, d in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
+                                subItem3s = ','.join(
+                                    [f'Phi = {d}' for c, d in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
+                                header += ','.join([f'{c}{subItems}' for c in export_raw_data_patterns])
+                                header2 += ','.join([f'{subItem2s}' for c in export_raw_data_patterns])
+                                header3 += ','.join([f'{subItem3s}' for c in export_raw_data_patterns])
+                                data_items = [header, header2, header3]
 
-                            f.writelines([f'{c}\n' for c in data_items])
-                            f.close()
+                                for x in range(export_raw_data.shape[0]):
+                                    data_items.append(','.join([f'{c}' for c in export_raw_data[x, :]]))
 
-                    except Exception as e:
-                        self._operator_interface.print_to_console(f'Fail to save raw data. {str(e)} \n')
+                                f.writelines([f'{c}\n' for c in data_items])
+                                f.close()
 
-            del lv_all_items
+                        except Exception as e:
+                            self._operator_interface.print_to_console(f'Fail to save raw data. {str(e)} \n')
+
+            del export_all_items
         self._operator_interface.print_to_console('complete the off_axis test items.\n')
 
     def login(self, active, usr, pwd):
