@@ -529,10 +529,10 @@ class projectDut(object):
         pass
 
     def initialize(self, **kwargs):
-        self._operator_interface.print_to_console("Initializing pancake Fixture_DUT.\n")
+        self._operator_interface.print_to_console("Initializing Eureka DUT.\n")
 
     def close(self):
-        self._operator_interface.print_to_console("Closing pancake uniformity Fixture\n")
+        self._operator_interface.print_to_console("Closing Eureka DUT\n")
 
     def __getattr__(self, item):
         def not_find(*args, **kwargs):

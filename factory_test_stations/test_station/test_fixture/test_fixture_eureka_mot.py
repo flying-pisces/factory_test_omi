@@ -665,6 +665,12 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             response = self._read_response()
         return self._parse_response(cmd[1], response).group(1)
 
+    def vacuum_status(self):
+        with self._fixture_mutex:
+            self._write_serial(f'{self._station_config.COMMAND_GET_VACUUM_STATUS}')
+            response = self._read_response()
+        return self._parse_response(r'VACUUM_STATUS:(\d)', response).group(1)
+
     def alignment(self, serial_number):
         self._alignment_pos = None
         self._write_serial('{0}:{1}'.format(self._station_config.COMMAND_ALIGNMENT, serial_number))

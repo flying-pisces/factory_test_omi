@@ -258,7 +258,7 @@ class EurekaMotEquipment(hardware_station_common.test_station.test_equipment.Tes
             raise EurekaMotEquipmentError(f'Fail to init {str(e)}')
 
         self.get_config()
-        self._operator_interface.print_to_console("Initializing Seacliff MOT Equipment \n")
+        self._operator_interface.print_to_console("Initializing Eureka MOT Equipment \n")
 
 
 class MotAlgorithmHelper(object):

@@ -304,7 +304,7 @@ class EurekaMotStation(test_station.TestStation):
         self._equipment = test_equipment_eureka_mot.EurekaMotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.0.2{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}SP1"
+        self._sw_version = f"1.0.3{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}SP1"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -379,6 +379,7 @@ class EurekaMotStation(test_station.TestStation):
                 f'update distance between camera and datum: {self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM}\n')
             self._equipment.initialize()
             self._equipment.open()
+            self._fw_version = self._fixture.version()
             threading.Thread(target=self._auto_backup_thr, daemon=True).start()
         except Exception as e:
             self._operator_interface.operator_input(None, str(e), 'error')
@@ -539,11 +540,11 @@ class EurekaMotStation(test_station.TestStation):
         @type test_log: test_station.test_log.test_log
         """
         msg0 = 'info --> lit up: {0}, emulator_dut: {1}, emulator_equip: {2}, emulator_fixture: {3},' \
-               ' particle:{4}, dut_checker:{5} ver: {6}\n' .format(
+               ' particle:{4}, dut_checker:{5} ver: {6} FW:{7}\n' .format(
                 self._station_config.DUT_LITUP_OUTSIDE, self._station_config.DUT_SIM,
                 self._station_config.EQUIPMENT_SIM, self._station_config.FIXTURE_SIM,
                 self._station_config.FIXTURE_PARTICLE_COUNTER, self._station_config.DISP_CHECKER_ENABLE,
-                self._sw_version)
+                self._sw_version, self._fw_version)
         self._operator_interface.print_to_console(msg0)
         is_query_temp = (hasattr(self._station_config, 'QUERY_DUT_TEMP_PER_PATTERN')
                          and self._station_config.QUERY_DUT_TEMP_PER_PATTERN
@@ -904,6 +905,8 @@ class EurekaMotStation(test_station.TestStation):
             raise test_station.TestStationSerialNumberError(f'须重启软件:{self._fatal_error_restart_msg}')
         if not self._is_ready_check():
             self._operator_interface.print_to_console(f'--------------------> {self._latest_serial_number}\n')
+            self._fixture.start_button_status(False)
+            self._operator_interface.prompt('Scan or type the DUT Serial Number', 'SystemButtonFace')
             raise test_station.TestStationSerialNumberError('Station not ready.')
         self._operator_interface.prompt('', 'SystemButtonFace')
         return True
@@ -930,14 +933,12 @@ class EurekaMotStation(test_station.TestStation):
             self._the_unit.nvm_speed_mode(mode='normal')
             self._operator_interface.print_to_console("Initialize DUT... \n")
             self.alert_handle(self._fixture.load_dut)
-
-            if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR, ]:
-                self.alert_handle(self._fixture.load)
-
             self._fixture.vacuum(False)
             self._retries_screen_on += 1
             self._the_unit.screen_on()
             self._is_screen_on_by_op = True
+
+            self.alert_handle(self._fixture.load)
 
             if self._station_config.FIXTURE_SIM:
                 self._is_alignment_success = True
@@ -977,6 +978,8 @@ class EurekaMotStation(test_station.TestStation):
                 self._operator_interface.print_to_console(
                     f'Please note --> {alert_res}: {self._err_msg_list.get(alert_res)}.\n', 'red')
                 if callable(func):
+                    if alert_res in [12, 13, 14]:
+                        self._fixture.unload_dut()
                     self._operator_interface.operator_input(
                         'Hint', f'Please note --> {alert_res}: {self._err_msg_list.get(alert_res)}.\n',
                         msg_type='warning')
@@ -1004,8 +1007,13 @@ class EurekaMotStation(test_station.TestStation):
                 if isinstance(ready_status, tuple) and len(ready_status) == 0x02:
                     ready_status, ready_code = ready_status
                     if ready_status in [0x00] and ready_code == 0:
-                        # load DUT automatically and then screen on
-                        ready = True
+                        if int(self._fixture.vacuum_status()) == 0:
+                            # load DUT automatically and then screen on
+                            ready = True
+                        else:
+                            self._fixture.start_button_status(True)
+                            self._operator_interface.print_to_console(
+                                f'需扣好产品: Vacuum warning, please load DUT correctly.\n', 'red')
                     elif ready_status == 0x00 and ready_code in self._err_msg_list:
                         self._operator_interface.print_to_console(
                             f'Please note: {self._err_msg_list.get(ready_code)}.\n', 'red')

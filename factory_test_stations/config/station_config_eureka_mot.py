@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.0.3
+2022-8-1 elton<elton.tian@myzygroup.com>
+-1. Lit up DUT firstly, while loading carrier to fixture.
+
+========================================================
 Version 1.0.2
 2022-7-27 elton<elton.tian@myzygroup.com>
 -1. Optimize test sequence
@@ -122,7 +127,8 @@ COMMAND_QUERY_TEMP = 'CMD_GET_TEMPERATURE'
 COMMAND_QUERY_DUT_TEMP = 'CMD_GET_DUT_TEMPERATURE'
 COMMAND_PROBE_BUTTON = 'CMD_PROBE_BUTTON'
 COMMAND_ZERO_POSIT = 'CMD_ZERO_POSIT'
-COMMAND_VACUUM_CTRL = 'CMD_VACUUM'
+COMMAND_VACUUM_CTRL = 'CMD_SET_VACUUM'
+COMMAND_GET_VACUUM_STATUS = 'CMD_GET_VACUUM_STATUS'
 COMMAND_DUT_LOAD = 'CMD_DUT_LOAD'
 COMMAND_DUT_UNLOAD = 'CMD_DUT_UNLOAD'
 COMMAND_QUERY_TEMP_RANGE = (10, 60)
