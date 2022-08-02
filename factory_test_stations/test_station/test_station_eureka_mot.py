@@ -23,6 +23,7 @@ import threading
 import shutil
 from pathlib import Path
 import datetime
+from hardware_station_common.test_station.test_log.shop_floor_interface.shop_floor import ShopFloor
 
 
 class EurekaMotStationError(Exception):
@@ -321,6 +322,7 @@ class EurekaMotStation(test_station.TestStation):
         self._is_exit = False
         self._is_running = False
         self._fatal_error_restart_msg = None
+        self._shop_floor: ShopFloor = None
         self._err_msg_list = {
             1: 'Axis X running error / X轴电机运动异常',
             2: 'Axis Y running error / Y轴电机运动异常',
@@ -380,6 +382,7 @@ class EurekaMotStation(test_station.TestStation):
             self._equipment.initialize()
             self._equipment.open()
             self._fw_version = self._fixture.version()
+            self._shop_floor = ShopFloor()
             threading.Thread(target=self._auto_backup_thr, daemon=True).start()
         except Exception as e:
             self._operator_interface.operator_input(None, str(e), 'error')
@@ -903,6 +906,11 @@ class EurekaMotStation(test_station.TestStation):
     def is_ready(self):
         if self._fatal_error_restart_msg is not None:
             raise test_station.TestStationSerialNumberError(f'须重启软件:{self._fatal_error_restart_msg}')
+        ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
+        if not isinstance(ok_res, tuple) or not ok_res[0]:
+            self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            return False
+
         if not self._is_ready_check():
             self._operator_interface.print_to_console(f'--------------------> {self._latest_serial_number}\n')
             self._fixture.start_button_status(False)

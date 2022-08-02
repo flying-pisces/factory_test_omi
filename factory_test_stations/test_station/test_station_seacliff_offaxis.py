@@ -516,8 +516,10 @@ class SeacliffOffAxisStation(test_station.TestStation):
                 scan_sn = None
 
     def is_ready(self):
-        serial_number = self._latest_serial_number
-        self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
+        ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
+        if not isinstance(ok_res, tuple) or not ok_res[0]:
+            self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            return False
         if not self._station_config.AUTO_SCAN_CODE:
             self.is_ready_litup_outside()
         return True

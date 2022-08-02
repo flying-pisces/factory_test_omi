@@ -354,6 +354,10 @@ class TokkiOffAxisNStation(test_station.TestStation):
         return test_station.TestStation.validate_sn(self, serial_num)
 
     def is_ready(self):
+        ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
+        if not isinstance(ok_res, tuple) or not ok_res[0]:
+            self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            return False
         serial_number = self._latest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
         self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
@@ -436,6 +440,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
             except:
                 pass
             self._operator_interface.prompt('')
+        return True
 
     def data_export(self, serial_number, test_log, tposIdx):
         """

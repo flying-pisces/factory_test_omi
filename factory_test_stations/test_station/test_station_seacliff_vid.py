@@ -438,6 +438,10 @@ class seacliffVidStation(test_station.TestStation):
         return self._overall_result, self._first_failed_test_result
 
     def is_ready(self):
+        ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
+        if not isinstance(ok_res, tuple) or not ok_res[0]:
+            self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            return False
         return True
 
     def validate_sn(self, serial_num):

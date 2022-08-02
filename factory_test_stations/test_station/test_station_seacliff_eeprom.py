@@ -12,134 +12,12 @@ import os
 import sys
 import time
 import json
-import Pmw
 import shutil
 import collections
 import numpy as np
 import datetime
 import hardware_station_common
-
-
-class EEPROMUserInputDialog(gui_utils.Dialog):
-    def __init__(self, station_config, operator_interface, title=None):
-        """
-
-        @type operator_interface: operator_interface.
-        """
-        self._operator_interface = operator_interface
-        self._station_config = station_config  # type: station_config
-        self.is_looping = True
-        self._value_dic = None
-        super(EEPROMUserInputDialog, self).__init__(self._operator_interface._prompt.master, title)
-
-    def body(self, master):
-        self._boresight_x = Pmw.EntryField(master, labelpos=tk.W, label_text="boresight_x", value="0",
-                                           validate={"validator": "real", "min": -128, "max": 128})
-        self._boresight_y = Pmw.EntryField(master, labelpos=tk.W, label_text="boresight_y", value="0",
-                                           validate={"validator": "real", "min": -128, "max": 128})
-        self._boresight_r = Pmw.EntryField(master, labelpos=tk.W, label_text="rotation_r", value="0",
-                                           validate={"validator": "real", "min": -2, "max": 2})
-
-        self._w255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="W255_Lv", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 256})
-        self._w255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="W255_x", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 1})
-        self._w255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="W255_y", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 1})
-
-        self._r255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="R255_Lv", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 256})
-        self._r255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="R255_x", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 1})
-        self._r255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="R255_y", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 1})
-
-        self._g255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="G255_Lv", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 256})
-        self._g255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="G255_x", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 1})
-        self._g255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="G255_y", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 1})
-
-        self._b255_lv = Pmw.EntryField(master, labelpos=tk.W, label_text="B255_Lv", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 256})
-        self._b255_x = Pmw.EntryField(master, labelpos=tk.W, label_text="B255_x", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 1})
-        self._b255_y = Pmw.EntryField(master, labelpos=tk.W, label_text="B255_y", value="0",
-                                           validate={"validator": "real", "min": 0, "max": 1})
-
-        self._tempW = Pmw.EntryField(master, labelpos=tk.W, label_text="Temp. W", value="30",
-                                      validate={"validator": "real", "min": 30, "max": 60})
-        self._tempR = Pmw.EntryField(master, labelpos=tk.W, label_text="Temp. R", value="30",
-                                     validate={"validator": "real", "min": 30, "max": 60})
-        self._tempG = Pmw.EntryField(master, labelpos=tk.W, label_text="Temp. G", value="30",
-                                     validate={"validator": "real", "min": 30, "max": 60})
-        self._tempB = Pmw.EntryField(master, labelpos=tk.W, label_text="Temp. B", value="30",
-                                     validate={"validator": "real", "min": 30, "max": 60})
-        self._tempWD = Pmw.EntryField(master, labelpos=tk.W, label_text="Temp. New W", value="30",
-                                     validate={"validator": "real", "min": 30, "max": 60})
-
-        self._gl_R = Pmw.EntryField(master, labelpos=tk.W, label_text="GL R", value="0",
-                                       validate={"validator": "real", "min": 0, "max": 256})
-        self._gl_G = Pmw.EntryField(master, labelpos=tk.W, label_text="GL G", value="0",
-                                    validate={"validator": "real", "min": 0, "max": 256})
-        self._gl_B = Pmw.EntryField(master, labelpos=tk.W, label_text="GL B", value="0",
-                                    validate={"validator": "real", "min": 0, "max": 256})
-
-        items = [self._boresight_x, self._boresight_y, self._boresight_r, self._w255_lv, self._w255_x, self._w255_y,
-                 self._r255_lv, self._r255_x, self._r255_y, self._g255_lv, self._g255_x, self._g255_y,
-                 self._b255_lv, self._b255_x, self._b255_y,
-                 self._tempW, self._tempR, self._tempG, self._tempB, self._tempWD, self._gl_R, self._gl_G, self._gl_B]
-        for idx, widget in enumerate(items):
-            row = idx // 3
-            col = idx % 3
-            widget.grid(row=row, column=col)
-        Pmw.alignlabels(items)
-        return self._boresight_x  # initial focus
-
-    def validate(self):
-        try:
-            self._value_dic = None
-            boresight_x = float(self._boresight_x.getvalue())
-            boresight_y = float(self._boresight_y.getvalue())
-            boresight_r = float(self._boresight_r.getvalue())
-            w255 = [float(c.getvalue()) for c in [self._w255_lv, self._w255_x, self._w255_y]]
-            r255 = [float(c.getvalue()) for c in [self._r255_lv, self._r255_x, self._r255_y]]
-            g255 = [float(c.getvalue()) for c in [self._g255_lv, self._g255_x, self._g255_y]]
-            b255 = [float(c.getvalue()) for c in [self._b255_lv, self._b255_x, self._b255_y]]
-
-            temps = [float(c.getvalue()) for c in [self._tempW, self._tempR, self._tempG, self._tempB, self._tempWD]]
-            wd_gl = [float(c.getvalue()) for c in [self._gl_R, self._gl_G, self._gl_B]]
-
-            self._value_dic = {
-                'display_boresight_x': boresight_x, 'display_boresight_y': boresight_y,  'rotation': boresight_r,
-                'lv_W255': w255[0], 'x_W255': w255[1], 'y_W255': w255[2],
-                'lv_R255': r255[0], 'x_R255': r255[1], 'y_R255': r255[2],
-                'lv_G255': g255[0], 'x_G255': g255[1], 'y_G255': g255[2],
-                'lv_B255': b255[0], 'x_B255': b255[1], 'y_B255': b255[2],
-                'TemperatureW': temps[0],
-                'TemperatureR': temps[1],
-                'TemperatureG': temps[2],
-                'TemperatureB': temps[3],
-                'TemperatureWD': temps[4],
-                'WhitePointGLR':  wd_gl[0],
-                'WhitePointGLG':  wd_gl[1],
-                'WhitePointGLB':  wd_gl[2],
-            }
-            return True
-        except Exception as e:
-            self._operator_interface.print_to_console('Fail to validate data. {0}'.format(e.args))
-            return False
-
-    def current_cfg(self):
-        return dict(self._value_dic) if self._value_dic is not None else None
-
-    def apply(self):
-        pass
-
-    def cancel(self):
-        self.is_looping = False
-        super(EEPROMUserInputDialog, self).cancel()
+from hardware_station_common.test_station.test_log.shop_floor_interface.shop_floor import ShopFloor
 
 
 def chk_and_set_measured_value_by_name(test_log, item, value):
@@ -447,6 +325,8 @@ class seacliffeepromStation(test_station.TestStation):
         self._sw_version = '1.2.4'
         self._eep_assistant = EEPStationAssistant()
         self._max_retries = 5
+        self._shop_floor: ShopFloor = None
+        self._latest_serial_number = None
 
     def initialize(self):
         if (self._station_config.DUT_SIM
@@ -470,6 +350,7 @@ class seacliffeepromStation(test_station.TestStation):
 
             if os.path.exists(self._station_config.CALIB_REQ_DATA_FILENAME):
                 shutil.rmtree(self._station_config.CALIB_REQ_DATA_FILENAME)
+            self._shop_floor = ShopFloor()
         except:
             self._operator_interface.operator_input(None, 'Fail to initialize test_station. ', 'error')
             raise
@@ -501,13 +382,7 @@ class seacliffeepromStation(test_station.TestStation):
         calib_data = None  # self._station_config.CALIB_REQ_DATA
         var_check_data = None
         try:
-            if self._station_config.USER_INPUT_CALIB_DATA == 0x01:
-                dlg = EEPROMUserInputDialog(self._station_config, self._operator_interface,
-                                            'EEPROM Parameter for SN:{0}'.format(serial_number))
-                while dlg.is_looping:
-                    self._operator_interface.wait(0.5, '')
-                calib_data = dlg.current_cfg()
-            elif self._station_config.USER_INPUT_CALIB_DATA == 0x02:
+            if self._station_config.USER_INPUT_CALIB_DATA == 0x02:
                 calib_data = None
                 calib_data_json_fn = os.path.join(self._station_config.CALIB_REQ_DATA_FILENAME,
                                                   f'eeprom_session_miz_{serial_number}.json')
@@ -797,5 +672,12 @@ class seacliffeepromStation(test_station.TestStation):
         return self._overall_result, self._first_failed_test_result
 
     def is_ready(self):
-        self._fixture.is_ready()
+        ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
+        if not isinstance(ok_res, tuple) or not ok_res[0]:
+            self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            return False
+        return True
 
+    def validate_sn(self, serial_num):
+        self._latest_serial_number = serial_num
+        return test_station.TestStation.validate_sn(self, serial_num)

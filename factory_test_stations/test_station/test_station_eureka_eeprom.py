@@ -19,6 +19,7 @@ import numpy as np
 import datetime
 import hardware_station_common
 from hardware_station_common.utils.io_utils import round_ex
+from hardware_station_common.test_station.test_log.shop_floor_interface.shop_floor import ShopFloor
 
 
 class EurekaEEPROMError(Exception):
@@ -281,7 +282,7 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._equip = test_equipment_eureka_eeprom.EurekaEEPROMEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.0.5'
+        self._sw_version = '0.0.6'
         self._eep_assistant = EEPStationAssistant()
         self._max_retries = 5
         self._module_type = None
@@ -293,6 +294,7 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._err_msg_list = {
             1: 'Fail to get signal about Sensor for press-plate'
         }
+        self._shop_floor: ShopFloor = None
 
     def initialize(self):
         if (self._station_config.DUT_SIM
@@ -310,6 +312,7 @@ class EurekaEEPROMStation(test_station.TestStation):
             self._fixture.initialize(ipaddr=self._station_config.FIXTURE_ETH_ADDR)
             self._station_sn = self._fixture.get_board_id()
             self._module_type = self._fixture.module_name()
+
             while True:
                 alert_res = self._fixture.unload()
                 if alert_res in [0, None]:
@@ -320,6 +323,7 @@ class EurekaEEPROMStation(test_station.TestStation):
             self._operator_interface.print_to_console(f'Query module type : {self._module_type} \n')
             if os.path.exists(self._station_config.CALIB_REQ_DATA_FILENAME):
                 shutil.rmtree(self._station_config.CALIB_REQ_DATA_FILENAME)
+            self._shop_floor = ShopFloor()
         except Exception as e:
             self._operator_interface.print_to_console(f'Fail to initialize test_station. {str(e)}', 'red')
             raise
@@ -686,6 +690,15 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._first_failed_test_result = test_log.get_first_failed_test_result()
         return self._overall_result, self._first_failed_test_result
 
+    def validate_sn(self, serial_num):
+        self._latest_serial_number = serial_num
+        return test_station.TestStation.validate_sn(self, serial_num)
+
     def is_ready(self):
-        self._fixture.is_ready()
+        ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
+        if not isinstance(ok_res, tuple) or not ok_res[0]:
+            self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            return False
+        self._operator_interface.prompt('', 'SystemButtonFace')
+        return True
 

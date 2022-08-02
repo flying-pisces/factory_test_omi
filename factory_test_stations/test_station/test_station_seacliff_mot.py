@@ -24,6 +24,7 @@ import threading
 import shutil
 from pathlib import Path
 import datetime
+from hardware_station_common.test_station.test_log.shop_floor_interface.shop_floor import ShopFloor
 
 
 class seacliffmotStationError(Exception):
@@ -330,6 +331,7 @@ class seacliffmotStation(test_station.TestStation):
             5: 'Signal from sensor (Pressing plate) is not triggered',
             15: 'Signal from sensor ( Door ) is error',
         }
+        self._shop_floor: ShopFloor = None
 
     def initialize(self):
         try:
@@ -368,6 +370,7 @@ class seacliffmotStation(test_station.TestStation):
             self._equipment.initialize()
             self._equipment.open()
             threading.Thread(target=self._auto_backup_thr, daemon=True).start()
+            self._shop_floor = ShopFloor()
         except Exception as e:
             self._operator_interface.operator_input(None, str(e), 'error')
             raise
@@ -886,6 +889,11 @@ class seacliffmotStation(test_station.TestStation):
     def is_ready(self):
         if self._fatal_error_restart_msg is not None:
             raise test_station.TestStationSerialNumberError(f'须重启软件:{self._fatal_error_restart_msg}')
+        ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
+        if not isinstance(ok_res, tuple) or not ok_res[0]:
+            self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            return False
+
         if not self._is_ready_check():
             self._operator_interface.print_to_console(f'--------------------> {self._latest_serial_number}\n')
             raise test_station.TestStationSerialNumberError('Station not ready.')
