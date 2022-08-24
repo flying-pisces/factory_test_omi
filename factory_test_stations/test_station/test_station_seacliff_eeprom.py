@@ -327,6 +327,7 @@ class seacliffeepromStation(test_station.TestStation):
         self._max_retries = 5
         self._shop_floor: ShopFloor = None
         self._latest_serial_number = None
+        self._ng_continually_msg = []
 
     def initialize(self):
         if (self._station_config.DUT_SIM
@@ -339,9 +340,6 @@ class seacliffeepromStation(test_station.TestStation):
             raise
         try:
             self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
-            if self._station_config.AUTO_CFG_COMPORTS:
-                self.auto_find_com_ports()
-
             msg = "find ports DUT = {0}. \n" \
                 .format(self._station_config.DUT_COMPORT)
             self._operator_interface.print_to_console(msg)
@@ -406,9 +404,12 @@ class seacliffeepromStation(test_station.TestStation):
         self._operator_interface.print_to_console("Start write data to DUT. %s\n" % the_unit.serial_number)
         test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
 
+
         try:
             the_unit.initialize(com_port=self._station_config.FIXTURE_COMPORT,
                                 eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
+            station_sn = the_unit._get_boardId()[1]
+            test_log.set_measured_value_by_name_ex('STATION_SN', station_sn)
             recv_obj = the_unit.screen_on(ignore_err=True)
             if recv_obj is True or self._station_config.DUT_SIM:
                 test_log.set_measured_value_by_name_ex('DUT_POWER_ON_INFO', 0)
@@ -663,20 +664,28 @@ class seacliffeepromStation(test_station.TestStation):
                 the_unit.close()
             except:
                 pass
-        return self.close_test(test_log)
+        res = self.close_test(test_log)
+        if (len(self._ng_continually_msg) >= 3
+                and len(set(self._ng_continually_msg)) == 1 and self._ng_continually_msg[-1] != 0):
+            self._operator_interface.operator_input(
+                f'建议联系TE: failures [{self._ng_continually_msg[-1]}] come out continuously for more than 3 times. ')
+        return res
 
     def close_test(self, test_log):
         ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###
         self._overall_result = test_log.get_overall_result()
         self._first_failed_test_result = test_log.get_first_failed_test_result()
+        self._ng_continually_msg.append(self._first_failed_test_result)
+        self._ng_continually_msg = self._ng_continually_msg[-4:-1]
         return self._overall_result, self._first_failed_test_result
 
     def is_ready(self):
         ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
-        if not isinstance(ok_res, tuple) or not ok_res[0]:
+        if ok_res is True or (isinstance(ok_res, tuple) and ok_res[0]):
+            return True
+        else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
             return False
-        return True
 
     def validate_sn(self, serial_num):
         self._latest_serial_number = serial_num

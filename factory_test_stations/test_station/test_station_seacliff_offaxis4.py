@@ -1025,10 +1025,11 @@ class SeacliffOffAxis4Station(test_station.TestStation):
 
     def is_ready(self):
         ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
-        if not isinstance(ok_res, tuple) or not ok_res[0]:
+        if ok_res is True or (isinstance(ok_res, tuple) and ok_res[0]):
+            return True
+        else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
             return False
-        return True
 
     def data_export(self, serial_number, test_log, tposIdx):
         """

@@ -132,13 +132,19 @@ class QueryTempParts(Enum):
     EquipmentAmbient = 0
     UUTNearBy = 1
 
+
 class EurekaMotFixtureError(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg, err_code=0):
         Exception.__init__(self)
         self.message = msg
+        self._err_code = err_code
 
     def __str__(self):
         return repr(self.message)
+
+    @property
+    def err_code(self):
+        return self._err_code
 
 
 class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFixture):
@@ -374,7 +380,8 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             self._write_serial(cmd[0])
             response = self._read_response()
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
-            raise EurekaMotFixtureError('fail to send command. %s' % response)
+            raise EurekaMotFixtureError('fail to send command. %s' % response,
+                                        err_code=int(self._parse_response(cmd[1], response).group(1)))
 
     def query_button_power_on_status(self):
         """
@@ -386,7 +393,8 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             self._write_serial(cmd[0])
             response = self._read_response()
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
-            raise EurekaMotFixtureError('fail to send command. %s' % response)
+            raise EurekaMotFixtureError('fail to send command. %s' % response,
+                                        err_code=int(self._parse_response(cmd[1], response).group(1)))
 
     def query_probe_status(self):
         """
@@ -414,7 +422,8 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             self._write_serial(cmd[0])
             response = self._read_response()
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
-            raise EurekaMotFixtureError('fail to send command. %s' % response)
+            raise EurekaMotFixtureError('fail to send command. %s' % response,
+                                        err_code=int(self._parse_response(cmd[1], response).group(1)))
 
     def reset(self):
         self._write_serial(self._station_config.COMMAND_RESET)
@@ -457,7 +466,7 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
                                              int(x), int(y), int(theta))
         success = False
         retries = 1
-        response = None
+        rev_code = -1
         rev_pattern = r'MODULE_MOVE:(\d+)'
         while retries <= 5 and not success:
             with self._fixture_mutex:
@@ -470,7 +479,7 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
                 break
             retries += 1
         if not success:
-            raise EurekaMotFixtureError('fail to send command. %s' % response)
+            raise EurekaMotFixtureError('fail to send command. %s' % response, err_code=rev_code)
 
     def calib_zero_pos(self):
         """
@@ -539,7 +548,8 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             rev_pattern = r'CAMERA_MOVE:(\d+)'
         response = self._read_response(timeout=10 * 1000)
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise EurekaMotFixtureError('fail to send command. %s' % response)
+            raise EurekaMotFixtureError('fail to send command. %s' % response,
+                                        err_code=int(self._parse_response(rev_pattern, response).group(1)))
 
     def status(self):
         """
@@ -569,7 +579,8 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             rev_pattern = r'StatusLight_ON:(\d+)'
             response = self._read_response()
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise EurekaMotFixtureError('fail to send command. %s' % response)
+            raise EurekaMotFixtureError('fail to send command. %s' % response,
+                                        err_code=int(self._parse_response(rev_pattern, response).group(1)))
 
     def set_tri_color_off(self):
         """
@@ -582,7 +593,8 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             rev_pattern = r'StatusLight_OFF:(\d+)'
             response = self._read_response()
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise EurekaMotFixtureError('fail to send command. %s' % response)
+            raise EurekaMotFixtureError('fail to send command. %s' % response,
+                                        err_code=int(self._parse_response(rev_pattern, response).group(1)))
 
     def query_temp(self, parts=QueryTempParts.EquipmentAmbient):
         """

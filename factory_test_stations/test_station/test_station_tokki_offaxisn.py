@@ -355,15 +355,16 @@ class TokkiOffAxisNStation(test_station.TestStation):
 
     def is_ready(self):
         ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
-        if not isinstance(ok_res, tuple) or not ok_res[0]:
+        if ok_res is True or (isinstance(ok_res, tuple) and ok_res[0]):
+            serial_number = self._latest_serial_number
+            self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
+            self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
+            if not self._station_config.DUT_SIM:
+                self._the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
+            return self.is_ready_litup_outside()
+        else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
             return False
-        serial_number = self._latest_serial_number
-        self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
-        self._the_unit = dut.projectDut(serial_number, self._station_config, self._operator_interface)
-        if not self._station_config.DUT_SIM:
-            self._the_unit = dut.pancakeDut(serial_number, self._station_config, self._operator_interface)
-        return self.is_ready_litup_outside()
 
     def is_ready_litup_outside(self):
         ready = False

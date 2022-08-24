@@ -305,7 +305,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.2.11{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.2.12{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -324,14 +324,28 @@ class seacliffmotStation(test_station.TestStation):
         self._station_sn = None
         self._fatal_error_restart_msg = None
         self._err_msg_list = {
-            1: 'Axis X running error',
-            2: 'Axis Y running error',
-            3: 'Axis A running error',
-            4: 'Axis Z running error',
-            5: 'Signal from sensor (Pressing plate) is not triggered',
-            15: 'Signal from sensor ( Door ) is error',
+            1: 'Axis X running error / X轴电机运动异常',
+            2: 'Axis Y running error / Y轴电机运动异常',
+            3: 'Axis A running error / A轴电机运动异常',
+            4: 'Axis Z running error / Z轴电机运动异常',
+            5: 'Signal from sensor (Pressing plate) is not triggered / DUT盖板未盖',
+            6: 'Signal from sensor (Grating) is not triggered / 安全光栅信号被触发',
+            7: 'Signal from sensor (Fixture Door) is not triggered / 治具门未关闭',
+            8: 'This command is cancel by operator / 用户取消',
+            9: 'Fixture is under warning status / 治具报警状态',
+            10: 'Signal from sensor (DUT Door) is not triggered / DUT门气缸异常',
+            11: 'Signal from sensor (Axis Z for equipment) is not triggered / Z轴相机支持气缸信号异常',
+            12: 'Signal from sensor (Hold DUT on) is not triggered / DUT 夹紧信号异常',
+            13: 'Signal from sensor (Raise DUT up or down) is not triggered / DUT升降信号异常',
+            14: 'Signal from sensor (DUT pogo pin) is not triggered / DUT Pogo Pin 气缸信号异常',
+            151: 'Signal from sensor ( Door ) is error / DUT开门Sensor异常',
+            152: 'Signal from sensor ( Door ) is error / DUT关门Sensor异常',
+            16:  'Warning for vacuum / 真空吸信号异常',
+            17: 'A Axis out of stroke / A 轴电机超过行程',
+            18: 'Z Axis out of stroke / Z 轴电机超过行程',
         }
         self._shop_floor: ShopFloor = None
+        self._ng_continually_msg = []
 
     def initialize(self):
         try:
@@ -788,23 +802,29 @@ class seacliffmotStation(test_station.TestStation):
                 self._equipment.open()
             except BaseException as e2:
                 self._operator_interface.print_to_console(f'Taprisiot Error E2: {str(e2)}\n')
-            self._fatal_error_restart_msg = f'Taprisiot --> {str(e)}'
+            self._fatal_error_restart_msg = f'主相机侧故障: Taprisiot --> {str(e)}'
         except test_fixture_seacliff_mot.seacliffmotFixtureError as e:
-            self._operator_interface.print_to_console(f'Fixture Error: {str(e)}\n')
-            self._fatal_error_restart_msg = f'Fixture Error --> {str(e)}'
+            self._fatal_error_restart_msg = f'治具侧故障: Fixture Error --> {str(e)}: {self._err_msg_list.get(e.err_code)}'
         except seacliffmotStationError as e:
             self._operator_interface.print_to_console(f'Station Error: {str(e)}\n')
+        except DUTError as e:
+            self._operator_interface.print_to_console(f'产品侧故障：DUT Error --> {str(e)}', 'red')
         except Exception as e:
             self._fatal_error_restart_msg = f'Please contact with MYZY --> {str(e)}'
         finally:
+            self._operator_interface.print_to_console(f'Finally ------------->')
             try:
                 self._pool.close()
                 self._operator_interface.print_to_console('Wait ProcessingPool to complete.\n')
                 self._operator_interface.print_to_console('Please wait...')
                 self._the_unit.close()
                 self.alert_handle(self._fixture.unload)
+            except test_fixture_seacliff_mot.seacliffmotFixtureError as e:
+                self._fatal_error_restart_msg = f'治具侧故障: Fixture Error --> {str(e)}: {self._err_msg_list.get(e.err_code)}'
+            except DUTError as e:
+                self._operator_interface.print_to_console(f'产品侧故障：DUT Error --> {str(e)}', 'red')
             except Exception as e:
-                self._operator_interface.print_to_console(f'Error --> {str(e)}\n')
+                self._fatal_error_restart_msg = f'Please contact with MYZY --> {str(e)}'
             while len([pn for pn, pv in self._pool_alg_dic.items() if not pv]) > 0:
                 self._operator_interface.wait(1, '.')
             self._operator_interface.wait(0, '\n')
@@ -817,7 +837,12 @@ class seacliffmotStation(test_station.TestStation):
         self._operator_interface.print_to_console(f'Finish------------{serial_number}-------\n')
         if self._fatal_error_restart_msg is not None:
             self._operator_interface.print_to_console(f'Exception ===>------{self._fatal_error_restart_msg}\n')
-        return self.close_test(test_log)
+        res = self.close_test(test_log)
+        if (len(self._ng_continually_msg) >= 3
+                and len(set(self._ng_continually_msg)) == 1 and self._ng_continually_msg[-1] != 0):
+            self._operator_interface.operator_input(
+                f'建议联系TE: failures [{self._ng_continually_msg[-1]}] come out continuously for more than 3 times. ')
+        return res
 
     def do_pattern_parametric_export(self, pos_name, pattern_name, capture_path, test_log):
         if pattern_name in self._station_config.ANALYSIS_GRP_DISTORTION:
@@ -880,6 +905,8 @@ class seacliffmotStation(test_station.TestStation):
     def close_test(self, test_log):
         self._overall_result = test_log.get_overall_result()
         self._first_failed_test_result = test_log.get_first_failed_test_result()
+        self._ng_continually_msg.append(self._first_failed_test_result)
+        self._ng_continually_msg = self._ng_continually_msg[-4:-1]
         return self._overall_result, self._first_failed_test_result
 
     def validate_sn(self, serial_num):
@@ -890,15 +917,15 @@ class seacliffmotStation(test_station.TestStation):
         if self._fatal_error_restart_msg is not None:
             raise test_station.TestStationSerialNumberError(f'须重启软件:{self._fatal_error_restart_msg}')
         ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
-        if not isinstance(ok_res, tuple) or not ok_res[0]:
+        if ok_res is True or (isinstance(ok_res, tuple) and ok_res[0]):
+            if not self._is_ready_check():
+                self._operator_interface.print_to_console(f'--------------------> {self._latest_serial_number}\n')
+                raise test_station.TestStationSerialNumberError('Station not ready.')
+            self._operator_interface.prompt('', 'SystemButtonFace')
+            return True
+        else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
             return False
-
-        if not self._is_ready_check():
-            self._operator_interface.print_to_console(f'--------------------> {self._latest_serial_number}\n')
-            raise test_station.TestStationSerialNumberError('Station not ready.')
-        self._operator_interface.prompt('', 'SystemButtonFace')
-        return True
 
     def _query_dual_start_check(self):
         serial_number = self._latest_serial_number
@@ -939,7 +966,7 @@ class seacliffmotStation(test_station.TestStation):
                     self._is_alignment_success = True
                     ready = True
 
-        except (seacliffmotStationError, DUTError, RuntimeError) as e:
+        except (test_fixture_seacliff_mot.seacliffmotFixtureError, DUTError, RuntimeError) as e:
             # self._operator_interface.operator_input(None, str(e), msg_type='error')
             self._operator_interface.print_to_console('exception msg %s.\n' % str(e))
         finally:
@@ -1118,8 +1145,8 @@ class seacliffmotStation(test_station.TestStation):
 
                         def distortion_centroid_parametric_export_ex_parallel_callback(res):
                             self._multi_lock.acquire()
+                            pos_name_i, pattern_name_i, pri_k_i, distortion_exports = res
                             try:
-                                pos_name_i, pattern_name_i, pri_k_i, distortion_exports = res
                                 if isinstance(distortion_exports, dict):
                                     self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = distortion_exports
                                     for export_key, export_value in distortion_exports.items():
@@ -1127,9 +1154,9 @@ class seacliffmotStation(test_station.TestStation):
                                             pos_name_i, pattern_name_i, pri_k_i, export_key)
                                         test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
                                 self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}')
-                                self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
                             except Exception as e2:
                                 self._operator_interface.print_to_console(f'err: distortion_callback {str(e2)}.\n')
+                            self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
                             self._multi_lock.release()
 
                         opt = {
@@ -1198,8 +1225,8 @@ class seacliffmotStation(test_station.TestStation):
 
                     def color_pattern_parametric_export_ex_parallel_callback(res):
                         self._multi_lock.acquire()
+                        pos_name_i, pattern_name_i, color_exports, err_msg = res
                         try:
-                            pos_name_i, pattern_name_i, color_exports, err_msg = res
                             if isinstance(color_exports, dict):
                                 self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = color_exports
                                 for export_key, export_value in color_exports.items():
@@ -1213,9 +1240,9 @@ class seacliffmotStation(test_station.TestStation):
                                         test_log.set_measured_value_by_name_ex(f'COMPENSATION_{export_key}', cp)
                                     test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
                             self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}, err_msg: {err_msg}')
-                            self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
                         except Exception as e2:
                             self._operator_interface.print_to_console(f'err: color_pattern_callback {str(e2)}.\n')
+                        self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
                         self._multi_lock.release()
                     dut_temp = self._temperature_dic[f'{pos_name}_{ana_pattern}']
                     opt = {
@@ -1283,8 +1310,8 @@ class seacliffmotStation(test_station.TestStation):
 
                         def grade_a_parametric_export_ex_parallel_callback(res):
                             self._multi_lock.acquire()
+                            pos_name_i, pattern_name_i, white_dot_exports, err_msg = res
                             try:
-                                pos_name_i, pattern_name_i, white_dot_exports, err_msg = res
                                 if isinstance(white_dot_exports, dict):
                                     self._exported_parametric[f'{pos_name_i}_{pattern_name_i}'] = white_dot_exports
                                     for export_key, export_value in white_dot_exports.items():
@@ -1292,9 +1319,9 @@ class seacliffmotStation(test_station.TestStation):
                                             pos_name_i, pattern_name_i, export_key)
                                         test_log.set_measured_value_by_name_ex(measure_item_name, export_value)
                                 self._operator_interface.print_to_console(f'finish export {pos_name_i}, {pattern_name_i}, err_msg: {err_msg}')
-                                self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
                             except Exception as e2:
                                 self._operator_interface.print_to_console(f'err: grade_a_callback {str(e2)}.\n')
+                            self._pool_alg_dic[f'{pos_name_i}_{pattern_name_i}'] = True
                             self._multi_lock.release()
                         opt = {'ModuleTemp': self._temperature_dic[f'{pos_name}_{pattern_name}'],
                                'Temp_W': self._temperature_dic[f'{pos_name}_{ref_pattern}'],

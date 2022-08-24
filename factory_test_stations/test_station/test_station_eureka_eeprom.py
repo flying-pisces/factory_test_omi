@@ -282,7 +282,7 @@ class EurekaEEPROMStation(test_station.TestStation):
         self._equip = test_equipment_eureka_eeprom.EurekaEEPROMEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = '0.0.6'
+        self._sw_version = '1.0.0'
         self._eep_assistant = EEPStationAssistant()
         self._max_retries = 5
         self._module_type = None
@@ -295,6 +295,7 @@ class EurekaEEPROMStation(test_station.TestStation):
             1: 'Fail to get signal about Sensor for press-plate'
         }
         self._shop_floor: ShopFloor = None
+        self._ng_continually_msg = []
 
     def initialize(self):
         if (self._station_config.DUT_SIM
@@ -307,7 +308,10 @@ class EurekaEEPROMStation(test_station.TestStation):
             raise EurekaEEPROMError('Configuration Error.')
         try:
             self._operator_interface.print_to_console(f'Initializing pancake EEPROM station...VER:{self._sw_version}\n')
-            self._operator_interface.update_root_config({'ShowLogin': 'False', 'IsUsrLogin': 'True'})
+            self._operator_interface.update_root_config({'ShowLogin': 'True',
+                                                         'IsUsrLogin': 'False',
+                                                         'Offline': 'True',
+                                                         })
 
             self._fixture.initialize(ipaddr=self._station_config.FIXTURE_ETH_ADDR)
             self._station_sn = self._fixture.get_board_id()
@@ -682,12 +686,19 @@ class EurekaEEPROMStation(test_station.TestStation):
                         'Hint', self._err_msg_list.get(alert_res), msg_type='warning', msgbtn=0)
             except Exception as e:
                 self._operator_interface.print_to_console(f'Fail to close test. {str(e)}')
-        return self.close_test(test_log)
+        res = self.close_test(test_log)
+        if len(self._ng_continually_msg) >= 3 \
+                and len([c for c in self._ng_continually_msg if c != self._ng_continually_msg[-1]]) == 0:
+            self._operator_interface.operator_input(
+                f'建议联系TE: failures [{self._ng_continually_msg[-1]}] come out continuously for more than 3 times. ')
+        return res
 
     def close_test(self, test_log):
         ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###
         self._overall_result = test_log.get_overall_result()
         self._first_failed_test_result = test_log.get_first_failed_test_result()
+        self._ng_continually_msg.append(self._first_failed_test_result)
+        self._ng_continually_msg = self._ng_continually_msg[-4:-1]
         return self._overall_result, self._first_failed_test_result
 
     def validate_sn(self, serial_num):
@@ -696,9 +707,29 @@ class EurekaEEPROMStation(test_station.TestStation):
 
     def is_ready(self):
         ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
-        if not isinstance(ok_res, tuple) or not ok_res[0]:
+        if ok_res is True or (isinstance(ok_res, tuple) and ok_res[0]):
+            self._operator_interface.prompt('', 'SystemButtonFace')
+            return True
+        else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
             return False
-        self._operator_interface.prompt('', 'SystemButtonFace')
-        return True
+
+    def login(self, active, usr, pwd):
+        login_success = True
+        if not active:
+            self._operator_interface.update_root_config({'IsUsrLogin': 'False'})
+            self._station_config.INLOT_CTRL = False
+        else:
+            login_success = False
+            try:
+                login_msg = self._shop_floor.login(usr, pwd)
+                if (login_msg is True) or (isinstance(login_msg, tuple) and login_msg[0] is True):
+                    self._operator_interface.update_root_config({'IsUsrLogin': 'True'})
+                    self._station_config.INLOT_CTRL = True
+                    login_success = True
+                else:
+                    self._operator_interface.print_to_console(f'Fail to login usr:{usr}, Data = {login_msg}')
+            except Exception as e:
+                self._operator_interface.print_to_console(f'Fail to login usr:{usr}, Except={str(e)}')
+        return login_success
 

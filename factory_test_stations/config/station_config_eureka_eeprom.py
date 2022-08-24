@@ -1,6 +1,13 @@
 """
 Release Note:
 ========================================================
+Version 1.0.0
+2022-8-7 elton<elton.tian@myzygroup.com>
+-1. call the ok_to_test before all the testing.
+-2. add messagebox for continuously ng
+-3. update mapping for Eureka.
+
+========================================================
 Version 0.0.5
 2022-7-28 elton<elton.tian@myzygroup.com>
 -1. Add support MES data from local csv.

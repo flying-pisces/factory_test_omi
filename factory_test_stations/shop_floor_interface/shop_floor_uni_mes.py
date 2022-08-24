@@ -118,10 +118,10 @@ def call_template(data):
         else:
             return False, result['parameter']['message']
     except Exception as e:
-        return False, 'The request failed'
+        return False, f'The request failed\n{traceback.format_exc()}'
 
 
-# 是否可以测试
+# SN验证
 def ok_to_test(serial_number):
     data = {'function': 'ok_to_test',
             'parameter': {'serial_number': serial_number}}
@@ -131,17 +131,20 @@ def ok_to_test(serial_number):
 # 测试结果上传
 def save_results(test_log):
     data = {'function': 'save_results',
-            'parameter': {'log_file_path': test_log.get_file_path()}}
+            'parameter': {
+                'log_file_path': test_log if isinstance(test_log, str) else test_log.get_file_path()}}
     return call_template(data)
 
 
-# 测试结果上传    
+# 测试结果上传
 def save_results_from_logs(log_file_path):
     data = {'function': 'save_results',
-            'parameter': {'log_file_path': log_file_path}}
+            'parameter': {
+                'log_file_path': log_file_path if isinstance(log_file_path, str) else log_file_path.get_file_path()}}
     return call_template(data)
 
 
+# 登录
 def login_system(user_name, password):
     data = {'function': 'login_system',
             'parameter': {'user_name': user_name,
@@ -153,8 +156,8 @@ if __name__ == '__main__':
     # 初始化ShopFloor
     initialize()
     # 登录
-    status, msg = login_system('admin', '123456')
-    print(status, msg)
+    # status, msg = login_system('admin', '123456')
+    # print(status, msg)
     # 开始测试
     # status, msg = ok_to_test('6LBF23D001B7ALC')
     # print(status, msg)
@@ -162,3 +165,31 @@ if __name__ == '__main__':
     # status, msg = save_results('D:/Project/发我的文件/test_station产出的结果文件/'
     #                            '6LBF23D001B7ALC_seacliff_offaxis-0000_20220610-144225_P.log')
     # print(status, msg)
+    while True:
+        select_id = input('\n'
+                          '1: Login to MES\n'
+                          '2. SN validation\n'
+                          '3. Upload test results\n'
+                          'Enter the test ID: ')
+        # 登录
+        if select_id == '1':
+            username = input('username: ')
+            password = input('password: ')
+            username = username if username else 'admin'
+            password = password if password else '123456'
+            status, msg = login_system(username, password)
+            print(status, msg)
+        # SN验证
+        elif select_id == '2':
+            pnl_id = input('sn: ')
+            pnl_id = pnl_id if pnl_id else '2308L9L26402D3'
+            status, msg = ok_to_test(pnl_id)
+            print(status, msg)
+        # 测试结果上传
+        elif select_id == '3':
+            path = input('file path: ')
+            path = path if path else \
+                'D:/Project/发我的文件/BOE现场日志/20220704/2308L9L26402D3_seacliff_bluni_si-0004_20220704-164018_P.log'
+            # 'D:/Project/发我的文件/BOE现场日志/20220719/2308L9U27K01ZZ_seacliff_bluni_si-0007_20220719-142637_P.log'
+            status, msg = save_results(path)
+            print(status, msg)

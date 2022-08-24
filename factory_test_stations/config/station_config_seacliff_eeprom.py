@@ -1,6 +1,14 @@
 """
 Release Note:
 ========================================================
+Version 1.2.5_pre
+2022-8-3 elton<elton.tian@myzygroup.com>
+-1. call the ok_to_test before all the testing.
+-2. add messagebox for continuously ng
+-3. add STATION_SN to record the SN about Fixture.
+-4. add error_string to summary.
+
+========================================================
 Version 1.2.4
 2021-12-13 elton<elton.tian@mygyroup.com>
 -1. add test item for Resolution check.

@@ -1,6 +1,23 @@
 """
 Release Note:
 ========================================================
+Version 1.0.6
+2022-8-13 elton<elton.tian@myzygroup.com>
+-1. update SPEC for P1C provided by Tian
+
+========================================================
+Version 1.0.5
+2022-8-11 elton<elton.tian@myzygroup.com>
+-1. update SPEC for P1C
+
+========================================================
+Version 1.0.4
+2022-8-7 elton<elton.tian@myzygroup.com>
+-1. call the ok_to_test before all the testing.
+-2. add messagebox for continuously ng
+-3. add STATION_SN to record the information for Fixture.
+
+========================================================
 Version 1.0.3
 2022-8-1 elton<elton.tian@myzygroup.com>
 -1. Lit up DUT firstly, while loading carrier to fixture.

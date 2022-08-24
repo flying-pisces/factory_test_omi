@@ -132,13 +132,19 @@ class QueryTempParts(Enum):
     EquipmentAmbient = 0
     UUTNearBy = 1
 
+
 class seacliffmotFixtureError(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg, err_code=0):
         Exception.__init__(self)
         self.message = msg
+        self._err_code = err_code
 
     def __str__(self):
         return repr(self.message)
+
+    @property
+    def err_code(self):
+        return self._err_code
 
 
 class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestFixture):
@@ -363,7 +369,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(cmd[0])
         response = self._read_response(rev_pattern=cmd[1])
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+            raise seacliffmotFixtureError('fail to send command. %s' % response,
+                                          err_code=int(self._parse_response(cmd[1], response).group(1)))
 
     def power_on_button_status(self, on):
         """
@@ -379,7 +386,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(cmd[0])
         response = self._read_response(rev_pattern=cmd[1])
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+            raise seacliffmotFixtureError('fail to send command. %s' % response,
+                                          err_code=int(self._parse_response(cmd[1], response).group(1)))
 
     def query_button_power_on_status(self):
         """
@@ -390,7 +398,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(cmd[0])
         response = self._read_response(rev_pattern=cmd[1])
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+            raise seacliffmotFixtureError('fail to send command. %s' % response,
+                                          err_code=int(self._parse_response(cmd[1], response).group(1)))
 
     def query_probe_status(self):
         """
@@ -416,7 +425,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         self._write_serial(cmd[0])
         response = self._read_response(rev_pattern=cmd[1])
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+            raise seacliffmotFixtureError('fail to send command. %s' % response,
+                                          err_code=int(self._parse_response(cmd[1], response).group(1)))
 
     def reset(self):
         """
@@ -472,7 +482,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
                 break
             retries += 1
         if not success:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+            raise seacliffmotFixtureError('fail to send command. %s' % response,
+                                          err_code=rev_code)
 
     def calib_zero_pos(self):
         """
@@ -537,7 +548,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         rev_pattern = r'CAMERA_MOVE:(\d+)'
         response = self._read_response(timeout=10 * 1000, rev_pattern=rev_pattern)
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+            raise seacliffmotFixtureError('fail to send command. %s' % response,
+                                          err_code=int(self._parse_response(rev_pattern, response).group(1)))
 
     def status(self):
         """
@@ -566,7 +578,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         rev_pattern = r'StatusLight_ON:(\d+)'
         response = self._read_response(rev_pattern=rev_pattern)
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+            raise seacliffmotFixtureError('fail to send command. %s' % response,
+                                          err_code=int(self._parse_response(rev_pattern, response).group(1)))
 
     def set_tri_color_off(self):
         """
@@ -578,7 +591,8 @@ class seacliffmotFixture(hardware_station_common.test_station.test_fixture.TestF
         rev_pattern = r'StatusLight_OFF:(\d+)'
         response = self._read_response(rev_pattern=rev_pattern)
         if int(self._parse_response(rev_pattern, response).group(1)) != 0:
-            raise seacliffmotFixtureError('fail to send command. %s' % response)
+            raise seacliffmotFixtureError('fail to send command. %s' % response,
+                                          err_code=int(self._parse_response(rev_pattern, response).group(1)))
 
     def query_temp(self, parts=QueryTempParts.EquipmentAmbient):
         """

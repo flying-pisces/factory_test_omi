@@ -517,12 +517,13 @@ class SeacliffOffAxisStation(test_station.TestStation):
 
     def is_ready(self):
         ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
-        if not isinstance(ok_res, tuple) or not ok_res[0]:
+        if ok_res is True or (isinstance(ok_res, tuple) and ok_res[0]):
+            if not self._station_config.AUTO_SCAN_CODE:
+                self.is_ready_litup_outside()
+            return True
+        else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
             return False
-        if not self._station_config.AUTO_SCAN_CODE:
-            self.is_ready_litup_outside()
-        return True
 
     def alert_handle(self, ready_code):
         alert_res = ready_code

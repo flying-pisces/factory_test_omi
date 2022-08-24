@@ -23,6 +23,8 @@ import math
 import csv
 import serial
 from scipy import interpolate
+from hardware_station_common.test_station.test_log.shop_floor_interface.shop_floor import ShopFloor
+
 
 
 class seacliffVidStationError(Exception):
@@ -55,9 +57,14 @@ class seacliffVidStation(test_station.TestStation):
         self._latest_serial_number = None
         self._fixture_port = None
         self._sw_version = '1.0.1'
+        self._shop_floor: ShopFloor = None
 
     def initialize(self):
         try:
+            self._operator_interface.update_root_config({'ShowLogin': 'True',
+                                                         'IsUsrLogin': 'False',
+                                                         'Offline': 'True',
+                                                         })
             self._operator_interface.print_to_console(f"Initializing seacliff vid station...{self._sw_version}SP1\n")
             # <editor-fold desc="port configuration automatically">
             cfg = 'station_config_seacliff_vid.json'
@@ -89,6 +96,7 @@ class seacliffVidStation(test_station.TestStation):
 
             self._fixture.initialize(fixture_com=self._fixture_port)
             self._equip.initialize()
+            self._shop_floor = ShopFloor()
         except:
             raise
 
@@ -439,10 +447,11 @@ class seacliffVidStation(test_station.TestStation):
 
     def is_ready(self):
         ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
-        if not isinstance(ok_res, tuple) or not ok_res[0]:
+        if ok_res is True or (isinstance(ok_res, tuple) and ok_res[0]):
+            return True
+        else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
             return False
-        return True
 
     def validate_sn(self, serial_num):
         self._panel_left_or_right = None
@@ -476,3 +485,22 @@ class seacliffVidStation(test_station.TestStation):
             'configuration_code': serial_num[5:7],
             'uid': serial_num[10:14]
         }
+
+    def login(self, active, usr, pwd):
+        login_success = True
+        if not active:
+            self._operator_interface.update_root_config({'IsUsrLogin': 'False'})
+            self._station_config.INLOT_CTRL = False
+        else:
+            login_success = False
+            try:
+                login_msg = self._shop_floor.login(usr, pwd)
+                if (login_msg is True) or (isinstance(login_msg, tuple) and login_msg[0] is True):
+                    self._operator_interface.update_root_config({'IsUsrLogin': 'True'})
+                    self._station_config.INLOT_CTRL = True
+                    login_success = True
+                else:
+                    self._operator_interface.print_to_console(f'Fail to login usr:{usr}, Data = {login_msg}')
+            except Exception as e:
+                self._operator_interface.print_to_console(f'Fail to login usr:{usr}, Except={str(e)}')
+        return login_success

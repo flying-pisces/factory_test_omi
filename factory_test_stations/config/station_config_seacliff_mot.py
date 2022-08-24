@@ -1,6 +1,14 @@
 """
 Release Note:
 ========================================================
+Version 1.2.12
+2022-8-7 elton<elton.tian@myzygroup>
+-1. call the ok_to_test before all the testing.
+-2. add messagebox for continuously ng
+-3. detail the error message
+-4. software not reset to scan-sn occasionally while analyzing the wrong image.
+
+========================================================
 Version 1.2.11
 2022-7-26 elton<elton.tian@myzygroup>
 -1. Remove lit-up outside, test loop start by dual-start button.
