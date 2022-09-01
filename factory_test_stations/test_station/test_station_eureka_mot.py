@@ -1024,6 +1024,7 @@ class EurekaMotStation(test_station.TestStation):
         timeout_for_dual = time.time()
         try:
             self._fixture.flush_data()
+            self._fixture.vacuum(True)
             self._fixture.start_button_status(True)
             time.sleep(self._station_config.FIXTURE_SOCK_DLY)
             while not ready:
