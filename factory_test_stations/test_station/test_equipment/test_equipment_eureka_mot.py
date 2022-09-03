@@ -129,26 +129,27 @@ class EurekaMotEquipment(hardware_station_common.test_station.test_equipment.Tes
         self._operator_interface.print_to_console("wait for the sequence to be finished.\n")
         while not done and not self._quit:
             ret = self._device.CmdCaptureSequenceStatus()
+            if not isinstance(ret, dict):
+                raise EurekaMotEquipmentError(f'Fail to check seq finish.. Ret {str(ret)}')
             processState = int(ret['state'].value)
             processStep = ret['currentSteps']
             processNbSteps = ret['nbSteps']
 
             if (processStateCurrent is None) or (processStateCurrent != processState) or (
                     processStepCurrent != processStep):
-                if self._verbose:
-                    print("  step {0}/{1} state {2}".format(processStep, processNbSteps, processState))
+                self._operator_interface.print_to_console(
+                    "---->  step {0}/{1} state {2}".format(processStep, processNbSteps, processState))
 
                 processStateCurrent = processState
                 processStepCurrent = processStep
 
             if processState == 7:  # Conoscope.CaptureSequenceState.CaptureSequenceState_Error:
                 done = True
-                if self._verbose:
-                    print("Error happened")
+                self._operator_interface.print_to_console("---->Error happened", 'red')
+                raise EurekaMotEquipmentError(f'Fail to check seq finish.. {str(processState)}')
             elif processState == 6:  # conoscope.Conoscope.CaptureSequenceState.CaptureSequenceState_Done:
                 done = True
-                if self._verbose:
-                    print("Process Done")
+                self._operator_interface.print_to_console("---->Process Done")
 
             if done is False:
                 time.sleep(0.05)
