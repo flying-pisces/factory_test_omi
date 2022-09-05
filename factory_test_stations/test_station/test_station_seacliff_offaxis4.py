@@ -701,6 +701,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
                                 self._the_unit[channel].screen_off()
                                 self._the_unit[channel] = None
                         else:
+                            self._operator_interface.prompt('', 'SystemButtonFace')
                             self._operator_interface.print_to_console(f'MES response info: {sn}, {sf_res}\n', 'red')
             except Exception as e:
                 self._operator_interface.print_to_console(f'Fail to fixture_query_thr : {str(e)}\n', 'red')
@@ -1029,6 +1030,7 @@ class SeacliffOffAxis4Station(test_station.TestStation):
             return True
         else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            self._operator_interface.prompt('', 'SystemButtonFace')
             return False
 
     def data_export(self, serial_number, test_log, tposIdx):

@@ -13,4 +13,5 @@ requests==2.23.0
 lxml==4.5.1
 pypiwin32==223
 tornado==5.0.2
-suds-py3==1.4.5.0 
+suds-py3==1.4.5.0
+py-exceptions==1.2.2

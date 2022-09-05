@@ -305,7 +305,7 @@ class seacliffmotStation(test_station.TestStation):
         self._equipment = test_equipment_seacliff_mot.seacliffmotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.2.12{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.2.13{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -349,8 +349,14 @@ class seacliffmotStation(test_station.TestStation):
 
     def initialize(self):
         try:
-            self._operator_interface.print_to_console("Initializing Seacliff MOT station...{0}\n"
+            self._operator_interface.print_to_console("Initializing Seacliff MOT station...{0}.....3\n"
                                                       .format(self._sw_version))
+            if hasattr(self._operator_interface, '_console'):
+                online = getattr(self._station_config, 'MES_IN_LOT_CTRL', None)
+                title = self._operator_interface._console.master.title()
+                self._operator_interface._console.master.title(
+                    f'{title}{"在线" if online else "离线"}')
+
             if self._station_config.AUTO_CFG_COMPORTS:
                 self.auto_find_com_ports()
             else:
@@ -921,10 +927,10 @@ class seacliffmotStation(test_station.TestStation):
             if not self._is_ready_check():
                 self._operator_interface.print_to_console(f'--------------------> {self._latest_serial_number}\n')
                 raise test_station.TestStationSerialNumberError('Station not ready.')
-            self._operator_interface.prompt('', 'SystemButtonFace')
             return True
         else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            self._operator_interface.prompt('', 'SystemButtonFace')
             return False
 
     def _query_dual_start_check(self):

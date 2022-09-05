@@ -685,6 +685,7 @@ class seacliffeepromStation(test_station.TestStation):
             return True
         else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            self._operator_interface.prompt('', 'SystemButtonFace')
             return False
 
     def validate_sn(self, serial_num):

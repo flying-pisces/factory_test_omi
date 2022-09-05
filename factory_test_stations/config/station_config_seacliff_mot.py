@@ -1,6 +1,13 @@
 """
 Release Note:
 ========================================================
+Version 1.2.13
+2022-9-6 elton<elton.tian@myzygroup>
+-1. add information for online/offline mode.
+-2. add trace message if any exception pop up.
+-3. update default SDK [CameraV2] to V93
+
+========================================================
 Version 1.2.12
 2022-8-7 elton<elton.tian@myzygroup>
 -1. call the ok_to_test before all the testing.
@@ -309,10 +316,10 @@ COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255
 DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 10
 
-VERSION_REVISION_EQUIPMENT = '88'
+VERSION_REVISION_EQUIPMENT = '93'
 VERSION_REVISION_LIST = {
     'Conoscope': ['72'],
-    'ConoscopeV2': ['87', '88'],
+    'ConoscopeV2': ['87', '88', '93'],
 }
 FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 
@@ -497,7 +504,7 @@ COMPENSATION_COEFF = {
 ##################################
 # IT and work order
 #
-FACEBOOK_IT_ENABLED = False
+FACEBOOK_IT_ENABLED = True
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 # UI_MODE
@@ -509,7 +516,8 @@ STATION_TYPE = 'seacliff_mot'
 STATION_NUMBER = '0001'
 AUTO_SCAN_CODE = False
 
-SHOPFLOOR_SYSTEM = 'genius_mot'
+SHOPFLOOR_SYSTEM = 'auto_mes'
+SHOPFLOOR_DIR = r'C:\oculus_src\factory_test_omi\factory_test_stations\shop_floor_interface'
 
 VERSION = 'SunnyP2-PreBuild-Alpha'
 AUTO_CVT_BGR_IMAGE_FROM_XYZ = False

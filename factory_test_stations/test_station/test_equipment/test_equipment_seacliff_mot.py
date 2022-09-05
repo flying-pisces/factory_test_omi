@@ -45,6 +45,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         self._config = None
         self._open = None
         self._conoscope = None
+        self._quit = False
 
     ## Eldim specific return.
     def _log(self, ret, functionName):
@@ -93,6 +94,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
     ########### Equipment Operation ###########
     def open(self):
         ret = self._device.CmdOpen()
+        self._quit = False
         self._open = self._log(ret, "CmdOpen")
         if self._verbose:
            print("Open Status is \n{0}\n".format(str(self._open)))
@@ -105,6 +107,7 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         return self._log(ret, "CmdReset")
 
     def close(self):
+        self._quit = True
         ret = self._device.CmdClose()
         if self._verbose:
             self._operator_interface.print_to_console("Open Status is \n{0}\n".format(str(self._log(ret, "CmdClose"))))
@@ -123,28 +126,29 @@ class seacliffmotEquipment(hardware_station_common.test_station.test_equipment.T
         processStateCurrent = None
         processStepCurrent = None
         self._operator_interface.print_to_console("wait for the sequence to be finished.\n")
-        while done is False:
+        while not done and not self._quit:
             ret = self._device.CmdCaptureSequenceStatus()
+            if not isinstance(ret, dict):
+                raise seacliffmotEquipmentError(f'Fail to check seq finish.. Ret {str(ret)}')
             processState = int(ret['state'].value)
             processStep = ret['currentSteps']
             processNbSteps = ret['nbSteps']
 
             if (processStateCurrent is None) or (processStateCurrent != processState) or (
                     processStepCurrent != processStep):
-                if self._verbose:
-                    print("  step {0}/{1} state {2}".format(processStep, processNbSteps, processState))
+                self._operator_interface.print_to_console(
+                    "---->  step {0}/{1} state {2}\n".format(processStep, processNbSteps, ret['state']))
 
                 processStateCurrent = processState
                 processStepCurrent = processStep
 
             if processState == 7:  # Conoscope.CaptureSequenceState.CaptureSequenceState_Error:
                 done = True
-                if self._verbose:
-                    print("Error happened")
+                self._operator_interface.print_to_console("---->Error happened\n", 'red')
+                raise seacliffmotEquipmentError(f'Fail to check seq finish.. {str(processState)}')
             elif processState == 6:  # conoscope.Conoscope.CaptureSequenceState.CaptureSequenceState_Done:
                 done = True
-                if self._verbose:
-                    print("Process Done")
+                self._operator_interface.print_to_console("---->Process Done\n")
 
             if done is False:
                 time.sleep(0.05)
@@ -635,7 +639,7 @@ class MotAlgorithmHelper(object):
         y_deg = 0
         col_ind = np.nonzero(np.abs(x_angle_arr - x_deg) == np.min(np.abs(x_angle_arr - x_deg)))[1][0]
         row_ind = np.nonzero(np.abs(y_angle_arr - y_deg) == np.min(np.abs(y_angle_arr - y_deg)))[1][0]
-        stats_summary = np.empty((2, 100), np.object)
+        stats_summary = np.empty((2, 100), object)
         stats_summary[0, k] = 'dir'
         stats_summary[1, k] = os.path.join(dirr, fnamebase)
         k = k + 1
@@ -1151,11 +1155,11 @@ class MotAlgorithmHelper(object):
             # hold off
             tmp_histo = XYZ[:, :, 1]
             tmp_histo = tmp_histo * chromaticity_mask
-            nbins = np.int(np.round((np.max(tmp_histo) - np.min(tmp_histo)) / 5))
+            nbins = np.int32(np.round((np.max(tmp_histo) - np.min(tmp_histo)) / 5))
             plt.subplot(2, 2, 4)
             cc = tmp_histo[tmp_histo != 0]
             weights = np.ones_like(cc) / float(len(cc))
-            rst = plt.hist(cc, density=True, range=(np.int(np.min(cc)), np.max(cc)), weights=weights,
+            rst = plt.hist(cc, density=True, range=(np.int32(np.min(cc)), np.max(cc)), weights=weights,
                           bins=nbins, histtype='bar', edgecolor='b', stacked=False)
             plt.xlabel('Luminance (nits)')
             plt.ylabel('Percentage')
@@ -1224,12 +1228,12 @@ class MotAlgorithmHelper(object):
             # hold off
             tmp_histo = Delta_uv_prime_smoothed_masked
             tmp_histo = tmp_histo * chromaticity_mask
-            nbins = np.int(np.round((np.max(tmp_histo) - np.min(tmp_histo)) / 0.0005))
+            nbins = np.int32(np.round((np.max(tmp_histo) - np.min(tmp_histo)) / 0.0005))
             plt.subplot(2, 2, 4)
             cc = tmp_histo[tmp_histo != 0]
             weights = np.ones_like(cc) / float(len(tmp_histo))
             rst = plt.hist(cc, density=True, bins=nbins, histtype='bar', edgecolor='b', weights=weights,
-                           range=[np.int(np.min(cc)), np.max(cc)])
+                           range=[np.int32(np.min(cc)), np.max(cc)])
             plt.gca().yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(np.sum(rst[0]), decimals=0, symbol=None))
             plt.gca().yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(np.sum(rst[0]) / 20))
             plt.gca().xaxis.get_major_formatter().set_powerlimits((0, 1))
@@ -1336,7 +1340,7 @@ class MotAlgorithmHelper(object):
         # Lum for Red, Green and Blue for D65
         Lum_after = Y_rgb / np.max(Y_scale)
         Gamma = 2.2
-        gray_levels = np.round(np.power(Lum_after / Lum_before, 1 / Gamma) * 255).astype(np.int)
+        gray_levels = np.round(np.power(Lum_after / Lum_before, 1 / Gamma) * 255).astype(np.int32)
 
         return {'GL': gray_levels,
                 'x_w': x_w,
@@ -1359,7 +1363,7 @@ class MotAlgorithmHelper(object):
     @staticmethod
     def ind2sub(array_shape, xind):
         if isinstance(xind, np.ndarray):
-            ind = xind.astype(np.int)
+            ind = xind.astype(np.int32)
         elif isinstance(xind, np.int64):
             ind = np.array([xind])
         else:
@@ -1556,7 +1560,7 @@ class MotAlgorithmHelper(object):
         I = np.lexsort(centroid.T[:1, :])
         Centroid = centroid[I, :]
 
-        Centroid2 = np.empty(Centroid.shape, np.object)
+        Centroid2 = np.empty(Centroid.shape, object)
         for i in range(0, n_dots):
             Centroid_temp = Centroid[i * n_dots:(i + 1) * n_dots, :]
             I = np.lexsort(Centroid_temp.T[:2, :])
@@ -1580,12 +1584,12 @@ class MotAlgorithmHelper(object):
         dxdy_WP_output_corrected = []
 
         if Size[0] == n_dots ** 2:
-            Lum = np.empty((n_dots ** 2,), dtype=np.object)
-            Color_x = np.empty(Lum.shape, dtype=np.object)
-            Color_y = np.empty(Lum.shape, dtype=np.object)
-            Color_x_corrected = np.empty(Lum.shape, dtype=np.object)
-            Lum_corrected = np.empty(Lum.shape, dtype=np.object)
-            Color_y_corrected = np.empty(Lum.shape, dtype=np.object)
+            Lum = np.empty((n_dots ** 2,), dtype=object)
+            Color_x = np.empty(Lum.shape, dtype=object)
+            Color_y = np.empty(Lum.shape, dtype=object)
+            Color_x_corrected = np.empty(Lum.shape, dtype=object)
+            Lum_corrected = np.empty(Lum.shape, dtype=object)
+            Color_y_corrected = np.empty(Lum.shape, dtype=object)
 
             for i in range(0, n_dots ** 2):
                 d = 25
@@ -1966,10 +1970,10 @@ class MotAlgorithmHelper(object):
 
             scenter = scentersRG[i]
             scentery = scentersRG[i][1]
-            scentera = np.int(np.floor(scentersRG[i][1] - d))
-            scenterb = np.int(np.floor(scentersRG[i][1] + d))
-            scenterc = np.int(np.floor(scentersRG[i][0] - d))
-            scenterd = np.int(np.floor(scentersRG[i][0] + d))
+            scentera = np.int32(np.floor(scentersRG[i][1] - d))
+            scenterb = np.int32(np.floor(scentersRG[i][1] + d))
+            scenterc = np.int32(np.floor(scentersRG[i][0] - d))
+            scenterd = np.int32(np.floor(scentersRG[i][0] + d))
             im = Y[scenterc:scenterd + 1, scentera:scenterb + 1]
             [rows, cols] = im.shape
             x = np.ones((rows, 1)) * np.arange(1, cols + 1)  # # Matrix with each pixel set to its x coordinate
@@ -2087,8 +2091,8 @@ class MotAlgorithmHelper(object):
         Lxy = np.empty((centroidColor.shape[0], 5))
         for i in range(0, Size[0]):
             # fix the index about center.
-            y_coord = np.fix(centroidColor[i, 1]).astype(np.int)
-            x_coord = np.fix(centroidColor[i, 0]).astype(np.int)
+            y_coord = np.fix(centroidColor[i, 1]).astype(np.int32)
+            x_coord = np.fix(centroidColor[i, 0]).astype(np.int32)
 
             Lxy[i, 0] = XYZ_smooth[y_coord, x_coord, 1]
             Lxy[i, 1] = little_x_smoothed[y_coord, x_coord]
@@ -2148,10 +2152,10 @@ class MotAlgorithmHelper(object):
         Display_center[1] = 0.4563 * (Image_center[1] - row_ind[0])
 
         d = 400
-        rt1 = np.int(np.fix(Image_center[1]) - d)
-        rt2 = np.int(np.fix(Image_center[1]) + d)
-        rt3 = np.int(np.fix(Image_center[0]) - d)
-        rt4 = np.int(np.fix(Image_center[0]) + d)
+        rt1 = np.int32(np.fix(Image_center[1]) - d)
+        rt2 = np.int32(np.fix(Image_center[1]) + d)
+        rt3 = np.int32(np.fix(Image_center[0]) - d)
+        rt4 = np.int32(np.fix(Image_center[0]) + d)
 
         # figure,imagesc(I)
 

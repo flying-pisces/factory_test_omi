@@ -708,10 +708,10 @@ class EurekaEEPROMStation(test_station.TestStation):
     def is_ready(self):
         ok_res = self._shop_floor.ok_to_test(self._latest_serial_number)
         if ok_res is True or (isinstance(ok_res, tuple) and ok_res[0]):
-            self._operator_interface.prompt('', 'SystemButtonFace')
             return True
         else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            self._operator_interface.prompt('', 'SystemButtonFace')
             return False
 
     def login(self, active, usr, pwd):

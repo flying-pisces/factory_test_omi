@@ -364,6 +364,7 @@ class TokkiOffAxisNStation(test_station.TestStation):
             return self.is_ready_litup_outside()
         else:
             self._operator_interface.print_to_console(f'Fail to check ok_to_test {str(ok_res)}\n', 'red')
+            self._operator_interface.prompt('', 'SystemButtonFace')
             return False
 
     def is_ready_litup_outside(self):

@@ -138,18 +138,18 @@ class EurekaMotEquipment(hardware_station_common.test_station.test_equipment.Tes
             if (processStateCurrent is None) or (processStateCurrent != processState) or (
                     processStepCurrent != processStep):
                 self._operator_interface.print_to_console(
-                    "---->  step {0}/{1} state {2}".format(processStep, processNbSteps, processState))
+                    "---->  step {0}/{1} state {2}\n".format(processStep, processNbSteps, ret['state']))
 
                 processStateCurrent = processState
                 processStepCurrent = processStep
 
             if processState == 7:  # Conoscope.CaptureSequenceState.CaptureSequenceState_Error:
                 done = True
-                self._operator_interface.print_to_console("---->Error happened", 'red')
+                self._operator_interface.print_to_console("---->Error happened\n", 'red')
                 raise EurekaMotEquipmentError(f'Fail to check seq finish.. {str(processState)}')
             elif processState == 6:  # conoscope.Conoscope.CaptureSequenceState.CaptureSequenceState_Done:
                 done = True
-                self._operator_interface.print_to_console("---->Process Done")
+                self._operator_interface.print_to_console("---->Process Done\n")
 
             if done is False:
                 time.sleep(0.05)

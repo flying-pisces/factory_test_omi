@@ -8,6 +8,7 @@ import ntpath
 import time
 import glob
 import UIDep
+import pyexceptions
 ########################################FIGURE OUT WHAT TO BUILD##################
 build_target = None
 if len(sys.argv) < 3:
@@ -49,6 +50,7 @@ def get_datas():
      datas.append((os.path.join(os.path.dirname(UIDep.__file__), '*.dll'), 'UIDep'))
      datas.append((os.path.join(os.path.dirname(UIDep.__file__), '*.txt'), '.'))
      datas.append((os.path.join(os.path.dirname(UIDep.__file__), '*.png'), '.'))
+     datas.append((os.path.join(os.path.dirname(pyexceptions.__file__), 'templates', '*.html'), 'pyexceptions/templates'))
 
      return datas
 
