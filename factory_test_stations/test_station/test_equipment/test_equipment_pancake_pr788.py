@@ -52,28 +52,18 @@ class pancakepr788Equipment(hardware_station_common.test_station.test_equipment.
             raise AssertionError('Unable to open fixture port: {}'.format(self._serial_port))
 
     def remote_mode(self):
-        self._write_serial("P")
-        time.sleep(1)
-        self._write_serial("H")
-        time.sleep(1)
-        self._write_serial("O")
-        time.sleep(1)
-        self._write_serial("T")
-        time.sleep(1)
-        self._write_serial("O")
-        time.sleep(1)
-        response = self._read_response()
+        self._serial_port.write("PHOTO\r\n".encode())
+        response = True #ugly hack
         return response
 
     def quit(self):
-        self._write_serial("q")
+        self._serial_port.write("Q\r\n".encode())
         time.sleep(1)
-        response = self._read_response()
+        response = True #ugly hack
         return response
 
-
     def measure(self):
-        self._write_serial(COMMAND_MES)
+        self._serial_port.write("M\r\n".encode())
         response = self._read_response()
         return response
 
@@ -86,18 +76,13 @@ class pancakepr788Equipment(hardware_station_common.test_station.test_equipment.
     def _write_serial(self, input_bytes):
         if self._verbose:
           self.logger.debug('writing: ' + input_bytes)
-        bytes_written = self._serial_port.write(input_bytes)
+        bytes_written = self._serial_port.write(input_bytes.encode())
         return bytes_written
 
     def _read_response(self):
+      self._serial_port.flush()
       response = self._serial_port.readline()
-      parsed = response.split()
-      data = None
-      cmd = response
-      if len(parsed) > 1:
-        data = parsed[1].split(";")
-        cmd = parsed[0].split(",")
-      return cmd, data
+      return response
 
 if __name__ == "__main__":
     import sys
@@ -108,8 +93,8 @@ if __name__ == "__main__":
     station_config.load_station('pancake_pr788')
     the_instrument = pancakepr788Equipment(station_config)
     isinit = the_instrument.is_ready()
-    print the_instrument.initialize()
-    print the_instrument.remote_mode()
-    print the_instrument.measure()
-    print the_instrument.quit()
+    print(the_instrument.initialize())
+    print(the_instrument.remote_mode())
+    print(the_instrument.measure())
+#    print(the_instrument.quit())
     the_instrument.close()
