@@ -5,18 +5,70 @@
 # 'factory-test' directory, logs directories, etc will get placed in there.
 # (use windows-style paths.)
 ROOT_DIR = r'C:\Oculus'
-
+RAW_IMAGE_LOG_DIR = r'C:/oculus/factory_test_omi/factory_test_stations/factory-test_logs/Raw'
 ##################################
 # serial number codes
 #
 SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config. re.regex
 
+DUT_COMPORT = "COM1" #
+DUT_ETH_PROXY = True
+DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
+
 # station_type
 # STATION_TYPE = 'project_station'
 # STATION_NUMBER = 10001
 # FULL_TREE_UI = False
 #
+
+#Command
+COMMAND_DISP_HELP = "$c.help"
+COMMAND_DISP_VERSION_GRP=['mcu', 'hw', 'fpga']
+COMMAND_DISP_VERSION = "Version"
+COMMAND_DISP_GETBOARDID = "getBoardID"
+COMMAND_DISP_POWERON = "DUT.powerOn,DSCMODE"
+# COMMAND_DISP_POWERON = "DUT.powerOn,SSD2832_BistMode"
+#COMMAND_DISP_POWERON = "DUT.powerOn"
+COMMAND_DISP_POWEROFF = "DUT.powerOff"
+COMMAND_DISP_RESET = "Reset"
+COMMAND_DISP_SETCOLOR = "SetColor"
+COMMAND_DISP_SHOWIMAGE = "ShowImage"
+COMMAND_DISP_READ = "MIPI.Read"
+COMMAND_DISP_WRITE = "MIPI.Write"
+COMMAND_DISP_2832WRITE = "t.2832_MIPI_WRITE"
+COMMAND_DISP_VSYNC = "REFRESHRATE"
+COMMAND_DISP_GET_COLOR = "GetColor"
+COMMAND_MEASURE_BLU = "Measure,BLU"
+
+COMMAND_NVM_WRITE_CNT = 'NVMWCNT'
+COMMAND_NVM_READ = 'NVMRead'
+COMMAND_NVM_WRITE = 'NVMWrite'
+COMMAND_SPEED_MODE = 'SET.B7MODE'
+COMMAND_GETB5ECC = 'Get.B5ECC'
+COMMAND_GET_MODULE_INPLACE = 'GET.MODULE.INPLACE'
+
+COMMAND_DISP_REBOOT_DLY = 4
+
+TEST_PATTERNS = {
+    'W255': {
+        'P': (255, 255, 255),
+    },
+    'W000': {
+        'P': (0, 0, 0),
+    },
+    'R255': {
+        'P': (255, 0, 0),
+    },
+    'G255': {
+        'P': (0, 255, 0),
+    },
+    'B255': {
+        'P': (0, 0, 255),
+    },
+}
+
+TEST_POSITIONS = [('Nominal', (0, 0), ["W255", "R255", "G255", "B255"])]
 
 ##################################
 # shopfloor
@@ -46,6 +98,8 @@ SHOW_CONSOLE = True
 # print all data to log-file
 IS_PRINT_TO_LOG = False
 IS_VERBOSE = True
+
+SPECTRAL_MEASURE = True
 
 #####
 ### Facebook_IT Enable boolean

@@ -2,10 +2,14 @@ import time
 
 import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_eureka_motpr as test_fixture_eureka_motpr
+import test_station.test_equipment.test_equipment_eureka_motpr as test_equipment_eureka_motpr
 import test_station.dut.eureka_dut as dut_eureka_motpr
 from hardware_station_common.utils.io_utils import round_ex
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 import types
+import re
+import datetime
+import os
 
 class EurekaMotPRError(Exception):
     pass
@@ -22,6 +26,9 @@ class EurekaMotPRStation(test_station.TestStation):
             self._fixture = test_fixture_eureka_motpr.EurekaMotPRFixture(station_config, operator_interface)
             if hasattr(station_config, 'FIXTURE_SIM') and station_config.FIXTURE_SIM:
                 self._fixture = projectstationFixture(station_config, operator_interface)
+
+            self._pr788 = test_equipment_eureka_motpr.EurekaMotPREquipment(station_config, operator_interface)
+
             self._overall_errorcode = ''
             self._first_failed_test_result = ''
             self._sw_version = '0.0.0'
@@ -37,6 +44,7 @@ class EurekaMotPRStation(test_station.TestStation):
                 })
             self._operator_interface.print_to_console("Initializing eureka MotPR station...\n")
             self._fixture.initialize()
+            self._pr788.initialize()
         except:
             raise
 
@@ -81,34 +89,51 @@ class EurekaMotPRStation(test_station.TestStation):
         try:
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
             self._operator_interface.print_to_console("Initialize DUT... \n")
-            time.sleep(1)
             test_log.set_measured_value_by_name_ex = types.MethodType(self.chk_and_set_measured_value_by_name, test_log)
 
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
 
-            test_log.set_measured_value_by_name_ex('Nominal_W255_OnAxis Lum', 119.2)
-            test_log.set_measured_value_by_name_ex('Nominal_W255_OnAxis x', 0.33)
-            test_log.set_measured_value_by_name_ex('Nominal_W255_OnAxis y', 0.34)
+            ###dut init
+            self._the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
+                                      eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
 
-            test_log.set_measured_value_by_name_ex('Nominal_R255_OnAxis Lum', 28)
-            test_log.set_measured_value_by_name_ex('Nominal_R255_OnAxis x', 0.62)
-            test_log.set_measured_value_by_name_ex('Nominal_R255_OnAxis y', 0.34)
+            ###dut screen on
+            self._the_unit.screen_on()
+            time.sleep(0.5)
+            pre_color = None
+            for p_name, pos, test_patterns in self._station_config.TEST_POSITIONS:
+                self._operator_interface.print_to_console(f'Mov to test position {p_name}_{pos}. \n')
+                for pattern in test_patterns:
+                    self._operator_interface.print_to_console(f'start to test pattern {p_name}_{pattern}. \n')
+                    info = self._station_config.TEST_PATTERNS.get(pattern)
+                    color_code = info['P']
+                    if pre_color != color_code:
+                        self._operator_interface.print_to_console('Set DUT To Color: {}.\n'.format(color_code))
+                        if isinstance(color_code, tuple):
+                            self._the_unit.display_color(color_code)
+                        elif isinstance(color_code, (str, int)):
+                            self._the_unit.display_image(color_code)
+                        pre_color = color_code
 
-            test_log.set_measured_value_by_name_ex('Nominal_G255_OnAxis Lum', 72)
-            test_log.set_measured_value_by_name_ex('Nominal_G255_OnAxis x', 0.32)
-            test_log.set_measured_value_by_name_ex('Nominal_G255_OnAxis y', 0.58)
+                    time.sleep(0.5)
+                    lum, x, y = self._pr788.deviceMeasure(
+                        0, 0, 0, test_equipment_eureka_motpr.MeasurementData.New.value)
+                    test_log.set_measured_value_by_name_ex(f'{p_name}_{pattern}_OnAxis Lum', lum)
+                    test_log.set_measured_value_by_name_ex(f'{p_name}_{pattern}_OnAxis x', x)
+                    test_log.set_measured_value_by_name_ex(f'{p_name}_{pattern}_OnAxis y', y)
+                    if self._station_config.SPECTRAL_MEASURE:
+                        self.spectral_test(test_log, pattern_name=pattern)
 
-            test_log.set_measured_value_by_name_ex('Nominal_B255_OnAxis Lum', 11)
-            test_log.set_measured_value_by_name_ex('Nominal_B255_OnAxis x',  0.18)
-            test_log.set_measured_value_by_name_ex('Nominal_B255_OnAxis y', 0.04)
+            self._the_unit.screen_off()
 
         except EurekaMotPRError:
-            self._the_unit.close()
-            self._operator_interface.print_to_console("Non-parametric Test Failure\n")
-            return self.close_test(test_log)
+            pass
+            # self._the_unit.close()
+            # self._operator_interface.print_to_console("Non-parametric Test Failure\n")
+            #return self.close_test(test_log)
 
-        else:
+        finally:
             self._the_unit.close()
             return self.close_test(test_log)
 
@@ -120,6 +145,7 @@ class EurekaMotPRStation(test_station.TestStation):
 
     def is_ready(self):
         self._fixture.is_ready()
+        return True
 
     def login(self, active, usr, pwd):
         self._operator_interface.print_to_console(f'Login to system: {usr} , active={active}\n')
@@ -127,3 +153,14 @@ class EurekaMotPRStation(test_station.TestStation):
             'IsUsrLogin': str(active)
         })
         return True
+
+    def spectral_test(self, test_log, pattern_name):
+        uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+        capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
+        file_path = os.path.join(capture_path, f'{pattern_name}.raw')
+        if not os.path.exists(capture_path):
+            test_station.utils.os_utils.mkdir_p(capture_path)
+            os.chmod(capture_path, 0o777)
+        spectralData = self._pr788.deviceSpectralMeasure('', test_equipment_eureka_motpr.MeasurementData.New.value)
+        with open(file_path, 'w') as f:
+            f.write(spectralData)
