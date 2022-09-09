@@ -349,7 +349,7 @@ class seacliffmotStation(test_station.TestStation):
 
     def initialize(self):
         try:
-            self._operator_interface.print_to_console("Initializing Seacliff MOT station...{0}.....3\n"
+            self._operator_interface.print_to_console("Initializing Seacliff MOT station...{0}.....4\n"
                                                       .format(self._sw_version))
             if hasattr(self._operator_interface, '_console'):
                 online = getattr(self._station_config, 'MES_IN_LOT_CTRL', None)
@@ -846,8 +846,8 @@ class seacliffmotStation(test_station.TestStation):
         res = self.close_test(test_log)
         if (len(self._ng_continually_msg) >= 3
                 and len(set(self._ng_continually_msg)) == 1 and self._ng_continually_msg[-1] != 0):
-            self._operator_interface.operator_input(
-                f'建议联系TE: failures [{self._ng_continually_msg[-1]}] come out continuously for more than 3 times. ')
+            self._operator_interface.operator_input(title='Warning',
+                msg = f'建议联系TE: failures [{self._ng_continually_msg[-1]}] come out continuously for more than 3 times. ')
         return res
 
     def do_pattern_parametric_export(self, pos_name, pattern_name, capture_path, test_log):
@@ -911,8 +911,8 @@ class seacliffmotStation(test_station.TestStation):
     def close_test(self, test_log):
         self._overall_result = test_log.get_overall_result()
         self._first_failed_test_result = test_log.get_first_failed_test_result()
-        self._ng_continually_msg.append(self._first_failed_test_result)
-        self._ng_continually_msg = self._ng_continually_msg[-4:-1]
+        self._ng_continually_msg.append(test_log.get_overall_error_code())
+        self._ng_continually_msg = self._ng_continually_msg[-3:]
         return self._overall_result, self._first_failed_test_result
 
     def validate_sn(self, serial_num):
