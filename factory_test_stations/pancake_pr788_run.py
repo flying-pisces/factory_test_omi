@@ -4,7 +4,7 @@ import hardware_station_common.factory_test_gui as gui
 
 # here we can override the station_config so that we don't have
 # to monkey with it in the build system
-station_config.load_station('project_station')
+station_config.load_station('pancake_pr788')
 # we just have to pass in the TestStation constructor for this specific station
 # and the station_config
 FACTORY_TEST_GUI = gui.FactoryTestGui(station_config, test_station.projectstationStation)
