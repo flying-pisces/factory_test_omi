@@ -7,20 +7,34 @@ import re
 
 
 class EurekaMotPREquipmentError(Exception):
-    pass
+    def __init__(self, msg, err_code=0):
+        Exception.__init__(self)
+        self.message = msg
+        self._err_code = err_code
+
+    def __str__(self):
+        return repr(self.message)
+
+    @property
+    def err_code(self):
+        return self._err_code
+
 
 class ErrorCodes(Enum):
     BadArguments = -5001
     BadData = -5004
 
+
 class MeasurementData(Enum):
     New = 0
     last = 1
+
 
 class InternalND(Enum):
     Close = 1
     Open = 0
     QueryState = -1
+
 
 class TaktLearnPhases(Enum):
     GetFrequency = 0
@@ -28,11 +42,13 @@ class TaktLearnPhases(Enum):
     StandardDark = 2
     EndPhases = 3
 
+
 class SynchMode(Enum):
     Non = 0
     Auto = 1
     Learn = 2
     User = 3
+
 
 class SpeedMode(Enum):
     SpeedNormal = 0
@@ -46,13 +62,12 @@ class UnitsType(Enum):
     MetricUnits = 1
 
 
-
-
 class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.TestEquipment):
     """
         class for Eureka motpr Equipment
             this is for doing all the specific things necessary to interface with equipment
     """
+
     def __init__(self, station_config, operator_interface):
         fullpath = os.path.abspath(sys.modules[EurekaMotPREquipment.__module__].__file__)
         cur = os.path.dirname(fullpath)
@@ -60,20 +75,20 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         clr.AddReference(os.path.join(cur, r'PR6xxComm.dll'))
 
         from PR6xxComm import CommBase
-        hardware_station_common.test_station.test_equipment.TestEquipment.__init__(self, station_config, operator_interface)
+        hardware_station_common.test_station.test_equipment.TestEquipment.__init__(self, station_config,
+                                                                                   operator_interface)
         self._device = CommBase()
-        self._isOpened = False
+        self._station_config = station_config
         pass
 
-    def is_ready(self):
-        if 0 == self.deviceOpen():
-            self._operator_interface.print_to_console("Eureka MotPR Equipment is Ready\n")
-        else:
-            self._operator_interface.print_to_console("Eureka MotPR Equipment is Not Ready, Pr788 Open Fail\n")
-
     def initialize(self):
-        self.is_ready()
-        self._operator_interface.print_to_console("Initializing Eureka MotPR Equipment\n")
+        self.deviceOpen()
+        synchMode = self._station_config.PR788_Config['SynchMode']
+        speedMode = self._station_config.PR788_Config['SpeedMode']
+        Oberserve = self._station_config.PR788_Config['Oberserve']
+        self.deviceSpeed(speedMode)
+        self.deviceSetSynchMode(synchMode)
+        self.deviceObserver(nObsever=Oberserve)
 
     def close(self):
         self.deviceClose()
@@ -109,15 +124,11 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
 
     def deviceOpen(self):
         res = self._device.prDeviceOpen()
-        if res == 0:
-            self._isOpened = True
-            return 0
-        return -1
-        # return self._device.prDeviceOpen()
+        if res != 0:
+            raise EurekaMotPREquipmentError(f"Eureka MotPR Equipment is Not Ready, Pr788 Open Fail. {res}")
 
     def deviceClose(self):
         self._device.prDeviceClose()
-
 
     def deviceSerialNumber(self, szSerialNumber=''):
         '''
@@ -125,14 +136,21 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         :param szSerialNumber:
         :return: tuple
         '''
-        return self._device.prDeviceSerialNumber(szSerialNumber)
+        res, serial_number = self._device.prDeviceSerialNumber(szSerialNumber)
+        if res != 0:
+            raise EurekaMotPREquipmentError('Fail to get serial number.')
+        return serial_number
 
     def deviceGetFirmwareVersion(self):
         '''
         get fw version
         :return:
         '''
-        return self._device.prDeviceFirmwareVersion('')
+        res = self._device.prDeviceFirmwareVersion('')
+        if isinstance(res, tuple) and len(res) == 2 and res[0] == 0:
+            return res[1]
+        else:
+            raise EurekaMotPREquipmentError('Fail to get FirmwareVersion')
 
     def deviceGetGetAccessoryList(self, preStr=''):
         '''
@@ -180,8 +198,6 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         '''
         return self._device.prDeviceInstCalDue(szDueDate)
 
-
-
     def deviceExposure(self, milliseconds):
         '''
 
@@ -207,9 +223,9 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         :param new:
         :return:
         '''
-        return self._device.prDeviceCapMeasure(capX,capY,capZ, MeasurementData.last.value)
+        return self._device.prDeviceCapMeasure(capX, capY, capZ, MeasurementData.last.value)
 
-    def deviceMeasure(self, brightness, cieX, cieY, measurementData: MeasurementData):
+    def deviceMeasure(self, measurementData: MeasurementData):
         '''
         Take luminance measurement
         :param brightness: double
@@ -218,24 +234,14 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         :param measurementData:
         :return: tuple
         '''
-        if not self._isOpened:
-            self._operator_interface.print_to_console("Eureka MotPR Equipment Not Opened\n")
-            return (-1, 0, 0, 0)
-
+        brightness, cieX, cieY = 0, 0, 0
         self._operator_interface.print_to_console("Eureka MotPR Equipment Start Measurement \n")
         res = self._device.prDeviceMeasure(brightness, cieX, cieY, measurementData)
-        try:
-            if res[0] == 0:
-                self._operator_interface.print_to_console("Eureka MotPR Equipment Measure Result: {}\n".format(res))
-                return res[1], res[2], res[3]
-            else:
-                self._operator_interface.print_to_console("Eureka MotPR Equipment Measure Error...\n")
-                return 0,0,0
-        except:
-            return 0,0,0
-
-        # return self._device.prDeviceMeasure(brightness, cieX, cieY, measurementData)
-
+        if isinstance(res, tuple) and len(res) == 4:
+            self._operator_interface.print_to_console("Measurement result\n")
+            return res[1:4]
+        else:
+            raise EurekaMotPREquipmentError(f'Fail to deviceMeasure. {res}')
 
     def deviceInternalND(self, internalND: InternalND):
         '''
@@ -245,8 +251,7 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         '''
         return self._device.prDeviceInternalND(internalND)
 
-
-    def deviceLastMeasurementInfo(self, pxie=0, lightDark=0, exposure=0, brightness=0, cct=0, temperature=0):
+    def deviceLastMeasurementInfo(self):
         '''
         Get additional information for last luminance or spectral measurement.
         :param pxie:
@@ -257,8 +262,8 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         :param temperature:
         :return: tuple
         '''
+        pxie, lightDark, exposure, brightness, cct, temperature = 0, 0, 0, 0, 0, 0
         return self._device.prDeviceLastMeasurementInfo(pxie, lightDark, exposure, brightness, cct, temperature)
-
 
     def deviceLearnFreqAdjustedTakt(self, taktlearnphase: TaktLearnPhases, fTaktSetFreq):
         '''
@@ -277,7 +282,11 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         :param szModel:
         :return: tuple
         '''
-        return self._device.prDeviceModel(szModel)
+        res = self._device.prDeviceModel(szModel)
+        if isinstance(res, tuple) and len(res) == 2 and res[0] == 0:
+            return res[1]
+        else:
+            raise EurekaMotPREquipmentError(f'Fail to deviceMeasure. {res}')
 
     def deviceObserver(self, nObsever=2):
         '''
@@ -285,7 +294,9 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         :param nObsever: only 2 or 10, other occur Error
         :return: int
         '''
-        return self._device.prDeviceObserver(nObsever)
+        res = self._device.prDeviceObserver(nObsever)
+        if res != 0:
+            raise EurekaMotPREquipmentError(f'Fail to deviceObserver. {res}')
 
     def deviceSetAccessory(self, accIndex):
         '''
@@ -318,7 +329,9 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         :param synchMode:
         :return: 0 = success
         '''
-        return self._device.prDeviceSetSynchMode(synchMode)
+        res = self._device.prDeviceSetSynchMode(synchMode)
+        if res != 0:
+            raise EurekaMotPREquipmentError(f'Fail to deviceSetSynchMode. {res}')
 
     def deviceSmartDark(self, bTurnOn):
         '''
@@ -329,33 +342,19 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         '''
         return self._device.prDeviceSmartDark(bTurnOn)
 
-    def deviceSpectralMeasure(self, spectralData, measurementData: MeasurementData):
+    def deviceSpectralMeasure(self, measurementData: MeasurementData, spectralData=''):
         '''
         Take spectral measurement
         :param spectralData:
         :param measurementData:
         :return: tuple
         '''
-
-        if not self._isOpened:
-            self._operator_interface.print_to_console("Eureka MotPR Equipment Not Opened\n")
-            return (-1, '')
-
         self._operator_interface.print_to_console("Eureka MotPR Equipment Start Spectral Measurement \n")
         res = self._device.prDeviceSpectralMeasure(spectralData, measurementData)
-
-        try:
-            if res[0] == 0:
-                self._operator_interface.print_to_console("Eureka MotPR Equipment Measure Result: {}\n".format(res))
-                return res[1]
-            else:
-                self._operator_interface.print_to_console("Eureka MotPR Equipment Measure Error...\n")
-                return 'err'
-        except:
-            return 'err'
-
-
-
+        if isinstance(res, tuple) and len(res) == 2:
+            return res[1]
+        else:
+            raise EurekaMotPREquipmentError(f'Fail to deviceSpectralMeasure {res}')
 
     def deviceSpeed(self, speedMode: SpeedMode):
         '''
@@ -363,7 +362,9 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         :param speedMode: Normal, Fast, 2XFast, 4XFast
         :return: 0 = success
         '''
-        return self._device.prDeviceSpeed(speedMode)
+        res = self._device.prDeviceSpeed(speedMode)
+        if res != 0:
+            raise EurekaMotPREquipmentError(f'Fail to deviceSpeed. {res}')
 
     def deviceStartCamera(self, viewerPath):
         '''
@@ -379,7 +380,6 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         :return:
         '''
         self._device.prDeviceStopCamera()
-
 
     def deviceSyncLearn(self, syncFrequency):
         '''
@@ -429,8 +429,13 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         '''
         return self._device.prDeviceUserCorrelationTable(table, brightness, cieX, cieY)
 
-
-
+    def deviceOpenLog(self, filepath):
+        '''
+        Creates SDK level log file and starts logging process.
+        :param filepath:
+        :return:
+        '''
+        return self._device.prOpenLogFile(filepath)
 
 
 if __name__ == '__main__':

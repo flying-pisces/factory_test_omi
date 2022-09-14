@@ -50,25 +50,38 @@ COMMAND_GET_MODULE_INPLACE = 'GET.MODULE.INPLACE'
 
 COMMAND_DISP_REBOOT_DLY = 4
 
+PR788_Config = {
+    "Log_Path": r'C:/oculus/factory_test_omi/factory_test_stations/factory-test_logs/PR788',
+    "Auto_Exposure": True,
+    #"Granularity": 1/9 * 10**6,
+    "Oberserve": 2,     ## 2 ~ 10
+    "SynchMode": 0,     ## Non = 0, Auto = 1, Learn = 2, User = 3
+    "SpeedMode": 0,     ## Normal = 0, Fast = 1, 2xFast = 2, 4xFast = 3
+}
+
 TEST_PATTERNS = {
     'W255': {
         'P': (255, 255, 255),
-    },
-    'W000': {
-        'P': (0, 0, 0),
+        'spectral': True,
+        'exposure': 1
     },
     'R255': {
         'P': (255, 0, 0),
+        'exposure': 1
     },
     'G255': {
         'P': (0, 255, 0),
+        'exposure': 1
     },
     'B255': {
         'P': (0, 0, 255),
+        'exposure': 1
     },
 }
 
 TEST_POSITIONS = [('Nominal', (0, 0), ["W255", "R255", "G255", "B255"])]
+
+SMOOTH_COUNT = 3
 
 ##################################
 # shopfloor
@@ -112,12 +125,12 @@ FULL_TREE_UI = True
 STATION_TYPE = 'eureka_motpr'
 STATION_NUMBER = '0001'
 
-####
+###
 ###
 MIN_SPACE_REQUIRED = [('C:', 1024)]
 SW_TITLE = r'OMI TEST STATION (MotPR)'
 
-DUT_SIM = True
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False
 

@@ -1,6 +1,11 @@
 """
 Release Note:
 ========================================================
+Version 1.0.7PRE
+2022-9-13 elton<elton.tian@myzygroup.com>
+-1. Add test-item to indicate the issue from fixture and equipment.
+
+========================================================
 Version 1.0.6
 2022-8-13 elton<elton.tian@myzygroup.com>
 -1. update SPEC for P1C provided by Tian
@@ -223,10 +228,10 @@ COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255
 DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 10
 
-VERSION_REVISION_EQUIPMENT = '88'
+VERSION_REVISION_EQUIPMENT = '93'
 VERSION_REVISION_LIST = {
     'Conoscope': ['72'],
-    'ConoscopeV2': ['87', '88'],
+    'ConoscopeV2': ['87', '88', '93'],
 }
 FILE_COUNT_INC = {0: 4, 1: 2, 2: 2, 3: 2, }
 

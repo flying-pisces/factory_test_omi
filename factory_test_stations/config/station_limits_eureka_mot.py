@@ -8,12 +8,16 @@ STATION_LIMITS_ARRAYS = [
 
     ["DUT_ModuleType", None, None, 93],
     ["Carrier_ProbeConnectStatus", None, None, 94],
-    ["DUT_ScreenOnRetries", 0, 5, 95],
+    # ["DUT_ScreenOnRetries", 0, 5, 95],
     ["DUT_ScreenOnStatus", True, True, 96],
     ["DUT_CancelByOperator", False, False, 97],
     ["ENV_ParticleCounter", None, None, 98],
     ["ENV_AmbientTemp", None, None, 99],
     ["DUT_AlignmentSuccess", True, True, 100],
+
+    ["ERR_FIXTURE", False, False, 101],
+    ["ERR_EQUIPMENT", False, False, 102],
+    ["ERR_DUT", False, False, 103],
 
     ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_W255", True, True, 10001],
     ["Test_RAW_IMAGE_SAVE_SUCCESS_normal_R255", True, True, 10002],

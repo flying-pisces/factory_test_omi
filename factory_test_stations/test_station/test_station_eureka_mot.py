@@ -579,6 +579,7 @@ class EurekaMotStation(test_station.TestStation):
         self._gl_W255 = {}
         self._temperature_dic = {}
         self._eep_data = {}
+        fixture_err, equip_err, dut_err = False, False, False
         try:
             self._is_running = True
             self._operator_interface.print_to_console(f"Initialize Test condition.={cpu_count_used}/{cpu_count}.. \n")
@@ -600,7 +601,7 @@ class EurekaMotStation(test_station.TestStation):
 
             test_log.set_measured_value_by_name_ex("DUT_ModuleType", self._module_left_or_right)
             test_log.set_measured_value_by_name_ex('Carrier_ProbeConnectStatus', self._probe_con_status)
-            test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
+            # test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
             test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
             test_log.set_measured_value_by_name_ex("DUT_AlignmentSuccess", self._is_alignment_success)
@@ -809,12 +810,15 @@ class EurekaMotStation(test_station.TestStation):
             except BaseException as e2:
                 self._operator_interface.print_to_console(f'Taprisiot Error E2: {str(e2)}\n')
             self._fatal_error_restart_msg = f'主相机侧故障: Taprisiot --> {str(e)}'
+            equip_err = True
         except test_fixture_eureka_mot.EurekaMotFixtureError as e:
             self._fatal_error_restart_msg = f'治具侧故障: Fixture Error --> {str(e)}: {self._err_msg_list.get(e.err_code)}'
+            fixture_err = True
         except EurekaMotStationError as e:
             self._operator_interface.print_to_console(f'Station Error: {str(e)}\n')
         except EurekaDUTError as e:
             self._operator_interface.print_to_console(f'产品侧故障：DUT Error --> {str(e)}', 'red')
+            dut_err = True
         except Exception as e:
             self._fatal_error_restart_msg = f'Please contact with MYZY --> {str(e)}'
         finally:
@@ -848,6 +852,9 @@ class EurekaMotStation(test_station.TestStation):
         self._operator_interface.print_to_console(f'Finish------------{serial_number}-------\n')
         if self._fatal_error_restart_msg is not None:
             self._operator_interface.print_to_console(f'Exception ===>------{self._fatal_error_restart_msg}\n')
+        for k, v in zip(['ERR_FIXTURE', 'ERR_EQUIPMENT', 'ERR_DUT'],
+                        [fixture_err, equip_err, dut_err]):
+            test_log.set_measured_value_by_name_ex(k, v)
         res = self.close_test(test_log)
         if (len(self._ng_continually_msg) >= 3
                 and len(set(self._ng_continually_msg)) == 1 and self._ng_continually_msg[-1] != 0):

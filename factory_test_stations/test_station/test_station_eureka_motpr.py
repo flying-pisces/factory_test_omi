@@ -44,7 +44,6 @@ class EurekaMotPRStation(test_station.TestStation):
                 })
             self._operator_interface.print_to_console("Initializing eureka MotPR station...\n")
             self._fixture.initialize()
-            self._pr788.initialize()
         except:
             raise
 
@@ -94,14 +93,26 @@ class EurekaMotPRStation(test_station.TestStation):
             self._operator_interface.print_to_console("Testing Unit %s\n" % self._the_unit.serial_number)
             test_log.set_measured_value_by_name_ex('SW_VERSION', self._sw_version)
 
+            ###fixture load
+
+
             ###dut init
             self._the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
                                       eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
+
+            ###pr788 ready
+            self.set_log4pr788(test_log)
+            self._pr788.initialize()
+
+            test_log.set_measured_value_by_name_ex(f'Device_SN', self._pr788.deviceSerialNumber())
+            test_log.set_measured_value_by_name_ex(f'Device_Model', self._pr788.deviceModel())
+            test_log.set_measured_value_by_name_ex(f'Device_Firmware_Ver', self._pr788.deviceGetFirmwareVersion())
 
             ###dut screen on
             self._the_unit.screen_on()
             time.sleep(0.5)
             pre_color = None
+
             for p_name, pos, test_patterns in self._station_config.TEST_POSITIONS:
                 self._operator_interface.print_to_console(f'Mov to test position {p_name}_{pos}. \n')
                 for pattern in test_patterns:
@@ -116,14 +127,27 @@ class EurekaMotPRStation(test_station.TestStation):
                             self._the_unit.display_image(color_code)
                         pre_color = color_code
 
-                    time.sleep(0.5)
-                    lum, x, y = self._pr788.deviceMeasure(
-                        0, 0, 0, test_equipment_eureka_motpr.MeasurementData.New.value)
-                    test_log.set_measured_value_by_name_ex(f'{p_name}_{pattern}_OnAxis Lum', lum)
-                    test_log.set_measured_value_by_name_ex(f'{p_name}_{pattern}_OnAxis x', x)
-                    test_log.set_measured_value_by_name_ex(f'{p_name}_{pattern}_OnAxis y', y)
-                    if self._station_config.SPECTRAL_MEASURE:
-                        self.spectral_test(test_log, pattern_name=pattern)
+                        time.sleep(0.5)
+                        measure_array = []
+
+                        if not self._station_config.PR788_Config['Auto_Exposure'] and 'exposure' in info.keys():
+                            self._pr788.deviceExposure(info.get('exposure'))
+
+                        for c in range(self._station_config.SMOOTH_COUNT):
+                            lum, x, y = self._pr788.deviceMeasure(test_equipment_eureka_motpr.MeasurementData.New.value)
+                            expsure = self._pr788.deviceLastMeasurementInfo()
+                            measure_array.append((lum, x, y, expsure[3]))
+
+                        lum = sum([lum for lum, __, __, __ in measure_array]) / len(measure_array)
+                        x = sum([x for __, x, __, __ in measure_array]) / len(measure_array)
+                        y = sum([y for __, __, y, __ in measure_array]) / len(measure_array)
+                        exposure = round(sum([z for __, __, __, z in measure_array]) / len(measure_array), 2)
+                        test_log.set_measured_value_by_name_ex(f'{p_name}_{pattern}_OnAxis Lum', lum)
+                        test_log.set_measured_value_by_name_ex(f'{p_name}_{pattern}_OnAxis x', x)
+                        test_log.set_measured_value_by_name_ex(f'{p_name}_{pattern}_OnAxis y', y)
+                        test_log.set_measured_value_by_name_ex(f'{p_name}_{pattern}_Exposure', exposure)
+                        if self._station_config.SPECTRAL_MEASURE and info.get('spectral') is True:
+                            self.spectral_test(test_log, pattern_name=pattern)
 
             self._the_unit.screen_off()
 
@@ -135,6 +159,7 @@ class EurekaMotPRStation(test_station.TestStation):
 
         finally:
             self._the_unit.close()
+            self._pr788.close()
             return self.close_test(test_log)
 
     def close_test(self, test_log):
@@ -155,12 +180,30 @@ class EurekaMotPRStation(test_station.TestStation):
         return True
 
     def spectral_test(self, test_log, pattern_name):
+        '''
+        test spectral and write test log to file
+        :param test_log:
+        :param pattern_name:
+        :return:
+        '''
         uni_file_name = re.sub('_x.log', '', test_log.get_filename())
-        capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
+        capture_path = os.path.join(self._station_config.PR788_Config['Log_Path'], uni_file_name)
         file_path = os.path.join(capture_path, f'{pattern_name}.raw')
         if not os.path.exists(capture_path):
             test_station.utils.os_utils.mkdir_p(capture_path)
             os.chmod(capture_path, 0o777)
-        spectralData = self._pr788.deviceSpectralMeasure('', test_equipment_eureka_motpr.MeasurementData.New.value)
+        spectralData = self._pr788.deviceSpectralMeasure(test_equipment_eureka_motpr.MeasurementData.New.value)
+        spectralData = spectralData.replace('\n', '')
         with open(file_path, 'w') as f:
             f.write(spectralData)
+
+    def set_log4pr788(self, test_log):
+        uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+        capture_path = os.path.join(self._station_config.PR788_Config['Log_Path'], uni_file_name)
+        file_path = os.path.join(capture_path, 'pr788.txt')
+        if not os.path.exists(capture_path):
+            test_station.utils.os_utils.mkdir_p(capture_path)
+            os.chmod(capture_path, 0o777)
+
+        self._pr788.deviceOpenLog(file_path)
+
