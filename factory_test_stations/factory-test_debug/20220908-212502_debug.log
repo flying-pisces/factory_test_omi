@@ -1,9 +1,0 @@
-[20220908-212502.575525]: Station Type: eureka_motpr
-[20220908-212502.848978]: Initializing Tester...
-[20220908-212502.848978]: Initializing eureka MotPR station...
-[20220908-212502.848978]: Initializing EurekaMotPR Fixture
-[20220908-212502.854977]: Fixture Initialized {'fixture_port': 'COM4'}.
-[20220908-212504.209617]: Eureka MotPR Equipment is Ready
-[20220908-212504.209617]: Initializing Eureka MotPR Equipment
-[20220908-212504.210617]: Initialization complete.
-[20220908-212504.211617]: waiting for sn
