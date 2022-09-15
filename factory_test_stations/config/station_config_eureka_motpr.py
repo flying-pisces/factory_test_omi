@@ -12,7 +12,7 @@ RAW_IMAGE_LOG_DIR = r'C:/oculus/factory_test_omi/factory_test_stations/factory-t
 SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
 SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config. re.regex
 
-DUT_COMPORT = "COM1" #
+DUT_COMPORT = "COM6" #
 DUT_ETH_PROXY = True
 DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
 
