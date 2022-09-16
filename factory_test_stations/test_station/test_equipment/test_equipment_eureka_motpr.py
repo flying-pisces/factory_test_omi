@@ -130,12 +130,13 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
     def deviceClose(self):
         self._device.prDeviceClose()
 
-    def deviceSerialNumber(self, szSerialNumber=''):
+    def deviceSerialNumber(self):
         '''
         Gets the serial number of the currently opened PRI spectral device
         :param szSerialNumber:
         :return: tuple
         '''
+        szSerialNumber = ''
         res, serial_number = self._device.prDeviceSerialNumber(szSerialNumber)
         if res != 0:
             raise EurekaMotPREquipmentError('Fail to get serial number.')
@@ -152,12 +153,13 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         else:
             raise EurekaMotPREquipmentError('Fail to get FirmwareVersion')
 
-    def deviceGetGetAccessoryList(self, preStr=''):
+    def deviceGetGetAccessoryList(self):
         '''
         get accessory list
         :param preStr:
         :return: string
         '''
+        preStr = ''
         return self._device.prDeviceGetAccessoryList(preStr)
 
     def deviceGetFrequency(self, preNum=0):
@@ -214,7 +216,7 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         '''
         return self._device.prDeviceEnableCorrelationTable(bool)
 
-    def deviceprDeviceCapMeasure(self, capX, capY, capZ, measurementData: MeasurementData):
+    def deviceprDeviceCapMeasure(self, measurementData: MeasurementData):
         '''
         Take spectral measurement
         :param capX:
@@ -223,6 +225,7 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         :param new:
         :return:
         '''
+        capX, capY, capZ = 0, 0, 0
         return self._device.prDeviceCapMeasure(capX, capY, capZ, MeasurementData.last.value)
 
     def deviceMeasure(self, measurementData: MeasurementData):
@@ -446,22 +449,30 @@ if __name__ == '__main__':
 
 
     station_config = cfgstub()
+    station_config.PR788_Config = {
+        "Log_Path": r'C:/oculus/factory_test_omi/factory_test_stations/factory-test_logs/PR788',
+        "Auto_Exposure": True,
+        # "Granularity": 1/9 * 10**6,
+        "Oberserve": 2,     ## 2 ~ 10
+        "SynchMode": 0,     ## Non = 0, Auto = 1, Learn = 2, User = 3
+        "SpeedMode": 0,     ## Normal = 0, Fast = 1, 2xFast = 2, 4xFast = 3
+    }
 
     the_equip = EurekaMotPREquipment(station_config, station_config)
     the_equip.initialize()
-    print(the_equip.version_info())
-    the_equip.deviceOpen()
+    the_equip.version_info()
+    the_equip.deviceSerialNumber()
 
     ####start new Measure
 
     ###Luminance measurement
-    result = the_equip.deviceMeasure(0, 0, 0, MeasurementData.New.value)
+    result = the_equip.deviceMeasure(MeasurementData.New.value)
 
     ###Spectral Measurement
-    result = the_equip.deviceSpectralMeasure('', MeasurementData.New.value)
+    result = the_equip.deviceSpectralMeasure(MeasurementData.New.value)
 
     ###XYZ measurement
-    result = the_equip.deviceprDeviceCapMeasure(0, 0, 0, MeasurementData.New.value)
+    result = the_equip.deviceprDeviceCapMeasure(MeasurementData.New.value)
 
     the_equip.deviceClose()
     pass

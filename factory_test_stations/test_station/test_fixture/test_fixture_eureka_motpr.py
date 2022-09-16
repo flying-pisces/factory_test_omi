@@ -802,7 +802,7 @@ if __name__ == "__main__":
     sys.path.append(r'../..')
     import logging
     import station_config
-    station_config.load_station('eureka_mot')
+    station_config.load_station('eureka_motpr')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
 
     ch = logging.StreamHandler()
@@ -813,7 +813,8 @@ if __name__ == "__main__":
 
     try:
         the_unit = EurekaMotPRFixture(station_config, station_config)
-        the_unit.initialize(fixture_port='com10', particle_port='com9', proxy_port=8099)
+        the_unit.initialize(fixture_port='com4', particle_port='com9', proxy_port=8099)
+
         for idx in range(0, 100):
             print('Loop ---> {}'.format(idx))
             try:

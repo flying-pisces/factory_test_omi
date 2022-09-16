@@ -169,7 +169,7 @@ class EurekaMotPRStation(test_station.TestStation):
         return self._overall_result, self._first_failed_test_result
 
     def is_ready(self):
-        self._fixture.is_ready()
+        # self._fixture.is_ready()
         return True
 
     def login(self, active, usr, pwd):
