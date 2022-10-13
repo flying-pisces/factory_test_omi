@@ -89,10 +89,13 @@ class SocketSender(object):
 
 # 初始化通信连接 (ps:连接为长连接)
 socket_sender = SocketSender("127.0.0.1", 5669)
+station_config_dict = {}
 
 
 # 初始化
-def initialize(*args, **kwargs):
+def initialize(station_config):
+    station_config_dict['station_id'] = f'{station_config.STATION_TYPE}_{station_config.STATION_NUMBER}'
+
     # 子线程启动连接, 并监听
     t = Thread(target=socket_sender.start)
     t.daemon = True
@@ -124,7 +127,10 @@ def call_template(data):
 # SN验证
 def ok_to_test(serial_number):
     data = {'function': 'ok_to_test',
-            'parameter': {'serial_number': serial_number}}
+            'parameter': {
+                'station_id': station_config_dict.get('station_id'),
+                'serial_number': serial_number,
+            }}
     return call_template(data)
 
 
@@ -153,8 +159,11 @@ def login_system(user_name, password):
 
 
 if __name__ == '__main__':
+    class stub(object):
+        STATION_TYPE = 'abcd'
+        STATION_NUMBER = '1001'
     # 初始化ShopFloor
-    initialize()
+    initialize(stub)
     # 登录
     # status, msg = login_system('admin', '123456')
     # print(status, msg)
