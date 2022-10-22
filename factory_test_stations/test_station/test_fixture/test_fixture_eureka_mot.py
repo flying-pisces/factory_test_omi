@@ -640,27 +640,27 @@ class EurekaMotFixture(hardware_station_common.test_station.test_fixture.TestFix
             response = self._read_response(timeout=self._station_config.FIXTURE_UNLOAD_DLY)
         return int(self._parse_response(rev_pattern, response).group(1))
 
-    def load_dut(self):
-        """
-        get version number
-        @return:
-        """
-        rev_pattern = r'DUTLOAD:(\d+)'
-        with self._fixture_mutex:
-            self._write_serial(f'{self._station_config.COMMAND_DUT_LOAD}')
-            response = self._read_response()
-        return int(self._parse_response(rev_pattern, response).group(1))
+    # def load_dut(self):
+    #     """
+    #     get version number
+    #     @return:
+    #     """
+    #     rev_pattern = r'DUTLOAD:(\d+)'
+    #     with self._fixture_mutex:
+    #         self._write_serial(f'{self._station_config.COMMAND_DUT_LOAD}')
+    #         response = self._read_response()
+    #     return int(self._parse_response(rev_pattern, response).group(1))
 
-    def unload_dut(self):
-        """
-        get version number
-        @return:
-        """
-        rev_pattern = r'DUTUNLOAD:(\d+)'
-        with self._fixture_mutex:
-            self._write_serial(f'{self._station_config.COMMAND_DUT_UNLOAD}')
-            response = self._read_response()
-        return int(self._parse_response(rev_pattern, response).group(1))
+    # def unload_dut(self):
+    #     """
+    #     get version number
+    #     @return:
+    #     """
+    #     rev_pattern = r'DUTUNLOAD:(\d+)'
+    #     with self._fixture_mutex:
+    #         self._write_serial(f'{self._station_config.COMMAND_DUT_UNLOAD}')
+    #         response = self._read_response()
+    #     return int(self._parse_response(rev_pattern, response).group(1))
 
     def vacuum(self, on):
         """
@@ -821,6 +821,7 @@ if __name__ == "__main__":
     import station_config
     station_config.load_station('eureka_mot')
     station_config.print_to_console = types.MethodType(print_to_console, station_config)
+    station_config.IS_PROXY_COMMUNICATION = False
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
@@ -830,7 +831,7 @@ if __name__ == "__main__":
 
     try:
         the_unit = EurekaMotFixture(station_config, station_config)
-        the_unit.initialize(fixture_port='com10', particle_port='com9', proxy_port=8099)
+        the_unit.initialize(fixture_port='com15', particle_port='com9', proxy_port=8099)
         for idx in range(0, 100):
             print('Loop ---> {}'.format(idx))
             try:

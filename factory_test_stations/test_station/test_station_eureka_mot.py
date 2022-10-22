@@ -376,10 +376,9 @@ class EurekaMotStation(test_station.TestStation):
                                      proxy_port=self._station_config.PROXY_ENDPOINT)
             self._fixture.start_button_status(True)
             self._fixture.power_on_button_status(True)
-            self._fixture.vacuum(False)
+            self._fixture.vacuum(True)
             if not self._station_config.FIXTURE_SIM and self.alert_handle(self._fixture.unload) != 0:
                 raise EurekaMotStationError(f'Fail to init the fixture.')
-            self.alert_handle(self._fixture.unload_dut)
             self._fixture.start_button_status(False)
             self._fixture.power_on_button_status(False)
             self._fixture.vacuum(False)
@@ -832,8 +831,6 @@ class EurekaMotStation(test_station.TestStation):
                 self._the_unit.close()
                 if True in [self._station_config.DUT_LOAD_WITHOUT_OPERATOR]:
                     self._fixture.vacuum(True)
-                else:
-                    self.alert_handle(self._fixture.unload_dut)
             except test_fixture_eureka_mot.EurekaMotFixtureError as e:
                 self._fatal_error_restart_msg = f'治具侧故障: Fixture Error --> {str(e)}: {self._err_msg_list.get(e.err_code)}'
             except EurekaDUTError as e:
@@ -968,7 +965,6 @@ class EurekaMotStation(test_station.TestStation):
                                       eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
             self._the_unit.nvm_speed_mode(mode='normal')
             self._operator_interface.print_to_console("Initialize DUT... \n")
-            self.alert_handle(self._fixture.load_dut)
             self._fixture.vacuum(False)
             self._retries_screen_on += 1
             self._the_unit.screen_on()
@@ -1014,8 +1010,6 @@ class EurekaMotStation(test_station.TestStation):
                 self._operator_interface.print_to_console(
                     f'Please note --> {alert_res}: {self._err_msg_list.get(alert_res)}.\n', 'red')
                 if callable(func):
-                    if alert_res in [12, 13, 14]:
-                        self._fixture.unload_dut()
                     self._operator_interface.operator_input(
                         'Hint', f'Please note --> {alert_res}: {self._err_msg_list.get(alert_res)}.\n',
                         msg_type='warning')
