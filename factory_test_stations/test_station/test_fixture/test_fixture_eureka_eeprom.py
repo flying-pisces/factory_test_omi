@@ -54,7 +54,7 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
             self._device_manager = gx.DeviceManager()
             dev_num, dev_info_list = self._device_manager.update_device_list()
             self._operator_interface.print_to_console(f'Cameras : ==> {[c.get("model_name") for c in dev_info_list]}')
-            dev_list = [c for c in dev_info_list if c.get('model_name') == 'MER2-160-227U3C']
+            dev_list = [c for c in dev_info_list if ['MER' in c.get('model_name').upper()]]
             if len(dev_list) != 0x01:
                 raise EurekaEEPROMFixtureErr('Fail to init instrument. cam = {0}'.format(len(dev_list)))
             self._camera_sn = dev_list[0].get('sn')

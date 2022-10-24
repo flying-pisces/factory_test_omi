@@ -30,7 +30,7 @@ class seacliffeepromFixture(hardware_station_common.test_station.test_fixture.Te
         if self._station_config.CAMERA_VERIFY_ENABLE:
             self._device_manager = gx.DeviceManager()
             dev_num, dev_info_list = self._device_manager.update_device_list()
-            dev_list = [c for c in dev_info_list if c.get('model_name') == 'MER-132-43U3C']
+            dev_list = [c for c in dev_info_list if ['MER' in c.get('model_name').upper()]]
             if len(dev_list) != 0x01:
                 raise seacliffeepromFixtureErr('Fail to init instrument. cam = {0}'.format(len(dev_list)))
             self._camera_sn = dev_list[0].get('sn')

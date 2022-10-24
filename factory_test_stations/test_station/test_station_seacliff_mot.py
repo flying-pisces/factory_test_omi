@@ -25,6 +25,7 @@ import shutil
 from pathlib import Path
 import datetime
 from hardware_station_common.test_station.test_log.shop_floor_interface.shop_floor import ShopFloor
+from MotAlgo.AlgoSeacliff import MotAlgorithmHelper
 
 
 class seacliffmotStationError(Exception):
@@ -351,7 +352,7 @@ class seacliffmotStation(test_station.TestStation):
         try:
             self._operator_interface.print_to_console("Initializing Seacliff MOT station...{0}.....4\n"
                                                       .format(self._sw_version))
-            if hasattr(self._operator_interface, '_console'):
+            if hasattr(self._operator_interface, '_console') and hasattr(self._operator_interface._console, 'master'):
                 online = getattr(self._station_config, 'MES_IN_LOT_CTRL', None)
                 title = self._operator_interface._console.master.title()
                 self._operator_interface._console.master.title(
@@ -756,7 +757,7 @@ class seacliffmotStation(test_station.TestStation):
                         ref_pattern = self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX[pattern_name]
                         exp_data = tuple([self._exported_parametric[f'{pos_name}_{c}'] for c in ref_patterns])
                         self._gl_W255[f'{pos_name}_{pattern_name}'] = \
-                            test_equipment_seacliff_mot.MotAlgorithmHelper.calc_gl_for_brightdot(*exp_data,
+                            MotAlgorithmHelper.calc_gl_for_brightdot(*exp_data,
                                  module_temp=self._temperature_dic[f'{pos_name}_{pattern_name}'])
                         self._operator_interface.print_to_console(
                             f"\ncalc gray level from W/R/G/B --> {self._gl_W255[f'{pos_name}_{pattern_name}']['GL']}\n")
@@ -1064,7 +1065,7 @@ class seacliffmotStation(test_station.TestStation):
                 file_z = seacliffmotStation.get_filenames_in_folder(capture_path, r'{0}_.*_Z_float\.bin'.format(pre_file_name))
                 if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
                     self._operator_interface.print_to_console('Read X/Y/Z float from {0} bins.\n'.format(pre_file_name))
-                    group_data = [test_equipment_seacliff_mot.MotAlgorithmHelper.get_export_data(fn,
+                    group_data = [MotAlgorithmHelper.get_export_data(fn,
                                   station_config=self._station_config)
                                   for fn in (file_x[0], file_y[0], file_z[0])]
 
@@ -1114,7 +1115,7 @@ class seacliffmotStation(test_station.TestStation):
             save_plots = opt['save_plots']
             module_temp = opt['ModuleTemp']
             coeff = opt['coeff']
-            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(coeff, save_plots=save_plots)
+            mot_alg = MotAlgorithmHelper(coeff, save_plots=save_plots)
             distortion_exports = mot_alg.distortion_centroid_parametric_export(fil, module_temp=module_temp)
         except:
             pass
@@ -1190,7 +1191,7 @@ class seacliffmotStation(test_station.TestStation):
             fil = opt['filename']
             save_plots = opt['save_plots']
             coeff = opt['coeff']
-            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(coeff, save_plots=save_plots)
+            mot_alg = MotAlgorithmHelper(coeff, save_plots=save_plots)
             if alg_optional == 'w':
                 dut_temp = opt['temperature']
                 module_LR = opt['moduleLR']
@@ -1281,7 +1282,7 @@ class seacliffmotStation(test_station.TestStation):
             save_plots = opt['save_plots']
             coeff = opt['coeff']
 
-            mot_alg = test_equipment_seacliff_mot.MotAlgorithmHelper(coeff, save_plots=save_plots)
+            mot_alg = MotAlgorithmHelper(coeff, save_plots=save_plots)
             XYZ_W = mot_alg.white_dot_pattern_w255_read(fil_ref, multi_process=False)
             white_dot_exports = mot_alg.white_dot_pattern_parametric_export(XYZ_W,
                         opt['GL'], opt['x_w'], opt['y_w'], temp_w=opt['Temp_W'],

@@ -24,6 +24,11 @@ import shutil
 from pathlib import Path
 import datetime
 from hardware_station_common.test_station.test_log.shop_floor_interface.shop_floor import ShopFloor
+import scipy
+import scipy.spatial.transform
+import scipy.spatial.transform.rotation
+import scipy.spatial.transform._rotation_groups
+from MotAlgo.AlgoEureka import MotAlgorithmHelper
 
 
 class EurekaMotStationError(Exception):
@@ -305,7 +310,7 @@ class EurekaMotStation(test_station.TestStation):
         self._equipment = test_equipment_eureka_mot.EurekaMotEquipment(station_config, operator_interface)
         self._overall_errorcode = ''
         self._first_failed_test_result = None
-        self._sw_version = f"1.0.6{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
+        self._sw_version = f"1.0.7{self._station_config.SW_VERSION_SUFFIX if hasattr(self._station_config, 'SW_VERSION_SUFFIX') else ''}"
         self._latest_serial_number = None  # type: str
         self._the_unit = None  # type: pancakeDut
         self._retries_screen_on = 0
@@ -353,8 +358,9 @@ class EurekaMotStation(test_station.TestStation):
                                                          'IsUsrLogin': 'False',
                                                          'Offline': 'True',
                                                          })
-            self._operator_interface.print_to_console("Initializing Eureka MOT station...{0}\n"
-                                                      .format(self._sw_version))
+            alg_version = MotAlgorithmHelper.AlgoVersion
+            self._operator_interface.print_to_console(
+                f"Initializing Eureka MOT station...SW: {self._sw_version}: Alg: {alg_version}\n")
             if self._station_config.AUTO_CFG_COMPORTS:
                 self.auto_find_com_ports()
             else:
@@ -531,7 +537,7 @@ class EurekaMotStation(test_station.TestStation):
             'R_x_corrected': 4, 'R_y_corrected': 4,
             'G_x_corrected': 3, 'G_y_corrected': 4,
             'B_x_corrected': 3, 'B_y_corrected': 4,
-            'Instantaneous % of On-axis': 3,
+            'BRO': 3,
         }
         if item in test_log.results_array():
             test_log.set_measured_value_by_name(item, value)
@@ -757,7 +763,7 @@ class EurekaMotStation(test_station.TestStation):
                         ref_pattern = self._station_config.ANALYSIS_GRP_COLOR_PATTERN_EX[pattern_name]
                         exp_data = tuple([self._exported_parametric[f'{pos_name}_{c}'] for c in ref_patterns])
                         self._gl_W255[f'{pos_name}_{pattern_name}'] = \
-                            test_equipment_eureka_mot.MotAlgorithmHelper.calc_gl_for_brightdot_v2(*exp_data,
+                            MotAlgorithmHelper.calc_gl_for_brightdot_v2(*exp_data,
                                  module_temp=self._temperature_dic[f'{pos_name}_{pattern_name}'])
                         self._operator_interface.print_to_console(
                             f"\ncalc gray level from W/R/G/B --> {self._gl_W255[f'{pos_name}_{pattern_name}']['GL']}\n")
@@ -1086,7 +1092,7 @@ class EurekaMotStation(test_station.TestStation):
                 file_z = EurekaMotStation.get_filenames_in_folder(capture_path, r'{0}_.*_Z_float\.bin'.format(pre_file_name))
                 if len(file_x) != 0 and len(file_y) == len(file_x) and len(file_z) == len(file_x):
                     self._operator_interface.print_to_console('Read X/Y/Z float from {0} bins.\n'.format(pre_file_name))
-                    group_data = [test_equipment_eureka_mot.MotAlgorithmHelper.get_export_data(fn,
+                    group_data = [MotAlgorithmHelper.get_export_data(fn,
                                   station_config=self._station_config)
                                   for fn in (file_x[0], file_y[0], file_z[0])]
 
@@ -1136,7 +1142,7 @@ class EurekaMotStation(test_station.TestStation):
             save_plots = opt['save_plots']
             module_temp = opt['ModuleTemp']
             coeff = opt['coeff']
-            mot_alg = test_equipment_eureka_mot.MotAlgorithmHelper(coeff, save_plots=save_plots)
+            mot_alg = MotAlgorithmHelper(coeff, save_plots=save_plots)
             distortion_exports = mot_alg.distortion_centroid_parametric_export(fil, module_temp=module_temp)
         except:
             pass
@@ -1212,14 +1218,15 @@ class EurekaMotStation(test_station.TestStation):
             fil = opt['filename']
             save_plots = opt['save_plots']
             coeff = opt['coeff']
-            mot_alg = test_equipment_eureka_mot.MotAlgorithmHelper(coeff, save_plots=save_plots)
+            mot_alg = MotAlgorithmHelper(coeff, save_plots=save_plots)
             if alg_optional == 'w':
                 dut_temp = opt['temperature']
                 module_LR = opt['moduleLR']
                 parametric_exports = mot_alg.color_pattern_parametric_export_W255(module_LR, dut_temp, fil)
             elif alg_optional in ['r', 'g', 'b']:
                 dut_temp = opt['temperature']
-                parametric_exports = mot_alg.color_pattern_parametric_export_RGB(alg_optional, dut_temp, fil)
+                module_LR = opt['moduleLR']
+                parametric_exports = mot_alg.color_pattern_parametric_export_RGB(alg_optional, module_LR, dut_temp, fil)
             elif alg_optional in ['br']:
                 dut_temp = opt['temperature']
                 parametric_exports = mot_alg.rgbboresight_parametric_export(dut_temp, fil)
@@ -1303,7 +1310,7 @@ class EurekaMotStation(test_station.TestStation):
             save_plots = opt['save_plots']
             coeff = opt['coeff']
 
-            mot_alg = test_equipment_eureka_mot.MotAlgorithmHelper(coeff, save_plots=save_plots)
+            mot_alg = MotAlgorithmHelper(coeff, save_plots=save_plots)
             XYZ_W = mot_alg.white_dot_pattern_w255_read(fil_ref, multi_process=False)
             white_dot_exports = mot_alg.white_dot_pattern_parametric_export(XYZ_W,
                         opt['GL'], opt['x_w'], opt['y_w'], temp_w=opt['Temp_W'],

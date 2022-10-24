@@ -6,6 +6,10 @@ import struct
 import traceback
 from queue import Queue
 from threading import Thread
+import subprocess
+import psutil
+import win32process
+import os
 
 
 # Socket发送端
@@ -89,12 +93,19 @@ class SocketSender(object):
 
 # 初始化通信连接 (ps:连接为长连接)
 socket_sender = SocketSender("127.0.0.1", 5669)
-station_config_dict = {}
-
+station_config_stub = {}
 
 # 初始化
 def initialize(station_config):
-    station_config_dict['station_id'] = f'{station_config.STATION_TYPE}_{station_config.STATION_NUMBER}'
+    station_config_stub['cfg'] = station_config
+    station_config_stub['cfg'].INLOT_CTRL = False
+
+    # helper = 'c:/oculus/run/mes_helper_eeprom.exe'
+    #
+    # if os.path.basename(helper) not in [c.info['name'] for c in psutil.process_iter(['name'])]:
+    #     sub_proc = win32process.CreateProcess(
+    #         helper, '',
+    #         None, None, 0, win32process.CREATE_NO_WINDOW, None, None, win32process.STARTUPINFO())
 
     # 子线程启动连接, 并监听
     t = Thread(target=socket_sender.start)
@@ -124,12 +135,13 @@ def call_template(data):
         return False, f'The request failed\n{traceback.format_exc()}'
 
 
-# SN验证
+# SN验证INLOT_CTRL
 def ok_to_test(serial_number):
     data = {'function': 'ok_to_test',
             'parameter': {
-                'station_id': station_config_dict.get('station_id'),
+                'station_id': f"{station_config_stub['cfg'].STATION_TYPE}_{station_config_stub['cfg'].STATION_NUMBER}",
                 'serial_number': serial_number,
+                'inlot_ctrl': f"{station_config_stub['cfg'].INLOT_CTRL}"
             }}
     return call_template(data)
 
@@ -138,16 +150,18 @@ def ok_to_test(serial_number):
 def save_results(test_log):
     data = {'function': 'save_results',
             'parameter': {
-                'log_file_path': test_log if isinstance(test_log, str) else test_log.get_file_path()}}
+                'log_file_path': test_log if isinstance(test_log, str) else test_log.get_file_path(),
+                'inlot_ctrl': f"{station_config_stub['cfg'].INLOT_CTRL}"
+            }}
     return call_template(data)
 
 
 # 测试结果上传
-def save_results_from_logs(log_file_path):
-    data = {'function': 'save_results',
-            'parameter': {
-                'log_file_path': log_file_path if isinstance(log_file_path, str) else log_file_path.get_file_path()}}
-    return call_template(data)
+# def save_results_from_logs(log_file_path):
+#     data = {'function': 'save_results',
+#             'parameter': {
+#                 'log_file_path': log_file_path if isinstance(log_file_path, str) else log_file_path.get_file_path()}}
+#     return call_template(data)
 
 
 # 登录
@@ -159,11 +173,8 @@ def login_system(user_name, password):
 
 
 if __name__ == '__main__':
-    class stub(object):
-        STATION_TYPE = 'abcd'
-        STATION_NUMBER = '1001'
     # 初始化ShopFloor
-    initialize(stub)
+    initialize()
     # 登录
     # status, msg = login_system('admin', '123456')
     # print(status, msg)
