@@ -1,9 +1,12 @@
 """
 Release Note:
 ========================================================
-Version 1.0.7PRE
+Version 1.0.7
 2022-9-13 elton<elton.tian@myzygroup.com>
 -1. Add test-item to indicate the issue from fixture and equipment.
+-2. add test-item to record the alignment_info_ZR
+-3. update algo based M-Algo V2.1 for EVT1.
+-4. updated for EVT1-station.
 
 ========================================================
 Version 1.0.6
@@ -226,7 +229,7 @@ COLORS = [(255, 255, 255), (127, 127, 127), (255, 0, 0), (0, 255, 0), (0, 0, 255
 DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 10
 
-VERSION_REVISION_EQUIPMENT = '88'
+VERSION_REVISION_EQUIPMENT = '93'
 VERSION_REVISION_LIST = {
     'Conoscope': ['72'],
     'ConoscopeV2': ['87', '88', '93'],
@@ -360,7 +363,7 @@ COMPENSATION_COEFF = {
 ##################################
 # IT and work order
 #
-FACEBOOK_IT_ENABLED = False
+FACEBOOK_IT_ENABLED = True
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
 # UI_MODE
@@ -373,15 +376,15 @@ STATION_NUMBER = '0001'
 AUTO_SCAN_CODE = False
 
 SHOPFLOOR_SYSTEM = 'auto_mes'
-SHOPFLOOR_DIR = 'c:/oculus/factory_test_omi/factory_test_stations/shop_floor_interface'
+SHOPFLOOR_DIR = 'c:/oculus/run/shop_floor_interface'
 
 VERSION = 'SunnyP2-PreBuild-Alpha'
 AUTO_CVT_BGR_IMAGE_FROM_XYZ = False
 AUTO_SAVE_2_TXT = False
 AUTO_SAVE_PROCESSED_PNG = True
 EQUIPMENT_SIM_CAPTURE_FROM_DIR = False
-DUT_SIM = False
+DUT_SIM = True
 EQUIPMENT_SIM = True
 EQUIPMENT_WHEEL_SIM = False
 EQUIPMENT_SPECTRO_SIM = False
-FIXTURE_SIM = False
+FIXTURE_SIM = True

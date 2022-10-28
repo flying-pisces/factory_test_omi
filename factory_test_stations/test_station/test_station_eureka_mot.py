@@ -355,10 +355,11 @@ class EurekaMotStation(test_station.TestStation):
     def initialize(self):
         try:
             self._operator_interface.update_root_config({'ShowLogin': 'True',
-                                                         'IsUsrLogin': 'False',
-                                                         'Offline': 'True',
+                                                         'IsUsrLogin': 'True',
+                                                         'Offline': 'False',
                                                          })
-            alg_version = MotAlgorithmHelper.AlgoVersion
+            # self._operator_interface.menubtn_cfg('login', True, '登陆'*5)
+            alg_version = MotAlgorithmHelper.__version__
             self._operator_interface.print_to_console(
                 f"Initializing Eureka MOT station...SW: {self._sw_version}: Alg: {alg_version}\n")
             if self._station_config.AUTO_CFG_COMPORTS:
@@ -603,6 +604,7 @@ class EurekaMotStation(test_station.TestStation):
             if isinstance(equip_version, dict):
                 test_log.set_measured_value_by_name_ex('EQUIP_VERSION', equip_version.get('Lib_Version'))
             test_log.set_measured_value_by_name_ex('SPEC_VERSION', self._station_config.SPEC_VERSION)
+            test_log.set_measured_value_by_name_ex('ALGO_VERSION', MotAlgorithmHelper.__version__)
 
             test_log.set_measured_value_by_name_ex("DUT_ModuleType", self._module_left_or_right)
             test_log.set_measured_value_by_name_ex('Carrier_ProbeConnectStatus', self._probe_con_status)
@@ -610,7 +612,7 @@ class EurekaMotStation(test_station.TestStation):
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
             test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
             test_log.set_measured_value_by_name_ex("DUT_AlignmentSuccess", self._is_alignment_success)
-
+            test_log.set_measured_value_by_name_ex('DUT_AlignmentInfo_Rz', self._alignment_result[2])
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
                 particle_count = self._fixture.particle_counter_read_val()
@@ -623,37 +625,37 @@ class EurekaMotStation(test_station.TestStation):
             if not self._is_alignment_success:
                 raise EurekaMotStationError('Fail to alignment.\n')
 
-            if len(self._station_config.TEST_ITEM_PATTERNS_VERIFIED) > 0:
-                self._operator_interface.print_to_console(f'Try to read data from MODULE.\n')
-                self._the_unit.nvm_speed_mode(mode='low')
-                eep_success = False
-                try:
-                    write_status = self._the_unit.nvm_read_statistics()
-                    self._operator_interface.print_to_console(f"Write status --- {str(write_status)}\n")
-                    raw_data = self._the_unit.nvm_read_data()
-                    if len(raw_data) > 2:
-                        raw_data = raw_data[2:]
-                    if serial_number in self._eep_data_from_npy.keys():
-                        self._operator_interface.print_to_console(f"Get EEP data for {serial_number} from npy.")
-                        self._eep_data['WhitePointGLR'] = self._eep_data_from_npy[serial_number][0]
-                        self._eep_data['WhitePointGLG'] = self._eep_data_from_npy[serial_number][1]
-                        self._eep_data['WhitePointGLB'] = self._eep_data_from_npy[serial_number][2]
-                    elif self._eepStationAssistant.uchar_checksum_chk(raw_data) and int(raw_data[-1], 16) >= 0x11:
-                        self._operator_interface.print_to_console(f"RAW <-- {','.join(raw_data)}\n")
-                        self._eep_data = self._eepStationAssistant.decode_raw_data(raw_data=raw_data)
-                    if len(self._eep_data) > 0:
-                        for k, v in self._station_config.TEST_ITEM_PATTERNS_VERIFIED.items():
-                            verified_tuple = [(c, int(self._eep_data[c])) for c in v]
-                            [test_log.set_measured_value_by_name_ex(f'UUT_{k}_{c}', v) for c, v in verified_tuple]
-                        eep_success = True
-                except Exception as e:
-                    self._operator_interface.print_to_console(f'Fail to read initialized data, exp: {str(e)}')
-                self._the_unit.nvm_speed_mode(mode='normal')
-                self._the_unit.screen_off()
-                self._the_unit.screen_on()
-
-                test_log.set_measured_value_by_name_ex('UUT_READ_EEP_DATA', eep_success)
-                self._operator_interface.print_to_console(f'set module to normal mode.\n')
+            # if len(self._station_config.TEST_ITEM_PATTERNS_VERIFIED) > 0:
+            #     self._operator_interface.print_to_console(f'Try to read data from MODULE.\n')
+            #     self._the_unit.nvm_speed_mode(mode='low')
+            #     eep_success = False
+            #     try:
+            #         write_status = self._the_unit.nvm_read_statistics()
+            #         self._operator_interface.print_to_console(f"Write status --- {str(write_status)}\n")
+            #         raw_data = self._the_unit.nvm_read_data()
+            #         if len(raw_data) > 2:
+            #             raw_data = raw_data[2:]
+            #         if serial_number in self._eep_data_from_npy.keys():
+            #             self._operator_interface.print_to_console(f"Get EEP data for {serial_number} from npy.")
+            #             self._eep_data['WhitePointGLR'] = self._eep_data_from_npy[serial_number][0]
+            #             self._eep_data['WhitePointGLG'] = self._eep_data_from_npy[serial_number][1]
+            #             self._eep_data['WhitePointGLB'] = self._eep_data_from_npy[serial_number][2]
+            #         elif self._eepStationAssistant.uchar_checksum_chk(raw_data) and int(raw_data[-1], 16) >= 0x11:
+            #             self._operator_interface.print_to_console(f"RAW <-- {','.join(raw_data)}\n")
+            #             self._eep_data = self._eepStationAssistant.decode_raw_data(raw_data=raw_data)
+            #         if len(self._eep_data) > 0:
+            #             for k, v in self._station_config.TEST_ITEM_PATTERNS_VERIFIED.items():
+            #                 verified_tuple = [(c, int(self._eep_data[c])) for c in v]
+            #                 [test_log.set_measured_value_by_name_ex(f'UUT_{k}_{c}', v) for c, v in verified_tuple]
+            #             eep_success = True
+            #     except Exception as e:
+            #         self._operator_interface.print_to_console(f'Fail to read initialized data, exp: {str(e)}')
+            #     self._the_unit.nvm_speed_mode(mode='normal')
+            #     self._the_unit.screen_off()
+            #     self._the_unit.screen_on()
+            #
+            #     test_log.set_measured_value_by_name_ex('UUT_READ_EEP_DATA', eep_success)
+            #     self._operator_interface.print_to_console(f'set module to normal mode.\n')
 
             # capture path accorded with test_log.
             uni_file_name = re.sub('_x.log', '', test_log.get_filename())
@@ -964,6 +966,7 @@ class EurekaMotStation(test_station.TestStation):
         self._is_alignment_success = False
         self._module_left_or_right = None
         self._probe_con_status = False
+        self._alignment_result = None
 
         try:
 
@@ -985,9 +988,9 @@ class EurekaMotStation(test_station.TestStation):
                 ready = True
             else:
                 self._the_unit.display_color((0, 0, 0))
-                alignment_result = self._fixture.alignment(self._latest_serial_number)
-                if isinstance(alignment_result, tuple):
-                    self._module_left_or_right = str(alignment_result[4]).upper()
+                self._alignment_result = self._fixture.alignment(self._latest_serial_number)
+                if isinstance(self._alignment_result, tuple):
+                    self._module_left_or_right = str(self._alignment_result[4]).upper()
                     self._is_alignment_success = True
                     ready = True
         except (test_fixture_eureka_mot.EurekaMotFixtureError, EurekaDUTError, RuntimeError) as e:
@@ -1427,3 +1430,6 @@ class EurekaMotStation(test_station.TestStation):
             except Exception as e:
                 self._operator_interface.print_to_console(f'Fail to login usr:{usr}, Except={str(e)}')
         return login_success
+
+    def extend_menuitem_click(self, command, content):
+        self._operator_interface.print_to_console(f'Active command button: {command}, ===> [{content}]')
