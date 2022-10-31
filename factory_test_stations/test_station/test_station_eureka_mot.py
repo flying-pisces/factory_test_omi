@@ -606,7 +606,6 @@ class EurekaMotStation(test_station.TestStation):
             test_log.set_measured_value_by_name_ex('SPEC_VERSION', self._station_config.SPEC_VERSION)
             test_log.set_measured_value_by_name_ex('ALGO_VERSION', MotAlgorithmHelper.__version__)
 
-            test_log.set_measured_value_by_name_ex("DUT_ModuleType", self._module_left_or_right)
             test_log.set_measured_value_by_name_ex('Carrier_ProbeConnectStatus', self._probe_con_status)
             # test_log.set_measured_value_by_name_ex("DUT_ScreenOnRetries", self._retries_screen_on)
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
@@ -620,6 +619,24 @@ class EurekaMotStation(test_station.TestStation):
             ambient_temp = self._fixture.query_temp()
             test_log.set_measured_value_by_name_ex("ENV_AmbientTemp", ambient_temp)
 
+            uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+            capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
+            if self._station_config.EQUIPMENT_SIM:
+                uut_dirs = [c for c in glob.glob(os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, r'*'))
+                            if os.path.isdir(c)
+                            and os.path.relpath(c, self._station_config.RAW_IMAGE_LOG_DIR)
+                            .upper().startswith(serial_number.upper())]
+                if len(uut_dirs) > 0:
+                    capture_path = uut_dirs[-1]
+                if os.path.exists(os.path.join(capture_path, 'measure_env.json')):
+                    with open(os.path.join(capture_path, 'measure_env.json'), 'r') as json_f:
+                        data = json.load(json_f)
+                        self._temperature_dic = data['Temperature']
+                        self._module_left_or_right = data['ModuleType']
+                else:
+                    self._operator_interface.print_to_console(f'set default temperature for all patterns.\n')
+
+            test_log.set_measured_value_by_name_ex("DUT_ModuleType", self._module_left_or_right)
             if not self._is_screen_on_by_op:
                 raise EurekaMotStationError('fail to power screen on normally.')
             if not self._is_alignment_success:
@@ -658,21 +675,6 @@ class EurekaMotStation(test_station.TestStation):
             #     self._operator_interface.print_to_console(f'set module to normal mode.\n')
 
             # capture path accorded with test_log.
-            uni_file_name = re.sub('_x.log', '', test_log.get_filename())
-            capture_path = os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, uni_file_name)
-            if self._station_config.EQUIPMENT_SIM:
-                uut_dirs = [c for c in glob.glob(os.path.join(self._station_config.RAW_IMAGE_LOG_DIR, r'*'))
-                            if os.path.isdir(c)
-                            and os.path.relpath(c, self._station_config.RAW_IMAGE_LOG_DIR)
-                            .upper().startswith(serial_number.upper())]
-                if len(uut_dirs) > 0:
-                    capture_path = uut_dirs[-1]
-                if os.path.exists(os.path.join(capture_path, 'measure_env.json')):
-                    with open(os.path.join(capture_path, 'measure_env.json'), 'r') as json_f:
-                        data = json.load(json_f)
-                        self._temperature_dic = data['Temperature']
-                else:
-                    self._operator_interface.print_to_console(f'set default temperature for all patterns.\n')
             if not os.path.exists(capture_path):
                 test_station.utils.os_utils.mkdir_p(capture_path)
                 os.chmod(capture_path, 0o777)
@@ -985,6 +987,7 @@ class EurekaMotStation(test_station.TestStation):
                 self._is_alignment_success = True
                 self._module_left_or_right = 'R'
                 self._fixture._alignment_pos = (0, 0, 0, 0)
+                self._alignment_result = (0, 0, 0, 0, 'R')
                 ready = True
             else:
                 self._the_unit.display_color((0, 0, 0))
@@ -1076,7 +1079,10 @@ class EurekaMotStation(test_station.TestStation):
         """
         if not os.path.exists(os.path.join(capture_path, 'measure_env.json')):
             with open(os.path.join(capture_path, 'measure_env.json'), 'w') as json_f:
-                json.dump({'Temperature': self._temperature_dic}, json_f, ensure_ascii=True, indent=4)
+                json.dump({
+                        'Temperature': self._temperature_dic,
+                        'ModuleType': self._module_left_or_right,
+                    }, json_f, ensure_ascii=True, indent=4)
         if not (self._station_config.AUTO_CVT_BGR_IMAGE_FROM_XYZ or self._station_config.AUTO_SAVE_2_TXT):
             return
         data_items_XYZ = {}
