@@ -611,7 +611,8 @@ class EurekaMotStation(test_station.TestStation):
             test_log.set_measured_value_by_name_ex("DUT_ScreenOnStatus", self._is_screen_on_by_op)
             test_log.set_measured_value_by_name_ex("DUT_CancelByOperator", self._is_cancel_test_by_op)
             test_log.set_measured_value_by_name_ex("DUT_AlignmentSuccess", self._is_alignment_success)
-            test_log.set_measured_value_by_name_ex('DUT_AlignmentInfo_Rz', self._alignment_result[2])
+            test_log.set_measured_value_by_name_ex('DUT_AlignmentInfo_Rz',
+                                                   self._alignment_result[2] if self._is_alignment_success else None)
             particle_count = 0
             if self._station_config.FIXTURE_PARTICLE_COUNTER:
                 particle_count = self._fixture.particle_counter_read_val()
