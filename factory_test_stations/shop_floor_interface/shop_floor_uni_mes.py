@@ -100,12 +100,12 @@ def initialize(station_config):
     station_config_stub['cfg'] = station_config
     station_config_stub['cfg'].INLOT_CTRL = True
 
-    helper = 'c:/oculus/run/mes_helper/service/mes_helper.exe'
-    script_dir = os.path.dirname(helper)
-    if os.path.basename(helper) not in [c.info['name'] for c in psutil.process_iter(['name'])]:
-        sub_proc = win32process.CreateProcess(
-            helper, '',
-            None, None, 0, win32process.CREATE_NO_WINDOW, None, script_dir, win32process.STARTUPINFO())
+    # helper = 'c:/oculus/run/mes_helper/service/mes_helper.exe'
+    # script_dir = os.path.dirname(helper)
+    # if os.path.basename(helper) not in [c.info['name'] for c in psutil.process_iter(['name'])]:
+    #     sub_proc = win32process.CreateProcess(
+    #         helper, '',
+    #         None, None, 0, win32process.CREATE_NO_WINDOW, None, script_dir, win32process.STARTUPINFO())
 
     # 子线程启动连接, 并监听
     t = Thread(target=socket_sender.start)
@@ -141,7 +141,7 @@ def ok_to_test(serial_number):
             'parameter': {
                 'station_id': f"{station_config_stub['cfg'].STATION_TYPE}_{station_config_stub['cfg'].STATION_NUMBER}",
                 'serial_number': serial_number,
-                'inlot_ctrl': f"{station_config_stub['cfg'].INLOT_CTRL}"
+                'inlot_ctrl': station_config_stub['cfg'].INLOT_CTRL
             }}
     return call_template(data)
 
@@ -151,7 +151,7 @@ def save_results(test_log):
     data = {'function': 'save_results',
             'parameter': {
                 'log_file_path': test_log if isinstance(test_log, str) else test_log.get_file_path(),
-                'inlot_ctrl': f"{station_config_stub['cfg'].INLOT_CTRL}"
+                'inlot_ctrl': station_config_stub['cfg'].INLOT_CTRL
             }}
     return call_template(data)
 
@@ -176,6 +176,9 @@ if __name__ == '__main__':
 
     class station_config(object):
         INLOT_CTRL = False
+        STATION_TYPE = 'EEPROM'
+        STATION_NUMBER = 1
+
 
     # 初始化ShopFloor
     initialize(station_config)
