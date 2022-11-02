@@ -100,12 +100,12 @@ def initialize(station_config):
     station_config_stub['cfg'] = station_config
     station_config_stub['cfg'].INLOT_CTRL = True
 
-    helper = 'c:/oculus/run/mes_helper.exe'
-
+    helper = 'c:/oculus/run/mes_helper/service/mes_helper.exe'
+    script_dir = os.path.dirname(helper)
     if os.path.basename(helper) not in [c.info['name'] for c in psutil.process_iter(['name'])]:
         sub_proc = win32process.CreateProcess(
             helper, '',
-            None, None, 0, win32process.CREATE_NO_WINDOW, None, None, win32process.STARTUPINFO())
+            None, None, 0, win32process.CREATE_NO_WINDOW, None, script_dir, win32process.STARTUPINFO())
 
     # 子线程启动连接, 并监听
     t = Thread(target=socket_sender.start)
@@ -173,8 +173,12 @@ def login_system(user_name, password):
 
 
 if __name__ == '__main__':
+
+    class station_config(object):
+        INLOT_CTRL = False
+
     # 初始化ShopFloor
-    initialize()
+    initialize(station_config)
     # 登录
     # status, msg = login_system('admin', '123456')
     # print(status, msg)
