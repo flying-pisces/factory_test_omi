@@ -218,6 +218,7 @@ class EurekaEEPROMFixture(hardware_station_common.test_station.test_fixture.Test
                     success = True
             except:
                 pass
+            retries += 1
         if not success:
             raise EurekaEEPROMFixtureErr('Fail to read get_module_inplace = {0}'.format(recv_obj))
         return recv_obj

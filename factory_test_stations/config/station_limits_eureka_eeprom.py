@@ -3,6 +3,7 @@ CURRENT_FW_VERSION = 1001
 STATION_LIMITS_ARRAYS = [
     ['STATION_SN', None, None, 78],
     ["SW_VERSION", None, None, 79],
+    ["DATA_SRC_ERR", False, False, 80],
     ["DUT_POWER_ON_INFO", None, None, 81],
     ["DUT_POWER_ON_RES", True, True, 82],
     ["JUDGED_BY_CAM", True, True, 83],

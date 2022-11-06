@@ -1,11 +1,22 @@
 """
 Release Note:
 ========================================================
+Version 1.0.1
+2022-11-6 elton<elton.tian@myzygroup.com>
+-1. fix module-in-place check if fail to read.
+-2. add setting about timeout for NVM-Read/Write
+
+========================================================
 Version 1.0.0
 2022-8-7 elton<elton.tian@myzygroup.com>
 -1. call the ok_to_test before all the testing.
 -2. add messagebox for continuously ng
 -3. update mapping for Eureka.
+
+========================================================
+Version 0.0.6
+2022-8-2 elton<elton.tian@myzygroup.com>
+-1. optimize code for ShopFloor
 
 ========================================================
 Version 0.0.5
@@ -84,6 +95,7 @@ COMMAND_DUAL_DISABLE = 'DISABLE.STARTBTN'
 
 DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 10
+DUT_NVRAM_READ_TIMEOUT = 10
 NVM_WRITE_PROTECT = False
 NVM_EEC_READ = True
 NVM_WRITE_SLOW_MOD = True

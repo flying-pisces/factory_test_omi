@@ -303,7 +303,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         """
         cmd = '{0}, {1}, {2}'.format(self._station_config.COMMAND_NVM_WRITE, len(data_array), ','.join(data_array))
         self._write_serial_cmd(cmd)
-        resp = self._read_response(timeout=10)
+        resp = self._read_response(timeout=self._station_config.DUT_NVRAM_WRITE_TIMEOUT)
         recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_WRITE, resp)
         if int(recv_obj[0]) != 0x00:
             raise EurekaDUTError('Fail to nvm write data = {0}'.format(recv_obj))
@@ -322,7 +322,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
             try:
                 cmd = '{0},{1}'.format(self._station_config.COMMAND_NVM_READ, data_len)
                 self._write_serial_cmd(cmd)
-                resp = self._read_response()
+                resp = self._read_response(self._station_config.DUT_NVRAM_READ_TIMEOUT)
                 recv_obj = self._prase_respose(self._station_config.COMMAND_NVM_READ, resp)
                 if int(recv_obj[0]) == 0x00:
                     success = True
