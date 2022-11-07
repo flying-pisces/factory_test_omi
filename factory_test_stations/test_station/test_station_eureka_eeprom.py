@@ -474,8 +474,11 @@ class EurekaEEPROMStation(test_station.TestStation):
             if write_in_slow_mod:
                 the_unit.nvm_speed_mode(mode='low')
             self._operator_interface.print_to_console('read write count for nvram ...\n')
-            write_status = the_unit.nvm_read_statistics()
+
             vendor_info = the_unit.get_vendor_info()
+            time.sleep(0.5)
+
+            write_status = the_unit.nvm_read_statistics()
             write_count = 0
             post_write_count = 0
             if self._station_config.DUT_SIM:
@@ -688,10 +691,10 @@ class EurekaEEPROMStation(test_station.TestStation):
             except Exception as e:
                 self._operator_interface.print_to_console(f'Fail to close test. {str(e)}')
         res = self.close_test(test_log)
-        if len(self._ng_continually_msg) >= 3 \
-                and len([c for c in self._ng_continually_msg if c != self._ng_continually_msg[-1]]) == 0:
+        if (len(self._ng_continually_msg) >= 3
+                and len(set(self._ng_continually_msg)) == 1 and self._ng_continually_msg[-1] != 0):
             self._operator_interface.operator_input(title='Warning',
-               msg = f'建议联系TE: failures [{self._ng_continually_msg[-1]}] come out continuously for more than 3 times. ')
+                msg=f'建议联系TE: failures [{self._ng_continually_msg[-1]}] come out continuously for more than 3 times. ')
         return res
 
     def close_test(self, test_log):

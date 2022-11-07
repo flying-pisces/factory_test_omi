@@ -319,6 +319,7 @@ class EurekaDut(hardware_station_common.test_station.dut.DUT):
         recv_obj = None
         success = False
         while retries < 5 and not success:
+            time.sleep(0.5)
             try:
                 cmd = '{0},{1}'.format(self._station_config.COMMAND_NVM_READ, data_len)
                 self._write_serial_cmd(cmd)
