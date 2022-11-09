@@ -639,6 +639,8 @@ class EurekaMotStation(test_station.TestStation):
 
             test_log.set_measured_value_by_name_ex("DUT_ModuleType", self._module_left_or_right)
             if not self._is_screen_on_by_op:
+                self._operator_interface.operator_input(title='Warning',
+                    msg=f'建议重测: 出现点亮异常, 可能需要重测. NG relate to DUT, retest it if possible.')
                 raise EurekaMotStationError('fail to power screen on normally.')
             if not self._is_alignment_success:
                 raise EurekaMotStationError('Fail to alignment.\n')
@@ -867,7 +869,7 @@ class EurekaMotStation(test_station.TestStation):
         if (len(self._ng_continually_msg) >= 3
                 and len(set(self._ng_continually_msg)) == 1 and self._ng_continually_msg[-1] != 0):
             self._operator_interface.operator_input(title='Warning',
-               msg = f'建议联系TE: failures [{self._ng_continually_msg[-1]}] come out continuously for more than 3 times. ')
+               msg=f'建议联系TE: failures [{self._ng_continually_msg[-1]}] come out continuously for more than 3 times. ')
         return res
 
     def do_pattern_parametric_export(self, pos_name, pattern_name, capture_path, test_log):
