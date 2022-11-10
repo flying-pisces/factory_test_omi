@@ -100,12 +100,15 @@ def initialize(station_config):
     station_config_stub['cfg'] = station_config
     station_config_stub['cfg'].INLOT_CTRL = True
 
-    # helper = 'c:/oculus/run/mes_helper/service/mes_helper.exe'
-    # script_dir = os.path.dirname(helper)
-    # if os.path.basename(helper) not in [c.info['name'] for c in psutil.process_iter(['name'])]:
-    #     sub_proc = win32process.CreateProcess(
-    #         helper, '',
-    #         None, None, 0, win32process.CREATE_NO_WINDOW, None, script_dir, win32process.STARTUPINFO())
+    print(station_config)
+    helper = 'c:/oculus/run/mes_helper/service/mes_helper.exe'
+    if hasattr(station_config, "MES_HELPER_EXE_PATH"):
+        helper = station_config.MES_HELPER_EXE_PATH
+    script_dir = os.path.dirname(helper)
+    if os.path.basename(helper) not in [c.info['name'] for c in psutil.process_iter(['name'])]:
+        sub_proc = win32process.CreateProcess(
+            helper, '',
+            None, None, 0, win32process.CREATE_NO_WINDOW, None, script_dir, win32process.STARTUPINFO())
 
     # 子线程启动连接, 并监听
     t = Thread(target=socket_sender.start)

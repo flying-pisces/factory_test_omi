@@ -51,6 +51,7 @@ def get_datas():
      datas.append((os.path.join(os.path.dirname(UIDep.__file__), '*.txt'), '.'))
      datas.append((os.path.join(os.path.dirname(UIDep.__file__), '*.png'), '.'))
      datas.append((os.path.join(os.path.dirname(pyexceptions.__file__), 'templates', '*.html'), 'pyexceptions/templates'))
+     datas.append(('test_station\\test_equipment\\*.dll','.\\test_station\\test_equipment\\'))
 
      return datas
 

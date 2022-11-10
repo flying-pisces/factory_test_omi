@@ -1,3 +1,5 @@
+import time
+
 import hardware_station_common.test_station.test_equipment
 from enum import Enum
 import clr
@@ -123,20 +125,27 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         return self._device.ErrString(Errorcode)
 
     def deviceOpen(self):
-        res = self._device.prDeviceOpen()
-        if res != 0:
+        res = -1
+        try:
+            for retry in range(5):
+                res = self._device.prDeviceOpen()
+                if res == 0:
+                    return res
+                else:
+                    self._device.prDeviceClose()
+                    time.sleep(1)
+        except EurekaMotPREquipmentError as e:
             raise EurekaMotPREquipmentError(f"Eureka MotPR Equipment is Not Ready, Pr788 Open Fail. {res}")
 
     def deviceClose(self):
         self._device.prDeviceClose()
 
-    def deviceSerialNumber(self):
+    def deviceSerialNumber(self, szSerialNumber=''):
         '''
         Gets the serial number of the currently opened PRI spectral device
         :param szSerialNumber:
         :return: tuple
         '''
-        szSerialNumber = ''
         res, serial_number = self._device.prDeviceSerialNumber(szSerialNumber)
         if res != 0:
             raise EurekaMotPREquipmentError('Fail to get serial number.')
@@ -153,13 +162,12 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         else:
             raise EurekaMotPREquipmentError('Fail to get FirmwareVersion')
 
-    def deviceGetGetAccessoryList(self):
+    def deviceGetGetAccessoryList(self, preStr=''):
         '''
         get accessory list
         :param preStr:
         :return: string
         '''
-        preStr = ''
         return self._device.prDeviceGetAccessoryList(preStr)
 
     def deviceGetFrequency(self, preNum=0):
@@ -240,8 +248,8 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         brightness, cieX, cieY = 0, 0, 0
         self._operator_interface.print_to_console("Eureka MotPR Equipment Start Measurement \n")
         res = self._device.prDeviceMeasure(brightness, cieX, cieY, measurementData)
-        if isinstance(res, tuple) and len(res) == 4:
-            self._operator_interface.print_to_console("Measurement result\n")
+        if isinstance(res, tuple) and len(res) == 4 and res[0] == 0:
+            self._operator_interface.print_to_console("Measurement Result: {}\n".format(res))
             return res[1:4]
         else:
             raise EurekaMotPREquipmentError(f'Fail to deviceMeasure. {res}')
@@ -279,12 +287,13 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         '''
         return self._device.prDeviceLearnFreqAdjustedTakt(taktlearnphase, fTaktSetFreq)
 
-    def deviceModel(self, szModel=''):
+    def deviceModel(self):
         '''
         Gets the model number of the currently opened PRI spectral device
         :param szModel:
         :return: tuple
         '''
+        szModel = ''
         res = self._device.prDeviceModel(szModel)
         if isinstance(res, tuple) and len(res) == 2 and res[0] == 0:
             return res[1]
@@ -345,16 +354,18 @@ class EurekaMotPREquipment(hardware_station_common.test_station.test_equipment.T
         '''
         return self._device.prDeviceSmartDark(bTurnOn)
 
-    def deviceSpectralMeasure(self, measurementData: MeasurementData, spectralData=''):
+    def deviceSpectralMeasure(self, measurementData: MeasurementData):
         '''
         Take spectral measurement
         :param spectralData:
         :param measurementData:
         :return: tuple
         '''
+        spectralData = ''
         self._operator_interface.print_to_console("Eureka MotPR Equipment Start Spectral Measurement \n")
         res = self._device.prDeviceSpectralMeasure(spectralData, measurementData)
-        if isinstance(res, tuple) and len(res) == 2:
+        if isinstance(res, tuple) and len(res) == 2 and res[0] == 0:
+            self._operator_interface.print_to_console("Spectral Measurement Result: {} \n".format(res))
             return res[1]
         else:
             raise EurekaMotPREquipmentError(f'Fail to deviceSpectralMeasure {res}')
@@ -452,27 +463,30 @@ if __name__ == '__main__':
     station_config.PR788_Config = {
         "Log_Path": r'C:/oculus/factory_test_omi/factory_test_stations/factory-test_logs/PR788',
         "Auto_Exposure": True,
-        # "Granularity": 1/9 * 10**6,
+        #"Granularity": 1/9 * 10**6,
         "Oberserve": 2,     ## 2 ~ 10
         "SynchMode": 0,     ## Non = 0, Auto = 1, Learn = 2, User = 3
         "SpeedMode": 0,     ## Normal = 0, Fast = 1, 2xFast = 2, 4xFast = 3
     }
 
     the_equip = EurekaMotPREquipment(station_config, station_config)
-    the_equip.initialize()
-    the_equip.version_info()
-    the_equip.deviceSerialNumber()
+    try:
+        the_equip.initialize()
+        the_equip.version_info()
+        the_equip.deviceGetFirmwareVersion()
+        the_equip.deviceModel()
 
-    ####start new Measure
+        ####start new Measure
 
-    ###Luminance measurement
-    result = the_equip.deviceMeasure(MeasurementData.New.value)
+        ###Luminance measurement
+        result = the_equip.deviceMeasure(MeasurementData.New.value)
 
-    ###Spectral Measurement
-    result = the_equip.deviceSpectralMeasure(MeasurementData.New.value)
+        ###Spectral Measurement
+        result = the_equip.deviceSpectralMeasure(MeasurementData.New.value)
 
-    ###XYZ measurement
-    result = the_equip.deviceprDeviceCapMeasure(MeasurementData.New.value)
+        ###XYZ measurement
+        result = the_equip.deviceprDeviceCapMeasure(MeasurementData.New.value)
 
-    the_equip.deviceClose()
-    pass
+    finally:
+        the_equip.deviceClose()
+        pass

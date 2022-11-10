@@ -174,8 +174,10 @@ class EurekaMotPRFixture(hardware_station_common.test_station.test_fixture.TestF
             resp = self._read_response(0.1, end_delimiter=self._end_delimiter_auto_response)
             self._fixture_mutex.release()
             if resp:
-                btn_dic = {3: r'PowerOn_Button:(\d+)',
-                           2: r'BUTTON_Right:(\d+)',
+                btn_dic = {5: r'PowerOff_Button:(\d+)',
+                           4: r'Coverboard_Status:(\d+)',
+                           3: r'PowerOn_Button:(\d+)',
+                           2: r'BUTTON_RIGHT:(\d+)',
                            1: r'BUTTON_Left:(\d+)',
                            0: r'BUTTON:(\d+)'}
                 for key, item in btn_dic.items():
@@ -377,6 +379,23 @@ class EurekaMotPRFixture(hardware_station_common.test_station.test_fixture.TestF
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
             raise EurekaMotPRFixtureError('fail to send command. %s' % response)
 
+    def power_off_button_status(self, on):
+        """
+        @type on : bool
+        enable the power off button
+        @return:
+        """
+        status_dic = {
+            True: (self._station_config.COMMAND_BUTTON_POWEROFF_ENABLE, r'PowerOffButton_Enable:(\d+)'),
+            False: (self._station_config.COMMAND_BUTTON_POWEROFF_DISABLE, r'PowerOffButton_Disable:(\d+)'),
+        }
+        cmd = status_dic[on]
+        with self._fixture_mutex:
+            self._write_serial(cmd[0])
+            response = self._read_response()
+        if int(self._parse_response(cmd[1], response).group(1)) != 0:
+            raise EurekaMotPRFixtureError('fail to send command. %s' % response)
+
     def query_button_power_on_status(self):
         """
         query the power on button
@@ -387,7 +406,9 @@ class EurekaMotPRFixture(hardware_station_common.test_station.test_fixture.TestF
             self._write_serial(cmd[0])
             response = self._read_response()
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
-            raise EurekaMotPRFixtureError('fail to send command. %s' % response)
+            #raise EurekaMotPRFixtureError('fail to send command. %s' % response)
+            return False
+        return True
 
     def query_probe_status(self):
         """
@@ -416,6 +437,31 @@ class EurekaMotPRFixture(hardware_station_common.test_station.test_fixture.TestF
             response = self._read_response()
         if int(self._parse_response(cmd[1], response).group(1)) != 0:
             raise EurekaMotPRFixtureError('fail to send command. %s' % response)
+
+    def query_button_status(self):
+        """
+        query the button status after click the button
+        :return:
+        """
+        reg = 'Button:(\d+)'
+        with self._fixture_mutex:
+            response = self._read_response(end_delimiter='^_^')
+        if int(self._parse_response(reg, response).group(1)) != 0:
+            return False
+        return True
+
+    def get_cover_board_status(self):
+        """
+        query the cover board status
+        :return: 0
+        """
+        reg = 'Coverboard_Status:(\d+)'
+        cmd = (self._station_config.COMMAND_GET_COVERBOARD_STATUS, r'Coverboard_Status:(\d+)')
+        with self._fixture_mutex:
+            self._write_serial(cmd[0])
+            response = self._read_response()
+        return int(self._parse_response(cmd[1], response).group(1))
+
 
     def reset(self):
         self._write_serial(self._station_config.COMMAND_RESET)
@@ -533,8 +579,8 @@ class EurekaMotPRFixture(hardware_station_common.test_station.test_fixture.TestF
         @param z:
         @return:
         """
-        z0 = self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM - z
-        cmd_mov = '{0}:{1}'.format(self._station_config.COMMAND_CAMERA_MOVE, z0)
+        #z0 = self._station_config.DISTANCE_BETWEEN_CAMERA_AND_DATUM - z
+        cmd_mov = '{0}:{1}'.format(self._station_config.COMMAND_CAMERA_MOVE, z)
         with self._fixture_mutex:
             self._write_serial(cmd_mov)
             rev_pattern = r'CAMERA_MOVE:(\d+)'
@@ -666,6 +712,12 @@ class EurekaMotPRFixture(hardware_station_common.test_station.test_fixture.TestF
             response = self._read_response()
         return self._parse_response(cmd[1], response).group(1)
 
+    def vacuum_status(self):
+        with self._fixture_mutex:
+            self._write_serial(f'{self._station_config.COMMAND_GET_VACUUM_STATUS}')
+            response = self._read_response()
+        return self._parse_response(r'VACUUM_STATUS:(\d)', response).group(1)
+
     def alignment(self, serial_number):
         self._alignment_pos = None
         self._write_serial('{0}:{1}'.format(self._station_config.COMMAND_ALIGNMENT, serial_number))
@@ -760,7 +812,7 @@ class EurekaMotPRFixture(hardware_station_common.test_station.test_fixture.TestF
                         val = ctypes.c_int32(rs.registers[0] + (rs.registers[1] << 16)).value
                         if hasattr(self._station_config, 'PARTICLE_COUNTER_APC') and self._station_config.PARTICLE_COUNTER_APC:
                             val = (ctypes.c_int32((rs.registers[0] << 16) + rs.registers[1])).value
-                except:
+                except Exception as e:
                     pass
                 finally:
                     retries += 1
@@ -813,12 +865,12 @@ if __name__ == "__main__":
 
     try:
         the_unit = EurekaMotPRFixture(station_config, station_config)
-        the_unit.initialize(fixture_port='com4', particle_port='com9', proxy_port=8099)
-
+        the_unit.initialize(fixture_port='com18', particle_port='com16', proxy_port=8099)
         for idx in range(0, 100):
             print('Loop ---> {}'.format(idx))
             try:
                 the_unit.help()
+                aa = the_unit.particle_counter_read_val()
                 the_unit.id()
                 the_unit.version()
 
