@@ -1,3 +1,4 @@
+# encoding=utf-8
 import hardware_station_common.test_station.test_station as test_station
 import numpy as np
 import os
@@ -12,23 +13,17 @@ from test_station.test_fixture.test_fixture_pancake_offaxis import pancakeoffaxi
 from test_station.test_fixture.test_fixture_project_station import projectstationFixture
 from test_station.test_equipment.test_equipment_pancake_offaxis import pancakeoffaxisEquipment
 from test_station.dut.dut import projectDut, DUTError
+import hardware_station_common.utils as hsc_utils
+from hardware_station_common.utils.io_utils import round_ex
 import types
 import glob
 import sys
 import shutil
+import json
+import serial
 
 
 class pancakeoffaxisError(Exception):
-    pass
-
-
-def chk_and_set_measured_value_by_name(test_log, item, value):
-    """
-
-    :type test_log: test_station.TestRecord
-    """
-    if item in test_log.results_array():
-        test_log.set_measured_value_by_name(item, value)
     pass
 
 
@@ -46,7 +41,7 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._operator_interface.print_to_console(msg)
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '2.1.0'
+        self._sw_version = '2.1.4'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
@@ -69,11 +64,64 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._is_screen_on_by_op = False
         self._retries_screen_on = 0
         self._is_cancel_test_by_op = False
+        self._fixture_port = None
+        self._fixture_scanner_port = None
+        self._fixture_particle_port = None
         self._ttxm_filelist = []
 
     def initialize(self):
-        self._operator_interface.print_to_console("Initializing station...\n")
-        self._fixture.initialize()
+        self._operator_interface.print_to_console(f"Initializing station...SW: {self._sw_version}\n")
+        # <editor-fold desc="port configuration automatically">
+        cfg = 'station_config_pancake_offaxis.json'
+        station_config = {
+            'FixtureCom': 'Fixture',
+            'Scanner': 'SR71001A',
+            'Particle': 'ParticleCounter'
+        }
+        com_ports = list(serial.tools.list_ports.comports())
+        port_list = [(com.device, com.hwid, com.serial_number, com.description)
+                     for com in com_ports if com.serial_number]
+        if not os.path.exists(cfg):
+            station_config['PORT_LIST'] = port_list
+            with open(cfg, 'w') as f:
+                json.dump(station_config, fp=f, indent=4)
+        else:
+            with open(cfg, 'r') as f:
+                station_config = json.load(f)
+
+        port_err_message = []
+        # config the port for fixture
+        regex_port = station_config['FixtureCom']
+        com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
+        if len(com_ports) != 1:
+            port_err_message.append(f'Fixture')
+        else:
+            self._fixture_port = com_ports[-1]
+
+        # config the port for scanner
+        if self._station_config.FIXTURE_HAS_AUTO_SCANNER:
+            regex_port = station_config['Scanner']
+            com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
+            if len(com_ports) > 0:
+                self._fixture_scanner_port = com_ports[-1]
+            else:
+                port_err_message.append(f'Scanner')
+
+        # config the port for scanner
+        if self._station_config.FIXTURE_PARTICLE_COUNTER:
+            regex_port = station_config['ParticleCounter']
+            com_ports = [c[0] for c in port_list if re.search(regex_port, c[2], re.I | re.S)]
+            if len(com_ports) == 1:
+                self._fixture_particle_port = com_ports[-1]
+            else:
+                port_err_message.append(f'Particle counter')
+        # </editor-fold>
+
+        if not self._station_config.FIXTURE_SIM and len(port_err_message) > 0:
+            raise pancakeoffaxisError(f'Fail to find ports for fixture {";".join(port_err_message)}')
+
+        self._fixture.initialize(fixture_port=self._fixture_port,
+                                 particle_port=self._fixture_particle_port)
 
         if self._station_config.FIXTURE_PARTICLE_COUNTER and hasattr(self, '_particle_counter_start_time'):
             while ((datetime.datetime.now() - self._particle_counter_start_time)
@@ -91,9 +139,20 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._equipment.close()
         self._equipment = None
 
+    def chk_and_set_measured_value_by_name(self, test_log, item, value, value_msg=None):
+        """
+        :type test_log: test_station.TestRecord
+        """
+        if item in test_log.results_array():
+            test_log.set_measured_value_by_name(item, value)
+            did_pass = test_log.get_test_by_name(item).did_pass()
+            if value_msg is None:
+                value_msg = value
+            self._operator_interface.update_test_value(item, value_msg, 1 if did_pass else -1)
+
     def _do_test(self, serial_number, test_log):
         # type: (str, test_station.test_log) -> tuple
-        test_log.set_measured_value_by_name_ex = types.MethodType(chk_and_set_measured_value_by_name, test_log)
+        test_log.set_measured_value_by_name_ex = types.MethodType(self.chk_and_set_measured_value_by_name, test_log)
         self._overall_result = False
         self._overall_errorcode = ''
         # self._operator_interface.operator_input("Manually Loading", "Please Load %s for testing.\n" % serial_number)
@@ -185,8 +244,41 @@ class pancakeoffaxisStation(test_station.TestStation):
             return overall_result, first_failed_test_result
 
     def close_test(self, test_log):
-        ### Insert code to gracefully restore fixture to known state, e.g. clear_all_relays() ###
+        result_array = test_log.results_array()
+        save_pnl_dic = self._station_config.SAVE_PNL_IF_FAIL
+        ui_msg = {
+                'LA': 'L (左眼)',
+                'RA': 'R (右眼)'
+        }
+        test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', '')
         self._overall_result = test_log.get_overall_result()
+        # modified the test result if ok_for_left/right
+        if not self._overall_result and set(ui_msg.keys()).issubset(save_pnl_dic.keys()):
+            save_pnl_dic_left = [result_array[c].did_pass() for c in save_pnl_dic['LA']]
+            save_pnl_dic_right = [result_array[c].did_pass() for c in save_pnl_dic['RA']]
+            ext_ctl_val = None
+            if (False in save_pnl_dic_left) and (False not in save_pnl_dic_right):
+                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'LA')
+                ext_ctl_val = 'LA'
+            elif (False not in save_pnl_dic_left) and (False in save_pnl_dic_right):
+                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'RA')
+                ext_ctl_val = 'RA'
+            else:
+                test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'FAIL')
+                ext_ctl_val = 'FAIL'
+            if ext_ctl_val in ui_msg.keys():
+                test_log.get_overall_result()
+                self._overall_result = True
+                test_log._overall_did_pass = True
+                test_log._overall_error_code = 0
+                self._operator_interface.update_root_config({'ResultMsgEx': ui_msg[ext_ctl_val]})
+            if not self._overall_result and len([k for k, v in result_array.items()
+                                                 if v.get_measured_value() is None]) > 0:
+                raise test_station.TestStationProcessControlError(f'Fail to test this DUT. 测试产品失败， 请重新测试')
+        else:
+            test_log.set_measured_value_by_name_ex('EXT_CTRL_RES', 'AA')
+            self._operator_interface.update_root_config({'ResultMsgEx': 'L/R(左/右眼)'})
+
         self._first_failed_test_result = test_log.get_first_failed_test_result()
         return self._overall_result, self._first_failed_test_result
 
@@ -195,14 +287,6 @@ class pancakeoffaxisStation(test_station.TestStation):
         return test_station.TestStation.validate_sn(self, serial_num)
 
     def is_ready(self):
-        free_space = self.get_free_space_mb(self._station_config.ROOT_DIR)
-        limit_free_space = 300
-        if free_space < limit_free_space:
-            msg = "Unable to start test (total size of free space {0:.1f} less than {1}M.\n"\
-                .format(free_space, limit_free_space)
-            self._operator_interface.operator_input('WARN', msg=msg, msg_type='warning')
-            return False
-
         serial_number = self._latest_serial_number
         self._operator_interface.print_to_console("Testing Unit %s\n" % serial_number)
         self._the_unit = dut.pancakeDutOffAxis(serial_number, self._station_config, self._operator_interface)
@@ -213,12 +297,6 @@ class pancakeoffaxisStation(test_station.TestStation):
         else:
             return self.is_ready_litup_outside()
 
-    def get_free_space_mb(self, folder):
-        import ctypes
-        free_bytes = ctypes.c_ulonglong(0)
-        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
-        return free_bytes.value / 1024 / 1024
-
     def is_ready_litup_outside(self):
         ready = False
         power_on_trigger = False
@@ -227,19 +305,23 @@ class pancakeoffaxisStation(test_station.TestStation):
         self._retries_screen_on = 0
         timeout_for_btn_idle = (20 if not hasattr(self._station_config, 'TIMEOUT_FOR_BTN_IDLE')
                                 else self._station_config.TIMEOUT_FOR_BTN_IDLE)
-        timeout_for_dual = timeout_for_btn_idle
+
+        timeout_for_dual = time.time()
         try:
             self._fixture.button_disable()
             self._fixture.power_on_button_status(True)
-            self._the_unit.initialize()
+            self._the_unit.initialize(com_port=self._station_config.DUT_COMPORT,
+                                      eth_addr=self._station_config.DUT_ETH_PROXY_ADDR)
             self._operator_interface.print_to_console("Initialize DUT... \n")
-            while timeout_for_dual > 0:
+            tm_current = timeout_for_dual
+            while tm_current - timeout_for_dual <= timeout_for_btn_idle:
                 if ready or self._is_cancel_test_by_op:
                     break
                 msg_prompt = 'Load DUT, and then Press PowerOn-Btn(Litup) in %s counts...'
                 if power_on_trigger:
                     msg_prompt = 'Press Dual-Btn(Load)/L-Btn(Cancel)/PowerOn-Btn(Re Litup)  in %s counts...'
-                self._operator_interface.prompt(msg_prompt % timeout_for_dual, 'yellow')
+                tm_data = timeout_for_btn_idle - (tm_current - timeout_for_dual)
+                self._operator_interface.prompt(msg_prompt % int(tm_data), 'yellow')
                 if self._station_config.FIXTURE_SIM:
                     self._is_screen_on_by_op = True
                     ready = True
@@ -259,20 +341,20 @@ class pancakeoffaxisStation(test_station.TestStation):
                             self._the_unit.screen_on()
                             power_on_trigger = True
                             self._fixture.button_enable()
-                            timeout_for_dual = timeout_for_btn_idle
+                            timeout_for_dual = time.time()
                         else:
                             self._the_unit.screen_off()
                             self._the_unit.reboot()  # Reboot
                             self._the_unit.screen_on()
                             power_on_trigger = True
-                            timeout_for_dual = timeout_for_btn_idle
+                            timeout_for_dual = time.time()
                     elif ready_status == 0x02:
                         self._is_cancel_test_by_op = True  # Cancel test.
                     elif ready_status == 0x04:
                         self._operator_interface.print_to_console('please load the dut correctly.\n')
                         pass
-                time.sleep(0.1)
-                timeout_for_dual -= 1
+                time.sleep(0.01)
+                tm_current = time.time()
         except Exception as e:
             self._operator_interface.print_to_console('exception msg {0}.\n'.format(e))
         finally:
@@ -283,10 +365,10 @@ class pancakeoffaxisStation(test_station.TestStation):
                 if not ready:
                     if not self._is_cancel_test_by_op:
                         self._operator_interface.print_to_console(
-                            'Unable to get start signal in %s from fixture.\n' % timeout_for_dual)
+                            'Unable to get start signal in %s from fixture.\n' % int(time.time() - timeout_for_dual))
                     else:
                         self._operator_interface.print_to_console(
-                            'Cancel start signal from dual %s.\n' % timeout_for_dual)
+                            'Cancel start signal from dual %s.\n' % int(time.time() - timeout_for_dual))
                     self._the_unit.close()
                     self._the_unit = None
             except:
@@ -361,32 +443,42 @@ class pancakeoffaxisStation(test_station.TestStation):
                                                                self._station_config.Resolution_Bin_Y)
                         self._operator_interface.print_to_console("Export data for %s\n" % test_pattern)
 
-    def offaxis_test_do(self, serial_number, test_log, the_unit):
+    def offaxis_test_do(self, serial_number, test_log: test_station.test_log.TestRecord, the_unit):
         pos_items = self._station_config.POSITIONS
         pre_color = None
         for posIdx, pos, pos_patterns in pos_items:
+            analysis_result_dic = {}
             self._operator_interface.print_to_console('clear registration\n')
             self._equipment.clear_registration()
             if not self._station_config.EQUIPMENT_SIM:
-                uni_file_name = re.sub('_x.log', '_{}.ttxm'.format(posIdx), test_log.get_filename())
-                bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH)
-                databaseFileName = os.path.join(bak_dir, uni_file_name)
+                uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+                bak_dir = os.path.join(self._station_config.ROOT_DIR, self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
+                if not os.path.exists(os.path.join(bak_dir, uni_file_name)):
+                    hsc_utils.mkdir_p(os.path.join(bak_dir, uni_file_name))
+                databaseFileName = os.path.join(bak_dir, uni_file_name, f'{posIdx}.ttxm')
                 self._equipment.create_database(databaseFileName)
                 self._ttxm_filelist.append(databaseFileName)
             else:
-                db_dir = self._station_config.EQUIPMENT_DEMO_DATABASE
-                fns = glob.glob1(db_dir, '%s_*_%s.ttxm'%(serial_number, posIdx))
-                if len(fns) > 0:
-                    databaseFileName = os.path.join(db_dir, fns[0])
-                    self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
-                    self._equipment.set_database(databaseFileName)
+                uut_dirs = [c for c in glob.glob(os.path.join(self._station_config.EQUIPMENT_DEMO_DATABASE, r'*'))
+                            if os.path.isdir(c)
+                            and os.path.relpath(c, self._station_config.EQUIPMENT_DEMO_DATABASE)
+                                .upper().startswith(serial_number.upper())]
+                if len(uut_dirs) <= 0:
+                    raise FileNotFoundError(f'unable to address data for {serial_number}')
+                db_dir = uut_dirs[-1]
+                fns = glob.glob1(db_dir, f'{posIdx}.ttxm')
+                if len(fns) <= 0:
+                    raise FileNotFoundError(f'unable to address data for {serial_number}')
+                databaseFileName = os.path.join(db_dir, fns[0])
+                self._operator_interface.print_to_console("Set tt_database {}.\n".format(databaseFileName))
+                self._equipment.set_database(databaseFileName)
 
             self._operator_interface.print_to_console("Panel Mov To Pos: {}.\n".format(pos))
             self._fixture.mov_abs_xy(pos[0], pos[1])
 
             center_item = self._station_config.CENTER_AT_POLE_AZI
             lv_cr_items = {}
-
+            lv_all_items = {}
             for test_pattern in pos_patterns:
                 if test_pattern not in pos_patterns:
                     self._operator_interface.print_to_console("Can't find pattern {} for position {}.\n"
@@ -411,22 +503,28 @@ class pancakeoffaxisStation(test_station.TestStation):
                     self._equipment.clear_registration()
                 analysis_result = self._equipment.sequence_run_step(analysis, '', use_camera, True)
                 self._operator_interface.print_to_console("Sequence run step  {}.\n".format(analysis))
+                analysis_result_dic[pattern] = analysis_result.copy()
+
+                # region extract raw data
+            for test_pattern in [c for c in pos_patterns if not self._station_config.DATA_COLLECT_ONLY]:
+                i = self._station_config.PATTERNS.index(test_pattern)
+                pattern = self._station_config.PATTERNS[i]
+                analysis = self._station_config.ANALYSIS[i]
 
                 lv_dic = {}
                 cx_dic = {}
                 cy_dic = {}
                 center_dic = {}
                 duv_dic = {}
+                u_dic = {}
+                v_dic = {}
                 u_values = None
                 u_values = None
 
-                if self._station_config.DATA_COLLECT_ONLY:
-                    continue
-
-                # region extract raw data
-
-                for c, result in analysis_result.items():
-                    if c != analysis:
+                analysis_result = analysis_result_dic.get(pattern)
+                if isinstance(analysis_result, dict) and analysis in analysis_result:
+                    result = analysis_result[analysis]
+                    if not isinstance(result, dict):
                         continue
                     for ra in result:
                         r = re.sub(' ', '', ra)
@@ -474,12 +572,14 @@ class pancakeoffaxisStation(test_station.TestStation):
                         vs0 = vs_dic[center_item]
                         duvs = np.sqrt((np.array(us) - us0)**2 + (np.array(vs) - vs0)**2)
                         duv_dic = dict(zip(keys, duvs))
-
+                        u_dic.update(us_dic)
+                        v_dic.update(vs_dic)
+                    lv_all_items[f'{posIdx}_{test_pattern}'] = lv_dic
                 # endregion
 
                 # region Normal Test Item.
 
-                # Brightness at 30deg polar angle (nits)
+                # BrCOMMAND_DISP_POWERON_DLYightness at 30deg polar angle (nits)
                 brightness_items = []
                 for item in self._station_config.BRIGHTNESS_AT_POLE_AZI:
                     tlv = lv_dic.get('P_%s_%s' % item)
@@ -487,7 +587,17 @@ class pancakeoffaxisStation(test_station.TestStation):
                         continue
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, tlv)
+                    test_log.set_measured_value_by_name_ex(test_item, round_ex(tlv, ndigits=1))
+
+                for item in self._station_config.COLOR_PRIMARY_AT_POLE_AZI:
+                    u = u_dic.get(f'P_%s_%s' % item)
+                    v = v_dic.get(f'P_%s_%s' % item)
+                    if u is None or v is None:
+                        continue
+                    test_item = '{}_{}_u_{}_{}'.format(posIdx, pattern, *item)
+                    test_log.set_measured_value_by_name_ex(test_item, round_ex(u, 4))
+                    test_item = '{}_{}_v_{}_{}'.format(posIdx, pattern, *item)
+                    test_log.set_measured_value_by_name_ex(test_item, round_ex(v, 4))
 
                 for p0, p180 in self._station_config.BRIGHTNESS_AT_POLE_ASSEM:
                     lv_x_0 = lv_dic.get('P_%s_%s' % p0)
@@ -508,14 +618,14 @@ class pancakeoffaxisStation(test_station.TestStation):
                     tlv = tlv / lv_dic[center_item]
                     brightness_items.append(tlv)
                     test_item = '{}_{}_Lv_Proportion_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, tlv)
+                    test_log.set_measured_value_by_name_ex(test_item, tlv, round_ex(tlv, 3))
 
                 for item in self._station_config.COLORSHIFT_AT_POLE_AZI:
                     duv = duv_dic.get('P_%s_%s' % item)
                     if duv is None:
                         continue
                     test_item = '{}_{}_duv_{}_{}'.format(posIdx, pattern, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, duv)
+                    test_log.set_measured_value_by_name_ex(test_item, duv, round_ex(duv, 3))
                 if len(lv_dic) > 0:
                     # Max brightness location
                     max_loc = max(lv_dic, key=lv_dic.get)
@@ -544,9 +654,62 @@ class pancakeoffaxisStation(test_station.TestStation):
                         continue
                     cr = lv_cr_items[w][item_key] / lv_cr_items[d][item_key]
                     test_item = '{}_CR_{}_{}'.format(posIdx, *item)
-                    test_log.set_measured_value_by_name_ex(test_item, cr)
+                    test_log.set_measured_value_by_name_ex(test_item, cr, round_ex(cr, 1))
             # endregion
 
             self.data_export(serial_number, test_log, posIdx)
 
+            if self._station_config.IS_EXPORT_RAW_DATA:
+                for export_posIdx, export_raw_data_patterns in self._station_config.EXPORT_RAW_DATA_PATTERN.items():
+                    if posIdx != export_posIdx or len(export_raw_data_patterns) <= 0:
+                        continue
+                    export_raw_data = np.empty(
+                        (len(self._station_config.EXPORT_RAW_DATA_PATTERN_POLE),
+                         len(self._station_config.EXPORT_RAW_DATA_PATTERN_AZI) * len(export_raw_data_patterns) + 1), np.float)
+                    export_raw_data[:, 0] = self._station_config.EXPORT_RAW_DATA_PATTERN_POLE.copy()
+                    for pattern_idx, exp_raw_data_pattern in enumerate(export_raw_data_patterns):
+                        export_raw_keys = {}
+                        for aziIdx, azi_item in enumerate(self._station_config.EXPORT_RAW_DATA_PATTERN_AZI):
+                            pname, azi = azi_item
+                            export_raw_keys = []
+                            for pole in self._station_config.EXPORT_RAW_DATA_PATTERN_POLE:
+                                if pole == 0:
+                                    export_raw_keys.append(f'P_0_0')
+                                elif pole > 0:
+                                    export_raw_keys.append(f'P_{pole}_{azi}')
+                                else:
+                                    export_raw_keys.append(f'P_{-pole}_{azi + 180}')
+                            export_raw_values = [lv_all_items[f'{posIdx}_{exp_raw_data_pattern}'].get(c) for c in export_raw_keys]
+                            export_raw_data[:, pattern_idx * len(self._station_config.EXPORT_RAW_DATA_PATTERN_AZI) + aziIdx + 1] = export_raw_values
+                    try:
+                        uni_file_name = re.sub('_x.log', '', test_log.get_filename())
+                        bak_dir = os.path.join(self._station_config.ROOT_DIR,
+                                               self._station_config.ANALYSIS_RELATIVEPATH, 'raw')
+                        raw_data_dir = os.path.join(bak_dir, uni_file_name)
+                        if not os.path.exists(raw_data_dir):
+                            os.mkdir(raw_data_dir)
+
+                        export_fn = test_log.get_filename().replace('_x.log', f'_raw_export_{posIdx}.csv')
+                        with open(os.path.join(raw_data_dir, export_fn), 'w') as f:
+                            header = ','
+                            header2 = ','
+                            header3 = 'Theta,'
+                            subItems = ','.join(['' for c in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
+                            subItem2s = ','.join([c for c, d in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
+                            subItem3s = ','.join([f'Phi = {d}' for c, d in self._station_config.EXPORT_RAW_DATA_PATTERN_AZI])
+                            header += ','.join([f'{c}{subItems}' for c in export_raw_data_patterns])
+                            header2 += ','.join([f'{subItem2s}' for c in export_raw_data_patterns])
+                            header3 += ','.join([f'{subItem3s}' for c in export_raw_data_patterns])
+                            data_items = [header, header2, header3]
+
+                            for x in range(export_raw_data.shape[0]):
+                                data_items.append(','.join([f'{c}' for c in export_raw_data[x, :]]))
+
+                            f.writelines([f'{c}\n' for c in data_items])
+                            f.close()
+
+                    except Exception as e:
+                        self._operator_interface.print_to_console(f'Fail to save raw data. {str(e)} \n')
+
+            del lv_all_items
         self._operator_interface.print_to_console('complete the off_axis test items.\n')

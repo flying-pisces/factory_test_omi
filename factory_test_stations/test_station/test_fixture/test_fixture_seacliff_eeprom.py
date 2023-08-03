@@ -30,7 +30,7 @@ class seacliffeepromFixture(hardware_station_common.test_station.test_fixture.Te
         if self._station_config.CAMERA_VERIFY_ENABLE:
             self._device_manager = gx.DeviceManager()
             dev_num, dev_info_list = self._device_manager.update_device_list()
-            dev_list = [c for c in dev_info_list if c.get('model_name') == 'MER-132-43U3C']
+            dev_list = [c for c in dev_info_list if ['MER' in c.get('model_name').upper()]]
             if len(dev_list) != 0x01:
                 raise seacliffeepromFixtureErr('Fail to init instrument. cam = {0}'.format(len(dev_list)))
             self._camera_sn = dev_list[0].get('sn')
@@ -55,14 +55,14 @@ class seacliffeepromFixture(hardware_station_common.test_station.test_fixture.Te
         return (self._station_config.DISP_CHECKER_L_HsvH <= h <= self._station_config.DISP_CHECKER_H_HsvH and
                 self._station_config.DISP_CHECKER_L_HsvS <= s <= self._station_config.DISP_CHECKER_H_HsvS)
 
-    def CheckImage(self, pattern, lower, upper):
+    def CheckImage(self, exp_fn, lower, upper):
         img = self._captureImg()  # type: np.ndarray
         if img is None:
             raise seacliffeepromFixtureErr('Fail to capture image from camera.')
 
         roi_img = img[self._station_config.CAMERA_CHECK_ROI[1]:self._station_config.CAMERA_CHECK_ROI[3],
               self._station_config.CAMERA_CHECK_ROI[0]:self._station_config.CAMERA_CHECK_ROI[2]]
-        cv2.imwrite('{0}.bmp'.format(pattern), roi_img)
+        cv2.imwrite(exp_fn, roi_img)
 
         hsv = cv2.cvtColor(roi_img, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, lowerb=np.array(lower), upperb=np.array(upper))

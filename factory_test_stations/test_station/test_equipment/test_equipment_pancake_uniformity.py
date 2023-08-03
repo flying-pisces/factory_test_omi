@@ -117,7 +117,7 @@ class pancakeuniformityEquipment(hardware_station_common.test_station.test_equip
         response = json.loads(self._device.EquipmentReady())
         msg = "Ready - ErrorCode: {0}".format(response['ErrorCode'])
         if verbose:
-            print msg
+            print(msg)
         ready_result = response['ErrorCode'] == 'Success'
         return ready_result
 

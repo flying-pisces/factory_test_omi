@@ -38,7 +38,7 @@ class pancakemuniStation(test_station.TestStation):
     """
 
     def __init__(self, station_config, operator_interface):
-        self._sw_version = '1.1.0'
+        self._sw_version = '1.1.0sp1'
         self._runningCount = 0
         test_station.TestStation.__init__(self, station_config, operator_interface)
         if hasattr(self._station_config, 'IS_PRINT_TO_LOG') and self._station_config.IS_PRINT_TO_LOG:
@@ -114,7 +114,7 @@ class pancakemuniStation(test_station.TestStation):
                                 modbus_client.close()
                                 # type: ReadHoldingRegistersResponse
                                 if rs is None or rs.isError():
-                                    retries = retries + 1
+                                    # retries = retries + 1
                                     time.sleep(0.05)
                                 else:
                                     self._station_config.FIXTURE_PARTICLE_COMPORT = com.device
@@ -207,7 +207,7 @@ class pancakemuniStation(test_station.TestStation):
             self._operator_interface.print_to_console('open the drawer automatically...\n')
             self._fixture.unload()
         except (test_fixture_paneltesting.seacliffpaneltestingFixtureError,
-                test_equipment.pancakemuniEquipmentError) as e:
+                test_equipment_seacliff_paneltesting.pancakemuniEquipmentError) as e:
             raise test_station.TestStationError('Unable to initialized.')
 
     def close(self):
@@ -327,20 +327,8 @@ class pancakemuniStation(test_station.TestStation):
         self._lastest_serial_number = serial_num
         return test_station.TestStation.validate_sn(self, serial_num)
 
-    def get_free_space_mb(self, folder):
-        import ctypes
-        free_bytes = ctypes.c_ulonglong(0)
-        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(folder), None, None, ctypes.pointer(free_bytes))
-        return free_bytes.value / 1024 / 1024
-
     def is_ready(self):
-        free_space = self.get_free_space_mb(self._station_config.ROOT_DIR)
-        limit_free_space = 500
-        if free_space < limit_free_space:
-            msg = "Unable to start test (total size of free space {0:.1f} less than {1}M.\n"\
-                .format(free_space, limit_free_space)
-            self._operator_interface.operator_input('WARN', msg=msg, msg_type='warning')
-            return False
+        return True
 
     def _query_dual_start(self):
         ready = False
@@ -358,7 +346,7 @@ class pancakemuniStation(test_station.TestStation):
         timeout_for_btn_idle = 20
         timeout_for_dual = timeout_for_btn_idle
         try:
-            self._the_unit.initialize()
+            self._the_unit.initialize(com_port=self._station_config.FIXTURE_COMPORT)
             self._fixture.start_button_status(False)
             self._fixture.power_on_button_status(True)
             while timeout_for_dual > 0:

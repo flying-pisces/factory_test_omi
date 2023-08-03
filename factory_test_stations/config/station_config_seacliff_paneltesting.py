@@ -1,3 +1,19 @@
+"""
+Release Note:
+========================================================
+Version 1.1.1b
+2021-2-17 elton.tian<elton.tian@myzygroup.com>
+-1. init version base on ERS P2.
+-2. change datetime format to local time.
+-3. fix: unable to power on DUT in fixture emulator mode.
+-4. optimize loop-testing mode.
+-5. optimize auto-finder for ParticleCounter.
+
+========================================================
+Version 0.1.4
+2020-12-30 elton<elton.tian@myzygroup.com>
+-1. Init version for bluni based on ERS P1.
+"""
 ##################################
 # directories
 #
@@ -20,8 +36,6 @@ FIXTURE_PARTICLE_COUNTER = True
 FIXTURE_PARTICLE_ADDR = 1
 DUT_COMPORT = 'COM1'
 CA_PORT = 'COM2'
-FIXTURE_COMPORT = 'COM1'
-FIXTURE_PARTICLE_COMPORT = 'COM2'
 
 AUTO_CFG_COMPORTS = False
 FIXTURE_PARTICLE_COMPORT_FILTER = 'VID:PID=0403:6001'
@@ -40,10 +54,10 @@ COMMAND_DISP_WRITE = "MIPI.Write"
 COMMAND_DISP_2832WRITE = "t.2832_MIPI_WRITE"
 COMMAND_DISP_VSYNC = "REFRESHRATE"
 
-COMMAND_DISP_POWERON_DLY = 1.5
+COMMAND_DISP_POWERON_DLY = 0.5
 COMMAND_DISP_RESET_DLY = 1
-COMMAND_DISP_SHOWIMG_DLY = 1
-COMMAND_DISP_POWEROFF_DLY = 0.2
+COMMAND_DISP_SHOWIMG_DLY = 0.01
+COMMAND_DISP_POWEROFF_DLY = 0
 
 DISP_CHECKER_ENABLE = False
 DISP_CHECKER_DLY = 2
@@ -83,6 +97,7 @@ COMMAND_CA_DOWN = 'CMD_CARRIER_DW'
 
 FIXTURE_RESET_DLY = 50
 FIXTURE_UNLOAD_DLY = 15
+FIXTURE_LOAD_DLY = 10
 DUT_LOAD_WITHOUT_OPERATOR = False
 
 DUT_LITUP_OUTSIDE = True
@@ -110,7 +125,7 @@ ENFORCE_SHOPFLOOR_ROUTING = False
 
 ######## DUT Related Parameters which will be defined
 DUT_ON_TIME = 4  # assuming DUT need 5 seconds to be powered after USB powered on command
-DUT_DISPLAYSLEEPTIME = 1
+DUT_DISPLAYSLEEPTIME = 0
 DISPLAY_CYCLE_TIME = 2
 DUT_RENDER_ONE_IMAGE_TIMEOUT = 0
 LAUNCH_TIME = 4

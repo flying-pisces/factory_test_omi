@@ -1,3 +1,72 @@
+"""
+Release Note:
+========================================================
+Version 1.2.5_pre
+2022-8-3 elton<elton.tian@myzygroup.com>
+-1. call the ok_to_test before all the testing.
+-2. add messagebox for continuously ng
+-3. add STATION_SN to record the SN about Fixture.
+-4. add error_string to summary.
+
+========================================================
+Version 1.2.4
+2021-12-13 elton<elton.tian@mygyroup.com>
+-1. add test item for Resolution check.
+
+========================================================
+Version 1.2.3
+2021-11-24 elton<elton.tian@mygyroup.com>
+-1. update test items based MOT V1.2.4
+-2. update DDIC version to 0x12
+-3. decode DDIC data and save it automatically.
+
+========================================================
+Version 1.2.2
+2021-9-21 elton<elton.tian@mygyroup.com>
+-1. add prompt information when detecting the wrong config.
+
+========================================================
+Version 1.2.1
+2021-9-18 elton<elton.tian@mygyroup.com>
+-1. update test items based MOT V1.2.2 + DICC VERSION
+
+========================================================
+Version 1.2.0
+2021-8-18 elton<elton.tian@mygyroup.com>
+-1. update test items based MOT V1.2.x
+
+========================================================
+Version 1.1.4
+2021-3-18 elton<elton.tian@mygyroup.com>
+-1. keep the unit unable to power on in not testing mode.
+-2. add inplace check for module.
+
+========================================================
+Version 1.1.3
+2021-3-8 elton<elton.tian@mygyroup.com>
+-1. read ecc before/after execute write command.
+-2. retries automatically when the write count not changed after flushing.
+-3. change default exposure time to 400k us
+
+========================================================
+Version 1.1.2
+2021-2-27 elton<elton.tian@mygyroup.com>
+-1. save images captured from CCD.
+-2. try to fix bugs about opt_issue with retry strategy.
+-3. skip to flash when the data to be write is equal to the data read from device.
+-4. add optional to write/read in normal/slow mode for nvm.
+
+========================================================
+Version 1.1.1
+2021-2-9 author<xxx@xxx.com>
+-1. change datetime format to local time.
+
+========================================================
+Version 1.1.0
+2020-1-18 elton<elton.tian@myzygroup.com>
+-1. Init version for EEPROM
+"""
+
 ##################################
 # directories
 #
@@ -7,17 +76,18 @@
 ROOT_DIR = r'C:\oculus\factory_test_omi\factory_test_stations'
 CSV_SUMMARY_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\seacliff_eeprom_summary'
 RAW_IMAGE_LOG_DIR = r'C:\oculus\factory_test_omi\factory_test_stations\factory-test_logs\raw'
-CALIB_REQ_DATA_FILENAME = r'c:\oculus\run\seacliff_eeprom\session_data'
+CALIB_REQ_DATA_FILENAME = r'C:\oculus\run\seacliff_eeprom\session_data'
 ##################################
 # serial number codes
 #
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = '\dPR0[\w|\d]{10}'  # Peak panel SN
+SERIAL_NUMBER_VALIDATION = True  # set to False for debugging
+SERIAL_NUMBER_MODEL_NUMBER = '^[\w]{13,14}$'
 
 ##################################
 # Fixture parameters
 AUTO_CFG_COMPORTS = True
 DUT_COMPORT = "COM14"  #
+DUT_ETH_PROXY_ADDR = ('192.168.21.132', 6000)
 
 COMMAND_DISP_HELP = "$c.help"
 COMMAND_DISP_VERSION_GRP=['mcu', 'hw', 'fpga']
@@ -37,19 +107,21 @@ COMMAND_DISP_GET_COLOR = "GetColor"
 COMMAND_NVM_WRITE_CNT = 'NVMWCNT'
 COMMAND_NVM_READ = 'NVMRead'
 COMMAND_NVM_WRITE = 'NVMWrite'
+COMMAND_SPEED_MODE = 'SET.B7MODE'
+COMMAND_GETB5ECC = 'Get.B5ECC'
+COMMAND_GET_MODULE_INPLACE = 'GET.MODULE.INPLACE'
 
-COMMAND_DISP_POWERON_DLY = 1.5
-COMMAND_DISP_RESET_DLY = 1
-COMMAND_DISP_SHOWIMG_DLY = 0.5
-COMMAND_DISP_POWEROFF_DLY = 0.2
-
-DUT_DISPLAYSLEEPTIME = 0.5
+DUT_DISPLAYSLEEPTIME = 0
 DUT_NVRAM_WRITE_TIMEOUT = 10
-NVM_WRITE_PROTECT = True
+NVM_WRITE_PROTECT = False
+NVM_EEC_READ = True
+NVM_WRITE_SLOW_MOD = True
+DUT_CHK_MODULE_INPLACE = False
 
-CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\config\MER-132-43U3C(FQ0200080140).txt'
-CAMERA_VERIFY_ENABLE = False
-CAMERA_EXPOSURE = 80000
+MIN_SPACE_REQUIRED = [('C:', 500)]
+CAMERA_CONFIG_FILE = r'C:\oculus\factory_test_omi\factory_test_stations\test_station\test_equipment\algorithm\MER-132-43U3C(FQ0200080140).txt'
+CAMERA_VERIFY_ENABLE = True
+CAMERA_EXPOSURE = 400000
 CAMERA_GAIN = 1.0
 
 CAMERA_CHECK_ROI = (400, 260, 820, 650)  # resolution: 1292 * 964
@@ -58,7 +130,7 @@ CAMERA_CHECK_CFG = [
         'pattern': (255, 0, 0),
         'chk_lsl': [0, 43, 46],
         'chk_usl': [30, 255, 255],
-        'determine':[50, 100],
+        'determine':[30, 100],
     },
 
     # {
@@ -86,36 +158,39 @@ DISP_CHECKER_COLOR = (0, 0, 255)
 DISP_CHECKER_LOCATION = (25, 5)
 DISP_CHECKER_COUNT = 2
 
-##################################
-# serial number codes
-#
-SERIAL_NUMBER_VALIDATION = False  # set to False for debugging
-SERIAL_NUMBER_MODEL_NUMBER = 'H'  # Fake model number requirement, need config
-
 NVM_WRITE_COUNT_MAX = 6
-# calibration required data.
-USER_INPUT_CALIB_DATA = True
+# calibration required data. 1:  User input values, 2: Get data from json-file.
+USER_INPUT_CALIB_DATA = 0x02
 
 CALIB_REQ_DATA = {
-    'display_boresight_x': 100.20,
-    'display_boresight_y': -120.25,
-    'rotation': -0.8,
+    'display_boresight_x': 0.3180896059721896,
+    'display_boresight_y': 2.1627223295544993,
+    'rotation': -0.915799815681917,
 
-    'lv_W255': 80,
-    'x_W255': 0.3001,
-    'y_W255': 0.3002,
+    'lv_W255': 112.040344,
+    'x_W255': 0.3228153833300315,
+    'y_W255': 0.3285835704813771,
 
-    'lv_R255': 100,
-    'x_R255': 0.654,
-    'y_R255': 0.321,
+    'lv_R255': 26.819864,
+    'x_R255': 0.6666388143079006,
+    'y_R255': 0.3152183604502523,
 
-    'lv_G255': 30,
-    'x_G255': 0.3001,
-    'y_G255': 0.6002,
+    'lv_G255': 78.019005,
+    'x_G255': 0.26605808295858685,
+    'y_G255': 0.6448553761160989,
 
-    'lv_B255': 50,
-    'x_B255': 0.1402,
-    'y_B255': 0.0405,
+    'lv_B255': 6.2487288,
+    'x_B255': 0.15439368793739008,
+    'y_B255': 0.04709624165493779,
+
+    'TemperatureW': 37,
+    'TemperatureR': 38,
+    'TemperatureG': 39,
+    'TemperatureB': 40,
+    'TemperatureWD': 41,
+    'WhitePointGLR': 255,
+    'WhitePointGLG': 244,
+    'WhitePointGLB': 240,
 }
 
 ##################################
@@ -133,15 +208,19 @@ USE_WORKORDER_ENTRY = True
 # visa instruments.  Hint: use Agilent VISA tools to make aliases!
 # (e.g. "DMM" vs "USB0::2391::1543::MY47007422::0::INSTR")
 ######## To be config per station type 
-IS_VERBOSE = False
-IS_PRINT_TO_LOG = False
+IS_VERBOSE = True
+IS_PRINT_TO_LOG = True
+
+# UI_MODE
+OPTIMIZE_UI_MODE = True
+SHOW_CONSOLE = False
 
 #####
 ### Facebook_IT Enable boolean
-FACEBOOK_IT_ENABLED = False
+FACEBOOK_IT_ENABLED = True
 
 # does the shopfloor use work orders?
 USE_WORKORDER_ENTRY = False
-DUT_SIM = True
-EQUIPMENT_SIM = True
-FIXTURE_SIM = True
+DUT_SIM = False
+EQUIPMENT_SIM = False
+FIXTURE_SIM = False

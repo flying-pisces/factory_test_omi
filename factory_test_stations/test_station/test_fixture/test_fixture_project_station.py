@@ -12,7 +12,7 @@ class projectstationFixture(hardware_station_common.test_station.test_fixture.Te
     def is_ready(self):
         pass
 
-    def initialize(self):
+    def initialize(self, **kwargs):
         self._operator_interface.print_to_console("Initializing project station Fixture\n")
 
     def close(self):
@@ -26,5 +26,6 @@ class projectstationFixture(hardware_station_common.test_station.test_fixture.Te
                     'is_ready', 'power_on_button_status', 'start_button_status', 'query_temp',
                     'mov_abs_xy_wrt_alignment', 'mov_camera_z_wrt_alignment', 'query_probe_status',
                     'particle_counter_state', 'version', 'particle_counter_read_val', 'mov_abs_xy_wrt_dut',
-                    'ca_postion_z',]:
+                    'ca_postion_z', 'calib_zero_pos', 'id', 'set_tri_color',
+                    'unload_dut', 'load_dut', 'vacuum', 'vacuum_status']:
             return not_find

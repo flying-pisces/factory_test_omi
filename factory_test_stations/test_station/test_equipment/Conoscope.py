@@ -10,7 +10,8 @@ import os
 
 class Conoscope:
     DLL_PATH = '.'
-    VERSION_REVISION = 52
+    VERSION_REVISION = 72
+
     class Filter(Enum):
         BK7 = 0
         Mirror = 1
@@ -81,6 +82,17 @@ class Conoscope:
         Bin = 0
         BinJpg = 1
 
+    class CxpLinkConfig(Enum):
+        CXP6_X2 = 0
+        CXP6_X4 = 1
+
+    class ComposeOuputImage(Enum):
+        ComposeOuputImage_XYZ = 0
+        ComposeOuputImage_X = 1
+        ComposeOuputImage_Y = 2
+        ComposeOuputImage_Z = 3
+        ComposeOuputImage_None = 4
+
     class ApplicationThread(threading.Thread):
         def __init__(self, threadID, name, counter):
             threading.Thread.__init__(self)
@@ -117,7 +129,8 @@ class Conoscope:
             ("RoiXLeft", ctypes.c_int),
             ("RoiXRight", ctypes.c_int),
             ("RoiYTop", ctypes.c_int),
-            ("RoiYBottom", ctypes.c_int)]
+            ("RoiYBottom", ctypes.c_int),
+            ("cxpLinkConfig", ctypes.c_int)]
 
     class ConoscopeDebugSettings(ctypes.Structure):
         _fields_ = [
@@ -164,7 +177,7 @@ class Conoscope:
             ("progress", ctypes.c_int),
             ("elapsedTime", ctypes.c_int64),
             ("fileName", ctypes.c_char_p)]
-        
+
     class CaptureSequenceConfig(ctypes.Structure):
         _fields_ = [
             ("sensorTemperature", ctypes.c_float),
@@ -180,12 +193,8 @@ class Conoscope:
             ("bAutoExposure", ctypes.c_bool),
             ("bUseExpoFile", ctypes.c_bool),
             ("bSaveCapture", ctypes.c_bool),
-            ("bUseRoi", ctypes.c_bool),
-            ("RoiXLeft", ctypes.c_int),
-            ("RoiXRight", ctypes.c_int),
-            ("RoiYTop", ctypes.c_int),
-            ("RoiYBottom", ctypes.c_int)]
-     
+            ("eOuputImage", ctypes.c_int)]
+
     class CaptureSequenceStatus(ctypes.Structure):
         _fields_ = [
             ("nbSteps", ctypes.c_int),
@@ -199,7 +208,7 @@ class Conoscope:
             ("nbAcquisition", ctypes.c_int),
             ("state", ctypes.c_int)]
 
-    def __init__(self, emulate_camera=False, emulate_wheel=False):
+    def __init__(self, *, emulate_camera=False, emulate_wheel=False, emulate_spectro=False):
         print("create an instance of the conoscope")
 
         self.conoscopeConfig = Conoscope.ConoscopeConfig()
@@ -241,9 +250,9 @@ class Conoscope:
         # p4 = ctypes.c_int (0)
         # hllApi (ctypes.byref (p1), p2, ctypes.byref (p3), ctypes.byref (p4))
 
-        #RunApplicationProto = ctypes.WINFUNCTYPE(
+        # RunApplicationProto = ctypes.WINFUNCTYPE(
         #    ctypes.c_char_p)  # Return type.
-        #self.__RunApplication = RunApplicationProto(("RunApplication", conoscopeDll)),
+        # self.__RunApplication = RunApplicationProto(("RunApplication", conoscopeDll)),
 
         CmdRunApp_Proto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p)  # Return type.
@@ -330,7 +339,7 @@ class Conoscope:
         CmdCfgFileReadProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p)  # Return type.
         self.__CmdCfgFileRead = CmdCfgFileReadProto(("CmdCfgFileRead", conoscopeDll))
-            
+
         CmdCfgFileStatusProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p,  # Return type.
             ctypes.c_void_p)
@@ -340,16 +349,16 @@ class Conoscope:
             ctypes.c_char_p,  # Return type.
             ctypes.c_void_p)
         self.__CmdGetCaptureSequence = CmdGetCaptureSequenceProto(("CmdGetCaptureSequence", conoscopeDll))
-            
+
         CmdCaptureSequenceProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p,  # Return type.
             ctypes.c_void_p)
         self.__CmdCaptureSequence = CmdCaptureSequenceProto(("CmdCaptureSequence", conoscopeDll))
-            
+
         CmdCaptureSequenceCancelProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p)  # Return type.
         self.__CmdCaptureSequenceCancel = CmdCaptureSequenceCancelProto(("CmdCaptureSequenceCancel", conoscopeDll))
-            
+
         CmdCaptureSequenceStatusProto = ctypes.WINFUNCTYPE(
             ctypes.c_char_p,  # Return type.
             ctypes.c_void_p)
@@ -394,17 +403,17 @@ class Conoscope:
         libVersionKey = 'Lib_Version'
 
         libName = 'CONOSCOPE_LIB'
-        #versionMajor = 0
-        #versionMinor = 8
-        #versionRevision = 27
+        # versionMajor = 0
+        # versionMinor = 8
+        # versionRevision = 27
 
         if (libNameKey in version) and (version[libNameKey] == libName):
             if libVersionKey in version:
                 versionNumber = version[libVersionKey].split('.')
 
-                versionMajorLib = int(versionNumber[0])
-                versionMinorLib = int(versionNumber[1])
-                versionRevisionLib = int(versionNumber[2])
+                versionMajorLib = versionNumber[0]
+                versionMinorLib = versionNumber[1]
+                versionRevisionLib = versionNumber[2]
 
                 if Conoscope.VERSION_REVISION != versionRevisionLib:
                     errorMessage = "Error: invalid revision {0}.{1}.{2} != {3}".format(
@@ -549,13 +558,13 @@ class Conoscope:
         ret = Conoscope.__Result(self.__CmdGetDebugConfig(ctypes.byref(self.conoscopeDebugSettings)))
         return ret
 
-    #def CmdCfgFileWrite(self):
+    # def CmdCfgFileWrite(self):
     #    ret = Conoscope.__Result(self.__CmdCfgFileWrite())
 
     def CmdCfgFileRead(self):
         ret = Conoscope.__Result(self.__CmdCfgFileRead())
         return ret
-            
+
     def CmdCfgFileStatus(self):
         ret = Conoscope.__Result(self.__CmdCfgFileStatus(ctypes.byref(self.cfgFileStatus)))
         return ret

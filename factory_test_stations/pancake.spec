@@ -7,6 +7,8 @@ import re
 import ntpath
 import time
 import glob
+import UIDep
+import pyexceptions
 ########################################FIGURE OUT WHAT TO BUILD##################
 build_target = None
 if len(sys.argv) < 3:
@@ -33,13 +35,24 @@ def getrootdir():
 
 def get_datas():
      working_dir = os.getcwd()
-     datas = [('config\\*%s*.py'%build_target_station,'config')]
+     datas = [('config\\*%s.py'%build_target_station,'config')]
 
      if len(glob.glob('shop_floor_interface\\*.py')) > 0:
         datas.append(('shop_floor_interface\\*.py','..\\shop_floor_interface\\'))
-     if len(glob.glob('test_station\\test_equipment\\algorithm\\*.seqx')) > 0:
-        datas.append(('test_station\\test_equipment\\algorithm\\*.seqx',
+     #  file extend name changed to seqxc from version 1.8
+     if len(glob.glob('test_station\\test_equipment\\algorithm\\*.seqxc')) > 0:
+        datas.append(('test_station\\test_equipment\\algorithm\\*.seqxc',
                 '.\\test_station\\test_equipment\\algorithm\\'))
+     # json file for mot.
+     if len(glob.glob('test_station\\test_equipment\\algorithm\\*.json')) > 0:
+        datas.append(('test_station\\test_equipment\\algorithm\\*.json',
+                '.\\test_station\\test_equipment\\algorithm\\'))
+     datas.append((os.path.join(os.path.dirname(UIDep.__file__), '*.dll'), 'UIDep'))
+     datas.append((os.path.join(os.path.dirname(UIDep.__file__), '*.txt'), '.'))
+     datas.append((os.path.join(os.path.dirname(UIDep.__file__), '*.png'), '.'))
+     datas.append((os.path.join(os.path.dirname(pyexceptions.__file__), 'templates', '*.html'), 'pyexceptions/templates'))
+     datas.append(('test_station\\test_equipment\\*.dll','.\\test_station\\test_equipment\\'))
+
      return datas
 
 ########################################Application setup############################
@@ -71,7 +84,8 @@ exe = EXE(pyz,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=True )
+          console=True,
+          icon='imo.ico')
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
