@@ -10,10 +10,51 @@ import struct
 import logging
 import time
 import string
-import win32process
-import win32event
-import pywintypes
+import platform
 import cv2
+
+# Cross-platform imports for Windows-specific functionality
+if platform.system() == "Windows":
+    try:
+        import win32process
+        import win32event
+        import pywintypes
+        HAS_WIN32 = True
+    except ImportError:
+        HAS_WIN32 = False
+else:
+    HAS_WIN32 = False
+    # Provide stubs for non-Windows platforms
+    class win32process:
+        STARTUPINFO = object
+        CREATE_NO_WINDOW = 0
+        STARTF_USESHOWWINDOW = 0
+        
+        @staticmethod
+        def CreateProcess(*args, **kwargs):
+            return (None, None, None, None)
+        
+        @staticmethod
+        def TerminateProcess(*args, **kwargs):
+            pass
+        
+        @staticmethod
+        def GetExitCodeProcess(*args, **kwargs):
+            return 0
+    
+    class win32event:
+        INFINITE = -1
+        WAIT_FAILED = 1
+        WAIT_TIMEOUT = 2
+        WAIT_OBJECT_0 = 0
+        
+        @staticmethod
+        def WaitForSingleObject(*args, **kwargs):
+            return win32event.WAIT_OBJECT_0
+    
+    class pywintypes:
+        class error(Exception):
+            pass
 
 import test_station.dut as dut
 

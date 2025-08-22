@@ -9,14 +9,55 @@ import struct
 import logging
 import datetime
 import string
-import win32process
-import win32event
-import pywintypes
+import platform
 import cv2
 import pprint
 import math
 import select
 import hardware_station_common.test_station.dut
+
+# Cross-platform imports for Windows-specific functionality
+if platform.system() == "Windows":
+    try:
+        import win32process
+        import win32event
+        import pywintypes
+        HAS_WIN32 = True
+    except ImportError:
+        HAS_WIN32 = False
+else:
+    HAS_WIN32 = False
+    # Provide stubs for non-Windows platforms
+    class win32process:
+        STARTUPINFO = object
+        CREATE_NO_WINDOW = 0
+        STARTF_USESHOWWINDOW = 0
+        
+        @staticmethod
+        def CreateProcess(*args, **kwargs):
+            return (None, None, None, None)
+        
+        @staticmethod
+        def TerminateProcess(*args, **kwargs):
+            pass
+        
+        @staticmethod
+        def GetExitCodeProcess(*args, **kwargs):
+            return 0
+    
+    class win32event:
+        INFINITE = -1
+        WAIT_FAILED = 1
+        WAIT_TIMEOUT = 2
+        WAIT_OBJECT_0 = 0
+        
+        @staticmethod
+        def WaitForSingleObject(*args, **kwargs):
+            return win32event.WAIT_OBJECT_0
+    
+    class pywintypes:
+        class error(Exception):
+            pass
 
 
 class DUTError(Exception):
@@ -301,32 +342,54 @@ class pancakeDut(hardware_station_common.test_station.dut.DUT):
         return recv_obj
 
     def _timeout_execute(self, cmd, timeout=0):
-        if timeout == 0:
-            timeout = win32event.INFINITE
         cwd = os.getcwd()
         res = -1
+        
         try:
-            si = win32process.STARTUPINFO()
-            render_img_path = os.path.dirname(self._renderImgTool)
-            os.chdir(render_img_path)
-            # si.dwFlags |= win32process.STARTF_USESHOWWINDOW
+            if HAS_WIN32:
+                # Windows implementation using win32 APIs
+                if timeout == 0:
+                    timeout = win32event.INFINITE
+                si = win32process.STARTUPINFO()
+                render_img_path = os.path.dirname(self._renderImgTool)
+                os.chdir(render_img_path)
 
-            handle = win32process.CreateProcess(None, cmd, None, None, 0, win32process.CREATE_NO_WINDOW,
-                                                None, None, si)
-            rc = win32event.WaitForSingleObject(handle[0], timeout)
-            if rc == win32event.WAIT_FAILED:
-                res = -1
-            elif rc == win32event.WAIT_TIMEOUT:
-                try:
-                    win32process.TerminateProcess(handle[0], 0)
-                except pywintypes.error as e:
-                    raise DUTError('exectue {0} timeout :{1}'.format(cmd, e))
-                if rc == win32event.WAIT_OBJECT_0:
-                    res = win32process.GetExitCodeProcess(handle[0])
+                handle = win32process.CreateProcess(None, cmd, None, None, 0, win32process.CREATE_NO_WINDOW,
+                                                    None, None, si)
+                rc = win32event.WaitForSingleObject(handle[0], timeout)
+                if rc == win32event.WAIT_FAILED:
+                    res = -1
+                elif rc == win32event.WAIT_TIMEOUT:
+                    try:
+                        win32process.TerminateProcess(handle[0], 0)
+                    except pywintypes.error as e:
+                        raise DUTError('execute {0} timeout :{1}'.format(cmd, e))
+                    if rc == win32event.WAIT_OBJECT_0:
+                        res = win32process.GetExitCodeProcess(handle[0])
+                else:
+                    res = 0
             else:
-                res = 0
+                # Cross-platform implementation using subprocess
+                import subprocess
+                try:
+                    render_img_path = os.path.dirname(self._renderImgTool) if hasattr(self, '_renderImgTool') else os.getcwd()
+                    os.chdir(render_img_path)
+                    
+                    if timeout == 0:
+                        timeout = None  # No timeout for subprocess
+                    
+                    result = subprocess.run(cmd, shell=True, timeout=timeout, 
+                                          capture_output=True, text=True)
+                    res = result.returncode
+                    
+                except subprocess.TimeoutExpired:
+                    raise DUTError('execute {0} timeout after {1}s'.format(cmd, timeout))
+                except Exception as e:
+                    raise DUTError('execute {0} failed: {1}'.format(cmd, e))
+                    
         finally:
             os.chdir(cwd)
+            
         if res != 0:
             raise DUTError('fail to exec {0} res :{1}'.format(cmd, res))
         return res

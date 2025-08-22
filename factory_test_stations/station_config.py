@@ -6,14 +6,67 @@ __author__ = 'chuckyin'
 import os
 import sys
 
-import winsound
+import platform
 import psutil
 import requests
 import logging
-import suds.client
+try:
+    import suds.client
+except ImportError:
+    try:
+        # Try the Python 3 compatible version
+        from suds import client as suds_client
+        import types
+        suds = types.ModuleType('suds')
+        suds.client = suds_client
+    except ImportError:
+        # Provide a stub if suds is not available
+        class suds:
+            class client:
+                pass
 import tkinter.simpledialog
 import lxml
 from lxml import etree
+
+# Cross-platform sound support
+try:
+    if platform.system() == "Windows":
+        import winsound
+    else:
+        # On non-Windows platforms, provide a stub for winsound
+        class winsound:
+            @staticmethod
+            def Beep(frequency, duration):
+                # Use system bell or print for non-Windows platforms
+                try:
+                    import os
+                    if platform.system() == "Darwin":  # macOS
+                        os.system("afplay /System/Library/Sounds/Ping.aiff")
+                    elif platform.system() == "Linux":
+                        os.system("echo -e '\a'")  # Terminal bell
+                except:
+                    print(f"Beep: {frequency}Hz for {duration}ms")
+            
+            @staticmethod
+            def PlaySound(sound, flags):
+                try:
+                    import os
+                    if platform.system() == "Darwin":  # macOS
+                        os.system("afplay /System/Library/Sounds/Ping.aiff")
+                    elif platform.system() == "Linux":
+                        os.system("echo -e '\a'")  # Terminal bell
+                except:
+                    print(f"PlaySound: {sound}")
+except ImportError:
+    # Fallback if winsound is not available
+    class winsound:
+        @staticmethod
+        def Beep(frequency, duration):
+            print(f"Beep: {frequency}Hz for {duration}ms")
+        
+        @staticmethod
+        def PlaySound(sound, flags):
+            print(f"PlaySound: {sound}")
 
 
 ###################################

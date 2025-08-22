@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factory Test Station</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .station-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .serial-section {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .status-summary {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .status-ready { background-color: #f8f9fa; color: #6c757d; }
+        .status-testing { background-color: #fff3cd; color: #856404; }
+        .status-pass { background-color: #d4edda; color: #155724; }
+        .status-fail { background-color: #f8d7da; color: #721c24; }
+        
+        .test-results {
+            background-color: white;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .test-results table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .test-results th,
+        .test-results td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .test-results th {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .test-results tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .result-pass { color: #28a745; font-weight: bold; }
+        .result-fail { color: #dc3545; font-weight: bold; }
+        .result-testing { color: #ffc107; font-weight: bold; }
+        
+        .eye-icon {
+            cursor: pointer;
+            color: #007bff;
+        }
+        
+        .console {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 5px;
+            height: 300px;
+            overflow-y: auto;
+        }
+        
+        .console-entry {
+            margin-bottom: 5px;
+        }
+        
+        .console-info { color: #ffffff; }
+        .console-success { color: #28a745; }
+        .console-error { color: #dc3545; }
+        .console-warning { color: #ffc107; }
+        
+        .controls {
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-success { background-color: #28a745; }
+        .btn-success:hover { background-color: #1e7e34; }
+        
+        .btn-warning { background-color: #ffc107; }
+        .btn-warning:hover { background-color: #e0a800; }
+        
+        .serial-input {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="station-info">
+            <h1 id="station-name">project_station</h1>
+            <div>Factory Test Station - Web Interface</div>
+        </div>
+    </div>
+    
+    <div class="serial-section">
+        <h3>Device Serial Number</h3>
+        <input type="text" id="serial-input" class="serial-input" placeholder="Serial will auto-scan..." readonly>
+        <button class="btn" onclick="scanSerial()">Auto Scan</button>
+        <button class="btn btn-success" onclick="startTest()">Start Test</button>
+    </div>
+    
+    <div id="status-summary" class="status-summary status-ready">
+        Ready - Click Auto Scan to detect device
+    </div>
+    
+    <div class="test-results">
+        <table>
+            <thead>
+                <tr>
+                    <th>Test Parameter</th>
+                    <th>Test Value</th>
+                    <th>Low Limit</th>
+                    <th>High Limit</th>
+                    <th>Attachment</th>
+                </tr>
+            </thead>
+            <tbody id="test-results-body">
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #6c757d;">
+                        No test results yet - start a test to see results
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="console" id="console">
+        <div class="console-entry console-info">[Ready] Factory Test Station Web Interface</div>
+        <div class="console-entry console-info">[Ready] Platform: Darwin</div>
+        <div class="console-entry console-info">[Ready] Click Auto Scan to detect device and start testing</div>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentTestData = {};
+        
+        socket.on('connect', function() {
+            console.log('Connected to server');
+            socket.emit('request_test_data');
+        });
+        
+        socket.on('test_update', function(data) {
+            currentTestData = data;
+            updateInterface(data);
+        });
+        
+        socket.on('console_output', function(entry) {
+            addConsoleEntry(entry);
+        });
+        
+        socket.on('test_complete', function(data) {
+            currentTestData = data;
+            updateInterface(data);
+        });
+        
+        function scanSerial() {
+            fetch('/api/scan_serial')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('serial-input').value = data.serial_number;
+                    addConsoleEntry({
+                        timestamp: new Date().toTimeString().slice(0,12),
+                        message: 'Device detected: ' + data.serial_number,
+                        level: 'success'
+                    });
+                });
+        }
+        
+        function startTest() {
+            const serialNumber = document.getElementById('serial-input').value;
+            if (!serialNumber) {
+                alert('Please scan for device serial number first');
+                return;
+            }
+            
+            fetch('/api/start_test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    serial_number: serialNumber
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert(data.message);
+                }
+            });
+        }
+        
+        function updateInterface(data) {
+            // Update station name and serial
+            document.getElementById('station-name').textContent = 'project_station, SN: ' + (data.serial_number || 'Not detected');
+            
+            // Update status summary
+            const statusDiv = document.getElementById('status-summary');
+            statusDiv.className = 'status-summary status-' + data.overall_status;
+            
+            let statusText = '';
+            switch(data.overall_status) {
+                case 'ready':
+                    statusText = 'Ready - Click Auto Scan to detect device';
+                    break;
+                case 'testing':
+                    statusText = 'Testing in progress...';
+                    break;
+                case 'pass':
+                    statusText = 'TEST PASSED ✓';
+                    break;
+                case 'fail':
+                    statusText = 'TEST FAILED ✗';
+                    break;
+            }
+            statusDiv.textContent = statusText;
+            
+            // Update test results table
+            updateTestResults(data.test_items || []);
+        }
+        
+        function updateTestResults(testItems) {
+            const tbody = document.getElementById('test-results-body');
+            
+            if (testItems.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #6c757d;">No test results yet - start a test to see results</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            testItems.forEach(item => {
+                const row = document.createElement('tr');
+                
+                let resultClass = '';
+                let resultText = item.result || 'testing...';
+                
+                if (item.status === 'pass') {
+                    resultClass = 'result-pass';
+                    resultText = 'pass';
+                } else if (item.status === 'fail') {
+                    resultClass = 'result-fail';
+                    resultText = 'fail';
+                } else {
+                    resultClass = 'result-testing';
+                }
+                
+                const attachmentCell = item.has_image ? 
+                    '<span class="eye-icon" onclick="viewImage(\''+item.name+'\')">👁️</span>' : '';
+                
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td class="${resultClass}">${resultText}</td>
+                    <td>${item.low_limit}</td>
+                    <td>${item.high_limit}</td>
+                    <td>${attachmentCell}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        function addConsoleEntry(entry) {
+            const console = document.getElementById('console');
+            const div = document.createElement('div');
+            div.className = 'console-entry console-' + entry.level;
+            div.textContent = '[' + entry.timestamp + '] ' + entry.message;
+            console.appendChild(div);
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        function viewImage(itemName) {
+            alert('View image for: ' + itemName + '\n(Image viewer would open here in full implementation)');
+        }
+        
+        // Auto-scan on page load
+        window.onload = function() {
+            setTimeout(scanSerial, 1000);
+        };
+    </script>
+</body>
+</html>
