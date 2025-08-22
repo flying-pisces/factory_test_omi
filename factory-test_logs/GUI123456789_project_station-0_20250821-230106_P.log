@@ -1,0 +1,11 @@
+Index, TestName, MeasuredVal, LoLim, HiLim, Result, ErrorCode
+0, UUT_Serial_Number, GUI123456789,  ,  , (LOG), 0
+0, Station_ID, project_station-0,  ,  , (LOG), 0
+0, Start_Time, 20250821-230106,  ,  , (LOG), 0
+0, End_Time, 20250821-230110,  ,  , (LOG), 0
+0, Overall_Result, PASS,  ,  , (LOG), 0
+0, Overall_ErrorCode, 0,  ,  , (LOG), 0
+0, elapsed_seconds, 3.902186,  ,  , (LOG), 0
+11, TEST ITEM 1, 1.1, 1, 2, PASS, 0
+12, TEST ITEM 2, 1.4,  ,  , (LOG), 0
+13, NON PARAMETRIC TEST ITEM 3, True, True, True, PASS, 0

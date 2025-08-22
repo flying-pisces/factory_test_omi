@@ -1,17 +1,120 @@
+import platform
+import sys
+import os
 import test_station
 import station_config
-import hardware_station_common.factory_test_gui as gui
 import test_station.test_station_seacliff_mot as test_station_mot
 import multiprocessing as mp
-if __name__ == '__main__':
 
+def main():
+    """Main entry point with UI mode selection."""
+    
     mp.freeze_support()
-
-    # here we can override the station_config so that we don't have
-    # to monkey with it in the build system
+    
+    # Load station configuration
     station_config.load_station('seacliff_mot')
-    # we just have to pass in the TestStation constructor for this specific station
-    # and the station_config
-    FACTORY_TEST_GUI = gui.FactoryTestGui(station_config, test_station_mot.seacliffmotStation)
-    # enter the main loop
-    FACTORY_TEST_GUI.main_loop()
+    
+    # Detect platform and available GUI frameworks
+    has_display = True
+    
+    # Check for display availability on Linux
+    if platform.system() == "Linux" and not os.environ.get("DISPLAY"):
+        has_display = False
+    
+    # Command line argument parsing for UI selection
+    force_console = "--console" in sys.argv
+    force_tkinter = "--tk" in sys.argv
+    force_web = "--web" in sys.argv
+    
+    print(f"Platform: {platform.system()}")
+    print(f"Station: seacliff_mot")
+    
+    # Force specific UI mode if requested
+    if force_web and has_display:
+        try:
+            print("Starting web browser GUI...")
+            import web_gui
+            web_gui.main()
+            return
+        except Exception as e:
+            print(f"Web GUI failed: {e}")
+            sys.exit(1)
+    
+    if force_tkinter and has_display:
+        try:
+            print("Starting tkinter GUI...")
+            import simple_gui_fixed as simple_gui
+            factory_test_gui = simple_gui.SimpleFactoryTestGUI()
+            factory_test_gui.main_loop()
+            return
+        except Exception as e:
+            print(f"Tkinter GUI failed: {e}")
+            sys.exit(1)
+    
+    if force_console:
+        print("Starting console mode...")
+        try:
+            import console_test_runner
+            runner = console_test_runner.ConsoleTestRunner('seacliff_mot')
+            if runner.initialize():
+                runner.interactive_mode()
+            else:
+                print("Failed to initialize console runner")
+                sys.exit(1)
+        except Exception as e:
+            print(f"Console mode failed: {e}")
+            sys.exit(1)
+        return
+    
+    # Default to console mode
+    print("Starting console mode (default)...")
+    try:
+        import console_test_runner
+        runner = console_test_runner.ConsoleTestRunner('seacliff_mot')
+        if runner.initialize():
+            runner.interactive_mode()
+        else:
+            print("Failed to initialize console runner")
+            sys.exit(1)
+    except Exception as e:
+        print(f"Console mode failed: {e}")
+        # Try tkinter GUI as fallback if console fails
+        if has_display:
+            try:
+                print("Console failed, trying tkinter GUI as fallback...")
+                import simple_gui_fixed as simple_gui
+                factory_test_gui = simple_gui.SimpleFactoryTestGUI()
+                factory_test_gui.main_loop()
+                return
+            except Exception as e:
+                print(f"Tkinter GUI also failed: {e}")
+        
+        print("All UI modes failed")
+        sys.exit(1)
+
+def print_usage():
+    """Print usage information."""
+    print("""
+Factory Test Station Runner - Seacliff MOT
+
+Usage:
+    python seacliff_mot_run.py [options]
+
+Options:
+    --console    Force console mode (no GUI) - DEFAULT
+    --tk         Force tkinter GUI mode (cross-platform kiosk)
+    --web        Force web browser GUI mode
+    --help       Show this help message
+
+Examples:
+    python seacliff_mot_run.py              # Console mode (default)
+    python seacliff_mot_run.py --console    # Force console mode
+    python seacliff_mot_run.py --tk         # Force tkinter kiosk mode
+    python seacliff_mot_run.py --web        # Force web browser GUI
+""")
+
+if __name__ == '__main__':
+    if "--help" in sys.argv:
+        print_usage()
+    else:
+        main()
