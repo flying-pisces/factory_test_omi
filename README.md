@@ -53,28 +53,82 @@ Station = DUT + Fixture + Equipment
 
 ## Installation:
 factory_test_omi can be run by external python; however, setting up a virtual environment to maintain a clean environment is recommended. If the dependencies are not installed yet, please install the dependencies:
+
+**Root Directory:** Use `/factory_test_omi` as the project root (contains README.md, requirements.txt)  
+**Working Directory:** Change to `/factory_test_omi/factory_test_stations` to run station scripts
+
 ```sh
 cd factory_test_omi
 .\env\Scripts\activate
 pip install -r requirements.txt
 ```
-To exit from the virtualenv, please run:\
+To exit from the virtualenv, please run:
 ```sh
 deactivate
 ```
 
 ## Usage:
-To run a station under a project, double click `PROJECT_STATION_run.py` or `python PROJECT_STATION_run.py`. For example, to run the AUO uniformity station,\
 
-``` sh
-python auo_unif_run.py 
-```
+### Python Executable
+Use either `python3` or `python` depending on your system:
+- **Linux/macOS:** Use `/usr/bin/python3` or `python3`
+- **Windows:** Use `python` 
+- **Cross-platform:** Use `python3` (recommended)
 
-Loop test for 100 times, the arg is `-l`
+### UI Modes
+All station runners support three UI modes:
+
+**Command Line Arguments:**
+- `--console` - Console mode (no GUI) - **DEFAULT**
+- `--tk` - Tkinter GUI mode (cross-platform kiosk)  
+- `--web` - Web browser GUI mode
+- `--help` - Show usage information
+
+### Running Stations
+
+**Change to the working directory first:**
 ```sh
-python auo_unif_run.py -l 100
+cd factory_test_omi/factory_test_stations
 ```
-More features such as pyinstall will be developped later. 
+
+**Basic usage (console mode - default):**
+```sh
+python3 project_station_run.py
+python3 pancake_offaxis_run.py
+python3 seacliff_eeprom_run.py
+```
+
+**Force specific UI modes:**
+```sh
+# Console mode (explicit)
+python3 project_station_run.py --console
+
+# Tkinter kiosk mode  
+python3 project_station_run.py --tk
+
+# Web browser mode
+python3 project_station_run.py --web
+```
+
+**Get help:**
+```sh
+python3 project_station_run.py --help
+```
+
+**Loop testing (legacy -l argument may be supported by specific stations):**
+```sh
+python3 pancake_offaxis_run.py -l 100
+```
+
+### Available Stations
+- `project_station_run.py` - Project station
+- `pancake_offaxis_run.py` - Pancake off-axis testing
+- `pancake_pixel_run.py` - Pancake pixel testing  
+- `pancake_pr788_run.py` - Pancake PR788 testing
+- `pancake_uniformity_run.py` - Pancake uniformity testing
+- `seacliff_eeprom_run.py` - Seacliff EEPROM programming
+- `seacliff_mot_run.py` - Seacliff MOT testing
+- `seacliff_paneltesting_run.py` - Seacliff panel testing 
 
 ## Framework Product Portofolio
 (1) Display panel vendor AUO, AUO Uniformity Station (completed) \
