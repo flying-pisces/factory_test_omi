@@ -641,7 +641,9 @@ def create_templates():
         function startTest() {
             const serialNumber = document.getElementById('serial-input').value;
             if (!serialNumber) {
-                alert('Please scan for device serial number first');
+                console.log('Please scan for device serial number first');
+                document.getElementById('console-messages').innerHTML += '<div class="message error">[' + new Date().toLocaleTimeString() + '] Please scan for device serial number first</div>';
+                document.getElementById('console-messages').scrollTop = document.getElementById('console-messages').scrollHeight;
                 return;
             }
             
@@ -657,7 +659,9 @@ def create_templates():
             .then(response => response.json())
             .then(data => {
                 if (!data.success) {
-                    alert(data.message);
+                    console.error('Test start failed:', data.message);
+                    document.getElementById('console-messages').innerHTML += '<div class="message error">[' + new Date().toLocaleTimeString() + '] Test failed: ' + data.message + '</div>';
+                    document.getElementById('console-messages').scrollTop = document.getElementById('console-messages').scrollHeight;
                 }
             });
         }
@@ -741,7 +745,9 @@ def create_templates():
         }
         
         function viewImage(itemName) {
-            alert('View image for: ' + itemName + '\\n(Image viewer would open here in full implementation)');
+            console.log('View image for:', itemName);
+            document.getElementById('console-messages').innerHTML += '<div class="message info">[' + new Date().toLocaleTimeString() + '] View image for: ' + itemName + ' (Image viewer would open here in full implementation)</div>';
+            document.getElementById('console-messages').scrollTop = document.getElementById('console-messages').scrollHeight;
         }
         
         // Auto-scan on page load

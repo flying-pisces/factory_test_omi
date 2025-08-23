@@ -1,20 +1,21 @@
 import hardware_station_common.test_station.test_station as test_station
 import test_station.test_fixture.test_fixture_project_station as test_fixture_project_station
-try:
-    import hardware_station_common.utils.gui_utils as gui_utils
-except ImportError:
-    # Create a stub for gui_utils when not available
-    class gui_utils:
-        class messagebox:
-            @staticmethod
-            def showwarning(msg):
-                print(f"WARNING: {msg}")
-            @staticmethod
-            def showinfo(msg):
-                print(f"INFO: {msg}")
-            @staticmethod
-            def showerror(msg):
-                print(f"ERROR: {msg}")
+# Always use console-based messaging to avoid popups
+class gui_utils:
+    class messagebox:
+        @staticmethod
+        def showwarning(msg):
+            print(f"WARNING: {msg}")
+        @staticmethod
+        def showinfo(msg):
+            print(f"INFO: {msg}")
+        @staticmethod
+        def showerror(msg):
+            print(f"ERROR: {msg}")
+        @staticmethod
+        def askyesno(title, msg):
+            print(f"PROMPT ({title}): {msg} - Automatically answering YES")
+            return True
 import test_station.dut as dut
 import time
 import os

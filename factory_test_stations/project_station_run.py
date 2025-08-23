@@ -1,12 +1,29 @@
 import platform
 import sys
 import os
+import time
 
 import station_config
 import test_station.test_station_project_station as test_station
 
+# Import cleanup utilities for process management
+try:
+    from cleanup_utils import cleanup_on_startup
+    HAS_CLEANUP = True
+except ImportError:
+    HAS_CLEANUP = False
+    def cleanup_on_startup(verbose=True):
+        if verbose:
+            print("⚠️  Cleanup utils not available, skipping process cleanup")
+        return []
+
 def main():
     """Main entry point with platform detection for GUI selection."""
+    
+    # Clean up any previous Python processes on startup
+    print("🚀 Starting Factory Test Station...")
+    cleanup_on_startup(verbose=True)
+    time.sleep(0.5)  # Brief pause to ensure cleanup completes
     
     # Load station configuration
     station_config.load_station('project_station')
